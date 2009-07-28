@@ -1,0 +1,18 @@
+This is the Java bindings for libhaggle.
+
+To run from this dir (Linux/MacOS X):
+
+> java -Djava.library.path=native/.libs -jar haggle.jar
+
+This will execut a small test program in the jar file, which will try to connect to Haggle
+
+To write a program using the bindings, include the haggle.jar file in the classpath.
+
+Android
+=======
+
+To create an Android class library from haggle.jar, execute the
+following commands (assuming you have the Android SDK in your PATH):
+
+> dx --dex --output=classes.dex haggle.jar
+> aapt add haggle-android.jar classes.dex

@@ -1,0 +1,132 @@
+Building Haggle for Android
+===========================
+
+Haggle can be built for Google's Android OS (i.e., the G1/Dream , or
+Magic).  Android is Linux based, but it is a very stripped down system
+with a minimal libc (called Bionic) and very basic C++ library
+support. There are no STL classes available on Android, but Haggle is
+built by default using its own STL-like container classes.
+
+To build Haggle for Android, you need an Android toolchain (ARM
+based). There are probably several ways to build Haggle for Android,
+but here we assume you use the source tree that can be downloaded from
+http://source.android.com. Follow the instructions on
+http://source.android.com/download in order to build the Android
+sources (you may want to build specifically for the G1 phone. Please
+note the special procedure for that). We here assume you build for a
+real device, and not the Android simulator.
+
+Currently there is no support for building Haggle with the Android NDK
+(Native Development Kit), although this should in theory be possible
+(at least if one ignores the fact that we probably rely on some
+headers that are not available in the NDK).
+
+Once you have a completely built Android system, enter the top
+directory of the Android source tree and put your Haggle source in
+'external/haggle' (the easiest way is to just put a symlink there
+pointing to wherever your Haggle source is located). Execute
+
+> source build/envsetup.sh
+
+In order to set all paths, etc. It might also be necessary to run the
+normal Haggle configure process in order to generate the config.h
+header file before Haggle can be built for Android.
+
+If Android didn't build libbluetooth.so for your configuration, you
+first need to build it by entering 'external/bluez/libs/' and type
+'mm'. You may also need to install this library onto your Android
+device.
+
+When everything is setup, enter 'external/haggle' and type 'mm'. This
+should build Haggle for Android. The binaries will end up as part of
+the Android system in 'out/target/product/dream/system' (you might
+have 'generic' instead of 'dream', depending on what target you built
+for). You may manually transfer the binaries and libraries to your
+Android device using, e.g., the 'adb push' command (or the provided
+'install_haggle.sh' script), or you may create a new system image
+(which now includes Haggle) and then flash your device with it.
+
+The basic components of Haggle that are of interest for Android are
+the Haggle executable ('haggle') and the application programming
+library ('libhaggle'). These end up in the output directory's 'bin/'
+and 'lib/' folders, respectively. Since Android's libxml2 library does
+not have the features needed by Haggle compiled in, a separate libxml2
+is built for Haggle. This is renamed to 'haggle-libxml2' in order to
+avoid conflicts and ends up in 'lib/'. In order to build applications
+using Android's Java-based application framework, a JNI class library
+is also built and installed. The components of this library are
+'libhaggle_jni' (the native code) and haggle.jar (the class
+library). These end up in 'lib/' and 'framework/',
+respectively. Haggle applications can be developed by including the
+haggle.jar class library when developing for Android.
+
+Haggle can be run from a shell by logging in on the phone with 'adb'.
+Type 'adb shell' to get a shell on the phone. Then execute 'haggle'.
+
+(How to use 'adb' and install programs on your device is out of the
+scope of this document, so we assume that you have the proper
+access and permissions on your device.)
+
+In order to install binaries in '/system', you may need to remount the
+filesystem with read/write permissions:
+
+> mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system
+
+Writing Haggle Applications
+---------------------------
+
+Haggle applications are developed as any other Android applications
+(see the Android tutorials for that). However, to be able to interact
+with Haggle from your application, you also have to include the
+haggle.jar class library in your Android application project (e.g., in
+Eclipse). The Haggle class library allows your application to interact
+with Haggle using a Java API.
+
+One example application, called "PhotoShare", should be bundled with
+this source package in the 'android' directory. PhotoShare is an
+Android Eclipse project. Once it is opened in Eclipse, it is probably
+necessary to configure local paths to haggle.jar, the Android SDK,
+etc.
+
+Setting Ad hoc mode
+-------------------
+
+At the time of writing of this document, Android has no GUI for
+setting ad hoc mode on the WiFi interface. However, ad hoc mode can be
+manually set through the shell by modifying the file
+/system/etc/wifi/tiwlan.ini with the following settings.
+
+WiFiAdhoc = 1
+dot11DesiredSSID = HTCG1Default
+dot11DesiredBSSType = 0 
+
+The driver module has to be reloaded into the kernel using this new
+configuration.
+
+Alternatively, use the script 'adhoc.sh'. Install the script on the
+device and run it as 'root', e.g.:
+
+# ./adhoc.sh start [ #nodeNR ]
+
+The WiFi interface should be turned off in the Android GUI before this
+script is run.
+
+Note about a bug with static initializers in Bionic
+---------------------------------------------------
+
+As of Android platform release 1.5r2 (and probably earlier) there is a
+confirmed bug in Bionic which causes the constructor of static objects
+to be run twice.
+
+See the following discussion thread for more information:
+
+http://groups.google.com/group/android-platform/browse_thread/thread/1a434b326cef6609
+
+To deal with this problem, some class constructors, of which there
+exist statically allocated objects, have extra checks to make sure the
+constructor can handle two calls without bad consequences.  In some
+other constructors, no fixes have been applied, because the problem is
+not critical. For example, statically allocated strings will probably
+leak memory because the string constructor is run twice, thus
+allocating the string memory twice as well. But this is something one
+can live with until a fix is applied in Bionic upstream.

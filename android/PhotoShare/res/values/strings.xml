@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hello">Hello World, PhotoShare</string>
+    <string name="app_name">PhotoShare</string>
+<string name="menu_interests">My Interests</string>
+<string name="menu_shutdown_haggle">Shutdown Haggle</string>
+
+<string name="gallery_longpress_text">Delete</string>
+<string name="menu_take_picture">Take Picture</string>
+<string name="haggle_dialog_title">Haggle Error</string>
+<string name="registration_failed">Could not register with Haggle.</string>
+<string name="spawn_daemon_failed">Could not spawn Haggle daemon.</string>
+<string name="interestlist_context_menu_text">Delete</string>
+</resources>

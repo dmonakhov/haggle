@@ -1,0 +1,8 @@
+PhotoShare
+
+In order to compile, you need Eclipse with the Android SDK installed. 
+You also need to setup the path to the libhaggle java bindings. First 
+build libhaggle with the Java bindings, then point Eclipse to the haggle.jar
+file that is built. This is done under 'Project->Properties->Java Build Path'
+in Eclipse.
+

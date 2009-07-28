@@ -1,0 +1,94 @@
+/* Copyright 2008-2009 Uppsala University
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#ifndef _CONNECTIVITYLOCALLINUX_H_
+#define _CONNECTIVITYLOCALLINUX_H_
+
+#ifndef  _IN_CONNECTIVITYLOCAL_H
+#error "Do not include this file directly, include ConnectivityLocal.h"
+#endif
+
+#include <libcpphaggle/Platform.h>
+#include "Connectivity.h"
+#include "Interface.h"
+
+#if defined(HAVE_DBUS)
+#include <dbus/dbus.h>
+struct dbus_handle {
+        DBusError err;
+        DBusConnection* conn;
+};
+#endif
+
+#if defined(ENABLE_ETHERNET)
+#include <linux/netlink.h>
+struct netlink_handle {
+        int sock;
+        int seq;
+        struct sockaddr_nl local;
+        struct sockaddr_nl peer;
+};
+#endif
+
+#if defined(ENABLE_BLUETOOTH)
+#include <bluetooth/bluetooth.h>
+#include <bluetooth/hci.h>
+#include <bluetooth/hci_lib.h>
+
+struct hci_handle {
+        int sock;
+        struct sockaddr_hci addr;
+        struct hci_filter flt;
+};
+#endif
+
+/**
+	Local connectivity module
+
+	This module scans the local hardware/software to find
+	bluetooth/ethernet/etc. interfaces that are accessible, and tells the
+	connectivity manager about them when they are detected.
+*/
+class ConnectivityLocal : public ConnectivityLocalBase
+{
+private:
+#if defined(HAVE_DBUS)
+        struct dbus_handle dbh;
+        friend DBusHandlerResult dbus_handler(DBusConnection *conn, DBusMessage *msg, void *data);
+#endif
+#if defined(ENABLE_BLUETOOTH)
+        struct hci_handle hcih;
+        int read_hci();
+        void findLocalBluetoothInterfaces();
+#endif
+#if defined(ENABLE_ETHERNET)
+        long ethernet_interfaces_found;
+
+        struct netlink_handle nlh;
+        int read_netlink();
+        void findLocalEthernetInterfaces();
+#endif
+
+        // Called when add_interface _actually_ adds an interface
+        //void interface_added(const Interface *node);
+
+        bool run();
+        void hookCleanup();
+public:
+
+        ConnectivityLocal(ConnectivityManager *m);
+        ~ConnectivityLocal();
+};
+
+#endif

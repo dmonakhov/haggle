@@ -1,0 +1,28 @@
+bin_PROGRAMS=hagglepop hagglesmtp haggleproxy mmpd
+hagglepop_SOURCES=hagglepop.cpp popserver.cpp popd.cpp databuf.cpp mini_base64.c thread.cpp prng.cpp
+hagglesmtp_SOURCES=hagglesmtp.cpp smtpserver.cpp smtpd.cpp databuf.cpp mini_base64.c thread.cpp prng.cpp
+haggleproxy_SOURCES=haggleproxy.cpp popserver.cpp popd.cpp smtpserver.cpp smtpd.cpp databuf.cpp mini_base64.c thread.cpp prng.cpp
+mmpd_SOURCES=mmpd.cpp
+
+CPPFLAGS +=-I$(top_builddir)/src/libhaggle/include 
+CPPFLAGS +=-I$(top_builddir)/src/utils 
+CPPFLAGS +=-I$(top_builddir)/src/libcpphaggle/include
+LDFLAGS +=-lhaggle -L$(top_builddir)/src/libhaggle/
+LDFLAGS +=-lhaggleutils -L$(top_builddir)/src/utils/
+LDFLAGS +=-lcpphaggle -L$(top_builddir)/src/libcpphaggle
+LDFLAGS +=-lxml2
+
+EXTRA_DIST = databuf.h mailattr.h mini_base64.h popd.h popserver.h prng.h smtpd.h smtpserver.h  thread.h README
+
+if OS_MACOSX
+if OS_IPHONEOS
+else
+LDFLAGS +=-framework CoreServices
+endif
+endif
+CFLAGS += -std=gnu99
+
+all-local:
+
+clean-local:
+	rm -f *~
