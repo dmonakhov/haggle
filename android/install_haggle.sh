@@ -6,6 +6,7 @@
 # be in the path.
 
 THIS_DIR=`dirname $0`
+DEVICE_FILES_DIR=$THIS_DIR/device-files
 PUSH_DIR=/sdcard
 DATA_DIR=/data/local
 SOURCE_DIR=out/target/product/dream
@@ -32,12 +33,12 @@ cd $THIS_DIR
 # therefore write first to the sdcard, and then we run a script on the
 # device as 'root', which copies the files to their correct places.
 
-if [ -f sdcard_install.sh ]; then
+if [ -f $DEVICE_FILES_DIR/sdcard_install.sh ]; then
     echo
     echo "Pushing 'sdcard_install.sh' to $DATA_DIR/"
-    $ADB $ADB_PARAMS push sdcard_install.sh $DATA_DIR/
-    $ADB $ADB_PARAMS push adhoc.sh $DATA_DIR/
-    $ADB $ADB_PARAMS push tiwlan.ini $DATA_DIR/
+    $ADB $ADB_PARAMS push $DEVICE_FILES_DIR/sdcard_install.sh $DATA_DIR/
+    $ADB $ADB_PARAMS push $DEVICE_FILES_DIR/adhoc.sh $DATA_DIR/
+    $ADB $ADB_PARAMS push $DEVICE_FILES_DIR/tiwlan.ini $DATA_DIR/
     $ADB $ADB_PARAMS shell chmod 775 $DATA_DIR/sdcard_install.sh
     $ADB $ADB_PARAMS shell chmod 775 $DATA_DIR/adhoc.sh
 fi
