@@ -1,0 +1,17 @@
+syntax: glob
+*~
+*.o
+*.lo
+*.Po
+*.Plo
+*\#*
+*.DS_Store
+Makefile
+Makefile.in
+*.class
+*.so*
+*.a
+*.la
+*.lai
+*.m4
+*.jar
