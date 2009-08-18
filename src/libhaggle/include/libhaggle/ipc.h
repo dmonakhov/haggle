@@ -96,6 +96,8 @@ typedef void (STDCALL *haggle_event_loop_stop_t) (void *);
 /* IPC API functions */
 
 /**
+   \defgroup IPC Inter Process Communication 
+
 	GENERAL NOTES:
 
 	Most IPC functions return a value indicating success or failure. This value only 
@@ -108,6 +110,7 @@ typedef void (STDCALL *haggle_event_loop_stop_t) (void *);
 	may be indicated in those messages.
 */
 
+/*@{*/
 
 /**
 	Returns (if possible) a handle that can be used to communicate with haggle
@@ -335,6 +338,9 @@ HAGGLE_API int haggle_event_loop_run_async(haggle_handle_t hh);
 	@returns an error code.
 */
 HAGGLE_API int haggle_event_loop_register_callbacks(haggle_handle_t hh, haggle_event_loop_start_t start, haggle_event_loop_stop_t stop, void *arg);
+
+/*@}*/
+
 #ifdef __cplusplus
 } /* closing brace for extern "C" */
 #endif

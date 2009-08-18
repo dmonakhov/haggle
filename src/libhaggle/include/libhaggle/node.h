@@ -24,6 +24,11 @@ extern "C" {
 #include <libhaggle/attribute.h>
 #include <libhaggle/interface.h>
 
+/**
+   \defgroup Node Node
+*/
+/*@{*/
+
 #define NODE_ID_LEN 20
 
 typedef struct HAGGLE_API node {
@@ -36,11 +41,6 @@ typedef struct HAGGLE_API node {
 	list_t interfaces;
 } haggle_node_t;
 
-typedef struct HAGGLE_API nodelist {
-	list_t nodes;
-	int num_nodes;
-} haggle_nodelist_t;
-
 #define HAGGLE_XML_NODE_NAME "Node"
 
 #if !defined(_LIBHAGGLE_METADATA_H)
@@ -51,17 +51,6 @@ struct metadata;
 HAGGLE_API struct node *haggle_node_new(const char *name);
 */
 HAGGLE_API struct node *haggle_node_new_from_metadata(struct metadata *m);
-
-HAGGLE_API haggle_nodelist_t *haggle_nodelist_new_from_metadata(struct metadata *m);
-HAGGLE_API haggle_nodelist_t *haggle_nodelist_new_from_dataobject(struct dataobject *dobj);
-
-HAGGLE_API struct node *haggle_nodelist_get_node_n(haggle_nodelist_t *nl, const int num);
-
-HAGGLE_API struct node *haggle_nodelist_pop(haggle_nodelist_t *nl);
-
-HAGGLE_API int haggle_nodelist_size(haggle_nodelist_t *nl);
-
-HAGGLE_API void haggle_nodelist_free(haggle_nodelist_t *nodelist);
 
 /**
 	Releases the memory associated with a node. The node cannot
@@ -155,6 +144,31 @@ HAGGLE_API void haggle_node_leak_report_print();
 */
 void haggle_node_print_attributes(struct node *n);
 #endif
+
+/*@}*/
+
+/**
+   \defgroup NodeList Node list
+*/
+/*@{*/
+
+typedef struct HAGGLE_API nodelist {
+	list_t nodes;
+	int num_nodes;
+} haggle_nodelist_t;
+
+HAGGLE_API haggle_nodelist_t *haggle_nodelist_new_from_metadata(struct metadata *m);
+HAGGLE_API haggle_nodelist_t *haggle_nodelist_new_from_dataobject(struct dataobject *dobj);
+
+HAGGLE_API struct node *haggle_nodelist_get_node_n(haggle_nodelist_t *nl, const int num);
+
+HAGGLE_API struct node *haggle_nodelist_pop(haggle_nodelist_t *nl);
+
+HAGGLE_API int haggle_nodelist_size(haggle_nodelist_t *nl);
+
+HAGGLE_API void haggle_nodelist_free(haggle_nodelist_t *nodelist);
+
+/*@}*/
 
 #ifdef __cplusplus
 }

@@ -29,17 +29,22 @@ extern "C" {
 #pragma warning( disable: 4200 )
 #endif
 
+/**
+   \defgroup Attribute Attribute
+
+   Attributes are name value pairs that define the metadata of data
+   objects.
+
+*/
+
+/*@{*/
+
 typedef struct HAGGLE_API attribute {
 	list_t l;
 	unsigned long weight;
 	char *value;
 	char *name;
 } haggle_attr_t;
-
-typedef struct HAGGLE_API attributelist {
-	list_t attributes;
-	unsigned long num_attributes;
-} haggle_attrlist_t;
 
 #if defined(OS_WINDOWS)
 #pragma warning( pop )
@@ -151,6 +156,18 @@ HAGGLE_API struct attribute *haggle_attribute_new_weighted(const char *name,
 */
 HAGGLE_API void haggle_attribute_free(struct attribute *attr);
 
+
+/*@}*/
+
+/**
+   \defgroup AttributeList Attribute list
+   @{
+*/
+
+typedef struct HAGGLE_API attributelist {
+	list_t attributes;
+	unsigned long num_attributes;
+} haggle_attrlist_t;
 
 /**
 	Create a new attribute list with zero contained attributes.
@@ -308,7 +325,10 @@ HAGGLE_API struct attribute *haggle_attributelist_pop(struct attributelist *al);
 #ifdef DEBUG
 
 HAGGLE_API void haggle_attributelist_print(struct attributelist *al);
+
 #endif
+
+/*@}*/
 
 #ifdef __cplusplus
 }

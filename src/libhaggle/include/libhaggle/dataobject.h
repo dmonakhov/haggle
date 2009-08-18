@@ -35,6 +35,12 @@ extern "C" {
 
 #define HASH_LENGTH 20
 
+/**
+   \defgroup DataObject Data object
+*/
+
+/*@{*/
+
 typedef unsigned char dataobject_id_t[HASH_LENGTH];
 
 typedef struct HAGGLE_API dataobject {
@@ -440,6 +446,8 @@ HAGGLE_API void haggle_dataobject_leak_report_print();
 HAGGLE_API void haggle_dataobject_print_attributes(struct dataobject *dobj);
 
 #endif /* DEBUG */
+
+/*@}*/
 
 #ifdef __cplusplus
 }

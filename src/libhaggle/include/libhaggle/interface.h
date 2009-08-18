@@ -30,6 +30,11 @@ extern "C" {
 #pragma warning( disable: 4200 )
 #endif
 
+/**
+   \defgroup Interface Interface
+*/
+/*@{*/
+
 /*
 	The interface types be synchronized with Interface.h in Haggle.
 */
@@ -79,6 +84,8 @@ HAGGLE_API const char *haggle_interface_get_identifier(const haggle_interface_t 
 HAGGLE_API int haggle_interface_get_identifier_length(const haggle_interface_t *iface);
 HAGGLE_API char *haggle_interface_get_identifier_str(const haggle_interface_t *iface);
 HAGGLE_API void haggle_interface_free(haggle_interface_t *iface);
+
+/*@}*/
 
 #ifdef __cplusplus
 }

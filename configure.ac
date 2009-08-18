@@ -570,7 +570,9 @@ fi
 AM_CONDITIONAL([JAVA_BINDINGS], [test x$java_bindings = xyes])
 
 AC_CONFIG_FILES([Makefile
-		 Doxyfile
+		 src/libhaggle/Doxyfile
+		 src/libcpphaggle/Doxyfile
+		 src/hagglekernel/Doxyfile
 		 extlibs/sqlite-3.6.6.2/Makefile
                  doc/Makefile
                  src/Makefile

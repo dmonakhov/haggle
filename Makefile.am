@@ -18,11 +18,16 @@ dist_doc_DATA = README
 docdir = doc
 
 if DOCS
-EXTRA_DIST += Doxygen.in 
-all-local: Doxyfile
-docs:
+
+DOC_DIRS := src/hagglekernel src/libcpphaggle src/libhaggle
+
+docs: 
 	@echo "Generating documentation"
-	doxygen Doxyfile
+	@for dir in ${DOC_DIRS}; do \
+		pushd "$$dir"; \
+		doxygen Doxyfile; \
+		popd; \
+	done
 endif
 
 tes%:
