@@ -1,12 +1,5 @@
 package org.haggle.PhotoShare;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
 import org.haggle.Attribute;
 import org.haggle.DataObject;
 import org.haggle.Handle;
@@ -40,46 +33,6 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 	public void onConfigurationChanged(Configuration newConfig) {
 		// TODO Auto-generated method stub
 		super.onConfigurationChanged(newConfig);
-	}
-	
-	private boolean copyFile(String from, String to) {
-		InputStream in;
-		OutputStream out;
-		
-		try {
-			in = new FileInputStream(from);
-		} catch (FileNotFoundException e) {
-			return false;
-		}
-		
-		try {
-			out = new FileOutputStream(to);
-		} catch (FileNotFoundException e) {
-			try {
-				in.close();
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-			}
-			return false;
-		}
-    
-        // Transfer bytes from in to out
-        byte[] buf = new byte[1024];
-        int len;
-        
-        try {
-        	while ((len = in.read(buf)) > 0) {
-        		out.write(buf, 0, len);
-
-        	}
-        	in.close();
-        	out.close();
-        } catch (IOException e) {
-			// TODO Auto-generated catch block
-        	return false;
-		}
-        
-		return true;
 	}
 
 	@Override

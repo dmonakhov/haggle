@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.database.DataSetObserver;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
@@ -12,17 +11,13 @@ import android.text.Editable;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 
 public class AddPictureAttributeView extends Activity {
@@ -99,10 +94,6 @@ public class AddPictureAttributeView extends Activity {
 
 		attributeAdpt.add(attr);
 		attributeList.add(attr);
-	}
-	private void removeAttribute(String attr) {
-		attributeAdpt.remove(attr);
-		attributeList.remove(attr);
 	}
 	private String removeAttribute(int pos) {
 		String str = attributeAdpt.getItem(pos);

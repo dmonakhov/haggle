@@ -1,7 +1,6 @@
 package org.haggle.PhotoShare;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.DataInputStream;
 import java.util.ArrayList;
@@ -64,7 +63,6 @@ public class PhotoView extends Activity implements OnClickListener {
 	private NodeAdapter nodeAdpt = null;
 	private PhotoShare ps = null;
 	private Gallery gallery = null;
-	private ListView neighlist = null;
 	private TextView neighlistHeader = null;
 	private boolean shouldRegisterWithHaggle = true;
 	
@@ -401,8 +399,9 @@ public class PhotoView extends Activity implements OnClickListener {
 			menu.add("Cancel");
 		} else { 
 			// TODO We should check for the correct view like for the gallery
-			ListView lv = (ListView) v;
+			/* ListView lv = (ListView) v;
 			NodeAdapter na = (NodeAdapter) lv.getAdapter();
+			*/
 			menu.setHeaderTitle("Node Information");
 			menu.add("Cancel");
 		}

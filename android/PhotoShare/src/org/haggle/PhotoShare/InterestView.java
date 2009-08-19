@@ -1,8 +1,6 @@
 package org.haggle.PhotoShare;
 
 import java.util.ArrayList;
-
-import android.R.attr;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -139,11 +137,11 @@ public class InterestView extends Activity {
     	
     	for (int i = 0; i < split.length; i++) {
     		String[] split2 = split[i].split(":");
-    		long weight;
+    		//long weight;
     		
     		if (split2.length == 2) {
     			try {
-    				weight = Long.parseLong(split2[1]);
+    				//weight = Long.parseLong(split2[1]);
     			} catch (Exception ex) {
     				// Just ignore and use default weight
     			}

@@ -3,26 +3,22 @@ package org.haggle.PhotoShare;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.ContentResolver;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.PixelFormat;
 import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.Size;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.view.*;
 import android.widget.ImageView;
-import android.provider.MediaStore;
 
 public class Camera extends Activity implements View.OnClickListener, SurfaceHolder.Callback {
 	private android.hardware.Camera mCameraDevice;
@@ -37,7 +33,7 @@ public class Camera extends Activity implements View.OnClickListener, SurfaceHol
     private ShutterCallback mShutterCallback = new ShutterCallback();
     private RawPictureCallback mRawPictureCallback = new RawPictureCallback();
     private JpegPictureCallback mJpegPictureCallback = new JpegPictureCallback();
-    private AutoFocusCallback mAutoFocusCallback = new AutoFocusCallback();
+    //private AutoFocusCallback mAutoFocusCallback = new AutoFocusCallback();
     private ContentResolver mContentResolver;
     private Thread writeFileThread = null;
 
@@ -91,7 +87,7 @@ public class Camera extends Activity implements View.OnClickListener, SurfaceHol
 			openCameraThread.join();
 		} catch (InterruptedException ex) {
 		}
-		android.hardware.Camera.Parameters parameters = mCameraDevice.getParameters();
+		//android.hardware.Camera.Parameters parameters = mCameraDevice.getParameters();
 	}
 	public void onStart() {
 		super.onStart();
