@@ -280,6 +280,7 @@ void Certificate::printPubKey() const
 	
 	printf("pubkey: %s\n", key_str);
 	
+	BIO_free(bp);
 }
 
 const RSA *Certificate::getPubKey() const
