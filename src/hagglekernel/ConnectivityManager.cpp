@@ -492,7 +492,12 @@ void ConnectivityManager::onReceivedDataObject(Event *e)
 			report_known_interface(remoteIface, true);
 			res = true;
 
-			kernel->addEvent(new Event(garbageEType, remoteIface, 30));
+			// Set a timeout at one minute for snooped interfaces. 
+			// This may be too short for Bluetooth, i.e., the device might not 
+			// scan and verify the snooped device before the timeout. However,
+			// this is not really a problem, since the device just goes away
+			// and then reappears when scanned for real.
+			kernel->addEvent(new Event(garbageEType, remoteIface, 60));
 		}
 	}
 }
@@ -668,10 +673,7 @@ void ConnectivityManager::onNewPolicy(Event *e)
 	
 	pr = e->getPolicy();
 	
-	for(connectivity_registry_t::iterator it = conn_registry.begin();
-		it != conn_registry.end();
-		it++)
-	{
+	for (connectivity_registry_t::iterator it = conn_registry.begin(); it != conn_registry.end(); it++) {
 		(*it)->setPolicy(pr);
 	}
 }

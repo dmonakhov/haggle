@@ -52,6 +52,11 @@ using namespace haggle;
 
 #endif /* OS_WINDOWS_MOBILE */
 
+#if defined(OS_ANDROID)
+// Include Android property service for reading device id
+#include <cutils/properties.h>
+#endif
+
 unsigned long Node::totNum = 0;
 const char *Node::typestr[] = {
 	"undefined",
@@ -502,6 +507,17 @@ void Node::calcId()
 		(LPBYTE)id,
 		&idlen);
 
+#elif defined(OS_ANDROID)
+	SHA_CTX ctx;
+	char serialno[PROPERTY_VALUE_MAX] = {'\0'};
+
+	SHA1_Init(&ctx);	
+	
+	property_get("ro.serialno", serialno, NULL);
+		
+	SHA1_Update(&ctx, (unsigned char *)serialno, strlen(serialno));
+	SHA1_Final((unsigned char *)id, &ctx);
+	
 #elif defined(OS_LINUX) || defined(OS_MACOSX_IPHONE) || defined(OS_WINDOWS_DESKTOP)
         InterfaceRefList iflist;
 	SHA_CTX ctx;
@@ -761,9 +777,3 @@ bool operator!=(const Node & n1, const Node & n2)
 {
 	return (!(n1 == n2));
 }
-
-// ostream & operator<<(std::ostream& os, const Node& n)
-// {
-// 	os << "Node with node id: " << n.getIdStr() << endl;
-// 	return os;
-// }

@@ -389,17 +389,16 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 		return;
 	}
 
-#ifdef DEBUG
 	HAGGLE_DBG("Node description data object %s, refcount=%d\n", dObj.getName(), dObj.refcount());
-	HAGGLE_DBG("Node description from node with id=%s \n", node->getIdStr());
-
+	HAGGLE_DBG("Node description from node with id=%s\n", node->getIdStr());
+	HAGGLE_DBG("My id is %s\n", kernel->getThisNode()->getIdStr());
+	
 	if (node == kernel->getThisNode()) {
 		HAGGLE_ERR("Node description is my own. Ignoring and deleting from data store\n");
 		// Remove the data object from the data store:
 		kernel->getDataStore()->deleteDataObject(dObj);
 		return;
 	}
-#endif
 	// Retrieve any existing node description data objects for the node described
 	// by the received node description
 	char filterString[255];
