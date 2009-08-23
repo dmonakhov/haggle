@@ -472,9 +472,15 @@ void ConnectivityManager::onReceivedDataObject(Event *e)
 	InterfaceRef localIface = dObj->getLocalInterface();
 	InterfaceRef remoteIface = dObj->getRemoteInterface();
 
-	if (!localIface || !remoteIface)
+	if (!localIface) {
+		HAGGLE_DBG("No local interface set on snooped data object, IGNORING\n");
 		return;
-
+	}
+	if (!remoteIface) {
+		HAGGLE_DBG("No remote interface set on snooped data object, IGNORING\n");
+		return;
+	}
+	
 	// Make sure the interface is marked as up.
 	remoteIface->up();
 

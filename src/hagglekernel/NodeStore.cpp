@@ -365,15 +365,13 @@ bool NodeStore::update(const NodeRef &node, NodeRefList *nl)
 		nr->node.unlock();
 
 		if (found_now) {
-			if(nl)
+			if (nl)
 				nl->push_back(nr->node);
 			
 			nr->node->setStored(false);
 
-			node->setExchangedNodeDescription(
-				nr->node->hasExchangedNodeDescription());
+			node->setExchangedNodeDescription(nr->node->hasExchangedNodeDescription());
 				
-			
 			it = erase(it);
 			delete nr;
 			found = true;
