@@ -178,6 +178,10 @@ void NodeManager::onRetrieveThisNode(Event *e)
 int NodeManager::sendNodeDescription(NodeRef neigh)
 {
 	DataObjectRef dObj = kernel->getThisNode()->getDataObject();
+	
+	// Force updated create time to make sure the node description is 
+	// always sent out
+	dObj->setCreateTime();
 
 	if (neigh->getBloomfilter()->has(dObj)) {
 		HAGGLE_DBG("Neighbor %s already has our most recent node description\n", neigh->getName().c_str());
