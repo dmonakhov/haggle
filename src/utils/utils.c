@@ -752,45 +752,48 @@ int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, char 
 	}
 
         /* First send a ICMP echo request probe to make sure the arp
-         * table is updated */
+         * table is updated. This should not strictly be necessary and
+         * in most cases only works when running as root (due to the 
+         * usage of a raw socket. Therefore, we just continue if we
+         * fail to open the socket.
+         */
 	icmp_sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 
-        if (icmp_sock == INVALID_SOCKET)
-                return -3;
-                                
-        icmp = (struct icmphdr *)outpack;
-	icmp->type = ICMP_ECHO;
-	icmp->code = 0;
-	icmp->checksum = 0;
-	icmp->un.echo.sequence = htons(1);
-	icmp->un.echo.id = 1;
-               
-	icmp->checksum = in_cksum((u_short *)icmp, datalen, 0);
-        
-        paddr = (struct sockaddr *)malloc(addrlen);
-
-        if (!paddr) {
+        if (icmp_sock != INVALID_SOCKET) {
+                icmp = (struct icmphdr *)outpack;
+                icmp->type = ICMP_ECHO;
+                icmp->code = 0;
+                icmp->checksum = 0;
+                icmp->un.echo.sequence = htons(1);
+                icmp->un.echo.id = 1;
+                
+                icmp->checksum = in_cksum((u_short *)icmp, datalen, 0);
+                
+                paddr = (struct sockaddr *)malloc(addrlen);
+                
+                if (!paddr) {
+                        close(icmp_sock);
+                        return -4;
+                }
+                
+                memcpy(paddr, saddr, addrlen);
+                
+                do {
+                        struct iovec iov = {outpack, 0};
+                        struct msghdr m = { paddr, addrlen, &iov, 1, &cmsg, 0, 0 };
+                        m.msg_controllen = sizeof(cmsg);
+                        iov.iov_len = datalen;
+                        
+                        ret = sendmsg(icmp_sock, &m, 0);
+                } while (0);
+                
+                free(paddr);
+                
                 close(icmp_sock);
-                return -4;
+                
+                /* Wait for a short time so that the ARP cache has been populated */
+                usleep(50000);
         }
-
-        memcpy(paddr, saddr, addrlen);
-
-        do {
-		struct iovec iov = {outpack, 0};
-		struct msghdr m = { paddr, addrlen, &iov, 1, &cmsg, 0, 0 };
-		m.msg_controllen = sizeof(cmsg);
-		iov.iov_len = datalen;
-
-		ret = sendmsg(icmp_sock, &m, 0);
-	} while (0);
-        
-        free(paddr);
-
-        close(icmp_sock);
-
-        /* Wait for a short time so that the ARP cache has been populated */
-        usleep(50000);
 
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 

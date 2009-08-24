@@ -367,8 +367,7 @@ void ForwardingManager::onNodeQueryResult(Event *e)
                 }
 	}
 
-	if (!ns.empty())
-	{
+	if (!ns.empty()) {
 		kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, ns));
 	}
 	
@@ -611,8 +610,7 @@ void ForwardingManager::onDelegateNodes(Event * e)
 		}
 	} while (delegate);
 
-	if (!ns.empty())
-	{
+	if (!ns.empty()) {
 		kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, ns));
 	}
 	
@@ -638,8 +636,7 @@ void ForwardingManager::onSendMetric(Event * e)
                                         ns.push_front(*it);
                         }
                 }
-                if (!ns.empty())
-		{
+                if (!ns.empty()) {
 			/*
 				Here, we don't send a _WILL_SEND event, because these data 
 				objects are not meant to be modified, and should eventually be 

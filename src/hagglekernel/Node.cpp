@@ -170,7 +170,7 @@ inline bool Node::init_node(const char *_id)
 		if (_id) {
 			HAGGLE_DBG("Attempted to create undefined node with ID. ID ignored.\n");
 		}
-		strncpy(idStr, "[Not yet set]", MAX_NODE_ID_STR_LEN);
+		strncpy(idStr, "[Unknown id]", MAX_NODE_ID_STR_LEN);
 	} else if (_id) {
 		memcpy(id, _id, NODE_ID_LEN);
 		calcIdStr();
