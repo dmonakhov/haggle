@@ -735,7 +735,7 @@ void DataObject::setCreateTime(Timeval t)
 
 bool DataObject::addAttribute(const Attribute& a)
 {
-	if(hasAttribute(a))
+	if (hasAttribute(a))
 		return false;
 	
         bool ret = attrs.add(a);

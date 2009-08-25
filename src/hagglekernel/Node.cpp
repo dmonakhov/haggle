@@ -72,11 +72,9 @@ inline bool Node::init_node(const char *_id)
 	memset(id, 0, NODE_ID_LEN);
 	memset(idStr, 0, MAX_NODE_ID_STR_LEN);
 	
-	if(!doBF)
-	{
+	if (!doBF) {
 		/* Init Bloomfilter */
-		doBF = 
-			new Bloomfilter(
+		doBF = new Bloomfilter(
 #ifdef OS_WINDOWS_DESKTOP
 				(float)
 #endif
@@ -166,6 +164,7 @@ inline bool Node::init_node(const char *_id)
         }
 	if (type == NODE_TYPE_THIS_NODE) {
 		calcId();
+		dObj->setIsThisNodeDescription(true);
 	} else if (type == NODE_TYPE_UNDEF) {
 		if (_id) {
 			HAGGLE_DBG("Attempted to create undefined node with ID. ID ignored.\n");
@@ -191,9 +190,7 @@ Node::Node(const NodeType_t _type, const DataObjectRef& dObj) :
                 type(_type), num(totNum++), name("Unnamed node"), nodeDescExch(false), 
                 dObj(dObj ? dObj : DataObjectRef(new DataObject())), 
                 doBF(NULL), stored(false), createdFromNodeDescription(dObj ? true : false), 
-                filterEventId(-1),
-				matchThreshold(0),
-				numberOfDataObjectsPerMatch(0)
+                filterEventId(-1), matchThreshold(0), numberOfDataObjectsPerMatch(0)
 {
 	init_node(NULL);
 }
@@ -205,8 +202,7 @@ Node::Node(const NodeType_t _type, const string& _name) :
                 type(_type), num(totNum++), name(_name), nodeDescExch(false), 
                 dObj(DataObjectRef(new DataObject())), doBF(NULL), stored(false), 
                 createdFromNodeDescription(false), filterEventId(-1),
-				matchThreshold(0),
-				numberOfDataObjectsPerMatch(0)
+		matchThreshold(0), numberOfDataObjectsPerMatch(0)
 {
 	init_node(NULL);
 }
@@ -218,9 +214,7 @@ Node::Node(const NodeType_t _type, const char *_id, const string& _name) :
                 type(_type), num(totNum++), name(_name), nodeDescExch(false), 
                 dObj(DataObjectRef(new DataObject())), doBF(NULL), 
                 stored(false), createdFromNodeDescription(false),
-                filterEventId(-1),
-				matchThreshold(0),
-				numberOfDataObjectsPerMatch(0)
+                filterEventId(-1), matchThreshold(0), numberOfDataObjectsPerMatch(0)
 {
 	init_node(_id);
 }
@@ -232,26 +226,24 @@ Node::Node(const char *_idStr, const NodeType_t _type, const string& _name) :
                 type(_type), num(totNum++), name(_name), nodeDescExch(false), 
                 dObj(DataObjectRef(new DataObject())), doBF(NULL), 
                 stored(false), createdFromNodeDescription(false),
-                filterEventId(-1),
-				matchThreshold(0),
-				numberOfDataObjectsPerMatch(0)
+                filterEventId(-1), matchThreshold(0),numberOfDataObjectsPerMatch(0)
 {
 	char iD[NODE_ID_LEN];
 	long i;
 	
 	for (i = 0; i < NODE_ID_LEN; i++) {
 		iD[i] = 0;
-		if(_idStr[i*2] <= '9')
+		if (_idStr[i*2] <= '9')
 			iD[i] += (_idStr[i*2] - '0') << 4;
-		else if(_idStr[i*2] <= 'G')
+		else if (_idStr[i*2] <= 'G')
 			iD[i] += (_idStr[i*2] - 'A' + 10) << 4;
 		else //if(_idStr[i*2] <= 'g')
 			iD[i] += (_idStr[i*2] - 'a' + 10) << 4;
-		if(_idStr[i*2 + 1] <= '9')
+		if (_idStr[i*2 + 1] <= '9')
 			iD[i] += (_idStr[i*2 + 1] - '0');
-		else if(_idStr[i*2 + 1] <= 'G')
+		else if (_idStr[i*2 + 1] <= 'G')
 			iD[i] += (_idStr[i*2 + 1] - 'A' + 10);
-		else //if(_idStr[i*2 + 1] <= 'g')
+		else //if (_idStr[i*2 + 1] <= 'g')
 			iD[i] += (_idStr[i*2 + 1] - 'a' + 10);
 	}
 	
@@ -269,14 +261,14 @@ Node::Node(const Node & n) :
                 doBF(new Bloomfilter(*n.doBF)), 
                 stored(n.stored), createdFromNodeDescription(n.createdFromNodeDescription),
                 filterEventId(n.filterEventId),
-				matchThreshold(n.matchThreshold),
-				numberOfDataObjectsPerMatch(n.numberOfDataObjectsPerMatch)
+		matchThreshold(n.matchThreshold),
+		numberOfDataObjectsPerMatch(n.numberOfDataObjectsPerMatch)
 {
 	memcpy(id, n.id, NODE_ID_LEN);
 	strncpy(idStr, n.idStr, MAX_NODE_ID_STR_LEN);
 
 	if (n.dObj)
-		dObj = DataObjectRef(n.dObj->copy());
+		dObj = n.dObj->copy();
 }
 
 Node::~Node()
@@ -289,7 +281,7 @@ Node::~Node()
 
 		eventInterests.erase(p.first);
 	}
-	if(doBF != NULL)
+	if (doBF != NULL)
 		delete doBF;
 }
 
@@ -753,11 +745,8 @@ DataObjectRef Node::getDataObject(bool withBloomfilter) const
 
         if (!m->addMetadata(toMetadata(withBloomfilter)))
                 return NULL;
-                    
-	if (type == NODE_TYPE_THIS_NODE)
-		ndObj->setIsThisNodeDescription(true);
 	
-        return ndObj;
+	return ndObj;
 }
 
 Bloomfilter *Node::getBloomfilter(void)
