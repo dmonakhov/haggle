@@ -28,7 +28,7 @@ ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 	forwardingModule(NULL)
 {
 #define __CLASS__ ForwardingManager
-	setEventHandler(EVENT_TYPE_NODE_UPDATED, onNewNodeDesc);
+	setEventHandler(EVENT_TYPE_NODE_UPDATED, onNodeUpdated);
 	setEventHandler(EVENT_TYPE_DATAOBJECT_NEW, onNewDataObject);
 	setEventHandler(EVENT_TYPE_DATAOBJECT_FORWARD, onDataObjectForward);
 	setEventHandler(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, onSendDataObjectResult);
@@ -42,20 +42,11 @@ ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 #endif
 	
 	dataObjectQueryCallback = newEventCallback(onDataObjectQueryResult);
+	delayedDataObjectQueryCallback = newEventCallback(onDelayedDataObjectQuery);
 	nodeQueryCallback = newEventCallback(onNodeQueryResult);
 	forwardDobjCallback = newEventCallback(onForwardDobjsCallback);
-
-#if HAVE_EXCEPTIONS
-	if (!forwardDobjCallback)
-		throw ForwardingException(-1, "Could not create forwardDobjCallback");
-#endif
-
 	forwardRepositoryCallback = newEventCallback(onForwardRepositoryCallback);
 
-#if HAVE_EXCEPTIONS
-	if (!forwardRepositoryCallback)
-		throw ForwardingException(-1, "Could not create forwardRepositoryCallback");
-#endif
 	forwardingModule = new ForwarderProphet(this);
 	kernel->getDataStore()->readRepository(new RepositoryEntry("ForwardingManager", "Forwarder state"), forwardRepositoryCallback);
 	
@@ -98,6 +89,9 @@ ForwardingManager::~ForwardingManager()
 	
 	if (sendMetricCallback)
 		delete sendMetricCallback;
+	
+	if (delayedDataObjectQueryCallback)
+		delete delayedDataObjectQueryCallback;
 }
 
 void ForwardingManager::onShutdown()
@@ -477,21 +471,54 @@ void ForwardingManager::onForwardQueryResult(Event *e)
 	forwardingModule->addMetricDO(newest);
 }
 
+void ForwardingManager::onDelayedDataObjectQuery(Event *e)
+{
+	if (!e || !e->hasData())
+		return;
+	
+	NodeRef node = e->getNode();
+
+	// If the node is still in the node query list, we know that there has been no update for it
+	// since we generated this delayed call.
+	for (List<NodeRef>::iterator it = nodeQueryList.begin(); it != nodeQueryList.end(); it++) {
+		if (node == *it) {
+			nodeQueryList.erase(it);
+			findMatchingDataObjectsAndTargets(node);
+			break;
+		}
+	}
+}
+
 void ForwardingManager::onNewNeighbor(Event *e)
 {
+	NodeRef node = e->getNode();
+	
+	if (node->getType() == NODE_TYPE_UNDEF)
+		return;
+	
 	// Tell the forwarding module that we've got a new neighbor:
-	if (e->getNode()->getType() != NODE_TYPE_UNDEF)
-		forwardingModule->newNeighbor(e->getNode());
+	forwardingModule->newNeighbor(node);
+	
+	// Find matching data objects for the node and figure out whether it is a good
+	// delegate. But delay these operations in case we get a node update event for the
+	// same node due to receiving a new node description for it. If we get the
+	// the update, we should only do the query once using the updated information.
+	kernel->addEvent(new Event(delayedDataObjectQueryCallback, node, 5));
+	
+	HAGGLE_DBG("%s - new node contact with %s [id=%s]. Delaying data object query in case there is an incoming node description for the node\n", 
+		   getName(), node->getName().c_str(), node->getIdStr());
 }
 
 void ForwardingManager::onEndNeighbor(Event *e)
-{
+{	
+	if (e->getNode()->getType() == NODE_TYPE_UNDEF)
+		return;
+	
 	// Tell the forwarding module that we've got a new neighbor:
-	if (e->getNode()->getType() != NODE_TYPE_UNDEF)
-		forwardingModule->endNeighbor(e->getNode());
+	forwardingModule->endNeighbor(e->getNode());
 }
 
-void ForwardingManager::onNewNodeDesc(Event *e)
+void ForwardingManager::onNodeUpdated(Event *e)
 {
 	if (!e || !e->hasData())
 		return;
@@ -499,28 +526,48 @@ void ForwardingManager::onNewNodeDesc(Event *e)
 	NodeRef node = e->getNode();
 	NodeRefList &replaced = e->getNodeList();
 	
-	// Did this node description replace an undefined node?
-	// Go through the replaced nodes
-	if (node->getType() != NODE_TYPE_UNDEF) {
-		bool found_replaced = false;
-
-		for (NodeRefList::iterator it = replaced.begin(); 
-			it != replaced.end() && !found_replaced; it++) {
-			// Was this undefined?
-			if ((*it)->getType() == NODE_TYPE_UNDEF) {
-				// Yep. Tell the forwarding module that we've got a new neighbor:
-				forwardingModule->newNeighbor(node);
-				found_replaced = true;
-			}
-		}
-	}
-	
 	if (node->getType() == NODE_TYPE_UNDEF) {
 		HAGGLE_DBG("%s Node is undefined, deferring dataObjectQuery\n", getName());
 		return;
+	} 
+	
+	HAGGLE_DBG("%s - got node update for %s [id=%s]\n", 
+		   getName(), node->getName().c_str(), node->getIdStr());
+
+	// Did this updated node replace an undefined node?
+	// Go through the replaced nodes to find out...
+	NodeRefList::iterator it = replaced.begin();
+	
+	while (it != replaced.end()) {
+		// Was this undefined?
+		if ((*it)->getType() == NODE_TYPE_UNDEF) {
+			// Yep. Tell the forwarding module that we've got a new neighbor:
+			forwardingModule->newNeighbor(node);
+			break;
+		}
+		it++;
 	}
 	
-	HAGGLE_DBG("%s - new node contact with %s, doing data object query\n", getName(), node->getIdStr());
+	// Check if there are any pending node queries that have been initiated by a previous
+	// new node contact event (in onNewNeighbor). In that case, remove the node from the
+	// nodeQueryList so that we do not generate the query twice.
+	for (List<NodeRef>::iterator it = nodeQueryList.begin(); it != nodeQueryList.end(); it++) {
+		if (node == *it) {
+			nodeQueryList.erase(it);
+			break;
+		}
+	}
+	findMatchingDataObjectsAndTargets(node);
+}
+
+void ForwardingManager::findMatchingDataObjectsAndTargets(NodeRef& node)
+{
+	if (!node)
+		return;
+	
+	HAGGLE_DBG("%s doing data object query for node %s [id=%s]\n", 
+		   getName(), node->getName().c_str(), node->getIdStr());
+	
 	// Check that this is an active neighbor node we can send to:
 	if (node->isNeighbor()) {
 		

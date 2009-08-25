@@ -39,6 +39,7 @@ typedef List< Pair< Pair<DataObjectRef, NodeRef>, int> > forwardingList;
 class ForwardingManager : public Manager
 {
 	EventCallback<EventHandler> *dataObjectQueryCallback;
+	EventCallback<EventHandler> *delayedDataObjectQueryCallback;
 	EventCallback<EventHandler> *nodeQueryCallback;
 	EventCallback<EventHandler> *forwardDobjCallback;
 	EventCallback<EventHandler> *forwardRepositoryCallback;
@@ -47,6 +48,7 @@ class ForwardingManager : public Manager
 	
 	forwardingList forwardedObjects;
 	Forwarder *forwardingModule;
+	List<NodeRef> nodeQueryList;
         // See comment in ForwardingManager.cpp about isNeighbor()
         bool isNeighbor(NodeRef& node);
         bool addToSendList(DataObjectRef& dObj, NodeRef& node, int repeatCount = 0);
@@ -61,7 +63,7 @@ public:
 	void onSendDataObjectResult(Event *e);
 	void onDataObjectQueryResult(Event *e);
 	void onNodeQueryResult(Event *e);
-	void onNewNodeDesc(Event *e);
+	void onNodeUpdated(Event *e);
 	void onNewDataObject(Event *e);
 	void onNewNeighbor(Event *e);
 	void onEndNeighbor(Event *e);
@@ -70,6 +72,8 @@ public:
 	void onForwardQueryResult(Event *e);
 	void onTargetNodes(Event *e);
 	void onDelegateNodes(Event *e);
+	void onDelayedDataObjectQuery(Event *e);
+	void findMatchingDataObjectsAndTargets(NodeRef& node);
 #ifdef DEBUG
 	void onDebugCmd(Event *e);
 #endif

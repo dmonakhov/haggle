@@ -178,10 +178,6 @@ void NodeManager::onRetrieveThisNode(Event *e)
 int NodeManager::sendNodeDescription(NodeRef neigh)
 {
 	DataObjectRef dObj = kernel->getThisNode()->getDataObject();
-	
-	// Force updated create time to make sure the node description is 
-	// always sent out
-	dObj->setCreateTime();
 
 	if (neigh->getBloomfilter()->has(dObj)) {
 		HAGGLE_DBG("Neighbor %s already has our most recent node description\n", neigh->getName().c_str());
@@ -277,8 +273,8 @@ void NodeManager::onNeighborInterfaceUp(Event *e)
 /* 
 	callback on retrieve node from Datastore
  
-	call in NodeManager::onNeighborInterfaceUp 
-	to retrieve a node with matching interfaces to an undefined node
+	called in NodeManager::onNeighborInterfaceUp 
+	to retrieve a previously known node that matches an interface from an interface up event.
 */
 void NodeManager::onRetrieveNode(Event *e)
 {
@@ -289,9 +285,9 @@ void NodeManager::onRetrieveNode(Event *e)
 
 	// See if this node is already an active neighbor but in an uninitialized state
 	if (kernel->getNodeStore()->update(node)) {
-		HAGGLE_DBG("Node was updated in neighbor list\n", node->getIdStr());
+		HAGGLE_DBG("Node %s [id=%s] was updated in node store\n", node->getName().c_str(), node->getIdStr());
 	} else {
-		HAGGLE_DBG("Node %s not previously neighbor... Adding to neighbor list\n", node->getIdStr());
+		HAGGLE_DBG("Node %s [id=%s] not previously neighbor... Adding to node store\n", node->getName().c_str(), node->getIdStr());
 		kernel->getNodeStore()->add(node);
 	}
 	
@@ -334,7 +330,7 @@ void NodeManager::onNewNodeContact(Event *e)
 		HAGGLE_DBG("%s - New node contact. Have not yet received node description!\n", getName());
 		break;
 	case NODE_TYPE_PEER:
-		HAGGLE_DBG("%s - New node contact %s\n", getName(), neigh->getIdStr());
+		HAGGLE_DBG("%s - New node contact %s [id=%s]\n", getName(), neigh->getName().c_str(), neigh->getIdStr());
 		break;
 	case NODE_TYPE_GATEWAY:
 		HAGGLE_DBG("%s - New gateway contact %s\n", getName(), neigh->getIdStr());
@@ -506,7 +502,7 @@ void NodeManager::onRetrieveNodeDescription(Event *e)
 	
 	// See if this node is already an active neighbor but in an uninitialized state
 	if (kernel->getNodeStore()->update(node, &nl)) {
-		HAGGLE_DBG("Neighbor node %s - %s was updated in node store\n", 
+		HAGGLE_DBG("Neighbor node %s [id=%s] was updated in node store\n", 
 			   node->getName().c_str(), node->getIdStr());
 		kernel->addEvent(new Event(EVENT_TYPE_NODE_UPDATED, node, nl));
 	} else {
@@ -524,7 +520,7 @@ void NodeManager::onRetrieveNodeDescription(Event *e)
 		// Therefore, we might get here for neighbor nodes as well, but in that case
 		// there is not much more to do until we discover the node properly
 		
-		HAGGLE_DBG("Got a node description for node %s - %s, which is not a previously discovered neighbor.\n", 
+		HAGGLE_DBG("Got a node description for node %s [id=%s], which is not a previously discovered neighbor.\n", 
 			   node->getName().c_str(), node->getIdStr());
 		
 		// Sync the node's interfaces with those in the interface store. This
@@ -541,7 +537,7 @@ void NodeManager::onRetrieveNodeDescription(Event *e)
 		
 		if (node->isAvailable()) {
 			// Add node to node store
-			HAGGLE_DBG("Node %s - %s was a neighbor -- adding to node store\n", 
+			HAGGLE_DBG("Node %s [id=%s] was a neighbor -- adding to node store\n", 
 				   node->getName().c_str(), node->getIdStr());
 			
 			kernel->getNodeStore()->add(node);
@@ -553,7 +549,7 @@ void NodeManager::onRetrieveNodeDescription(Event *e)
 			kernel->addEvent(new Event(EVENT_TYPE_NODE_UPDATED, node, nl));
 
 		} else {
-			HAGGLE_DBG("Node %s - %s had no active interfaces, not adding to store\n", 
+			HAGGLE_DBG("Node %s [id=%s] had no active interfaces, not adding to store\n", 
 				   node->getName().c_str(), node->getIdStr());
 		}
 	}

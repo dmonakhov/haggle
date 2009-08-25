@@ -341,9 +341,13 @@ bool NodeStore::update(const NodeRef &node, NodeRefList *nl)
 	if (!node)
 		return false;
 
-	// Since the updated node might differ from the old one we identify
-	// them by their interfaces
-	for (NodeStore::iterator it = begin(); it != end(); ) {
+	// There may be undefined nodes in the node store that should
+	// be removed/merged with a 'defined' node that we create from a 
+	// node description. We loop through all nodes in the store and
+	// compare their interface lists with the one in the 'defined' node.
+	// If any interfaces match, we remove the matching nodes in the store 
+	// and eventually replace them with the new one.
+	for (NodeStore::iterator it = begin(); it != end();) {
 		NodeRecord *nr = *it;
 		bool found_now = false;
 		
