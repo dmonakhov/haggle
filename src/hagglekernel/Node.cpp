@@ -381,21 +381,25 @@ Metadata *Node::toMetadata(bool withBloomfilter) const
 
 int Node::addAttribute(const Attribute & a)
 {
+	setCreateTime();
 	return dObj->addAttribute(a);
 }
 
 int Node::addAttribute(const string name, const string value, const unsigned long weight)
 {
+	setCreateTime();
   	return dObj->addAttribute(name, value, weight);
 }
 
 int Node::removeAttribute(const Attribute & a)
 {
+	setCreateTime();
 	return dObj->removeAttribute(a);
 }
 
 int Node::removeAttribute(const string name, const string value)
 {
+	setCreateTime();
 	return (dObj->removeAttribute(name, value));
 }
 
