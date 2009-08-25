@@ -480,9 +480,9 @@ void ForwardingManager::onDelayedDataObjectQuery(Event *e)
 
 	// If the node is still in the node query list, we know that there has been no update for it
 	// since we generated this delayed call.
-	for (List<NodeRef>::iterator it = nodeQueryList.begin(); it != nodeQueryList.end(); it++) {
+	for (List<NodeRef>::iterator it = pendingQueryList.begin(); it != pendingQueryList.end(); it++) {
 		if (node == *it) {
-			nodeQueryList.erase(it);
+			pendingQueryList.erase(it);
 			findMatchingDataObjectsAndTargets(node);
 			break;
 		}
@@ -503,6 +503,8 @@ void ForwardingManager::onNewNeighbor(Event *e)
 	// delegate. But delay these operations in case we get a node update event for the
 	// same node due to receiving a new node description for it. If we get the
 	// the update, we should only do the query once using the updated information.
+	
+	pendingQueryList.push_back(node);
 	kernel->addEvent(new Event(delayedDataObjectQueryCallback, node, 5));
 	
 	HAGGLE_DBG("%s - new node contact with %s [id=%s]. Delaying data object query in case there is an incoming node description for the node\n", 
@@ -550,10 +552,10 @@ void ForwardingManager::onNodeUpdated(Event *e)
 	
 	// Check if there are any pending node queries that have been initiated by a previous
 	// new node contact event (in onNewNeighbor). In that case, remove the node from the
-	// nodeQueryList so that we do not generate the query twice.
-	for (List<NodeRef>::iterator it = nodeQueryList.begin(); it != nodeQueryList.end(); it++) {
+	// pendingQueryList so that we do not generate the query twice.
+	for (List<NodeRef>::iterator it = pendingQueryList.begin(); it != pendingQueryList.end(); it++) {
 		if (node == *it) {
-			nodeQueryList.erase(it);
+			pendingQueryList.erase(it);
 			break;
 		}
 	}
