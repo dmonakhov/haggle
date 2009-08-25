@@ -65,7 +65,6 @@ public:
         DataManager(HaggleKernel *_haggle = haggleKernel);
         ~DataManager();
         void onGetLocalBF(Event *e);
-        void setThisNodeBF(void);
 private:
 	void handleVerifiedDataObject(DataObjectRef& dObj);
         void onVerifiedDataObject(Event *e);

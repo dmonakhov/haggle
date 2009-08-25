@@ -83,7 +83,7 @@ void Bloomfilter::remove(const DataObjectRef &dObj)
 	}
 }
 
-bool Bloomfilter::has(const DataObjectRef &dObj)
+bool Bloomfilter::has(const DataObjectRef &dObj) const
 {
 	if (non_counting != NULL) {
 		return bloomfilter_check(non_counting, (const char *)dObj->getId(), DATAOBJECT_ID_LEN) != 0;
@@ -96,7 +96,7 @@ bool Bloomfilter::has(const DataObjectRef &dObj)
 	return false;
 }
 
-string Bloomfilter::toBase64(void)
+string Bloomfilter::toBase64(void) const
 {
 	string retval;
 	
@@ -146,7 +146,7 @@ void Bloomfilter::fromBase64(const string &b64)
 	}
 }
 
-string Bloomfilter::toBase64NonCounting(void)
+string Bloomfilter::toBase64NonCounting(void) const
 {
 	string retval;
 	
@@ -164,7 +164,7 @@ string Bloomfilter::toBase64NonCounting(void)
 	return retval;
 }
 
-unsigned long Bloomfilter::countDataObjects(void)
+unsigned long Bloomfilter::countDataObjects(void) const
 {
 	if (non_counting != NULL) {
 		return bloomfilter_get_n(non_counting);
@@ -177,11 +177,11 @@ unsigned long Bloomfilter::countDataObjects(void)
 	return 0;
 }
 
-const char *Bloomfilter::getRaw(void)
+const char *Bloomfilter::getRaw(void) const
 {
 	if (non_counting != NULL) {
 		return (char *)non_counting;
-	} else if(counting != NULL) {
+	} else if (counting != NULL) {
 		return (char *)counting;
 	} 
 		
@@ -190,7 +190,7 @@ const char *Bloomfilter::getRaw(void)
 	return NULL;
 }
 
-unsigned long Bloomfilter::getRawLen(void)
+unsigned long Bloomfilter::getRawLen(void) const
 {
 	if (non_counting != NULL) {
 		return (unsigned long)BLOOMFILTER_TOT_LEN(non_counting);

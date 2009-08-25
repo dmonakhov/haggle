@@ -213,10 +213,7 @@ void ApplicationManager::onRetrieveAppNodes(Event *e)
 	// The node list will not be deleted along with the event, so we have to do it:
 	if (nodes)
 		delete nodes;
-	// Update create time in case the attributes changed:
-	// FIXME: determine if the attributes actually did change:
-	kernel->getThisNode()->setCreateTime();
-	
+		
 	// Push the updated node description to all neighbors
 	kernel->addEvent(new Event(EVENT_TYPE_NODE_DESCRIPTION_SEND));
 }

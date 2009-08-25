@@ -297,6 +297,9 @@ public:
 
         // Bloomfilter functions
 	Bloomfilter *getBloomfilter();
+	void setBloomfilter(const char *base64);
+	void setBloomfilter(const Bloomfilter& bf);
+
 	
 	/**
 		Sets the create time of this node. This should only be done (and will 

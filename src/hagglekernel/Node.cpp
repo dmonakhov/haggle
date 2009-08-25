@@ -754,10 +754,24 @@ Bloomfilter *Node::getBloomfilter(void)
 	return doBF;
 }
 
+void Node::setBloomfilter(const char *base64)
+{
+	doBF->fromBase64(base64);
+	setCreateTime();
+}
+
+void Node::setBloomfilter(const Bloomfilter& bf)
+{
+	doBF->fromBase64(bf.toBase64NonCounting());
+	setCreateTime();
+}
+
 void Node::setCreateTime(Timeval t)
 {
-	if (dObj->isThisNodeDescription())
+	if (dObj->isThisNodeDescription()) {
+		HAGGLE_DBG("SETTING create time on this node node description\n");
 		dObj->setCreateTime(t);
+	}
 }
 
 Timeval Node::getCreateTime() const

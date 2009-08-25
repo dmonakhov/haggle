@@ -67,13 +67,13 @@ public:
 	/**
 		Returns true iff the data object is in the bloomfilter.
 	*/
-	bool has(const DataObjectRef &dObj);
+	bool has(const DataObjectRef &dObj) const;
 	
 	/**
 		Returns a platform-independent representation of the bloomfilter in a
 		Base64 encoded string.
 	*/
-	string toBase64(void);
+	string toBase64(void) const;
 	/**
 		Sets the bloomfilter to be the bloomfilter represented by the given
 		Base64 encoded string.
@@ -93,19 +93,19 @@ public:
 		function would return for a non-counting bloomfilter with the same 
 		inserted data objects as this bloomfilter. This means
 	*/
-	string toBase64NonCounting(void);
+	string toBase64NonCounting(void) const;
 	
 	/**
 		Returns the number of data objects in the bloomfilter.
 	*/
-	unsigned long countDataObjects(void);
+	unsigned long countDataObjects(void) const;
 	
 	/**
 	*/
-	const char *getRaw(void);
+	const char *getRaw(void) const;
 	/**
 	*/
-	unsigned long getRawLen(void);
+	unsigned long getRawLen(void) const;
 	
 	/**
 	*/

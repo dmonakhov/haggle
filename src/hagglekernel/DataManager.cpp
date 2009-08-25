@@ -326,21 +326,13 @@ void DataManager::onDataTaskComplete(Event *e)
 	delete task;
 }
 
-void DataManager::setThisNodeBF(void)
-{
-	// Replace kernel->thisNode's bloomfilter with the one in localBF
-	kernel->getThisNode()->getBloomfilter()->fromBase64(
-		localBF.toBase64NonCounting());
-	kernel->getThisNode()->setCreateTime();
-}
-
 void DataManager::onDeletedDataObject(Event * e)
 {
 	if (!e || !e->hasData())
 		return;
 	
 	localBF.remove(e->getDataObject());
-	setThisNodeBF();
+	kernel->getThisNode()->setBloomfilter(localBF);
 }
 
 /*
@@ -370,7 +362,7 @@ void DataManager::onInsertedDataObject(Event * e)
 
 	if (dObj->isPersistent() && !localBF.has(dObj)) {
 		localBF.add(dObj);
-		setThisNodeBF();
+		kernel->getThisNode()->setBloomfilter(localBF);
 	}
 }
 

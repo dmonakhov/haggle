@@ -173,7 +173,7 @@ DataObject::DataObject(const DataObject& dObj) :
                 isForLocalApp(dObj.isForLocalApp), ownsFile(false), 
                 storagepath(dObj.storagepath),
                 dataLen(dObj.dataLen), dynamicDataLen(dObj.dynamicDataLen), 
-                createTime(dObj.createTime), has_CreateTime(false),
+                createTime(dObj.createTime), has_CreateTime(dObj.has_CreateTime),
 		receiveTime(dObj.receiveTime), 
                 localIface(dObj.localIface), remoteIface(dObj.remoteIface), 
                 rxTime(dObj.rxTime), persistent(dObj.persistent), 
