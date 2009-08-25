@@ -772,8 +772,6 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
                         updateApplicationInterests(appNode);
                 }
                 if (numattrsThisNode) {
-                        // Update the create time on the thisNode data object:
-                        kernel->getThisNode()->setCreateTime();
                         // Push the updated node description to all neighbors
                         kernel->addEvent(new Event(EVENT_TYPE_NODE_DESCRIPTION_SEND));
                 }
@@ -843,6 +841,9 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
                         updateApplicationInterests(appNode);
 			
                         kernel->getDataStore()->retrieveNodeByType(NODE_TYPE_APPLICATION, onRetrieveAppNodesCallback);
+			
+                        // Push the updated node description to all neighbors
+                        kernel->addEvent(new Event(EVENT_TYPE_NODE_DESCRIPTION_SEND));
                 }
         }
 }

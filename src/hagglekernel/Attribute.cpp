@@ -127,4 +127,8 @@ Attributes::size_type Attributes::erase(const Attribute& a) {
         }
         return 0;
 }
-bool Attributes::add(const Attribute& a) { return insert(make_pair(a.getName(), a)) != end(); }
+
+bool Attributes::add(const Attribute& a) 
+{ 
+	return insert(make_pair(a.getName(), a)) != end(); 
+}

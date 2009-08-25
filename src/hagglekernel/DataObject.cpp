@@ -726,7 +726,7 @@ void DataObject::setCreateTime(Timeval t)
                 return;
         
         createTime = t;
-		has_CreateTime = true;
+	has_CreateTime = true;
 
         metadata->setParameter(DATAOBJECT_CREATE_TIME_PARAM, createTime.getAsString());
 
