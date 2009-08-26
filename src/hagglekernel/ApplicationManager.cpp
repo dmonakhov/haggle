@@ -837,10 +837,9 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
                 if (numattrs) {
                         updateApplicationInterests(appNode);
 			
+                        // Update the node description and send it to all 
+                        // neighbors.
                         kernel->getDataStore()->retrieveNodeByType(NODE_TYPE_APPLICATION, onRetrieveAppNodesCallback);
-			
-                        // Push the updated node description to all neighbors
-                        kernel->addEvent(new Event(EVENT_TYPE_NODE_DESCRIPTION_SEND));
                 }
         }
 }
