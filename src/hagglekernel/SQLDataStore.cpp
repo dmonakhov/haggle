@@ -2141,15 +2141,14 @@ int SQLDataStore::_deleteDataObject(const DataObjectId_t &id, bool shouldReportR
 	sqlite3_stmt *stmt;
 	const char *tail;
 	
-	if (shouldReportRemoval)
-	{
+	if (shouldReportRemoval) {
 		DataObjectRef dObj = getDataObjectFromRowId(getDataObjectRowId(id));
 		// FIXME: shouldn't the data object be given back ownership of it's 
 		// file? (If it has one.) So that the file is removed from disk along 
 		// with the data object.
-		if(dObj)
+		if (dObj) {
 			kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_DELETED, dObj));
-		else{
+		} else {
 			// there should not be a data object to delete, so done.
 			return -1;
 		}

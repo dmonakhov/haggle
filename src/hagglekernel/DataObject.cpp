@@ -317,10 +317,10 @@ void DataObject::setThumbnail(char *data, long len)
 	Metadata *md = getOrCreateDataMetadata();
 	char *b64 = NULL;
 	
-	if(!md)
+	if (!md)
 		return;
 	
-	if(base64_encode_alloc(data, len, &b64) == 0)
+	if (base64_encode_alloc(data, len, &b64) == 0)
 		return;
 	
 	string str = "";
@@ -666,7 +666,7 @@ ssize_t DataObjectDataRetrieverImplementation::retrieve(void *data, size_t len, 
                         header_bytes_left = 0;
                 }
         }
-		if(getHeaderOnly)
+		if (getHeaderOnly)
 			return readLen;
         if (!fp) {
                 return readLen;

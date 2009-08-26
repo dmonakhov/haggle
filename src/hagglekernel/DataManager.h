@@ -60,9 +60,17 @@ class DataManager : public Manager
 	EventType dataTaskEvent;
 	EventType agingEvent;
 	DataHelper *helper;
+	/* We keep a local bloomfilter in the data manager in addition to the one in "this node". 
+	 The reason for this is that the local bloomfilter here is a counting bloomfilter that
+	 allows us to both add and remove data from it. When we update the local bloomfilter,
+	 we also convert it into a non-counting bloomfilter that we set in "this node". The 
+	 non-counting version is much smaller in size, and hence more suitable for sending out
+	 in the node description.
+	 */
 	Bloomfilter localBF;
+	bool setCreateTimeOnBloomfilterUpdate;
 public:
-        DataManager(HaggleKernel *_haggle = haggleKernel);
+        DataManager(HaggleKernel *_haggle = haggleKernel, const bool setCreateTimeOnBloomfilterUpdate = false);
         ~DataManager();
         void onGetLocalBF(Event *e);
 private:

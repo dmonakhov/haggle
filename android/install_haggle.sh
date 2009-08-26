@@ -14,6 +14,8 @@ ADB_PARAMS=
 ANDROID_DIR=$SCRIPT_DIR/../../../
 SOURCE_DIR=$ANDROID_DIR/out/target/product/dream
 
+echo "Looking for Android devices..."
+
 DEVICES=$(adb devices | awk '{ if (match($2,"device")) print $1}')
 NUM_DEVICES=$(echo $DEVICES | awk '{print split($0,a, " ")}')
 
@@ -24,8 +26,8 @@ if [ $NUM_DEVICES -lt 1 ]; then
     exit
 fi 
 
-echo
 echo "$NUM_DEVICES Android devices found."
+echo
 echo "Assuming android source is found in $ANDROID_DIR"
 echo "Please make sure this is correct before proceeding."
 echo

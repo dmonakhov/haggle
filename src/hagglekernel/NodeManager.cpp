@@ -187,7 +187,7 @@ int NodeManager::sendNodeDescription(NodeRef neigh)
 	if (thumbnail != NULL)
 		dObj->setThumbnail(thumbnail, thumbnail_size);
 	
-	HAGGLE_DBG("Sending node description to \'%s\'\n", neigh->getName().c_str());
+	HAGGLE_DBG("Sending node description [id=%s] to \'%s\'\n", dObj->getIdStr(), neigh->getName().c_str());
 	kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, neigh));
 	
 	// Remember that we tried to send our node description to this node:

@@ -38,8 +38,6 @@ typedef ReferenceList<Node> NodeRefList;
 #include "Metadata.h"
 #include "DataObject.h"
 #include "Bloomfilter.h"
-
-//#include "Event.h"
 #include "Debug.h"
 
 // Different types of nodes. Determines among other things how to deal
@@ -297,9 +295,8 @@ public:
 
         // Bloomfilter functions
 	Bloomfilter *getBloomfilter();
-	void setBloomfilter(const char *base64);
-	void setBloomfilter(const Bloomfilter& bf);
-
+	void setBloomfilter(const char *base64, const bool set_create_time = false);
+	void setBloomfilter(const Bloomfilter& bf, const bool set_create_time = false);
 	
 	/**
 		Sets the create time of this node. This should only be done (and will 

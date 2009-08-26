@@ -433,8 +433,10 @@ void SecurityManager::onRepositoryData(Event *e)
 	if (qr->countRepositoryEntries() == 0) {
 		HAGGLE_DBG("No repository entries, generating new certificate and keypair\n");
 		helper->addTask(new SecurityTask(SECURITY_TASK_GENERATE_CERTIFICATE));
+		
+		// Delay signalling that we are ready for startup until we get the 
+		// task result indicating our certificate is ready.
 		delete qr;
-		signalIsReadyForStartup();
 		return;
 	}
 	
@@ -551,6 +553,7 @@ void SecurityManager::onSecurityTaskComplete(Event *e)
 				/* Save our private key and our certificate */
 				privKey = task->privKey;
 				myCert = task->cert;
+				signalIsReadyForStartup();
 			}
 			break;
                 case SECURITY_TASK_VERIFY_CERTIFICATE:

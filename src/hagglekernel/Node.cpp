@@ -754,22 +754,41 @@ Bloomfilter *Node::getBloomfilter(void)
 	return doBF;
 }
 
-void Node::setBloomfilter(const char *base64)
+void Node::setBloomfilter(const char *base64, const bool set_create_time)
 {
 	doBF->fromBase64(base64);
-	setCreateTime();
+	
+	/*
+	 Notes about setting create time
+	 ===============================
+	 Here we can decide to set the create time or not every time we update the bloomfilter
+	 (i.e., when we receive or send a new data object). The implication of setting the
+	 create time is that the node description will by definition be 'new', and therefore
+	 we will be triggered to send it to nodes that we meet as they will seem to not have
+	 received this new version yet. The downside is that we may send a lot of node description
+	 updates altough nothing else has changed (e.g., our interests). On the other hand, other
+	 nodes will be updated about what data objects we have received (or sent), and therefore
+	 it may reduce the amount of reduntant transmissions of data object we already have.
+	 
+	 It is not yet clear what is the best strategy here.
+	 */
+	if (set_create_time)
+		setCreateTime();
 }
 
-void Node::setBloomfilter(const Bloomfilter& bf)
+void Node::setBloomfilter(const Bloomfilter& bf, const bool set_create_time)
 {
 	doBF->fromBase64(bf.toBase64NonCounting());
-	setCreateTime();
+	
+	/* See not above about setting the create time here. */
+	if (set_create_time)
+		setCreateTime();
 }
 
 void Node::setCreateTime(Timeval t)
 {
 	if (dObj->isThisNodeDescription()) {
-		HAGGLE_DBG("SETTING create time on this node node description\n");
+		HAGGLE_DBG("SETTING create time on node description\n");
 		dObj->setCreateTime(t);
 	}
 }

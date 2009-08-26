@@ -450,6 +450,7 @@ void ForwardingManager::onForwardQueryResult(Event *e)
 		current = qr->detachFirstDataObject();
 		if (current) {
 			if (newest) {
+				HAGGLE_DBG("Deleting old forwarding objects from data store\n");
 				if (current->getCreateTime() > newest->getCreateTime()) {
 					kernel->getDataStore()->deleteDataObject(newest);
 					newest = current;

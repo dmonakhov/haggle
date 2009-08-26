@@ -237,6 +237,9 @@ int bloomfilter_operation(struct bloomfilter *bf, const char *key,
 {
 	unsigned char *buf;
 	unsigned int i;
+#ifdef COUNTING_BLOOMFILTER
+	unsigned short removed = 0;
+#endif
 	int res = 1;
 	salt_t *salts;
 
@@ -255,10 +258,6 @@ int bloomfilter_operation(struct bloomfilter *bf, const char *key,
 	memcpy(buf, key, len);
 	
 	salts = (salt_t *)BLOOMFILTER_GET_SALTS(bf);
-
-	/* Increment number of objects in filter */
-	if (op == BF_OP_ADD)
-		bf->n++;
 
 	for (i = 0; i < bf->k; i++) {
 		SHA_CTX ctxt;
@@ -306,11 +305,14 @@ int bloomfilter_operation(struct bloomfilter *bf, const char *key,
 			break;
 #ifdef COUNTING_BLOOMFILTER
 		case BF_OP_REMOVE:
-			if (((u_int16_t *)BLOOMFILTER_GET_FILTER(bf))[index] > 0)
+			if (((u_int16_t *)BLOOMFILTER_GET_FILTER(bf))[index] > 0) {
 				((u_int16_t *)BLOOMFILTER_GET_FILTER(bf))[index]--;
+				removed++;
+			}
+			/*
 			else 
 				fprintf(stderr, "Cannot remove item, because it is not in filter\n");
-			bf->n--;
+			 */
 			break;
 #endif
 		default:
@@ -318,6 +320,14 @@ int bloomfilter_operation(struct bloomfilter *bf, const char *key,
 		}
 		
 	}
+	/* Increment or decrement the number of objects in the filter depending on operation */
+	if (op == BF_OP_ADD)
+		bf->n++;
+#ifdef COUNTING_BLOOMFILTER
+	else if (op == BF_OP_REMOVE && removed > 0)
+		bf->n--;
+#endif
+	
 out:
 	free(buf);
 

@@ -58,7 +58,7 @@ HINSTANCE g_hInstance;
 
 HaggleKernel *kernel;
 static bool shouldCleanupPidFile = true;
-
+static bool setCreateTimeOnBloomfilterUpdate = false;
 static bool recreateDataStore = false;
 static bool runAsInteractive = true;
 /* Command line options variables. */
@@ -353,14 +353,15 @@ static struct {
 	{ "-dd", "--delete-datastore", "delete database file before starting." },
 	{ "-h", "--help", "print this help." },
 	{ "-d", "--daemonize", "run in the background as a daemon." },
-	{ "-f", "--filelog", "write debug output to a file (haggle.log)." }
+	{ "-f", "--filelog", "write debug output to a file (haggle.log)." },
+	{ "-c", "--create-time-bloomfilter", "set create time in node description on bloomfilter update." }
 };
 
 static void print_help()
 {	
 	unsigned int i;
 
-	printf("Usage: ./haggle -[hbdfI{dd}]\n");
+	printf("Usage: ./haggle -[hbdfIc{dd}]\n");
 	
 	for (i = 0; i < sizeof(cmd) / (3*sizeof(char *)); i++) {
 		printf("\t%-4s %-20s %s\n", cmd[i].cmd_short, cmd[i].cmd_long, cmd[i].cmd_desc);
@@ -462,7 +463,7 @@ int run_haggle()
 
 		am = new ApplicationManager(kernel);
 
-		dm = new DataManager(kernel);
+		dm = new DataManager(kernel, setCreateTimeOnBloomfilterUpdate);
 
 		nm = new NodeManager(kernel);
 
@@ -686,6 +687,8 @@ int main(void)
 			daemonize();
 		} else if (check_cmd(argv[0], 5)) {
                         Trace::trace.enableFileTrace();
+		} else if (check_cmd(argv[0], 6)) {
+                        setCreateTimeOnBloomfilterUpdate = true;
 		} else {
 			fprintf(stderr, "Unknown command line option: %s\n", argv[0]);
 			print_help();

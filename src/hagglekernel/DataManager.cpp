@@ -118,9 +118,9 @@ void DataHelper::cleanup()
 	}
 }
 
-DataManager::DataManager(HaggleKernel * _kernel) : 
-	Manager("DataManager", _kernel),
-	localBF((float) 0.01, MAX_RECV_DATAOBJECTS, true)
+DataManager::DataManager(HaggleKernel * _kernel, const bool _setCreateTimeOnBloomfilterUpdate) : 
+	Manager("DataManager", _kernel), localBF((float) 0.01, MAX_RECV_DATAOBJECTS, true),
+	setCreateTimeOnBloomfilterUpdate(_setCreateTimeOnBloomfilterUpdate)
 {
 #define __CLASS__ DataManager
 	int ret;
@@ -152,15 +152,16 @@ DataManager::DataManager(HaggleKernel * _kernel) :
 	helper = new DataHelper(this, dataTaskEvent);
 	
 	onGetLocalBFCallback = newEventCallback(onGetLocalBF);
-	RepositoryEntryRef lbf = 
-		new RepositoryEntry(
-			"DataManager", 
-			"Local Bloomfilter");
+	RepositoryEntryRef lbf = new RepositoryEntry("DataManager", "Local Bloomfilter");
 	kernel->getDataStore()->readRepository(lbf, onGetLocalBFCallback);
 	
 	if (helper) {
 		HAGGLE_DBG("Starting data helper...\n");
 		helper->start();
+	}
+	
+	if (setCreateTimeOnBloomfilterUpdate) {
+		HAGGLE_DBG("Will set create time in node description when updating bloomfilter\n");
 	}
 }
 
@@ -215,10 +216,7 @@ void DataManager::onGetLocalBF(Event *e)
 			string str = re->getValue();
 			localBF.fromBase64(str);
 		}
-		RepositoryEntryRef lbf = 
-			new RepositoryEntry(
-				"DataManager", 
-				"Local Bloomfilter");
+		RepositoryEntryRef lbf = new RepositoryEntry("DataManager", "Local Bloomfilter");
 		kernel->getDataStore()->deleteRepository(lbf);
 	} else {
 		// Don't do anything... for now.
@@ -332,7 +330,7 @@ void DataManager::onDeletedDataObject(Event * e)
 		return;
 	
 	localBF.remove(e->getDataObject());
-	kernel->getThisNode()->setBloomfilter(localBF);
+	kernel->getThisNode()->setBloomfilter(localBF, setCreateTimeOnBloomfilterUpdate);
 }
 
 /*
@@ -362,7 +360,7 @@ void DataManager::onInsertedDataObject(Event * e)
 
 	if (dObj->isPersistent() && !localBF.has(dObj)) {
 		localBF.add(dObj);
-		kernel->getThisNode()->setBloomfilter(localBF);
+		kernel->getThisNode()->setBloomfilter(localBF, setCreateTimeOnBloomfilterUpdate);
 	}
 }
 

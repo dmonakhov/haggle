@@ -300,6 +300,10 @@ int counting_bloomfilter_operation(struct counting_bloomfilter *bf, const char *
 {
 	unsigned char *buf;
 	unsigned int i;
+#ifdef COUNTING_BLOOMFILTER_IS_COUNTING
+	unsigned short removed = 0;
+#endif
+	
 	int res = 1;
 	counting_salt_t *salts;
 
@@ -369,11 +373,15 @@ int counting_bloomfilter_operation(struct counting_bloomfilter *bf, const char *
 			break;
 #ifdef COUNTING_BLOOMFILTER_IS_COUNTING
 		case COUNTING_BF_OP_REMOVE:
-			if (((u_int16_t *)COUNTING_BLOOMFILTER_GET_FILTER(bf))[index] > 0)
+			if (((u_int16_t *)COUNTING_BLOOMFILTER_GET_FILTER(bf))[index] > 0) {
 				((u_int16_t *)COUNTING_BLOOMFILTER_GET_FILTER(bf))[index]--;
-			else 
+				removed++;
+			}
+			
+			/* 
+			 else 
 				fprintf(stderr, "Cannot remove item, because it is not in filter\n");
-			bf->n--;
+			 */
 			break;
 #endif
 		default:
@@ -381,6 +389,14 @@ int counting_bloomfilter_operation(struct counting_bloomfilter *bf, const char *
 		}
 		
 	}
+	/* Increment or decrement the number of objects in the filter depending on operation */
+	if (op == COUNTING_BF_OP_ADD)
+		bf->n++;
+#ifdef COUNTING_BLOOMFILTER_IS_COUNTING
+	else if (op == COUNTING_BF_OP_REMOVE && removed > 0)
+		bf->n--;
+#endif
+	
 out:
 	free(buf);
 
