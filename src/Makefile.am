@@ -11,6 +11,7 @@ SUBDIRS = \
 	proxy \
 	logcollector \
 	clitool \
+	luckyMe \
 	tests/test01
 
 clean-local:

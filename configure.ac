@@ -589,6 +589,7 @@ AC_CONFIG_FILES([Makefile
                  src/proxy/Makefile
                  src/logcollector/Makefile
                  src/clitool/Makefile
+                 src/luckyMe/Makefile
                  src/tests/test01/Makefile
                  src/webserver/Makefile
                  src/hagglekernel/Makefile
