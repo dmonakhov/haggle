@@ -377,7 +377,6 @@ void DebugManager::onDebugReport(Event *e)
 {
 	//kernel->getInterfaceStore()->print();
 	kernel->getNodeStore()->print();
-	//Thread::registryPrint();
 #ifdef DEBUG_DATASTORE
 	kernel->getDataStore()->print();
 #endif
@@ -419,7 +418,7 @@ void DebugManager::onWatchableEvent(const Watchable& wbl)
 #if defined(OS_LINUX) || defined(OS_MACOSX) || defined(OS_WINDOWS_DESKTOP)
 #if defined(DEBUG)
 	else if (wbl == console) {
-		char *raw;
+		char *raw = NULL;
                 size_t rawLen;
 		int res;
 		unsigned char c;
@@ -473,17 +472,21 @@ void DebugManager::onWatchableEvent(const Watchable& wbl)
 			case 's':
 				kernel->shutdown();
 				break;		
-			case 't':
+#ifdef DEBUG
+			case 't':				
 				printf("===============================\n");
 				Thread::registryPrint();
 				printf("===============================\n");
 				break;
+#endif
 			case 'b':
 				kernel->getThisNode()->getDataObject()->getMetadata()->getRawAlloc(&raw, &rawLen);
-				printf("======= Node description =======\n");
-				printf("%s\n", raw);
-				printf("================================\n");
-				free(raw);
+				if (raw) {
+					printf("======= Node description =======\n");
+						printf("%s\n", raw);
+					printf("================================\n");
+					free(raw);
+				}
 				break;
 			case 'h':
 			default:

@@ -175,7 +175,7 @@ double fac(int n)
  */
 void createInterest() 
 {
-	int i = 0;
+	unsigned int i = 0;
 	char luckAttrValue[32];
 	struct attributelist *attrList = haggle_attributelist_new();
 	struct attribute *attr = 0;
@@ -199,7 +199,7 @@ void createInterest()
 	unsigned int u = n * p;
 	
 	printf("luck=%ld \n", luck);
-	printf("binomial distribution  n=%ld, p=%f\n", n, p);
+	printf("binomial distribution  n=%u, p=%f\n", n, p);
 	
 	unsigned int sum_weight = 0;
 	unsigned int interest = 0;
@@ -208,15 +208,15 @@ void createInterest()
 		weight = 100 * fac(n)/(fac(n-i)*fac(i))*pow(p,i)*pow(1-p,n-i);
 		sum_weight += weight;
 		if (weight > 0) {
-			printf("interest: %ld, %d\n", interest, weight);
+			printf("interest: %u, %d\n", interest, weight);
 			interests[interest] = weight;
-			sprintf(luckAttrValue, "%ld", interest);
+			sprintf(luckAttrValue, "%u", interest);
 			attr = haggle_attribute_new_weighted(APP_NAME, luckAttrValue, weight);
 			haggle_attributelist_add_attribute(attrList, attr);
 		}
 	}
 	
-	printf("sum weights %ld\n", sum_weight);
+	printf("sum weights %u\n", sum_weight);
 	
 	haggle_ipc_add_application_interests(haggleHandle, attrList);
 }
@@ -268,7 +268,7 @@ void onDataobject(struct dataobject *dObj, void* nix)
 		if (!strcmp(attr_name, APP_NAME)) {
 			attr_value = atoi(haggle_attribute_get_value(attr));
 			ResultString << attr_value << " ";
-			printf("%ld[%ld] ", attr_value, interests[attr_value]);
+			printf("%u[%u] ", attr_value, interests[attr_value]);
 		
 			sum += interests[attr_value];
 		}
@@ -276,7 +276,7 @@ void onDataobject(struct dataobject *dObj, void* nix)
 	ResultString << " - " << sum;
 	ResultString << "<br/>";
 	
-	printf("luck: %ld\n", sum);
+	printf("luck: %u\n", sum);
 	
 	mutex_unlock(&mutex);
 	

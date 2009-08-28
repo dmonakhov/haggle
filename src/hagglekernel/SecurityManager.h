@@ -44,6 +44,12 @@ class SecurityManager;
 #define CA_ISSUER_NAME "Haggle reviewer"
 
 typedef enum {
+	SECURITY_LEVEL_LOW = 0, // No security enabled.
+	SECURITY_LEVEL_MEDIUM = 1, // Only require valid signatures for node descriptions, but not for other data objects.
+	SECURITY_LEVEL_HIGH = 2, // Require valid signatures for all data objects. 
+} SecurityLevel_t;
+
+typedef enum {
         SECURITY_TASK_GENERATE_CERTIFICATE,
 	SECURITY_TASK_VERIFY_CERTIFICATE,
 	SECURITY_TASK_VERIFY_DATAOBJECT,
@@ -81,6 +87,7 @@ public:
 class SecurityManager : public Manager {
         friend class SecurityHelper;
 private:
+	SecurityLevel_t securityLevel;
 	EventType etype;
 	SecurityHelper *helper;
 	EventCallback<EventHandler> *onRepositoryDataCallback;
@@ -108,7 +115,9 @@ public:
 	void printCertificates();
 	void onDebugCmdEvent(Event *e);
 #endif
-	SecurityManager(HaggleKernel *_haggle = haggleKernel);
+	void setSecurityLevel(const SecurityLevel_t slevel) { securityLevel = slevel; }
+	SecurityLevel_t getSecurityLevel() const { return securityLevel; }
+	SecurityManager(HaggleKernel *_haggle = haggleKernel, SecurityLevel_t slevel = SECURITY_LEVEL_MEDIUM);
 	~SecurityManager();
 
 	class SMException : public ManagerException

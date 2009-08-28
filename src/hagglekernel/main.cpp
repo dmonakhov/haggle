@@ -61,6 +61,7 @@ static bool shouldCleanupPidFile = true;
 static bool setCreateTimeOnBloomfilterUpdate = false;
 static bool recreateDataStore = false;
 static bool runAsInteractive = true;
+static SecurityLevel_t securityLevel = SECURITY_LEVEL_MEDIUM;
 /* Command line options variables. */
 // Benchmark specific variables
 #ifdef BENCHMARK
@@ -354,14 +355,15 @@ static struct {
 	{ "-h", "--help", "print this help." },
 	{ "-d", "--daemonize", "run in the background as a daemon." },
 	{ "-f", "--filelog", "write debug output to a file (haggle.log)." },
-	{ "-c", "--create-time-bloomfilter", "set create time in node description on bloomfilter update." }
+	{ "-c", "--create-time-bloomfilter", "set create time in node description on bloomfilter update." },
+	{ "-s", "--security-level", "set security level 0-2 (low, medium, high)" }
 };
 
 static void print_help()
 {	
 	unsigned int i;
 
-	printf("Usage: ./haggle -[hbdfIc{dd}]\n");
+	printf("Usage: ./haggle -[hbdfIcs{dd}]\n");
 	
 	for (i = 0; i < sizeof(cmd) / (3*sizeof(char *)); i++) {
 		printf("\t%-4s %-20s %s\n", cmd[i].cmd_short, cmd[i].cmd_long, cmd[i].cmd_desc);
@@ -471,7 +473,7 @@ int run_haggle()
 
 		fm = new ForwardingManager(kernel);
 		
-		sm = new SecurityManager(kernel);
+		sm = new SecurityManager(kernel, securityLevel);
 		
 #ifdef USE_UNIX_APPLICATION_SOCKET
 		p = new ProtocolLOCAL(kernel->getStoragePath() + "/" + HAGGLE_LOCAL_SOCKET, pm);
@@ -689,6 +691,14 @@ int main(void)
                         Trace::trace.enableFileTrace();
 		} else if (check_cmd(argv[0], 6)) {
                         setCreateTimeOnBloomfilterUpdate = true;
+		} else if (check_cmd(argv[0], 7)) {
+			if (!argv[1] || atoi(argv[1]) < 0 || atoi(argv[1]) > 2) {
+				fprintf(stderr, "Bad security level, must be between 0-2\n");
+				return -1;
+			}
+                        securityLevel = static_cast<SecurityLevel_t>(atoi(argv[1]));
+			argv++;
+			argc--;
 		} else {
 			fprintf(stderr, "Unknown command line option: %s\n", argv[0]);
 			print_help();

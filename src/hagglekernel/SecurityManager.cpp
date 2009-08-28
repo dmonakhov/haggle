@@ -303,8 +303,10 @@ void SecurityHelper::cleanup()
 	}
 }
 
-SecurityManager::SecurityManager(HaggleKernel *_haggle) :
-	Manager("Security Manager", _haggle), etype(EVENT_TYPE_INVALID), helper(NULL), 
+const char *security_level_names[] = { "LOW", "MEDIUM", "HIGH" };
+
+SecurityManager::SecurityManager(HaggleKernel *_haggle, const SecurityLevel_t slevel) :
+	Manager("Security Manager", _haggle), securityLevel(slevel), etype(EVENT_TYPE_INVALID), helper(NULL), 
 	myCert(NULL), ca_issuer(CA_ISSUER_NAME), caPrivKey(NULL), caPubKey(NULL), privKey(NULL)
 {
 #define __CLASS__ SecurityManager
@@ -358,6 +360,8 @@ SecurityManager::SecurityManager(HaggleKernel *_haggle) :
 
 	EventType etype = registerEventType("SecurityTaskEvent", onSecurityTaskComplete);
 
+	HAGGLE_DBG("Security level is set to %s\n", security_level_names[securityLevel]);
+	
 	helper = new SecurityHelper(this, etype);
 
 	if (helper) {
@@ -588,7 +592,9 @@ void SecurityManager::onReceivedDataObject(Event *e)
 	
 	// Check if the data object's signature should be verified. Otherwise, generate the 
 	// verified event immediately.
-	if (dObj->shouldVerifySignature()) {
+	if (dObj->shouldVerifySignature() && 
+	    ((dObj->isNodeDescription() && securityLevel > SECURITY_LEVEL_LOW) || 
+	     (securityLevel > SECURITY_LEVEL_MEDIUM))) {
 		helper->addTask(new SecurityTask(SECURITY_TASK_VERIFY_DATAOBJECT, dObj));
 	} else {
 		kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_VERIFIED, dObj));	
