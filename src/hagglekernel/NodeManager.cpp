@@ -504,7 +504,6 @@ void NodeManager::onRetrieveNodeDescription(Event *e)
 	if (kernel->getNodeStore()->update(node, &nl)) {
 		HAGGLE_DBG("Neighbor node %s [id=%s] was updated in node store\n", 
 			   node->getName().c_str(), node->getIdStr());
-		kernel->addEvent(new Event(EVENT_TYPE_NODE_UPDATED, node, nl));
 	} else {
 		// This is the path for node descriptions received via a third party, i.e.,
 		// the node description does not belong to the neighbor node we received it
@@ -546,14 +545,17 @@ void NodeManager::onRetrieveNodeDescription(Event *e)
 			// both 'discovered' the node and updated its node description at once.
 			// In most cases, this should never really happen (see not above).
 			kernel->addEvent(new Event(EVENT_TYPE_NODE_CONTACT_NEW, node));
-			kernel->addEvent(new Event(EVENT_TYPE_NODE_UPDATED, node, nl));
-
 		} else {
 			HAGGLE_DBG("Node %s [id=%s] had no active interfaces, not adding to store\n", 
 				   node->getName().c_str(), node->getIdStr());
 		}
 	}
 	
+	// We send the update event for all nodes that we have received a new node description from, even
+	// if they are not neighbors. This is because we want to match data objects against the node although
+	// we might not have direct connectivity to it.
+	kernel->addEvent(new Event(EVENT_TYPE_NODE_UPDATED, node, nl));
+
 	delete qr;
 }
 

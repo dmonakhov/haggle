@@ -506,7 +506,7 @@ void ForwardingManager::onNewNeighbor(Event *e)
 	// the update, we should only do the query once using the updated information.
 	
 	pendingQueryList.push_back(node);
-	kernel->addEvent(new Event(delayedDataObjectQueryCallback, node, 5));
+	kernel->addEvent(new Event(delayedDataObjectQueryCallback, node, 3));
 	
 	HAGGLE_DBG("%s - new node contact with %s [id=%s]. Delaying data object query in case there is an incoming node description for the node\n", 
 		   getName(), node->getName().c_str(), node->getIdStr());
@@ -543,7 +543,7 @@ void ForwardingManager::onNodeUpdated(Event *e)
 	
 	while (it != replaced.end()) {
 		// Was this undefined?
-		if ((*it)->getType() == NODE_TYPE_UNDEF) {
+		if ((*it)->getType() == NODE_TYPE_UNDEF && node->isNeighbor()) {
 			// Yep. Tell the forwarding module that we've got a new neighbor:
 			forwardingModule->newNeighbor(node);
 			break;
