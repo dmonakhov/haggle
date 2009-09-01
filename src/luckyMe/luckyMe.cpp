@@ -182,7 +182,13 @@ void createDataobjectRandom()
 
 	unsigned int i = 0;
 	char luckAttrValue[32];
-	struct dataobject *dObj = haggle_dataobject_new();
+
+	struct dataobject *dObj = 0;
+	if (fileName) {
+		dObj = haggle_dataobject_new_from_file(fileName);
+	} else {
+		dObj = haggle_dataobject_new();
+	}
 	
 	printf("createDataobject %u\n", cntDataObjectNumber);
 	// todo: get unique attributes
@@ -213,7 +219,12 @@ void createDataobjectGrid()
 
 	if (cntDataObjectNumber > maxDataObjectNumber-1) shutdown(0);
 	
-	struct dataobject *dObj = haggle_dataobject_new();
+	struct dataobject *dObj = 0;
+	if (fileName) {
+		dObj = haggle_dataobject_new_from_file(fileName);
+	} else {
+		dObj = haggle_dataobject_new();
+	}
 	
 	printf("createDataobject %u\n", cntDataObjectNumber);
 	for (i=0; i<6; i++) {
@@ -258,7 +269,7 @@ void onShutdown(struct dataobject *dObj, void* nix)
 static void PrintUsage()
 {	
 	fprintf(stderr, 
-            "Usage: ./%s [-A num] [-d num] [-i num] [-t interval] [-g gridSize] [-s hostname] [-f name]\n", 
+            "Usage: ./%s [-A num] [-d num] [-i num] [-t interval] [-g gridSize] [-s hostname] [-f path]\n", 
             APP_NAME);
     fprintf(stderr, "          -A attribute pool (default %u)\n", attrPoolSize);
     fprintf(stderr, "          -d number of attributes per data object (default %u)\n", numDataObjectAttributes);
