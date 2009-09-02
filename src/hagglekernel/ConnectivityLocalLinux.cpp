@@ -684,7 +684,7 @@ DBusHandlerResult dbus_handler(DBusConnection * conn, DBusMessage * msg, void *d
                         dbus_error_free(&err);
                 }
         } else {
-		CM_DBG("ERROR: Message on the dbus is not a recognized signal\n");
+	        //CM_DBG("ERROR: Message on the dbus is not a recognized signal\n");
                 return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 	}
 #endif
