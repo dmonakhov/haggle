@@ -74,7 +74,7 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 	IOReturn ret;
 //	unsigned char macaddr[BT_ALEN] = { 0x00, 0x16, 0xcb, 0x2c, 0x99, 0x65 };
 	unsigned char macaddr[BT_ALEN] = { 0x00, 0x1e, 0xc2, 0xb5, 0xd6, 0xd7 };
-	char *name = "LocalBluetoothDevice";
+	const char *name = "LocalBluetoothDevice";
 	ret = IOBluetoothLocalDeviceAvailable();
 
 	// if we can't find any bluetooth device, return silently:

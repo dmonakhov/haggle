@@ -12,8 +12,27 @@ DATA_DIR=/data/local
 ADB=adb
 ADB_PARAMS=
 ANDROID_DIR=$SCRIPT_DIR/../../../
-SOURCE_DIR=$ANDROID_DIR/out/target/product/dream
+PRODUCT_DIR=out/target/product/dream
 
+# Restart adb with root permissions
+adb root
+
+
+pushd $ANDROID_DIR
+
+if [ ! -d $PRODUCT_DIR ]; then
+	# in later versions of Android, the dream dir has been renamed to
+	# dream-open, so lets try that before bailing out.
+	PRODUCT_DIR=$PRODUCT_DIR-open
+
+	if [ ! -d $PRODUCT_DIR ]; then
+		echo "Cannot find product directory $PRODUCT_DIR"
+		exit
+	fi
+fi
+
+popd
+	
 echo "Looking for Android devices..."
 
 DEVICES=$(adb devices | awk '{ if (match($2,"device")) print $1}')
@@ -44,14 +63,13 @@ pushd $SCRIPT_DIR
 # device as 'root', which copies the files to their correct places.
 
 if [ -f $DEVICE_FILES_DIR/adhoc.sh ]; then
-    
-    for dev in $DEVICES; do
-	echo "Installing configuration files onto device $dev"
+   	for dev in $DEVICES; do
+		echo "Installing configuration files onto device $dev"
 
-	$ADB -s $dev push $DEVICE_FILES_DIR/adhoc.sh $DATA_DIR/
-	$ADB -s $dev push $DEVICE_FILES_DIR/tiwlan.ini $DATA_DIR/
-	$ADB -s $dev shell chmod 775 $DATA_DIR/adhoc.sh
-    done
+		$ADB -s $dev push $DEVICE_FILES_DIR/adhoc.sh $DATA_DIR/
+		$ADB -s $dev push $DEVICE_FILES_DIR/tiwlan.ini $DATA_DIR/
+		$ADB -s $dev shell chmod 775 $DATA_DIR/adhoc.sh
+    	done
 fi
 
 
@@ -64,7 +82,8 @@ LIBS="libhaggle.so libhaggle_jni.so libhaggle-xml2.so"
 BIN_PATH_PREFIX="system/bin"
 HAGGLE_BIN="haggle"
 
-pushd $SOURCE_DIR
+pushd $ANDROID_DIR
+pushd $PRODUCT_DIR
 
 echo $PWD
 
@@ -72,8 +91,8 @@ for dev in $DEVICES; do
     echo
     echo "Installing files onto device $dev"
 
-    # Remount /system partition in read/write mode
-    $ADB -s $dev shell su -c mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system
+    # Remount /system partition in rw mode
+    $ADB -s $dev remount
 
     # Enter directory holding unstripped binaries
     pushd symbols
@@ -94,7 +113,7 @@ for dev in $DEVICES; do
 	$ADB -s $dev shell su -c chmod 644 /$LIB_PATH_PREFIX/$file
     done
     
-    # Back to source dir
+    # Back to product dir
     popd
 
     # Install framework files
@@ -106,12 +125,13 @@ for dev in $DEVICES; do
 	$ADB -s $dev shell su -c chmod 644 /$FRAMEWORK_PATH_PREFIX/$file
     done
 
-    # Reset /system partition to read-only mode
-    $ADB -s $dev shell su -c mount -o remount,ro -t yaffs2 /dev/block/mtdblock3 /system
-
     # Cleanup data folder if any
     $ADB -s $dev shell su -c rm /data/haggle/*
+
+    # Reset filesystem to read-only
+    $ADB -s $dev shell su -c mount -o remount,ro -t yaffs2 /dev/block/mtdblock3 /system
 done
 
+popd
 popd
 popd
