@@ -19,6 +19,7 @@
     <FormFactorID>
     </FormFactorID>
     <StartupObject>PhotoShare.PhotoShare</StartupObject>
+    <ApplicationIcon>PhotoShare.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -136,6 +137,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\PhotoShare.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="PhotoShare.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CompactFramework.CSharp.targets" />
   <ProjectExtensions>
