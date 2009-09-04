@@ -240,6 +240,10 @@ void ConnectivityLocal::hookCleanup()
 #if defined(ENABLE_ETHERNET)
 	CloseHandle(notifyAddrChangeHandle);
 #endif
+	
+#if defined(WIDCOMM_BLUETOOTH)
+	//WIDCOMMBluetooth::cleanup();
+#endif
 }
 
 bool ConnectivityLocal::run()
@@ -252,6 +256,10 @@ bool ConnectivityLocal::run()
 	MSGQUEUEOPTIONS mqOpts = { sizeof(MSGQUEUEOPTIONS), MSGQUEUE_NOPRECOMMIT, 0,
 		sizeof(BTEVENT), TRUE
 	};
+
+#if defined(WIDCOMM_BLUETOOTH)
+	//WIDCOMMBluetooth::init();
+#endif
 #if defined(BLUETOOTH_STACK_FORCE_UP)
 	reenableBluetoothStack = false;
 #endif

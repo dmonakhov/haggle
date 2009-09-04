@@ -493,17 +493,21 @@ void ConnectivityManager::onReceivedDataObject(Event *e)
 
 		// Check whether this interface is already registered or not
 		if (!have_interface(remoteIface->getType(), remoteIface->getRawIdentifier())) {
+			unsigned int timeout = 20;
 			remoteIface->setFlag(IFFLAG_SNOOPED);
 			report_interface(remoteIface, localIface, onReceivedDataObject_helper);
 			report_known_interface(remoteIface, true);
 			res = true;
 
-			// Set a timeout at one minute for snooped interfaces. 
-			// This may be too short for Bluetooth, i.e., the device might not 
-			// scan and verify the snooped device before the timeout. However,
-			// this is not really a problem, since the device just goes away
-			// and then reappears when scanned for real.
-			kernel->addEvent(new Event(garbageEType, remoteIface, 60));
+			if (remoteIface->getType() == IFTYPE_BLUETOOTH)
+				timeout = 120;
+
+			// Set a longer timeout for Bluetooth since the device may not be verified
+			// until we scan next time, which may be up to 2 minutes by default.
+			// If the inteface would timeout before the device is detected for real,
+			// it is anyhow not really a problem, since the device just goes away
+			// and then reappears again.
+			kernel->addEvent(new Event(garbageEType, remoteIface, timeout));
 		}
 	}
 }

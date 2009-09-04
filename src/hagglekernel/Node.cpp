@@ -788,7 +788,7 @@ void Node::setBloomfilter(const Bloomfilter& bf, const bool set_create_time)
 void Node::setCreateTime(Timeval t)
 {
 	if (dObj->isThisNodeDescription()) {
-		HAGGLE_DBG("SETTING create time on node description\n");
+		//HAGGLE_DBG("SETTING create time on node description\n");
 		dObj->setCreateTime(t);
 	}
 }

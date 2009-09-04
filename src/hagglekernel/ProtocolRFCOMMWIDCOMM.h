@@ -16,8 +16,11 @@
 #define _PROTOCOLRFCOMMWIDCOMM_H
 
 #include <libcpphaggle/Platform.h>
+#include <libcpphaggle/List.h>
 
 #if defined(ENABLE_BLUETOOTH) && defined(WIDCOMM_BLUETOOTH)
+
+using namespace haggle;
 
 #include <BtSdkCE.h>
 #include "Interface.h"
@@ -37,10 +40,18 @@ class ProtocolRFCOMM;
 */
 class RFCOMMConnection : public CRfCommPort {
 	ProtocolRFCOMM *p;
+	bool connected, assigned;
+	BD_ADDR remote_addr;
 public:
-	void setProtocol(ProtocolRFCOMM *_p) { p = _p; } 
+	void setProtocol(ProtocolRFCOMM *_p) { printf("setting new protocol\n"); p = _p; }
+	ProtocolRFCOMM *getProtocol() { return p; }
 	RFCOMMConnection(ProtocolRFCOMM *_p = NULL);
 	~RFCOMMConnection();
+	bool connect(unsigned short channel, const char *addr);
+	bool isConnected();
+	bool isAssigned() const { return assigned; }
+	void setAssigned(bool a = true) { assigned = a; }
+	bool getRemoteAddr(BD_ADDR *addr) const;
 	void OnDataReceived(void *p_data, UINT16 len);
 	void OnEventReceived(UINT32 event_code);
 };
@@ -49,14 +60,23 @@ public:
 class ProtocolRFCOMM : public Protocol
 {
 	friend class RFCOMMConnection;
+	static List<const RFCOMMConnection *> connectionList;
 protected:
 	static CRfCommIf rfCommIf;
 	RFCOMMConnection *rfCommConn;
         unsigned short channel;
 	bool init(bool autoAssignScn = false);
 
-	virtual void OnDataReceived(void *p_data, UINT16 len) {}
-	virtual void OnEventReceived(UINT32 event_code) {}
+	// Functions manipulating the connection list
+	const RFCOMMConnection *_getConnection(const BD_ADDR addr);
+	bool hasConnection(const RFCOMMConnection *c);
+	bool hasConnection(const BD_ADDR addr);
+	bool addConnection(const RFCOMMConnection *c);
+	void removeConnection(const RFCOMMConnection *c);
+	RFCOMMConnection *getFirstUnassignedConnection();
+
+	virtual void OnDataReceived(void *p_data, UINT16 len) { printf("OnDataReceived() %u bytes for base class\n", len); }
+	virtual void OnEventReceived(UINT32 event_code) { printf("OnEventReceived() for base class\n"); }
 
         ProtocolRFCOMM(RFCOMMConnection *rfCommConn, const char *_mac, const unsigned short _channel, 
 		const InterfaceRef& _localIface, const short flags = PROT_FLAG_CLIENT, 
@@ -69,6 +89,9 @@ protected:
         virtual ~ProtocolRFCOMM();
 };
 
+// Not sure what a good size is here
+#define RFCOMM_DATA_BUFFER_SIZE 20000 
+
 /** */
 class ProtocolRFCOMMClient : public ProtocolRFCOMM
 {
@@ -78,7 +101,18 @@ class ProtocolRFCOMMClient : public ProtocolRFCOMM
 	bool init();
 	void OnDataReceived(void *p_data, UINT16 len);
 	void OnEventReceived(UINT32 event_code);
-	//ProtocolEvent waitForConnection();
+	/*
+		This is a circular buffer to temporarily store data that is read from
+		the OnDataReceived() callbacks before it can be read by the protocol
+		thread's runloop.
+	*/
+	char data_buffer[RFCOMM_DATA_BUFFER_SIZE];
+	unsigned long db_head, db_tail;
+	size_t dataBufferWrite(const void *data, size_t len);
+	size_t dataBufferRead(void *data, size_t len);
+	size_t dataBufferBytesToRead();
+	bool dataBufferIsEmpty();
+	Mutex db_mutex;
 public:
 	ProtocolRFCOMMClient(RFCOMMConnection *rfcommConn, BD_ADDR bdaddr, const unsigned short _channel, 
 		const InterfaceRef& _localIface, ProtocolManager *m = NULL);
@@ -128,7 +162,6 @@ class ProtocolRFCOMMServer : public ProtocolRFCOMM
 	friend class ProtocolRFCOMM;
 	friend class RFCOMMConnection;
 	HANDLE connectionEvent;
-	BD_ADDR clientBdAddr;
 
 	void OnEventReceived(UINT32 event_code);
 

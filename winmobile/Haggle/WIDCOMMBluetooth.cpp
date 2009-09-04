@@ -39,11 +39,14 @@ int WIDCOMMBluetooth::init()
 	if (stack)
 		return -1;
 
+	printf("Initializing bluetooth stack\n");
+
 	stack = new WIDCOMMBluetooth();
 
-	if (!stack)
+	if (!stack) {
+		fprintf(stderr, "Bluetooth stack initialization failed\n");
 		return -1;
-
+	}
 	printf("Stack was initialized\n");
 
 	return 0;
@@ -52,7 +55,9 @@ int WIDCOMMBluetooth::init()
 void WIDCOMMBluetooth::cleanup()
 {
 	if (stack) {
+		printf("Deleting Bluetooth stack object\n");
 		delete stack;
+		printf("Bluetooth stack deleted\n");
 		stack = NULL;
 	}
 }
@@ -100,17 +105,20 @@ void WIDCOMMBluetooth::OnStackStatusChange(CBtIf::STACK_STATUS new_status)
 
 	if (hMsgQ)
 		WriteMsgQueue(hMsgQ, &bte, sizeof(BTEVENT), INFINITE, 0);
-
 	/*
-	fprintf(stderr, "Cleaning up Bluetooth stack\n");
+	if (new_status == DEVST_DOWN) {
 
-	cleanup();
+		fprintf(stderr, "Cleaning up Bluetooth stack\n");
 
-	fprintf(stderr, "Waiting a couple of secs before reinitializing Bluetooth stack\n");
-	Sleep(2000);
+		cleanup();
 
-	if (init() < 0) {
-		fprintf(stderr, "Could not initialize Bluetooth stack again\n");
+		fprintf(stderr, "Waiting a couple of secs before reinitializing Bluetooth stack\n");
+		Sleep(2000);
+
+		if (init() < 0) {
+			fprintf(stderr, "Could not initialize Bluetooth stack again\n");
+		}
+
 	}
 	*/
 }
