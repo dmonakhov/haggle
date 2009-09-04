@@ -113,6 +113,14 @@ EOF
 
 chmod +x install.sh
 
+cat > README <<EOF
+You need an Android Developer phone, or other Android phone with root access,
+in order to install Haggle.
+
+To install, connect your Android phone to a computer and run ./install.sh
+
+EOF
+
 pushd ..
 
 # Make a tar-ball of everything
