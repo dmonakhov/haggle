@@ -2,11 +2,15 @@
 # a jar file with the class files in a subdirectory
 noinst_JAVA = Handle.java EventHandler.java Node.java Attribute.java DataObject.java Interface.java
 
+EXTRA_DIST=
+
 if DEBUG
 noinst_JAVA += TestApp.java
+else
+EXTRA_DIST+=TestApp.java
 endif
 
-EXTRA_DIST= $(noinst_JAVA)
+EXTRA_DIST+= $(noinst_JAVA)
 
 JAVAROOT=$(top_builddir)/src/libhaggle/jni/java
 
