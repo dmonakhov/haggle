@@ -92,7 +92,7 @@ for dev in $DEVICES; do
     echo "Installing files onto device $dev"
 
     # Remount /system partition in rw mode
-    $ADB -s $dev remount
+    $ADB -s $dev shell su -c mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system
 
     # Enter directory holding unstripped binaries
     pushd symbols
