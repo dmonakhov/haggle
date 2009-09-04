@@ -39,6 +39,12 @@
         "Entry"
         {
         "MsmKey" = "8:_3476E4C4925B8C88C2C775B774D11225"
+        "OwnerKey" = "8:_3F43EEECFA4C440C818D6B763D4355F2"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_3476E4C4925B8C88C2C775B774D11225"
         "OwnerKey" = "8:_60E5ACE5DD824C6FB0811D4B85D278FD"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -69,7 +75,13 @@
         "Entry"
         {
         "MsmKey" = "8:_3643B000AA1C3F855EAB40AA404EE009"
-        "OwnerKey" = "8:_C45763531192F5AABFC9B7F41FFBD72B"
+        "OwnerKey" = "8:_7EA19E6828C601B0CCFD4DAEB55C96EB"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_3643B000AA1C3F855EAB40AA404EE009"
+        "OwnerKey" = "8:_3F43EEECFA4C440C818D6B763D4355F2"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -146,8 +158,20 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_3984EFB6BFF7F270276CDB0F085E71E9"
+        "OwnerKey" = "8:_3F43EEECFA4C440C818D6B763D4355F2"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_39FCFB89FA026200744B4BD0035742AD"
         "OwnerKey" = "8:_60E5ACE5DD824C6FB0811D4B85D278FD"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_39FCFB89FA026200744B4BD0035742AD"
+        "OwnerKey" = "8:_3F43EEECFA4C440C818D6B763D4355F2"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -164,6 +188,12 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_3F43EEECFA4C440C818D6B763D4355F2"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_544480269AA24E5F8E0750A6C91E0896"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -172,6 +202,12 @@
         {
         "MsmKey" = "8:_57C770F4B1BDB52595F8FFF5B437878F"
         "OwnerKey" = "8:_60E5ACE5DD824C6FB0811D4B85D278FD"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_57C770F4B1BDB52595F8FFF5B437878F"
+        "OwnerKey" = "8:_3F43EEECFA4C440C818D6B763D4355F2"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -201,6 +237,12 @@
         "Entry"
         {
         "MsmKey" = "8:_6EDA0634725ADCF1AF3F682EC8367329"
+        "OwnerKey" = "8:_60E5ACE5DD824C6FB0811D4B85D278FD"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_7EA19E6828C601B0CCFD4DAEB55C96EB"
         "OwnerKey" = "8:_60E5ACE5DD824C6FB0811D4B85D278FD"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -278,14 +320,14 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_C45763531192F5AABFC9B7F41FFBD72B"
-        "OwnerKey" = "8:_60E5ACE5DD824C6FB0811D4B85D278FD"
+        "MsmKey" = "8:_CDD228CB14BDD66DC7E682709262151A"
+        "OwnerKey" = "8:_3984EFB6BFF7F270276CDB0F085E71E9"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
         "MsmKey" = "8:_CDD228CB14BDD66DC7E682709262151A"
-        "OwnerKey" = "8:_3984EFB6BFF7F270276CDB0F085E71E9"
+        "OwnerKey" = "8:_3F43EEECFA4C440C818D6B763D4355F2"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -334,6 +376,12 @@
         {
         "MsmKey" = "8:_F99B0CF5C56DC83243425D8C17C7F3FB"
         "OwnerKey" = "8:_CDD228CB14BDD66DC7E682709262151A"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_F99B0CF5C56DC83243425D8C17C7F3FB"
+        "OwnerKey" = "8:_3F43EEECFA4C440C818D6B763D4355F2"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -668,6 +716,34 @@
             "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
+            "{E4F2F62A-3940-4BF5-A031-F7FA98CAAFFA}:_7EA19E6828C601B0CCFD4DAEB55C96EB"
+            {
+            "AssemblyIsInGAC" = "11:FALSE"
+            "AssemblyAsmDisplayName" = "8:HaggleCS, Version=1.0.3534.26616, Culture=neutral"
+                "ScatterAssemblies"
+                {
+                    "_7EA19E6828C601B0CCFD4DAEB55C96EB"
+                    {
+                    "Name" = "8:HaggleCS.dll"
+                    "Attributes" = "3:512"
+                    }
+                }
+            "SourcePath" = "8:HaggleCS.dll"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_5B9A6FD569FC467BB4C0765E99B90A60"
+            "Condition" = "8:"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "Register" = "3:0"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
             "{E4F2F62A-3940-4BF5-A031-F7FA98CAAFFA}:_8C6B684E7919071644EE5D4933B1BA11"
             {
             "AssemblyIsInGAC" = "11:FALSE"
@@ -768,34 +844,6 @@
             "Register" = "3:0"
             "Exclude" = "11:FALSE"
             "IsDependency" = "11:FALSE"
-            "IsolateTo" = "8:"
-            }
-            "{E4F2F62A-3940-4BF5-A031-F7FA98CAAFFA}:_C45763531192F5AABFC9B7F41FFBD72B"
-            {
-            "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:HaggleCS, Version=1.0.3491.24591, Culture=neutral"
-                "ScatterAssemblies"
-                {
-                    "_C45763531192F5AABFC9B7F41FFBD72B"
-                    {
-                    "Name" = "8:HaggleCS.dll"
-                    "Attributes" = "3:512"
-                    }
-                }
-            "SourcePath" = "8:HaggleCS.dll"
-            "TargetName" = "8:"
-            "Tag" = "8:"
-            "Folder" = "8:_5B9A6FD569FC467BB4C0765E99B90A60"
-            "Condition" = "8:"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "Register" = "3:0"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
             "{E4F2F62A-3940-4BF5-A031-F7FA98CAAFFA}:_CDD228CB14BDD66DC7E682709262151A"
@@ -1003,7 +1051,7 @@
         {
             "{605BE39E-5046-48BD-AEC0-63C3A46626D5}:_104044123D704696B6FB58238AC75830"
             {
-            "SourcePath" = "8:Windows Mobile 6 Professional SDK (ARMV4I)\\Release(WIDCOMM)\\haggleutils.lib"
+            "SourcePath" = "8:Windows Mobile 6 Professional SDK (ARMV4I)\\Release\\haggleutils.lib"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_5B9A6FD569FC467BB4C0765E99B90A60"
@@ -1029,7 +1077,7 @@
             }
             "{605BE39E-5046-48BD-AEC0-63C3A46626D5}:_24A8DC6F761C4C4C9DEF14805E95E375"
             {
-            "SourcePath" = "8:Windows Mobile 6 Professional SDK (ARMV4I)\\Release(WIDCOMM)\\libxml2.dll"
+            "SourcePath" = "8:Windows Mobile 6 Professional SDK (ARMV4I)\\Release\\libxml2.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_5B9A6FD569FC467BB4C0765E99B90A60"
@@ -1053,9 +1101,35 @@
                 {
                 }
             }
+            "{605BE39E-5046-48BD-AEC0-63C3A46626D5}:_3F43EEECFA4C440C818D6B763D4355F2"
+            {
+            "SourcePath" = "8:..\\LibHaggleCS\\obj\\Release\\HaggleCS.dll"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_5B9A6FD569FC467BB4C0765E99B90A60"
+            "Condition" = "8:"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "Register" = "3:0"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:0"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:Built"
+            "OutputProjectGuid" = "8:{F6B7879F-3952-492E-867B-F021C3B91EB0}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
             "{605BE39E-5046-48BD-AEC0-63C3A46626D5}:_544480269AA24E5F8E0750A6C91E0896"
             {
-            "SourcePath" = "8:Windows Mobile 6 Professional SDK (ARMV4I)\\Release(WIDCOMM)\\libeay32.dll"
+            "SourcePath" = "8:Windows Mobile 6 Professional SDK (ARMV4I)\\Release\\libeay32.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_5B9A6FD569FC467BB4C0765E99B90A60"
@@ -1081,7 +1155,7 @@
             }
             "{605BE39E-5046-48BD-AEC0-63C3A46626D5}:_60C58270DFB84DEDB48A0DFE659912FA"
             {
-            "SourcePath" = "8:Windows Mobile 6 Professional SDK (ARMV4I)\\Release(WIDCOMM)\\Haggle.exe"
+            "SourcePath" = "8:Windows Mobile 6 Professional SDK (ARMV4I)\\Release\\Haggle.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_5B9A6FD569FC467BB4C0765E99B90A60"
@@ -1159,7 +1233,7 @@
             }
             "{605BE39E-5046-48BD-AEC0-63C3A46626D5}:_EF94B62BA5804E8EA2DB4D6CDBFE6146"
             {
-            "SourcePath" = "8:Windows Mobile 6 Professional SDK (ARMV4I)\\Release(WIDCOMM)\\sqlite.lib"
+            "SourcePath" = "8:Windows Mobile 6 Professional SDK (ARMV4I)\\Release\\sqlite.lib"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_5B9A6FD569FC467BB4C0765E99B90A60"
