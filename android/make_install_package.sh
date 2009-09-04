@@ -24,7 +24,7 @@ if [ ! -z $2 ]; then
 fi
 
 
-ANDROID_BIN_DIR=$ANDROID_SRC_DIR/out/target/product/dream/system
+ANDROID_BIN_DIR=$ANDROID_SRC_DIR/out/target/product/dream-open/system
 HAGGLE_BIN=$ANDROID_BIN_DIR/bin/haggle
 LIBHAGGLE_SO=$ANDROID_BIN_DIR/lib/libhaggle.so
 LIBHAGGLE_XML2_SO=$ANDROID_BIN_DIR/lib/libhaggle-xml2.so
@@ -77,6 +77,9 @@ echo "Press any key to install Haggle and PhotoShare on these devices, or ctrl-c
 # Wait for some user input
 read
 
+# Make sure we install with root privileges
+adb root
+
 for dev in \$DEVICES; do
     echo "Installing onto device \$dev"
     # Remount /system partition in read/write mode
@@ -103,7 +106,7 @@ for dev in \$DEVICES; do
     adb -s \$dev shell su -c mount -o remount,ro -t yaffs2 /dev/block/mtdblock3 /system
 
     # Cleanup data folder if any
-    adb -s \$dev shell su -c rm /data/haggle/*
+    adb -s \$dev shell su -c rm /data/haggle/* &> /dev/null
 done
 
 EOF
