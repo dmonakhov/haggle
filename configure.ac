@@ -117,21 +117,38 @@ then
      	CPPFLAGS="${CPPFLAGS} -DENABLE_STL"
 fi
 
-LIBXML2_INCLUDE_DIR="/usr/include/libxml2"
-save_CPPFLAGS=${CPPFLAGS}
-CPPFLAGS="${CPPFLAGS} -I${LIBXML2_INCLUDE_DIR}"
+# compiling libxml2 is actually not supported yet.
+compile_libxml2=no
 
-# Checks for libraries
+save_CPPFLAGS=${CPPFLAGS}
+
+AC_ARG_VAR([LIBXML2_DIR], [Location of Libxml2 source code])
+dnl Allow the user to set the libxml2 dir
+AC_ARG_WITH(libxml2,
+	    AS_HELP_STRING([--with-libxml2=DIR],[DIR to look for Libxml2]),
+	    [LIBXML2_DIR=$withval;compile_libxml2=yes],)
+
+if test "x$compile_libxml2" = 'xyes';
+then
+	LIBXML2_INCLUDE_DIR="${LIBXML2_DIR}/include"
+	CPPFLAGS="${CPPFLAGS} -I${LIBXML2_INCLUDE_DIR}"
+	CFLAGS="${CFLAGS} -I${LIBXML2_INCLUDE_DIR}"
+else
+	LIBXML2_INCLUDE_DIR="/usr/include/libxml2"
+	CPPFLAGS="${CPPFLAGS} -I${LIBXML2_INCLUDE_DIR}"
+fi
+
+# Check for Libxml2 headers
 AC_CHECK_LIB(xml2,xmlInitParser,
-	[AC_CHECK_HEADERS([libxml/parser.h],,AC_MSG_ERROR(You have libxml2 but not the development headers))],AC_MSG_ERROR(xml library not found...),)
-AC_SUBST(LIBXML2_INCLUDE_DIR)
+		[AC_CHECK_HEADERS([libxml/parser.h],,AC_MSG_ERROR(You have libxml2 but not the development headers))],AC_MSG_ERROR(xml library not found...),)
+AC_SUBST(LIBXML2_INCLUDE_DIR)	
 
 CPPFLAGS=${save_CPPFLAGS}
 
 compile_openssl=no
 
 AC_ARG_VAR([OPENSSL_DIR], [Location of OpenSSL source code])
-dnl Allow the user to set the JAVA_HOME dir?
+dnl Allow the user to set the openssl dir
 AC_ARG_WITH(openssl,
 	    AS_HELP_STRING([--with-openssl=DIR],[DIR to look for OpenSSL]),
 	    [OPENSSL_DIR=$withval;compile_openssl=yes],)
@@ -562,7 +579,7 @@ then
 	else
 		if test "x$JAVA" == 'x'; 
 		then
-			AC_MSG_ERROR([Java bindings require java and javac. Check your PATH])
+			AC_MSG_ERROR([Java bindings require java and javac. Check your PATH or disable with --disable-java-bindings])
 		fi
 	fi
 fi
