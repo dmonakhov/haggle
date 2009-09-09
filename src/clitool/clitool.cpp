@@ -70,6 +70,7 @@ int main(int argc, char *argv[])
 		command_get_interests,
 		command_new_dataobject,
 		command_blacklist,
+		command_shutdown,
 		command_fail,
 		command_none
 	} command = command_none;
@@ -115,6 +116,9 @@ int main(int argc, char *argv[])
 			i++;
 			if(i < argc)
 				command_parameter = argv[i];
+		}else if(command == command_none && strcmp(argv[i], "shutdown") == 0)
+		{
+			command = command_shutdown;
 		}else{
 			printf("Unrecognized parameter: %s\n", argv[i]);
 			command = command_fail;
@@ -180,6 +184,7 @@ int main(int argc, char *argv[])
 "new         Creates and publishes a new data object with the given attribute\n"
 "get         Tries to retrieve all interests for this application.\n"
 "blacklist   Toggles blacklisting of the given interface.\n"
+"shutdown    Terminates haggle\n"
 "\n"
 "Attributes are specified as such: <name>=<value>[:<weight>]. Name and value\n"
 "are text strings, and weight is an optional integer. Name can of course not\n"
@@ -286,7 +291,13 @@ int main(int argc, char *argv[])
 			haggle_ipc_publish_dataobject(haggle_, dObj);
 		}
 		break;
-		
+
+		case command_shutdown:
+		{
+			haggle_ipc_shutdown(haggle_);
+		}
+		break;	
+			
 		// Shouldn't be able to get here:
 		default:
 		break;
