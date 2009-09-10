@@ -353,13 +353,13 @@ typedef DWORD pid_t;
    Return 0 if Haggle is not running, -1 on error, or a valid pid
    of a running Haggle instance.
  */
-unsigned long haggle_daemon_pid()
+long haggle_daemon_pid()
 {
 #define PIDBUFLEN 200
         char buf[PIDBUFLEN];
         size_t ret;
         FILE *fp;
-        pid_t pid;
+        long pid = -1;
 #if defined(OS_WINDOWS)
         HANDLE p;
 #endif
@@ -369,7 +369,7 @@ unsigned long haggle_daemon_pid()
 
         if (!fp) {
                 /* The Pid file does not exist --> Haggle not running. */
-                return 0;
+                return HAGGLE_NO_ERROR;
         }
 
         memset(buf, 0, PIDBUFLEN);
@@ -380,9 +380,9 @@ unsigned long haggle_daemon_pid()
         fclose(fp);
 
         if (ret == 0)
-                return -1;
+                return HAGGLE_ERROR;
 
-        pid = (pid_t)atoi(buf);
+        pid = atol(buf);
         
         /* Check whether there is a process matching the pid */
 #if defined(OS_LINUX)
@@ -395,7 +395,7 @@ unsigned long haggle_daemon_pid()
 
         /* Check /proc file system for a process with the matching
          * Pid */
-        snprintf(buf, PIDBUFLEN, "/proc/%d/cmdline", pid);
+        snprintf(buf, PIDBUFLEN, "/proc/%ld/cmdline", pid);
 
         fp = fopen(buf, "r");
 
@@ -424,7 +424,7 @@ unsigned long haggle_daemon_pid()
          * previously quit without cleaning up (e.g., Haggle crashed,
          * or the phone ran out of battery, etc.)
          */
-        return 0;
+        return HAGGLE_NO_ERROR;
 }
 
 static int spawn_daemon_internal(const char *daemonpath)
@@ -434,7 +434,7 @@ static int spawn_daemon_internal(const char *daemonpath)
 	char cmd[PATH_LEN];
 
         if (!daemonpath)
-                return -1;
+                return HAGGLE_ERROR;
 
         snprintf(cmd, PATH_LEN, "%s -d", daemonpath);
         
@@ -442,7 +442,7 @@ static int spawn_daemon_internal(const char *daemonpath)
 
         if (system(cmd) != 0) {
                 fprintf(stderr, "could not start Haggle daemon\n");
-                return -1;
+                return HAGGLE_ERROR;
         }
 
         /* Sleep a couple of seconds, just to let Haggle start before
@@ -458,7 +458,7 @@ static int spawn_daemon_internal(const char *daemonpath)
 	const char *path = daemonpath;
 #endif
 	if (!path)
-		return -1;
+		return HAGGLE_ERROR;
 
 	ret = CreateProcess(path, L"", NULL, NULL, 0, 0, NULL, NULL, NULL, &pi);
 
@@ -467,7 +467,7 @@ static int spawn_daemon_internal(const char *daemonpath)
 #endif
 	if (ret == 0) {
 		LIBHAGGLE_ERR("Could not create process\n");
-		return -1;
+		return HAGGLE_ERROR;
 	}
 	/* Sleep a couple of seconds, just to let Haggle start before
            the application tries to connect. The time needed can vary
@@ -478,7 +478,7 @@ static int spawn_daemon_internal(const char *daemonpath)
         if (haggle_daemon_pid() != 0)
                 return 1;
 
-        return -1;
+        return HAGGLE_ERROR;
 }
 
 int haggle_daemon_spawn(const char *daemonpath)
@@ -486,7 +486,7 @@ int haggle_daemon_spawn(const char *daemonpath)
         int i = 0;
 
         if (haggle_daemon_pid() != 0)
-                return 0;
+                return HAGGLE_NO_ERROR;
 
         if (daemonpath) {
                 return spawn_daemon_internal(daemonpath);
@@ -517,7 +517,7 @@ int haggle_daemon_spawn(const char *daemonpath)
 			break;
 	}
 
-	return -1;
+	return HAGGLE_ERROR;
 }
 
 int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ignore_busy_signal)

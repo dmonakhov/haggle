@@ -141,9 +141,10 @@ HAGGLE_API void haggle_handle_free(haggle_handle_t hh);
 	This function returns the Process ID (PID) of a running
         Haggle daemon.
 	
-	@returns the haggle daemon's PID, or 0 if it is not running.
+	@returns the haggle daemon's PID, HAGGLE_NO_ERROR if it 
+	is not running, or HAGGLE_ERROR on error.
 */
-HAGGLE_API unsigned long haggle_daemon_pid();
+HAGGLE_API long haggle_daemon_pid();
 
 /**
 	This function can be used by an application to spawn a new
@@ -152,8 +153,8 @@ HAGGLE_API unsigned long haggle_daemon_pid();
         @param daemonpath The path to the Haggle daemon executable, or
         NULL if libhaggle should try standard paths.
 
-	@returns 0 if a haggle daemon is already running, 1 if a daemon 
-        was spawned and -1 if an error occured.
+	@returns HAGGLE_NO_ERROR if a haggle daemon is already running, 1 if a daemon 
+        was spawned and HAGGLE_ERROR if an error occured.
 */
 HAGGLE_API int haggle_daemon_spawn(const char *daemonpath);
 
