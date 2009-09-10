@@ -145,6 +145,7 @@ int main(int argc, char **argv)
 	struct stat dir_stat;
 	struct sigaction sigact;
 	int ret;
+        unsigned long pid;
 
 	strncpy(dirpath, getenv("HOME"), MAX_DIRPATH_LEN);
 	dirpath[strlen(dirpath)] = '/';
@@ -203,7 +204,13 @@ int main(int argc, char **argv)
 	sigaction(SIGINT, &sigact, NULL);
 	sigaction(SIGKILL, &sigact, NULL);
 
-        if (!haggle_daemon_pid()) {
+        ret = haggle_daemon_pid(&pid);
+
+        if (ret == HAGGLE_ERROR) {
+                printf("Could not get Haggle pid\n");
+                exit(EXIT_FAILURE);
+        }
+        if (ret == 0) {
                 printf("Haggle not running, trying to spawn daemon... ");
                 
                 if (haggle_daemon_spawn(NULL) != 1) {
@@ -211,7 +218,7 @@ int main(int argc, char **argv)
                         exit(EXIT_FAILURE);
                 }
                 printf("success!\n");
-        }
+        } 
 
         printf("Haggle running, trying to get handle\n");
 
@@ -222,7 +229,7 @@ int main(int argc, char **argv)
                 exit(EXIT_FAILURE);                
 	}
 
-        printf("Haggle daemon pid is %lu\n", haggle_daemon_pid());
+        printf("Haggle daemon pid is %lu\n", pid);
 
 	haggle_ipc_register_event_interest(hh, LIBHAGGLE_EVENT_NEIGHBOR_UPDATE, neighbor_update_event);
 	haggle_ipc_register_event_interest(hh, LIBHAGGLE_EVENT_NEW_DATAOBJECT, new_dataobject_event);

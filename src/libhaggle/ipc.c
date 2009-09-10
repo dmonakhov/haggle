@@ -353,17 +353,20 @@ typedef DWORD pid_t;
    Return 0 if Haggle is not running, -1 on error, or a valid pid
    of a running Haggle instance.
  */
-long haggle_daemon_pid()
+int haggle_daemon_pid(unsigned long *pid)
 {
 #define PIDBUFLEN 200
         char buf[PIDBUFLEN];
         size_t ret;
         FILE *fp;
-        long pid = -1;
+	unsigned long _pid;
 #if defined(OS_WINDOWS)
         HANDLE p;
 #endif
 	int old_instance_is_running = 0;
+
+	if (pid)
+	        *pid = 0;
 
         fp = fopen(PID_FILE, "r");
 
@@ -382,8 +385,11 @@ long haggle_daemon_pid()
         if (ret == 0)
                 return HAGGLE_ERROR;
 
-        pid = atol(buf);
+        _pid = strtoul(buf, NULL, 10);
         
+	if (pid)
+	        *pid = _pid;
+
         /* Check whether there is a process matching the pid */
 #if defined(OS_LINUX)
         /* On Linux, do not use kill to figure out whether there is a
@@ -395,7 +401,7 @@ long haggle_daemon_pid()
 
         /* Check /proc file system for a process with the matching
          * Pid */
-        snprintf(buf, PIDBUFLEN, "/proc/%ld/cmdline", pid);
+        snprintf(buf, PIDBUFLEN, "/proc/%ld/cmdline", _pid);
 
         fp = fopen(buf, "r");
 
@@ -407,10 +413,10 @@ long haggle_daemon_pid()
 	}
        
 #elif defined(OS_UNIX)
-        old_instance_is_running = (kill(pid, 0) != -1);
+        old_instance_is_running = (kill(_pid, 0) != -1);
 #elif defined(OS_WINDOWS)
 	
-        p = OpenProcess(0, FALSE, pid);
+        p = OpenProcess(0, FALSE, _pid);
         old_instance_is_running = (p != NULL);
 
         if (p != NULL)
@@ -418,7 +424,7 @@ long haggle_daemon_pid()
 #endif
         /* If there was a process, return its pid */
         if (old_instance_is_running)
-                return pid;
+                return 1;
         
         /* No process matching the pid --> Haggle is not running and
          * previously quit without cleaning up (e.g., Haggle crashed,
@@ -475,7 +481,7 @@ static int spawn_daemon_internal(const char *daemonpath)
 	   */
 	Sleep(8000);
 #endif
-        if (haggle_daemon_pid() != 0)
+        if (haggle_daemon_pid(NULL) != 0)
                 return 1;
 
         return HAGGLE_ERROR;
@@ -485,7 +491,7 @@ int haggle_daemon_spawn(const char *daemonpath)
 {
         int i = 0;
 
-        if (haggle_daemon_pid() != 0)
+        if (haggle_daemon_pid(NULL) != 0)
                 return HAGGLE_NO_ERROR;
 
         if (daemonpath) {
@@ -539,7 +545,7 @@ int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ig
 #endif
 
 #if !defined(OS_MACOSX_IPHONE)
-        if (haggle_daemon_pid() == 0)
+        if (haggle_daemon_pid(NULL) == 0)
                 return HAGGLE_DAEMON_ERROR;
 #endif
 
