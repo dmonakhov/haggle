@@ -79,7 +79,7 @@ namespace Haggle
                 static extern int UnmanagedEventLoopStop(IntPtr hh);
 
                 [DllImport("libhaggle.dll", EntryPoint = "haggle_daemon_pid")]
-                static extern int UnmanagedDaemonPid();
+                static extern int UnmanagedDaemonPid(ref uint pid);
 
                 [DllImport("libhaggle.dll", EntryPoint = "haggle_daemon_spawn")]
                 static extern int UnmanagedDaemonSpawn(IntPtr exepath);
@@ -151,9 +151,19 @@ namespace Haggle
                 {
                         return UnmanagedDeleteDataObject(handle, dObj.cDataObject);
                 }
-                public static int DaemonPid()
+                public static uint DaemonPid()
                 {
-                        return UnmanagedDaemonPid();
+                        uint pid = 0;
+
+                        int ret = UnmanagedDaemonPid(ref pid);
+
+                        if (ret == 1)
+                        {
+                                Debug.WriteLine("Haggle pid is " + pid);
+
+                                return pid;
+                        }
+                        return 0;
                 }
                 public static int SpawnDaemon()
                 {

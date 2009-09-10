@@ -111,7 +111,6 @@ namespace PhotoShare
                                         {
                                                 return false;
                                         }
-
                                 }
                                 try
                                 {
@@ -148,7 +147,7 @@ namespace PhotoShare
                                         else
                                         {
                                                 Debug.WriteLine("Haggle Error: " + ex.ToString() + " errnum=" + ex.GetError());
-                                                int pid = HaggleHandle.DaemonPid();
+                                                uint pid = HaggleHandle.DaemonPid();
 
                                                 if (pid > 0)
                                                 {
