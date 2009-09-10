@@ -117,21 +117,12 @@ then
      	CPPFLAGS="${CPPFLAGS} -DENABLE_STL"
 fi
 
-LIBXML2_INCLUDE_DIR="/usr/include/libxml2"
-save_CPPFLAGS=${CPPFLAGS}
-CPPFLAGS="${CPPFLAGS} -I${LIBXML2_INCLUDE_DIR}"
-
-# Checks for libraries
-AC_CHECK_LIB(xml2,xmlInitParser,
-	[AC_CHECK_HEADERS([libxml/parser.h],,AC_MSG_ERROR(You have libxml2 but not the development headers))],AC_MSG_ERROR(xml library not found...),)
-AC_SUBST(LIBXML2_INCLUDE_DIR)
-
-CPPFLAGS=${save_CPPFLAGS}
+AM_PATH_XML2(2.4.0)
 
 compile_openssl=no
 
 AC_ARG_VAR([OPENSSL_DIR], [Location of OpenSSL source code])
-dnl Allow the user to set the JAVA_HOME dir?
+dnl Allow the user to set the openssl dir
 AC_ARG_WITH(openssl,
 	    AS_HELP_STRING([--with-openssl=DIR],[DIR to look for OpenSSL]),
 	    [OPENSSL_DIR=$withval;compile_openssl=yes],)
@@ -562,7 +553,7 @@ then
 	else
 		if test "x$JAVA" == 'x'; 
 		then
-			AC_MSG_ERROR([Java bindings require java and javac. Check your PATH])
+			AC_MSG_ERROR([Java bindings require java and javac. Check your PATH or disable with --disable-java-bindings])
 		fi
 	fi
 fi

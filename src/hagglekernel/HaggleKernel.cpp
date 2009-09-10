@@ -212,6 +212,9 @@ void HaggleKernel::signalIsReadyForStartup(Manager *m)
 
 void HaggleKernel::signalIsReadyForShutdown(Manager *m)
 {
+
+	HAGGLE_DBG("%s signals it is ready for shutdow\n", m->getName());
+	
 	for (registry_t::iterator it = registry.begin(); it != registry.end(); it++) {
 		if (!(*it).first->isReadyForShutdown()) {
 			HAGGLE_DBG("%s is not ready for shutdown\n", (*it).first->getName());

@@ -15,7 +15,7 @@ if OS_IPHONEOS
 libhaggle_la_LDFLAGS =
 endif
 
-CPPFLAGS += -I$(LIBXML2_INCLUDE_DIR) -Iinclude
+CPPFLAGS +=$(XML_CPPFLAGS) -Iinclude
 
 if HAVE_EXTRACTOR
 LDFLAGS += -lextractor

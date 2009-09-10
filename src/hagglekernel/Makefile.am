@@ -143,12 +143,15 @@ EXTRA_DIST= Attribute.h \
 	hagglesim
 
 
-LDFLAGS:=-L../utils/ -L../libcpphaggle -lhaggleutils -lcpphaggle -lm -lxml2 -lcrypto
+haggle_LDFLAGS :=-L../utils/ -L../libcpphaggle -lhaggleutils -lcpphaggle -lm $(XML_LIBS) -lcrypto
+haggle_CXXFLAGS :=$(CXXFLAGS)
+haggle_CPPFLAGS :=$(XML_CPPFLAGS) -I$(top_srcdir)/src/utils -I$(top_srcdir)/src/libcpphaggle/include -I$(top_srcdir)/src/libhaggle/include
+libhagglekernel_a_CPPFLAGS:=$(haggle_CPPFLAGS)
 
 if HAVE_EXCEPTION
-CXXFLAGS +=-DHAVE_EXCEPTION=1
+haggle_CXXFLAGS +=-DHAVE_EXCEPTION=1
 else
-CXXFLAGS +=-DHAVE_EXCEPTION=0 -fno-exceptions -fno-non-call-exceptions
+haggle_CXXFLAGS +=-DHAVE_EXCEPTION=0 -fno-exceptions -fno-non-call-exceptions
 endif
 
 # Configuration dependent source code
@@ -167,7 +170,7 @@ endif
 # Linux specific source code
 if OS_LINUX
 
-LDFLAGS += -lpthread
+haggle_LDFLAGS += -lpthread
 
 libhagglekernel_a_SOURCES += ConnectivityLocalLinux.cpp ResourceMonitorLinux.cpp
 
@@ -180,8 +183,8 @@ libhagglekernel_a_SOURCES += ConnectivityEthernet.cpp
 endif
 
 if HAVE_DBUS
-LDFLAGS += $(DBUS_LIBS)
-CPPFLAGS += $(DBUS_INCLUDES)
+haggle_LDFLAGS += $(DBUS_LIBS)
+haggle_CPPFLAGS += $(DBUS_INCLUDES)
 endif
 
 
@@ -202,9 +205,9 @@ if OS_MACOSX
 libhagglekernel_a_SOURCES += ConnectivityLocalMacOSX.cpp ResourceMonitorMacOSX.cpp
 
 if OS_IPHONEOS
-LDFLAGS +=-framework CoreFoundation -L@OPENSSL_LIB_DIR@
+haggle_LDFLAGS +=-framework CoreFoundation -L@OPENSSL_LIB_DIR@
 else
-LDFLAGS +=-framework CoreFoundation -framework IOKit -framework CoreServices
+haggle_LDFLAGS +=-framework CoreFoundation -framework IOKit -framework CoreServices
 endif
 
 if ENABLE_BLUETOOTH
@@ -217,10 +220,10 @@ haggle_DEPENDENCIES += libmacosxobjc.a
 libmacosxobjc_a_SOURCES := ProtocolRFCOMMMacOSX.cpp
 libmacosxobjc_a_DEPENDENCIES=$(top_srcdir)/config.h
 
-libmacosxobjc_a_CPPFLAGS =-x objective-c++ 
+libmacosxobjc_a_CPPFLAGS :=$(haggle_CPPFLAGS) -x objective-c++ 
 #libmacosxobjc_a_CXXFLAGS = 
 haggle_LDADD += libmacosxobjc.a
-LDFLAGS +=-framework IOBluetooth -framework Foundation
+haggle_LDFLAGS +=-framework IOBluetooth -framework Foundation
 endif
 
 if ENABLE_ETHERNET
@@ -257,25 +260,22 @@ if BUNDLED_SQLITE
 CPPFLAGS +=-I@SQLITE_INCLUDE_DIR@
 haggle_LDADD += @SQLITE_LIB_DIR@/libsqlite.a
 else
-LDFLAGS +=-lsqlite3 
+haggle_LDFLAGS +=-lsqlite3 
 endif
 
 if ENABLE_BLUETOOTH
 if OS_LINUX
-LDFLAGS +=-lbluetooth
+haggle_LDFLAGS +=-lbluetooth
 endif
 
 if OS_MACOSX
-LDFLAGS +=-framework IOBluetooth
+haggle_LDFLAGS +=-framework IOBluetooth
 endif
 endif
 
 if OS_MACOSX
-LDFLAGS +=-framework CoreFoundation
+haggle_LDFLAGS +=-framework CoreFoundation
 endif
-
-CXXLIBS =
-CPPFLAGS +=-I$(LIBXML2_INCLUDE_DIR) -I$(top_srcdir)/src/utils -I$(top_srcdir)/src/libcpphaggle/include -I$(top_srcdir)/src/libhaggle/include
 
 all-local:
 	cp $(PROGRAMS) $(top_builddir)/bin/
