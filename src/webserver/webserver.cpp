@@ -636,7 +636,12 @@ int main (int argc, char *argv[])
 
 	mutex_init(&mutex);
 
-	if (haggle_daemon_pid() == 0) {
+        int ret = haggle_daemon_pid(NULL) ;
+
+        if (ret == HAGGLE_ERROR)
+                goto done;
+
+	if (ret == 0) {
 		printf("Trying to spawn daemon\n");
 		haggle_daemon_spawn(NULL);
 	}

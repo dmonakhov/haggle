@@ -498,7 +498,15 @@ JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_eventLoopIsRunning(JNIEnv *env
  */
 JNIEXPORT jlong JNICALL Java_org_haggle_Handle_getDaemonPid(JNIEnv *env, jclass cls)
 {
-        return (jlong)haggle_daemon_pid();
+        unsigned long pid;
+
+	int ret = haggle_daemon_pid(&pid);
+
+        /* Check if Haggle is running */
+        if (ret == 1)
+                return (jlong)pid;
+
+        return (jlong)ret;
 }
 
 /*
