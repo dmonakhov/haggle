@@ -1054,7 +1054,7 @@ Addresses::~Addresses()
         }
 }
 
-Addresses *Addresses::copy()
+Addresses *Addresses::copy() const
 {
         return new Addresses(*this);
 }

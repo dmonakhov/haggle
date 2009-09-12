@@ -198,7 +198,7 @@ void ApplicationManager::onRetrieveAppNodes(Event *e)
 			// Try to get the most updated node from the node store:
 			nr = kernel->getNodeStore()->retrieve(*it);
 			// No node in the store? Default to the node in the data store:
-			if(!nr)
+			if (!nr)
 				nr = (*it);
 			
 			nr.lock();

@@ -2055,7 +2055,6 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 
 		if (ret == SQLITE_ERROR) {
 			HAGGLE_DBG("SQLite insert of attribute failed !\n");
-			node.unlock();
 			goto out_insertNode_err;
 		}
 
@@ -2071,7 +2070,6 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 
 		if (ret == SQLITE_ERROR) {
 			HAGGLE_DBG("SQLite insert of node-attribute link failed!\n");
-			node.unlock();
 			goto out_insertNode_err;
 		}
 	}

@@ -560,11 +560,11 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 		/*	
 			Find the target interface that suits us best
 			(we assume that for any remote target
-			interface we have a corresponding local
+			interfacpeerIfacee we have a corresponding local
 			interface).
 			
 		*/
-		InterfaceRef sendIface = NULL;
+		InterfaceRef peerIface = NULL;
 		bool done = false;
 		
 		InterfaceRefList::const_iterator it = interfaces->begin();
@@ -595,11 +595,11 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 						break;
 					}
 					
-					if (!sendIface)
-						sendIface = iface;
-					else if (sendIface->getType() != IFTYPE_ETHERNET &&
-						 sendIface->getType() != IFTYPE_WIFI)
-						sendIface = iface;
+					if (!peerIface)
+						peerIface = iface;
+					else if (peerIface->getType() != IFTYPE_ETHERNET &&
+						 peerIface->getType() != IFTYPE_WIFI)
+						peerIface = iface;
 					break;
 #endif
 #if defined(ENABLE_ETHERNET)
@@ -616,11 +616,11 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 							   iface->getTypeStr(), iface->getIdentifierStr());
 						break;
 					}
-					if (!sendIface)
-						sendIface = iface;
-					else if (sendIface->getType() == IFTYPE_BLUETOOTH ||
-						 sendIface->getType() == IFTYPE_WIFI)
-						sendIface = iface;
+					if (!peerIface)
+						peerIface = iface;
+					else if (peerIface->getType() == IFTYPE_BLUETOOTH ||
+						 peerIface->getType() == IFTYPE_WIFI)
+						peerIface = iface;
 					break;
 				case IFTYPE_WIFI:
 					if (!iface->getAddressByType(AddressType_IPv4) 
@@ -632,11 +632,11 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 							   iface->getTypeStr(), iface->getIdentifierStr());
 						break;
 					}
-					if (!sendIface)
-						sendIface = iface;
-					else if (sendIface->getType() == IFTYPE_BLUETOOTH &&
-						 sendIface->getType() != IFTYPE_ETHERNET)
-						sendIface = iface;
+					if (!peerIface)
+						peerIface = iface;
+					else if (peerIface->getType() == IFTYPE_BLUETOOTH &&
+						 peerIface->getType() != IFTYPE_ETHERNET)
+						peerIface = iface;
 					break;
 #endif
 				case IFTYPE_APPLICATION_PORT:
@@ -653,7 +653,7 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 					}
 					// Not much choise here.
 					if (targ->getType() == NODE_TYPE_APPLICATION) {
-						sendIface = iface;
+						peerIface = iface;
 						done = true;
 					}
                                         
@@ -675,7 +675,7 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 		// the node.
 		targ.unlock();
 		
-		if (!sendIface) {
+		if (!peerIface) {
 			HAGGLE_DBG("No send interface found. Aborting send of data object!!!\n");
 			// Failed to send to this target, send failure event:
 			kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_FAILURE, dObj, targ));
@@ -688,10 +688,13 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 		// transmit to that interface
 		Protocol *p = NULL;
 		
-		// We should lock the interface if we iterate its address list.
-		sendIface.lock();
-		
-		const Addresses *adds = sendIface->getAddresses();
+		// We make a copy of the addresses list here so that we do not
+		// have to lock the peer interface while we call getSenderProtocol().
+		// getSenderProtocol() might do a lookup in the interface store in order
+		// to find the local interface which is parent of the peer interface.
+		// This might cause a deadlock in case another thread also does a lookup
+		// in the interface store while we hold the interface lock.
+		const Addresses *adds = peerIface->getAddresses()->copy();
 		
 		// Figure out a suitable protocol given the addresses associated 
 		// with the selected interface
@@ -700,38 +703,39 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 			switch ((*it)->getType()) {
 #if defined(ENABLE_BLUETOOTH)
 			case AddressType_BTMAC:
-				p = getSenderProtocol(PROT_TYPE_RFCOMM, sendIface);
+				p = getSenderProtocol(PROT_TYPE_RFCOMM, peerIface);
 				break;
 #endif
 			case AddressType_IPv4:
 #if defined(ENABLE_IPv6)
 			case AddressType_IPv6:
 #endif
-				if (sendIface->isApplication()) {
+				if (peerIface->isApplication()) {
 #ifdef USE_UNIX_APPLICATION_SOCKET
-					p = getSenderProtocol(PROT_TYPE_LOCAL, sendIface);
+					p = getSenderProtocol(PROT_TYPE_LOCAL, peerIface);
 #else
-					p = getSenderProtocol(PROT_TYPE_UDP, sendIface);
+					p = getSenderProtocol(PROT_TYPE_UDP, peerIface);
 #endif
 				}
 				else
-					p = getSenderProtocol(PROT_TYPE_TCP, sendIface);
+					p = getSenderProtocol(PROT_TYPE_TCP, peerIface);
 				break;
 #if defined(ENABLE_MEDIA)
 			case AddressType_FilePath:
-				p = getSenderProtocol(PROT_TYPE_MEDIA, sendIface);
+				p = getSenderProtocol(PROT_TYPE_MEDIA, peerIface);
 				break;
 #endif
 			default:
 				break;
 			}
 		}
-		sendIface.unlock();
+		
+		delete adds;
 		
                 // Send data object to the found protocol:
 
                 if (p) {
-			if (p->sendDataObject(dObj, targ, sendIface)) {
+			if (p->sendDataObject(dObj, targ, peerIface)) {
 				numTx++;
 			} else {
 				// Failed to send to this target, send failure event:
@@ -739,7 +743,7 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 			}
 		} else {
 			HAGGLE_DBG("No suitable protocol found for interface %s:%s!\n", 
-				   sendIface->getTypeStr(), sendIface->getIdentifierStr());
+				   peerIface->getTypeStr(), peerIface->getIdentifierStr());
 			// Failed to send to this target, send failure event:
 			kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_FAILURE, dObj, targ));			
 		}

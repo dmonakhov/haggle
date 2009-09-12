@@ -312,7 +312,7 @@ public:
 	Addresses(const Addresses& adds);
 	~Addresses();
 	void add(Address *a) { push_back(a); }
-	Addresses *copy();
+	Addresses *copy() const;
 	Address *pop();
 };
 

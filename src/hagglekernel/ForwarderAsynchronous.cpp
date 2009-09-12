@@ -96,20 +96,21 @@ void ForwarderAsynchronous::generateDelegatesFor(DataObjectRef &dObj, NodeRef &t
 		return;
 	
 	// Retreive the result:
-	actionQueue.insert(
-		new FP_Action(FP_generate_delegates_for,dObj,target,NULL,NULL));
+	actionQueue.insert(new FP_Action(FP_generate_delegates_for, dObj, target, NULL, NULL));
 }
 
 string ForwarderAsynchronous::getEncodedState(void)
 {
-	Mutex	theMutex;
-	string	retval;
+	Mutex theMutex;
+	string retval;
 	
-	// Mutexes are unlocked by default:
+	// This mutex is used to synchronize execution with the actionQueue thread.
+	// We lock it here, then wait for the other thread to unlock it before
+	// continuing
 	theMutex.lock();
 	// Retreive the result:
-	actionQueue.insert(
-		new FP_Action(FP_get_encoded_state,NULL,NULL,&retval,&theMutex));
+	actionQueue.insert(new FP_Action(FP_get_encoded_state, NULL, NULL, &retval, &theMutex));
+	// Wait for other thread to unlock mutex, which means retval should be valid.
 	theMutex.lock();
 	
 	return retval;
@@ -123,12 +124,13 @@ void ForwarderAsynchronous::setEncodedState(string &state)
 		This has to be done synchronously, even though it doesn't return a 
 		value, because we cannot be sure when the state string is deallocated.
 	*/
-	
-	// Mutexes are unlocked by default:
+	// This mutex is used to synchronize execution with the actionQueue thread.
+	// We lock it here, then wait for the other thread to unlock it before
+	// continuing
 	theMutex.lock();
 	// Retreive the result:
-	actionQueue.insert(
-		new FP_Action(FP_set_encoded_state,NULL,NULL,&state,&theMutex));
+	actionQueue.insert(new FP_Action(FP_set_encoded_state, NULL, NULL, &state, &theMutex));
+	// Wait for other thread to unlock mutex, which means retval should be valid.
 	theMutex.lock();
 }
 
@@ -137,10 +139,9 @@ void ForwarderAsynchronous::printRoutingTable(void)
 {
 	Mutex theMutex;
 	
-	// Mutexes are unlocked by default:
+	// Print table synchronously, by waiting on a mutex
 	theMutex.lock();
-	actionQueue.insert(
-		new FP_Action(FP_print_table,NULL,NULL,NULL,&theMutex));
+	actionQueue.insert(new FP_Action(FP_print_table, NULL, NULL, NULL, &theMutex));
 	theMutex.lock();
 }
 #endif
