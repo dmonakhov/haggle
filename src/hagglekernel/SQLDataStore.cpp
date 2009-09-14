@@ -173,7 +173,7 @@ enum {
 };
 
 //------------------------------------------
-#define SQL_CREATE_TABLE_NODES_CMD "CREATE TABLE IF NOT EXISTS " TABLE_NODES " (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, type INTEGER, id BLOB UNIQUE ON CONFLICT ROLLBACK, id_str TEXT, name TEXT, bloomfilter BLOB, num_attributes INTEGER DEFAULT 0, timestamp DATE);"
+#define SQL_CREATE_TABLE_NODES_CMD "CREATE TABLE IF NOT EXISTS " TABLE_NODES " (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, type INTEGER, id BLOB UNIQUE ON CONFLICT ROLLBACK, id_str TEXT, name TEXT, bloomfilter BLOB, num_attributes INTEGER DEFAULT 0, timestamp DATE, maxmatchingdos INTEGER, threshold INTEGER);"
 enum {
 	table_nodes_rowid = 0,
 	table_nodes_type,
@@ -182,7 +182,9 @@ enum {
 	table_nodes_name,
 	table_nodes_bloomfilter,
 	table_nodes_num_attributes,
-	table_nodes_timestamp
+	table_nodes_timestamp,
+	table_nodes_maxmatchingdos,
+	table_nodes_threshold
 };
 
 //------------------------------------------
@@ -682,9 +684,9 @@ static inline char *SQL_IFACE_FROM_ROWID_CMD(const sqlite_int64 iface_rowid)
 
 // -- NODE
 
-static inline char *SQL_INSERT_NODE_CMD(const int type, const char *idStr, const char *name)
+static inline char *SQL_INSERT_NODE_CMD(const int type, const char *idStr, const char *name, const unsigned int maxmatchingdos, const unsigned int threshold)
 {
-	snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "INSERT INTO " TABLE_NODES " (type,id,id_str,name,bloomfilter) VALUES (%d,?,\'%s\',\'%s\',?);", type, idStr, name);
+	snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "INSERT INTO " TABLE_NODES " (type,id,id_str,name,bloomfilter) VALUES (%d,?,\'%s\',\'%s\',?,%d,%d);", type, idStr, name, maxmatchingdos, threshold);
 
 	return sqlcmd;
 }
@@ -855,6 +857,9 @@ Node *SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 		return NULL;
 	}
 #endif
+	// Set matching limit and threshold:
+	node->setMaxDataObjectsInMatch((unsigned int)sqlite3_column_int(in_stmt, table_nodes_maxmatchingdos));
+	node->setMatchingThreshold((unsigned int)sqlite3_column_int(in_stmt, table_nodes_threshold));
 	// set bloomfilter
 	node->getBloomfilter()->setRaw((char *)sqlite3_column_blob(in_stmt, table_nodes_bloomfilter));
 
@@ -1986,7 +1991,13 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 
 //	sqlQuery(SQL_BEGIN_TRANSACTION_CMD);
 
-	sql_cmd = SQL_INSERT_NODE_CMD((const int) node->getType(), node->getIdStr(), node->getName().c_str());
+	sql_cmd = 
+		SQL_INSERT_NODE_CMD(
+			(const int) node->getType(), 
+			node->getIdStr(), 
+			node->getName().c_str(), 
+			node->getMaxDataObjectsInMatch(), 
+			node->getMatchingThreshold());
 
 	HAGGLE_DBG("SQLcmd: %s\n", sql_cmd);
 

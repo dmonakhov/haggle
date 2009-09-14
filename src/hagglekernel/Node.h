@@ -77,6 +77,9 @@ typedef enum {
 #define NODE_METADATA_INTERFACE_ADDRESS "Address"
 #define NODE_METADATA_BLOOMFILTER "Bloomfilter"
 
+#define NODE_NUMBEROFDATAOOBJECTSPERMATCH_DEFAULT 15
+#define NODE_MATCHTHRESHOLD_DEFAULT 50
+
 typedef unsigned char NodeId_t[NODE_ID_LEN];
 
 /** */
