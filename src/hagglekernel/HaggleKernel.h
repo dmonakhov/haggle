@@ -58,6 +58,7 @@ class HaggleKernel : public EventQueue
 	DataStore *dataStore;
 	Timeval starttime;
 	bool shutdownCalled;
+	bool running; // true if running (after startup)
 	
 	/*
 	 We have a registry of registered managers, where each 

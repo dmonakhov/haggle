@@ -153,6 +153,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				LinkLibraryDependencies="false"
 				AdditionalOptions=" /subsystem:windowsce,5.02"
 				AdditionalDependencies="libeay32.lib"
 				OutputFile="$(OutDir)/haggleutils.lib"

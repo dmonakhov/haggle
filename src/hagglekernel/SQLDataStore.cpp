@@ -173,7 +173,7 @@ enum {
 };
 
 //------------------------------------------
-#define SQL_CREATE_TABLE_NODES_CMD "CREATE TABLE IF NOT EXISTS " TABLE_NODES " (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, type INTEGER, id BLOB UNIQUE ON CONFLICT ROLLBACK, id_str TEXT, name TEXT, bloomfilter BLOB, num_attributes INTEGER DEFAULT 0, timestamp DATE, maxmatchingdos INTEGER, threshold INTEGER);"
+#define SQL_CREATE_TABLE_NODES_CMD "CREATE TABLE IF NOT EXISTS " TABLE_NODES " (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, type INTEGER, id BLOB UNIQUE ON CONFLICT ROLLBACK, id_str TEXT, name TEXT, bloomfilter BLOB, num_attributes INTEGER DEFAULT 0, max_matching_dataobjects INTEGER, threshold INTEGER, timestamp DATE);"
 enum {
 	table_nodes_rowid = 0,
 	table_nodes_type,
@@ -182,9 +182,9 @@ enum {
 	table_nodes_name,
 	table_nodes_bloomfilter,
 	table_nodes_num_attributes,
-	table_nodes_timestamp,
-	table_nodes_maxmatchingdos,
-	table_nodes_threshold
+	table_nodes_max_matching_dataobjects,
+	table_nodes_threshold,
+	table_nodes_timestamp
 };
 
 //------------------------------------------
@@ -406,13 +406,13 @@ enum {
 
 // Matching Dataobject > Nodes
 //------------------------------------------
-#define SQL_CREATE_VIEW_DATAOBJECT_NODE_MATCH_CMD "CREATE VIEW " VIEW_MATCH_DATAOBJECTS_AND_NODES " AS SELECT da.dataobject_rowid as dataobject_rowid, na.node_rowid as node_rowid, count(*) as mcount, sum(na.weight) as weight, min(na.weight)=" STRINGIFY(ATTR_WEIGHT_NO_MATCH) " as doNotMatch, da.timestamp as dataobject_timestamp FROM " VIEW_MAP_DATAOBJECTS_TO_ATTRIBUTES_VIA_ROWID_DYNAMIC " as da INNER JOIN " TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID " as na ON na.attr_rowid=da.attr_rowid GROUP by da.dataobject_rowid, na.node_rowid;"
+#define SQL_CREATE_VIEW_DATAOBJECT_NODE_MATCH_CMD "CREATE VIEW " VIEW_MATCH_DATAOBJECTS_AND_NODES " AS SELECT da.dataobject_rowid as dataobject_rowid, na.node_rowid as node_rowid, count(*) as mcount, sum(na.weight) as weight, min(na.weight)=" STRINGIFY(ATTR_WEIGHT_NO_MATCH) " as dataobject_not_match, da.timestamp as dataobject_timestamp FROM " VIEW_MAP_DATAOBJECTS_TO_ATTRIBUTES_VIA_ROWID_DYNAMIC " as da INNER JOIN " TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID " as na ON na.attr_rowid=da.attr_rowid GROUP by da.dataobject_rowid, na.node_rowid;"
 enum {
 	view_match_dataobjects_and_nodes_dataobject_rowid = 0,
 	view_match_dataobjects_and_nodes_node_rowid,
 	view_match_dataobjects_and_nodes_mcount,
 	view_match_dataobjects_and_nodes_weight,
-	view_match_dataobjects_and_nodes_doNotMatch,
+	view_match_dataobjects_and_nodes_dataobject_not_match,
 	view_match_dataobjects_and_nodes_dataobject_timestamp
 };
 
@@ -426,24 +426,24 @@ enum {
 	view_match_dataobjects_and_nodes_as_ratio_node_rowid,
 	view_match_dataobjects_and_nodes_as_ratio_mcount,
 	view_match_dataobjects_and_nodes_as_ratio_weight,
-	view_match_dataobjects_and_nodes_as_ratio_doNotMatch,
+	view_match_dataobjects_and_nodes_as_ratio_dataobject_not_match,
 	view_match_dataobjects_and_nodes_as_ratio_dataobject_timestamp
 };
 
 // Matching Node > Dataobjects
 //------------------------------------------
-#define SQL_CREATE_VIEW_NODE_DATAOBJECT_MATCH_CMD "CREATE VIEW " VIEW_MATCH_NODES_AND_DATAOBJECTS " AS SELECT da.dataobject_rowid as dataobject_rowid, na.node_rowid as node_rowid, count(*) as mcount, sum(na.weight) as weight, min(na.weight)=" STRINGIFY(ATTR_WEIGHT_NO_MATCH) " as doNotMatch, da.timestamp as dataobject_timestamp FROM " VIEW_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID_DYNAMIC " as na INNER JOIN " TABLE_MAP_DATAOBJECTS_TO_ATTRIBUTES_VIA_ROWID " as da ON na.attr_rowid=da.attr_rowid GROUP by na.node_rowid, da.dataobject_rowid;"
+#define SQL_CREATE_VIEW_NODE_DATAOBJECT_MATCH_CMD "CREATE VIEW " VIEW_MATCH_NODES_AND_DATAOBJECTS " AS SELECT da.dataobject_rowid as dataobject_rowid, na.node_rowid as node_rowid, count(*) as mcount, sum(na.weight) as weight, min(na.weight)=" STRINGIFY(ATTR_WEIGHT_NO_MATCH) " as dataobject_not_match, da.timestamp as dataobject_timestamp FROM " VIEW_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID_DYNAMIC " as na INNER JOIN " TABLE_MAP_DATAOBJECTS_TO_ATTRIBUTES_VIA_ROWID " as da ON na.attr_rowid=da.attr_rowid GROUP by na.node_rowid, da.dataobject_rowid;"
 enum {
 	view_match_nodes_and_dataobjects_dataobject_rowid = 0,
 	view_match_nodes_and_dataobjects_node_rowid,
 	view_match_nodes_and_dataobjects_mcount,
 	view_match_nodes_and_dataobjects_weight,
-	view_match_nodes_and_dataobjects_doNotMatch,
+	view_match_nodes_and_dataobjects_dataobject_not_match,
 	view_match_nodes_and_dataobjects_dataobject_timestamp
 };
 
 //------------------------------------------
-#define SQL_CREATE_VIEW_NODE_DATAOBJECT_MATCH_CMD_RATED_CMD "CREATE VIEW " VIEW_MATCH_NODES_AND_DATAOBJECTS_AS_RATIO " AS SELECT 100*mcount/d.num_attributes as dataobject_ratio, 100*mcount/n.num_attributes as node_ratio, m.* FROM " VIEW_MATCH_NODES_AND_DATAOBJECTS " as m LEFT JOIN " TABLE_NODES " as n ON m.node_rowid=n.rowid LEFT JOIN " TABLE_DATAOBJECTS " as d ON m.dataobject_rowid=d.rowid WHERE doNotMatch=0 ORDER BY node_ratio desc, mcount desc;"
+#define SQL_CREATE_VIEW_NODE_DATAOBJECT_MATCH_CMD_RATED_CMD "CREATE VIEW " VIEW_MATCH_NODES_AND_DATAOBJECTS_AS_RATIO " AS SELECT 100*mcount/d.num_attributes as dataobject_ratio, 100*mcount/n.num_attributes as node_ratio, m.* FROM " VIEW_MATCH_NODES_AND_DATAOBJECTS " as m LEFT JOIN " TABLE_NODES " as n ON m.node_rowid=n.rowid LEFT JOIN " TABLE_DATAOBJECTS " as d ON m.dataobject_rowid=d.rowid WHERE dataobject_not_match=0 ORDER BY node_ratio desc, mcount desc;"
 // using count: #define SQL_CREATE_VIEW_NODE_DATAOBJECT_MATCH_CMD_RATED_CMD "CREATE VIEW " VIEW_MATCH_NODES_AND_DATAOBJECTS_AS_RATIO " AS SELECT 100*mcount/dacount as dataobject_ratio, 100*mcount/nacount as node_ratio, m.* FROM " VIEW_MATCH_NODES_AND_DATAOBJECTS " as m LEFT JOIN " VIEW_NODE_ATTRIBUTE_COUNT " as cn ON m.node_rowid=cn.node_rowid LEFT JOIN " VIEW_DATAOBJECT_ATTRIBUTE_COUNT " as cd ON m.dataobject_rowid=cd.dataobject_rowid ORDER BY 100*mcount/nacount+100*mcount/dacount desc, mcount desc;"
 enum {
 	view_match_nodes_and_dataobjects_rated_dataobject_ratio = 0,
@@ -452,7 +452,7 @@ enum {
 	view_match_nodes_and_dataobjects_rated_node_rowid,
 	view_match_nodes_and_dataobjects_rated_mcount,
 	view_match_nodes_and_dataobjects_rated_weight,
-	view_match_nodes_and_dataobjects_rated_doNotMatch,
+	view_match_nodes_and_dataobjects_rated_dataobject_not_match,
 	view_match_nodes_and_dataobjects_rated_dataobject_timestamp
 };
 
@@ -686,7 +686,7 @@ static inline char *SQL_IFACE_FROM_ROWID_CMD(const sqlite_int64 iface_rowid)
 
 static inline char *SQL_INSERT_NODE_CMD(const int type, const char *idStr, const char *name, const unsigned int maxmatchingdos, const unsigned int threshold)
 {
-	snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "INSERT INTO " TABLE_NODES " (type,id,id_str,name,bloomfilter) VALUES (%d,?,\'%s\',\'%s\',?,%d,%d);", type, idStr, name, maxmatchingdos, threshold);
+	snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "INSERT INTO " TABLE_NODES " (type,id,id_str,name,bloomfilter,max_matching_dataobjects,threshold) VALUES (%d,?,\'%s\',\'%s\',?,%d,%d);", type, idStr, name, maxmatchingdos, threshold);
 
 	return sqlcmd;
 }
@@ -858,7 +858,7 @@ Node *SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 	}
 #endif
 	// Set matching limit and threshold:
-	node->setMaxDataObjectsInMatch((unsigned int)sqlite3_column_int(in_stmt, table_nodes_maxmatchingdos));
+	node->setMaxDataObjectsInMatch((unsigned int)sqlite3_column_int(in_stmt, table_nodes_max_matching_dataobjects));
 	node->setMatchingThreshold((unsigned int)sqlite3_column_int(in_stmt, table_nodes_threshold));
 	// set bloomfilter
 	node->getBloomfilter()->setRaw((char *)sqlite3_column_blob(in_stmt, table_nodes_bloomfilter));
@@ -1991,13 +1991,8 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 
 //	sqlQuery(SQL_BEGIN_TRANSACTION_CMD);
 
-	sql_cmd = 
-		SQL_INSERT_NODE_CMD(
-			(const int) node->getType(), 
-			node->getIdStr(), 
-			node->getName().c_str(), 
-			node->getMaxDataObjectsInMatch(), 
-			node->getMatchingThreshold());
+	sql_cmd = SQL_INSERT_NODE_CMD((const int) node->getType(), node->getIdStr(), 
+		node->getName().c_str(), node->getMaxDataObjectsInMatch(), node->getMatchingThreshold());
 
 	HAGGLE_DBG("SQLcmd: %s\n", sql_cmd);
 
@@ -2810,9 +2805,9 @@ int SQLDataStore::_doNodeQuery(DataStoreNodeQuery *q)
 	
 	/* the actual query */
 	if (q->getMaxResp() > 0) {
-		snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT * FROM %s WHERE node_ratio >= %u AND mcount >= %u AND doNotMatch=0 limit %u;", VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO, q->getRatio(), q->getAttrMatch(), q->getMaxResp());
+		snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT * FROM %s WHERE node_ratio >= %u AND mcount >= %u AND dataobject_not_match=0 limit %u;", VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO, q->getRatio(), q->getAttrMatch(), q->getMaxResp());
 	} else {
-		snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT * FROM %s WHERE node_ratio >= %u AND mcount >= %u AND doNotMatch=0;", VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO, q->getRatio(), q->getAttrMatch());
+		snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT * FROM %s WHERE node_ratio >= %u AND mcount >= %u AND dataobject_not_match=0;", VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO, q->getRatio(), q->getAttrMatch());
 	}
 	
 	ret = sqlite3_prepare(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);

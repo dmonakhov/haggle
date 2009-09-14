@@ -1033,7 +1033,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory=""
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\Haggle"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>
@@ -3394,11 +3394,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\extlibs\openssl-0.9.8j\inc32\openssl\crypto.h"
+				RelativePath="..\..\..\extlibs\openssl-0.9.8j\crypto\crypto.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\extlibs\openssl-0.9.8j\crypto\crypto.h"
+				RelativePath="..\..\..\extlibs\openssl-0.9.8j\inc32\openssl\crypto.h"
 				>
 			</File>
 			<File
