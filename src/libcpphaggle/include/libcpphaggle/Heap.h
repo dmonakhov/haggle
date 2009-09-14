@@ -72,6 +72,7 @@ public:
         HeapItem *getFirst() {
                 return heap[0];
         }
+	unsigned int getSize() const { return size; }
 private:
         int increaseSize(unsigned int increase_size = HEAP_DEFAULT_INCREASE_SIZE);
         unsigned int max_size;

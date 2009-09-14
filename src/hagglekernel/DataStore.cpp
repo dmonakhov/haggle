@@ -517,7 +517,7 @@ bool DataStore::run()
 		// execute a task
 		if (++count > 10) {
 			count = 0;
-			LOG_ADD("DataStore task queue length=%lu\n", taskQ.size());
+			LOG_ADD("%s DataStore task queue length=%lu\n", Timeval::now().getAsString().c_str(), taskQ.size());
 		}
 #endif
 		mutex.unlock();

@@ -47,7 +47,7 @@ typedef enum {
 
 // Locking is provided by a mutex, so the queue should be thread safe
 /** */
-class EventQueue : Heap
+class EventQueue : public Heap
 {
 private:
         Mutex mutex;
