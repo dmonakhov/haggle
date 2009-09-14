@@ -272,8 +272,7 @@ void ForwarderProphet::_ageMetric(void)
              it != my_metrics.end(); it++) {
                 
 		// Is this node a neighbor?
-		NodeRef node = getKernel()->getNodeStore()->
-                                retrieve(id_number_to_nodeid[it->first]);
+		NodeRef node = getKernel()->getNodeStore()->retrieve(id_number_to_nodeid[it->first]);
                 
 		if (node && !node->isNeighbor()) {
 			// Update our private metric regarding this node:

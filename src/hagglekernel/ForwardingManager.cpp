@@ -124,9 +124,24 @@ void ForwardingManager::onDebugCmd(Event *e)
  */
 bool ForwardingManager::isNeighbor(NodeRef& node)
 {
-	if (node && node->getType() == NODE_TYPE_PEER && kernel->getNodeStore()->retrieve(node, true))
-                return true;
-
+	if (node && node->getType() == NODE_TYPE_PEER) {
+		/*
+		 WARNING! Previously, kernel->getNodeStore()->retrieve(node,...) was
+		 called on the same line as node->getType(), i.e.,
+		 
+		 if (node && node->getType() == NODE_TYPE_PEER && kernel->getNodeStore()->retrieve(node, true))
+			...
+		 
+		 but this could cause a potential deadlock in the NodeStore(). The first
+		 call to getType() will lock the node (through the use of the reference auto
+		 locking) and that lock will remain until the next line is executed. If
+		 getNodeStore()->retrieve() is called on the same line, the node will hence
+		 be in a locked state when accessing the node store, which is forbidden
+		 due to the risk of deadlock (see separate note in NodeStore.{h,cpp}).
+		 */
+		if (kernel->getNodeStore()->retrieve(node, true))
+			return true;
+	}
         return false;
 }
 /*
