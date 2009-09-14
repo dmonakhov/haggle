@@ -490,6 +490,9 @@ void DataStore::hookCancel()
 // This function is the thread
 bool DataStore::run()
 {
+#if defined (DEBUG)
+	static unsigned short count = 0;
+#endif
 	while (true) {
 		
 		mutex.lock();
@@ -509,7 +512,14 @@ bool DataStore::run()
 		DataStoreTask *task = taskQ.front();
 
 		taskQ.pop_front();
-
+#if defined(DEBUG)
+		// Log the queue length every tenth time we
+		// execute a task
+		if (++count > 10) {
+			count = 0;
+			LOG_ADD("DataStore task queue length=%lu\n", taskQ.size());
+		}
+#endif
 		mutex.unlock();
 
 		switch (task->getType()) {

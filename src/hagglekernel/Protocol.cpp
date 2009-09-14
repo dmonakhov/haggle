@@ -557,6 +557,9 @@ const char *Protocol::ctrlmsgToStr(struct ctrlmsg *m) const
                 case CTRLMSG_TYPE_REJECT:
                         strcpy(msg, "REJECT");
                         break;
+                case CTRLMSG_TYPE_TERMINATE:
+                        strcpy(msg, "TERMINATE");
+                        break;
                 default:
                         snprintf(msg, 30, "Unknown message type=%u", m->type);
         }
@@ -906,8 +909,12 @@ ProtocolEvent Protocol::sendDataObjectNow(const DataObjectRef& dObj)
 				} else if (m.type == CTRLMSG_TYPE_REJECT) {
 					// Reject message. Stop sending this data object:
                                         HAGGLE_DBG("%s Got REJECT control message, stop sending\n", getName());
-                                        return pEvent;
-				} 
+                                        return PROT_EVENT_REJECT;
+				} else if (m.type == CTRLMSG_TYPE_TERMINATE) {
+					// Terminate message. Stop sending this data object, and all queued ones:
+                                        HAGGLE_DBG("%s Got TERMINATE control message, purging queue\n", getName());
+                                        return PROT_EVENT_TERMINATE;
+				}
 			} else {
                                 HAGGLE_ERR("Did not receive accept/reject control message\n");
                         }
@@ -1013,11 +1020,21 @@ bool Protocol::run()
 				
 				pEvent = sendDataObjectNow(dObj);
 				
-				if (pEvent == PROT_EVENT_SUCCESS) {
+				if (pEvent == PROT_EVENT_SUCCESS || pEvent == PROT_EVENT_REJECT) {
+					// Treat reject as SUCCESS, since it probably means the peer already has the
+					// data object and we should therefore not try to send it again.
 					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, dObj, getManager()->getKernel()->getNodeStore()->retrieve(peerIface)));
 				} else {
 					// Send success/fail event with this data object
 					switch (pEvent) {
+						case PROT_EVENT_TERMINATE:
+							// TODO: What to do here?
+							// We should stop sending completely, but if we just
+							// close the connection we might just connect and start
+							// sending again. We need a way to signal that we should 
+							// not try to send to this peer again -- at least not
+							// until next time he is our neighbor. For now, treat
+							// the same way as if the peer closed the connection.
 						case PROT_EVENT_PEER_CLOSED:
 							HAGGLE_DBG("%s Peer [%s] closed its end of the connection...\n", 
 									   getName(), (peerIface ? peerIface->getName() : "n/a"));

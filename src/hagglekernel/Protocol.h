@@ -86,6 +86,8 @@ typedef enum {
 	PROT_EVENT_ERROR_FATAL = -2,
         PROT_EVENT_ERROR = -1,
         PROT_EVENT_SUCCESS = 0,
+	PROT_EVENT_REJECT, // A data object was rejected
+	PROT_EVENT_TERMINATE, // The peer does not want any more data objects in queue
 	PROT_EVENT_SEND_FAILED, // A non fatal send error.
 	PROT_EVENT_RECV_FAILED, // A non fatal recv error.
         PROT_EVENT_TIMEOUT,
@@ -177,7 +179,9 @@ class Protocol : public ManagerModule<ProtocolManager>
         typedef enum crtlmsg_type {
                 CTRLMSG_TYPE_ACK = 5, // use something which is not zero
                 CTRLMSG_TYPE_ACCEPT,
-                CTRLMSG_TYPE_REJECT,         
+                CTRLMSG_TYPE_REJECT,
+		CTRLMSG_TYPE_TERMINATE /* Terminate the transmission of data objects.
+					Currently not implemented. */
         } ctrlmsg_type_t;
 
         typedef struct ctrlmsg {
