@@ -14,9 +14,6 @@
  */ 
 
 #include <libhaggle/haggle.h>
-#include <libcpphaggle/Timeval.h>
-
-using namespace haggle;
 
 #include "smtpserver.h"
 #include "smtpd.h"
@@ -49,7 +46,8 @@ void smtp_new_email(char *from, char *to, char *message, long message_len)
 	char UID[256];
 	struct dataobject *dObj;
 	unsigned long random_id_number;
-	Timeval	now = Timeval::now();
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
 	
 	printf("Received message to send\n");
 	
@@ -60,7 +58,7 @@ void smtp_new_email(char *from, char *to, char *message, long message_len)
 	
 	// Make sure the data object is permanent:
 	haggle_dataobject_set_flags(dObj, DATAOBJECT_FLAG_PERSISTENT);
-	haggle_dataobject_set_createtime(dObj, now.getTimevalStruct());
+	haggle_dataobject_set_createtime(dObj, &tv);
 	haggle_dataobject_add_attribute(dObj, haggle_email_attribute_from, from);
 	haggle_dataobject_add_attribute(dObj, haggle_email_attribute_to, to);
 	haggle_dataobject_add_hash(dObj);
@@ -71,7 +69,7 @@ void smtp_new_email(char *from, char *to, char *message, long message_len)
 		numbers for uniqueness, but the likelihood of two 64-bit values to be 
 		the same is very slim.
 	*/
-	sprintf(UID, "%lu.%lu.%s", now.getSeconds(), random_id_number, from);
+	sprintf(UID, "%lu.%lu.%s", tv.tv_sec, random_id_number, from);
 	// Make sure that all characters are valid UID characters:
 	{
 		long	i;

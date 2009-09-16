@@ -962,9 +962,9 @@ int current_platform(void)
 		detected_platform = platform_macosx_iphone_(0,0,0);
 		strcpy(hardware_name, "iPhone");
 #elif defined(OS_MACOSX)
-		long	versMin;
-		long	versMaj;
-		long	versBugfix;
+		SInt32	versMin;
+		SInt32	versMaj;
+		SInt32	versBugfix;
 		
 		// Uses Gestalt to find the major and minor version.
 		Gestalt(gestaltSystemVersionMajor, &versMaj);

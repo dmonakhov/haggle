@@ -540,31 +540,54 @@ void Protocol::removeData(size_t len)
 	bufferDataLen -= len;
 }
 
+// NOT CONST: because we modify the last string whenever a bad message type 
+// number arrives.
+static char *controlMessage[6] = 
+	{
+		(char *) "ACK",
+		(char *) "ACCEPT",
+		(char *) "REJECT",
+		(char *) "TERMINATE",
+		(char *) "Bad control message",
+		/*
+			The ctrlmsg field "type" is an 8-bit value, so it can be converted
+			into at most 3 digits, thus the three "0"s.
+			
+			The entire string will be replaced, but the text is here as a 
+			placeholder to make sure the string is long enough
+		*/
+		(char *) "Unknown message type=000"
+	};
+
+// This returns const, because we don't want the caller to modify the original
+// strings.
 const char *Protocol::ctrlmsgToStr(struct ctrlmsg *m) const
 {
-        static char msg[30] = { "Bad control message" };
-
         if (!m)
-                return msg;
+                return controlMessage[4];
 
+        // Return the right string based on type:
         switch (m->type) {
                 case CTRLMSG_TYPE_ACK:
-                        strcpy(msg, "ACK");
+                        return controlMessage[0];
                         break;
                 case CTRLMSG_TYPE_ACCEPT:
-                        strcpy(msg, "ACCEPT");
+                        return controlMessage[1];
                         break;
                 case CTRLMSG_TYPE_REJECT:
-                        strcpy(msg, "REJECT");
+                        return controlMessage[2];
                         break;
                 case CTRLMSG_TYPE_TERMINATE:
-                        strcpy(msg, "TERMINATE");
+                        return controlMessage[3];
                         break;
                 default:
-                        snprintf(msg, 30, "Unknown message type=%u", m->type);
+                        // Sure, this is not _completely_ thread-safe, but
+						// it is unlikely to be a severe problem.
+                        snprintf(controlMessage[5], 30, "Unknown message type=%u", m->type);
+						return controlMessage[5];
         }
-
-        return msg;
+        // Shouldn't be able to get here, but still...
+        return controlMessage[4];
 }
 
 

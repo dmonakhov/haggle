@@ -14,9 +14,6 @@
  */
 
 #include <libhaggle/haggle.h>
-#include <libcpphaggle/Timeval.h>
-
-using namespace haggle;
 
 #include <string.h>
 #include <signal.h>
@@ -77,6 +74,7 @@ int main(int argc, char *argv[])
 	char *command_parameter = NULL;
 	char *attr_name = NULL;
 	char *attr_value = NULL;
+	char *file_name = NULL;
 	long attr_weight = 1;
 	
         pthread_mutex_init(&mutex, NULL);
@@ -88,7 +86,13 @@ int main(int argc, char *argv[])
 		if(strcmp(argv[i], "-p") == 0)
 		{
 			i++;
-			progname = argv[i];
+			if(i < argc)
+				progname = argv[i];
+		}else if(strcmp(argv[i], "-f") == 0)
+		{
+			i++;
+			if(i < argc)
+				file_name = argv[i];
 		}else if(command == command_none && strcmp(argv[i], "add") == 0)
 		{
 			command = command_add_interest;
@@ -172,11 +176,12 @@ int main(int argc, char *argv[])
 "Usage:\n"
 "clitool [-p <name of program>] add <attribute>\n"
 "clitool [-p <name of program>] del <attribute>\n"
-"clitool [-p <name of program>] new <attribute>\n"
+"clitool [-p <name of program>] [-f <filename>] new <attribute>\n"
 "clitool [-p <name of program>] get\n"
 "clitool [-p <name of program>] blacklist <Ethernet MAC address>\n"
 "\n"
 "-p          Allows this program to masquerade as another.\n"
+"-f          Allows this program to add a file as content to a data object.\n"
 "add         Tries to add <attribute> to the list of interests for this\n"
 "            application.\n"
 "del         Tries to remove <attribute> from the list of interests for this\n"
@@ -229,25 +234,32 @@ int main(int argc, char *argv[])
 		case command_new_dataobject:
 		{
 			struct dataobject *dObj;
-			Timeval	now = Timeval::now();
+			struct timeval tv;
+			gettimeofday(&tv, NULL);
 			
 			// New data object:
-			dObj = haggle_dataobject_new();
+			if(file_name == NULL)
+				dObj = haggle_dataobject_new();
+			else
+				dObj = haggle_dataobject_new_from_file(file_name);
 			
-			// Set create time:
-			haggle_dataobject_set_createtime(dObj, now.getTimevalStruct());
-			// Add attribute:
-			haggle_dataobject_add_attribute(
-				dObj, 
-				attr_name, 
-				attr_value);
-			// Make sure the data object is permanent:
-			haggle_dataobject_set_flags(
-				dObj, 
-				DATAOBJECT_FLAG_PERSISTENT);
-			
-			// Publish:
-			haggle_ipc_publish_dataobject(haggle_, dObj);
+			if(dObj != NULL)
+			{
+				// Set create time:
+				haggle_dataobject_set_createtime(dObj, &tv);
+				// Add attribute:
+				haggle_dataobject_add_attribute(
+					dObj, 
+					attr_name, 
+					attr_value);
+				// Make sure the data object is permanent:
+				haggle_dataobject_set_flags(
+					dObj, 
+					DATAOBJECT_FLAG_PERSISTENT);
+				
+				// Publish:
+				haggle_ipc_publish_dataobject(haggle_, dObj);
+			}
 		}
 		break;
 		

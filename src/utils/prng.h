@@ -16,8 +16,12 @@
 #ifndef __PRNG_H__
 #define __PRNG_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
-	Pseudo-random number generation library for the haggle emailing proxy.
+	Pseudo-random number generation library
 */
 
 /*
@@ -36,5 +40,10 @@ unsigned char prng_uint8(void);
 	Returns a 32-bit random number.
 */
 unsigned long prng_uint32(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

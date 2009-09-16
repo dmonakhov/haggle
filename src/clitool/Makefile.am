@@ -1,15 +1,13 @@
 bin_PROGRAMS=clitool
-clitool_SOURCES=clitool.cpp prng.cpp
+clitool_SOURCES=clitool.cpp
 
 CPPFLAGS += -I$(top_builddir)/src/libhaggle/include 
 CPPFLAGS += -I$(top_builddir)/src/utils 
-CPPFLAGS += -I$(top_builddir)/src/libcpphaggle/include
 LDFLAGS += -lhaggle -L$(top_builddir)/src/libhaggle/
 LDFLAGS += -lhaggleutils -L$(top_builddir)/src/utils/
-LDFLAGS += -lcpphaggle -L$(top_builddir)/src/libcpphaggle
 LDFLAGS +=-lxml2
 
-EXTRA_DIST= prng.h
+EXTRA_DIST=
 
 CFLAGS += -std=gnu99
 
