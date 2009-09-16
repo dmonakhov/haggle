@@ -94,3 +94,24 @@ testsuite/test_utils/bloom
 testsuite/test_utils/bloom_count
 testsuite/test_utils/shatest
 testsuite/test_utils/test64
+*.ncb
+*.suo
+*.vcproj.*
+*.csproj.*
+Windows Mobile * SDK (ARMV4I)
+windows/Haggle/Debug/
+windows/Haggle/Haggle/Debug
+windows/MailProxy/Debug
+windows/MailProxy/MailProxy/Debug
+windows/OpenSSL/Crypto/Debug
+windows/WebServer/Debug
+windows/WebServer/WebServer/Debug
+windows/haggleutils/haggleutils/Debug
+windows/libcpphaggle/Debug
+windows/libhaggle/libhaggle/Debug
+windows/libxml2/libxml2/Debug
+windows/sqlite3/sqlite3/Debug
+winmobile/Haggle/Haggle.aps
+winmobile/HaggleInstaller/Debug*
+winmobile/LibHaggleCS/obj
+winmobile/PhotoShare/obj
