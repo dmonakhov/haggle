@@ -155,7 +155,7 @@
 				Name="VCLibrarianTool"
 				LinkLibraryDependencies="false"
 				AdditionalOptions=" /subsystem:windowsce,5.02"
-				AdditionalDependencies="libeay32.lib"
+				AdditionalDependencies="IPHLPAPI.lib"
 				OutputFile="$(OutDir)/haggleutils.lib"
 				AdditionalLibraryDirectories="$(OutDir)"
 			/>
@@ -236,7 +236,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalOptions=" /subsystem:windowsce,5.02"
-				AdditionalDependencies="libeay32.lib"
+				AdditionalDependencies="libeay32.lib IPHLPAPI.lib"
 				OutputFile="$(OutDir)/haggleutils.lib"
 				AdditionalLibraryDirectories="$(OutDir)"
 			/>
@@ -1477,6 +1477,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\utils\prng.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\utils\utils.c"
 				>
 			</File>
@@ -1500,6 +1504,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\utils\haggleutils.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\utils\prng.h"
 				>
 			</File>
 			<File

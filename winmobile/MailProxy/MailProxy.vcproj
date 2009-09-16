@@ -161,7 +161,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions=" /subsystem:windowsce,5.02"
-				AdditionalDependencies="libhaggle.lib haggleutils.lib libcpphaggle.lib ws2.lib iphlpapi.lib"
+				AdditionalDependencies="libhaggle.lib haggleutils.lib ws2.lib iphlpapi.lib"
 				OutputFile="$(OutDir)/MailProxy.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(OutDir)"
@@ -596,10 +596,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\proxy\prng.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\proxy\smtpd.cpp"
 				>
 			</File>
@@ -635,10 +631,6 @@
 			</File>
 			<File
 				RelativePath="..\..\src\proxy\popserver.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\proxy\prng.h"
 				>
 			</File>
 			<File

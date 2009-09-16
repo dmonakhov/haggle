@@ -13,6 +13,7 @@
  * limitations under the License.
  */ 
 
+#include <utils.h>
 #include <libhaggle/haggle.h>
 
 #if defined(OS_LINUX) || defined(OS_MACOSX)
@@ -42,7 +43,6 @@
 
 #include "popd.h"
 #include "databuf.h"
-#include <utils.h>
 
 #include <stdio.h>
 

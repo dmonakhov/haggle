@@ -13,6 +13,10 @@
  * limitations under the License.
  */ 
 
+#if defined(WIN32) || defined(WINCE)
+#define OS_WINDOWS
+#endif
+
 #include <time.h>
 #include "utils.h"
 
@@ -28,7 +32,7 @@ void prng_init(void)
 	srandom(time(NULL));
 #elif defined(OS_WINDOWS)
 	struct timeval tv;
-	gettimeofday(&tv);
+	gettimeofday(&tv, NULL);
 	srand(tv.tv_usec);
 #endif
 }

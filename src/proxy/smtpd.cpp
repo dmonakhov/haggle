@@ -13,6 +13,7 @@
  * limitations under the License.
  */ 
 
+#include <utils.h>
 #include <libhaggle/haggle.h>
 
 #include "smtpd.h"
@@ -45,8 +46,6 @@
 #include <winerror.h>
 #include <iphlpapi.h>
 #endif
-
-#include <utils.h>
 
 // Removes the define of printf from utils.h 
 #undef printf 

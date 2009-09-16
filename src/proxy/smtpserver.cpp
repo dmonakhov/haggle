@@ -13,6 +13,7 @@
  * limitations under the License.
  */ 
 
+#include <utils.h>
 #include <libhaggle/haggle.h>
 
 #include "smtpserver.h"
