@@ -232,27 +232,38 @@ then
 	dnl no media support for Linux
 	have_media=no
 
-	# Check for D-Bus
-	DBUS_INCLUDES="`pkg-config --cflags dbus-1`"
-	DBUS_LIBS="`pkg-config --libs dbus-1`"
-	save_CPPFLAGS=${CPPFLAGS}
-	CPPFLAGS="${CPPFLAGS} ${DBUS_INCLUDES}"
+	dnl Check for D-Bus
 	have_dbus=no
-	AC_CHECK_LIB(dbus-1,dbus_bus_get,
-			[AC_CHECK_HEADERS([dbus-1.0/dbus/dbus.h],have_dbus=yes,AC_MSG_RESULT(You have libdbus-1 but not the development headers))],AC_MSG_RESULT(D-Bus not found...),)
-	AC_MSG_CHECKING([for D-Bus])							     
-	AC_MSG_RESULT([$have_dbus])
 
-	if test x$have_dbus = xyes; 
+	AC_ARG_ENABLE([dbus],
+	AS_HELP_STRING([--disable-dbus],[Disable D-Bus support]),
+	[case "${enableval}" in
+	  yes) dbus=yes ;;
+	  no)  dbus=no ;;
+	 *) AC_MSG_ERROR([bad value ${enableval} for --disable-dbus]) ;;
+	esac],[dbus=yes])
+
+
+	if test x$dbus = xyes
 	then
-		AC_DEFINE([HAVE_DBUS], 1, [D-Bus support])
-		AC_CHECK_LIB(dbus-1,dbus_watch_get_unix_fd, 
-		AC_DEFINE([HAVE_DBUS_WATCH_GET_UNIX_FD], 1, [Have dbus_watch_get_unix_fd function]),
-		AC_DEFINE([HAVE_DBUS_WATCH_GET_UNIX_FD], 0, [Does not have dbus_watch_get_unix_fd function]),,)
-		AC_SUBST(DBUS_INCLUDES)
-		AC_SUBST(DBUS_LIBS)
-	fi
-	CPPFLAGS=${save_CPPFLAGS}
+		# Check for D-Bus
+		DBUS_INCLUDES="`pkg-config --cflags dbus-1`"
+		DBUS_LIBS="`pkg-config --libs dbus-1`"
+		save_CPPFLAGS=${CPPFLAGS}
+		CPPFLAGS="${CPPFLAGS} ${DBUS_INCLUDES}"
+		AC_CHECK_LIB(dbus-1,dbus_bus_get,
+			[AC_CHECK_HEADERS([dbus-1.0/dbus/dbus.h],have_dbus=yes,AC_MSG_RESULT(You have libdbus-1 but not the development headers))],AC_MSG_RESULT(D-Bus not found...),)
+		AC_MSG_CHECKING([for D-Bus])							      		 AC_MSG_RESULT([$have_dbus])
+
+		if test x$have_dbus = xyes; 
+		then
+			AC_DEFINE([HAVE_DBUS], 1, [D-Bus support])
+			AC_CHECK_LIB(dbus-1,dbus_watch_get_unix_fd, AC_DEFINE([HAVE_DBUS_WATCH_GET_UNIX_FD], 1, [Have dbus_watch_get_unix_fd function]), AC_DEFINE([HAVE_DBUS_WATCH_GET_UNIX_FD], 0, [Does not have dbus_watch_get_unix_fd function]),,)
+			AC_SUBST(DBUS_INCLUDES)
+			AC_SUBST(DBUS_LIBS)	
+		fi
+		CPPFLAGS=${save_CPPFLAGS}
+	fi				
 fi
 
 AM_CONDITIONAL(HAVE_DBUS, [test x$have_dbus = xyes])
@@ -606,6 +617,10 @@ echo Use C++ exceptions......... : $exceptions
 echo Use C++ STL................ : $stl
 echo Java bindings.............. : $java_bindings
 echo UNIX domain socket for IPC. : $unix_socket
+if test x$haggle_os_linux = xtrue
+then
+	echo D-Bus support.............. : $have_dbus
+fi
 echo Extractor support.......... : $have_extractor
 # echo OMNeT++ support............ : $omnetpp
 echo Use bundled Sqlite......... : $bundled_sqlite
