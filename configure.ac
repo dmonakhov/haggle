@@ -253,7 +253,8 @@ then
 		CPPFLAGS="${CPPFLAGS} ${DBUS_INCLUDES}"
 		AC_CHECK_LIB(dbus-1,dbus_bus_get,
 			[AC_CHECK_HEADERS([dbus-1.0/dbus/dbus.h],have_dbus=yes,AC_MSG_RESULT(You have libdbus-1 but not the development headers))],AC_MSG_RESULT(D-Bus not found...),)
-		AC_MSG_CHECKING([for D-Bus])							      		 AC_MSG_RESULT([$have_dbus])
+		AC_MSG_CHECKING([for D-Bus])	
+     		AC_MSG_RESULT([$have_dbus])
 
 		if test x$have_dbus = xyes; 
 		then
