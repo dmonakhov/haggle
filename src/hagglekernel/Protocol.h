@@ -346,7 +346,7 @@ protected:
         /**
            Convert control message to human readable format.
          */
-        const char *ctrlmsgToStr(struct ctrlmsg *m) const;
+        const string ctrlmsgToStr(struct ctrlmsg *m) const;
 public:	
         /**
            Constructor. May throw an exception to show it was unable to create.
