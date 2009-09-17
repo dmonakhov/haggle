@@ -163,8 +163,10 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 		libhaggle_debug_init();
 		break;
 	case DLL_THREAD_ATTACH:
+		libhaggle_debug_init();
 		break;
 	case DLL_THREAD_DETACH:
+		libhaggle_debug_fini();
 		break;
 	case DLL_PROCESS_DETACH:
 		libhaggle_debug_fini();
@@ -1177,7 +1179,7 @@ start_ret_t haggle_event_loop(void *arg)
                         event_loop_signal_lower(hh);
 			break;
                 } else if (ret == EVENT_LOOP_SOCKET_READABLE)  {
-                        
+                       
                         ret = recv(hh->sock, eventbuf, BUFLEN, 0);
                         
                         if (ret == SOCKET_ERROR) {

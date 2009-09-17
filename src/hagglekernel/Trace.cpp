@@ -174,7 +174,7 @@ LogTrace::LogTrace(void)
 	traceFile = fopen(filename.c_str(), "a");
 
 	if (traceFile) {
-		addToLog("\n\n%s: Log started, fd=%d\n", Timeval::now().getAsString().c_str(), fileno(traceFile));
+		addToLog("\n\n%s: Log started, fd=%ld\n", Timeval::now().getAsString().c_str(), fileno(traceFile));
 	} else {
 		fprintf(stderr,"Unable to open log file!\n");
 	}

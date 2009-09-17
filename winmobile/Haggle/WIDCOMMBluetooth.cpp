@@ -4,6 +4,7 @@
 
 #include <msgqueue.h>
 #include <libcpphaggle/Exception.h>
+#include "Trace.h"
 
 WIDCOMMBluetooth *WIDCOMMBluetooth::stack = NULL;
 WIDCOMMBluetooth::StackInitializer WIDCOMMBluetooth::stackInit;
@@ -17,13 +18,11 @@ WIDCOMMBluetooth::StackInitializer::~StackInitializer()
 	WIDCOMMBluetooth::cleanup();
 }
 
-WIDCOMMBluetooth::WIDCOMMBluetooth() : CBtIf(), mutex("WIDCOMM"), hMsgQ(NULL), hStackEvent(NULL), 
-	hInquiryEvent(NULL), hDiscoveryEvent(NULL), inquiryCallback(NULL), discoveryCallback(NULL),
-	inquiryData(NULL), discoveryData(NULL), isInInquiry(false), isInDiscovery(false)
+WIDCOMMBluetooth::WIDCOMMBluetooth() : CBtIf(), hMsgQ(NULL), hStackEvent(CreateEvent(NULL, FALSE, FALSE, NULL)), 
+	hInquiryEvent(CreateEvent(NULL, FALSE, FALSE, NULL)), hDiscoveryEvent(CreateEvent(NULL, FALSE, FALSE, NULL)), 
+	inquiryCallback(NULL), discoveryCallback(NULL), inquiryData(NULL), discoveryData(NULL), 
+	isInInquiry(false), isInDiscovery(false)
 {
-	hStackEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-	hInquiryEvent = CreateEvent(NULL, FALSE, FALSE, NULL);	
-	hDiscoveryEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
 
 WIDCOMMBluetooth::~WIDCOMMBluetooth()
@@ -131,8 +130,6 @@ void WIDCOMMBluetooth::OnDeviceResponded(BD_ADDR bda, DEV_CLASS devClass, BD_NAM
 	rd.name = (char *)bdName;
 	rd.bConnected = (bConnected == TRUE) ? true : false;
 
-	mutex.lock();
-	
 	/*
 		Check first if the device is already in the cache. For some reason, the stack 
 		sometimes calls	this handler function several times for the same device.
@@ -141,14 +138,11 @@ void WIDCOMMBluetooth::OnDeviceResponded(BD_ADDR bda, DEV_CLASS devClass, BD_NAM
 	for (List<struct RemoteDevice>::iterator it = inquiryCache.begin(); it != inquiryCache.end(); ++it) {
 		if (memcmp((*it).bda, bda, sizeof(BD_ADDR)) == 0) {
 			rd = *it;
-			mutex.unlock();
 			return;
 		}
 	}
 	inquiryCache.push_back(rd);
 	inquiryResult++;
-
-	mutex.unlock();
 
 	if (inquiryCallback)
 		inquiryCallback(&rd, inquiryData);
@@ -177,9 +171,7 @@ int WIDCOMMBluetooth::_doInquiry(widcomm_inquiry_callback_t callback, void *data
 	// Make sure the event is not set
 	ResetEvent(hInquiryEvent);
 
-	mutex.lock();
 	inquiryCache.clear();
-	mutex.unlock();
 
 	if (StartInquiry() == FALSE) {
 		isInInquiry = false;
@@ -189,9 +181,12 @@ int WIDCOMMBluetooth::_doInquiry(widcomm_inquiry_callback_t callback, void *data
 	// Once we successfully started the inquiry, the isInInquiry boolean
 	// will be reset to 'false' by the OnInquiryComplete callback
 	if (!async) {
+		printf("Waiting for inquiry to complete\n");
 		if (WaitForSingleObject(hInquiryEvent, INFINITE) == WAIT_FAILED) {
+			fprintf(stderr, "Inquiry failed\n");
 			return -1;
 		}
+		printf("Inquiry completed\n");
 		return inquiryResult;
 	}
 	return 0;
@@ -210,7 +205,12 @@ int WIDCOMMBluetooth::doInquiryAsync(widcomm_inquiry_callback_t callback, void *
 void WIDCOMMBluetooth::stopInquiry()
 {
 	stack->StopInquiry();
-	stack->isInInquiry = false;
+
+	if (stack->isInInquiry) {
+		stack->isInInquiry = false;
+		// Make sure we fire the event in case someone is waiting on it
+		SetEvent(stack->hInquiryEvent);
+	}
 }
 
 void WIDCOMMBluetooth::OnDiscoveryComplete()
@@ -227,16 +227,12 @@ void WIDCOMMBluetooth::OnDiscoveryComplete()
 	if (num_records == 0)
 		goto out;
 
-	mutex.lock();
-
 	for (List<struct RemoteDevice>::iterator it = inquiryCache.begin(); it != inquiryCache.end(); ++it) {
 		if (memcmp((*it).bda, bdaddr, sizeof(BD_ADDR)) == 0) {
 			rd = *it;
 			recordFound = true;
 		}
 	}
-
-	mutex.unlock();
 
 	if (!recordFound)
 		goto out;
@@ -271,6 +267,7 @@ int WIDCOMMBluetooth::_doDiscovery(const RemoteDevice *rd, GUID *guid, widcomm_d
 	discoveryData = data;
 	discoveryResult = 0;
 
+	HAGGLE_DBG("Starting Bluetooth discovery for device %s\n", rd->name.c_str());
 	// Make sure the event is not set
 	ResetEvent(hDiscoveryEvent);
 
@@ -284,9 +281,12 @@ int WIDCOMMBluetooth::_doDiscovery(const RemoteDevice *rd, GUID *guid, widcomm_d
 	// Once we successfully started the inquiry, the isInDiscovery boolean
 	// will be reset to 'false' by the OnDiscoveryComplete callback
 	if (!async) {
+		HAGGLE_DBG("Waiting for discovery to complete\n");
 		if (WaitForSingleObject(hDiscoveryEvent, INFINITE) == WAIT_FAILED) {
+			HAGGLE_ERR("Discovery failed\n");
 			return -1;
 		}
+		HAGGLE_DBG("Discovery completed\n");
 		return discoveryResult;
 	}
 

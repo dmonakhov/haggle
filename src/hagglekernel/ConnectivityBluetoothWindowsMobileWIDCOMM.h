@@ -37,6 +37,7 @@ private:
 	CSdpService *sdp;
         friend void bluetoothDiscovery(ConnectivityBluetooth *conn);
         friend void serviceDiscoveryCallback(struct RemoteDevice *rd, CSdpDiscoveryRec *records, int num_records, void *data);
+	void hookStopOrCancel();
         bool run();
         void hookCleanup();
 public:

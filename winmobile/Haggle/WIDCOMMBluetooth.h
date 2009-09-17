@@ -117,7 +117,6 @@ class WIDCOMMBluetooth : public CBtIf
 	static StackInitializer stackInit;
 	List<struct RemoteDevice> inquiryCache; // Cache of discovered devices
 	List<struct RemoteDevice>::iterator inquiryCacheIterator; // Iterator to enumerate remote devices
-	Mutex mutex; // To protect the inquiry cache
 	HANDLE hMsgQ;
 	HANDLE hStackEvent;
 	HANDLE hInquiryEvent;  // Used to synchronize inquiry
@@ -126,8 +125,8 @@ class WIDCOMMBluetooth : public CBtIf
 	widcomm_discovery_callback_t discoveryCallback; // Service record callback for the asynchronous API
 	void *inquiryData;
 	void *discoveryData;
-	volatile bool isInInquiry;
-	volatile bool isInDiscovery;
+	bool isInInquiry;
+	bool isInDiscovery;
 	int inquiryResult;
 	int discoveryResult;
 
