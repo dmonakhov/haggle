@@ -366,10 +366,8 @@ ProtocolError Protocol::getProtocolError()
 const char *Protocol::getProtocolErrorStr()
 {
 	static char *errStr = NULL;
+	static const char *unknownErrStr = "Unknown error";
 	LPVOID lpMsgBuf;
-
-	if (errStr)
-		delete [] errStr;
 
 	DWORD len = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
 				  NULL,
@@ -379,12 +377,20 @@ const char *Protocol::getProtocolErrorStr()
 				  0,
 				  NULL);
 	if (len) {
-		errStr = new char[len + 1];
+		if (errStr && (strlen(errStr) < len)) {
+			delete [] errStr;
+			errStr = NULL;
+		}
+		if (errStr == NULL)
+			errStr = new char[len + 1];
+
 		sprintf(errStr, "%s", reinterpret_cast < TCHAR * >(lpMsgBuf));
 		LocalFree(lpMsgBuf);
-	}
-	return errStr;
-	//return (error < _PROT_ERROR_MAX && error > _PROT_ERROR_MIN) ? errorStr[error] : "Bad error";
+
+		return errStr;
+	} 
+
+	return unknownErrStr;
 }
 #endif
 

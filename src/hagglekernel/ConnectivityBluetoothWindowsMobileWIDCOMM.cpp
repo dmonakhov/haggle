@@ -105,6 +105,8 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 		return;
 	}
 
+	CM_DBG("Inquiry done\n");
+
 	while (true) {
 		InterfaceStatus_t status;
 		const RemoteDevice *rd = WIDCOMMBluetooth::getNextRemoteDevice();
@@ -125,6 +127,8 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 			
 			convertUUIDBytesToGUID((char *)uuid, &guid);
 			
+			CM_DBG("Starting discovery for device %s\n", rd->name.c_str());
+
 			int ret = WIDCOMMBluetooth::doDiscovery(rd, &guid);
 
 			if (ret > 0) {
@@ -150,6 +154,11 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 		}
 	}
 	CM_DBG("Found %d Haggle devices\n", count);
+}
+
+void ConnectivityBluetooth::hookStopOrCancel()
+{
+	WIDCOMMBluetooth::stopInquiry();
 }
 
 void ConnectivityBluetooth::hookCleanup()

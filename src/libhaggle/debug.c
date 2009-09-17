@@ -41,7 +41,7 @@ int libhaggle_debug_init()
 #ifdef WINCE
 	const char *path = platform_get_path(PLATFORM_PATH_DATA, "/libhaggle.txt");
 
-	if (!path)
+	if (!path || tr_out || tr_err)
 		return -1;
 
 	tr_out = tr_err = fopen(path, "w");

@@ -2604,8 +2604,9 @@ int SQLDataStore::_doDOQuery(NodeRef &node, NodeRef alsoThisBF, DataStoreQueryRe
 	int num_match = 0;
 	
 	sqlite_int64 node_rowid = getNodeRowId(node);
-	if(node_rowid == -1){
-		HAGGLE_DBG("No rowid for node\n", sql_cmd);
+
+	if (node_rowid == -1 ){
+		HAGGLE_DBG("No rowid for node %s\n", sql_cmd, node->getName().c_str());
 		return 0;
 	}
 
