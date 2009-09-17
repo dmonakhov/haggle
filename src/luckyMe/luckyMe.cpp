@@ -370,6 +370,26 @@ void eventLoop() {
 	}
 }
 
+void onInterests(struct dataobject *dObj, void* nix)
+{
+	if(haggle_dataobject_get_attribute_by_name(dObj, APP_NAME) != NULL)
+	{
+		// We already have some interests, so we don't create any new ones.
+		
+		// In the future, we might want to delete the old interests, and
+		// create new ones... depending on the circumstances.
+		// If so, that code would fit here. 
+	}else{
+		// No old interests: Create new interests.
+		if (gridSize > 0) {
+			createInterestGrid();
+		} else {
+			createInterestBinomial();
+		}
+	}
+	haggle_dataobject_free(dObj);
+}
+
 #ifdef OS_WINDOWS_MOBILE
 int wmain()
 {	
@@ -394,6 +414,7 @@ int wmain()
 		// register callback for new data objects
 		// haggle_ipc_register_event_interest(haggleHandle, LIBHAGGLE_EVENT_NEW_DATAOBJECT, onDataobject);
 		haggle_ipc_register_event_interest(haggleHandle, LIBHAGGLE_EVENT_HAGGLE_SHUTDOWN, onShutdown);
+		haggle_ipc_register_event_interest(haggleHandle, LIBHAGGLE_EVENT_INTEREST_LIST, onInterests);
 		
 		// reset random number generator
 		struct timeval t;
@@ -403,12 +424,8 @@ int wmain()
 		// start Haggle eventloop
 		haggle_event_loop_run_async(haggleHandle);
 
-		// create interests
-		if (gridSize > 0) {
-			createInterestGrid();
-		} else {
-			createInterestBinomial();
-		}
+		// retreive interests:
+		haggle_ipc_get_application_interests_async(haggleHandle);
 		
 		// start luckyMe eventloop 
 		// (data objects are created in intervals from within this eventloop)
