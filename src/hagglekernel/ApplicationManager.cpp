@@ -412,8 +412,7 @@ int ApplicationManager::sendToAllApplications(DataObjectRef& dObj, long eid)
 	for (NodeRefList::iterator it = apps.begin(); it != apps.end(); it++) {
 		NodeRef& app = *it;
 
-		DataObjectRef sendDO = DataObjectRef(dObj->copy(), 
-			"DataObject[App=" + app->getName() + "]");
+		DataObjectRef sendDO = DataObjectRef(dObj->copy(), "DataObject[App=" + app->getName() + "]");
 
 #ifdef DEBUG_APPLICATION_API
                         char *raw;
@@ -428,7 +427,7 @@ int ApplicationManager::sendToAllApplications(DataObjectRef& dObj, long eid)
 #endif
 		sendToApplication(sendDO, app);
 		numSent++;
-		HAGGLE_DBG("Sent event to application %s\n", app->getName().c_str());
+		HAGGLE_DBG("Sent event id=%ld to application %s\n", eid, app->getName().c_str());
 	}
 
 	return numSent;
