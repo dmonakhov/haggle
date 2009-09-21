@@ -151,10 +151,102 @@ wchar_t *strtowstr(const char *str)
 static char path[MAX_PATH_LEN + 1];
 
 #if defined(OS_WINDOWS_MOBILE)
+static int has_haggle_folder(LPCWSTR path)
+{
+	WCHAR	my_path[MAX_PATH+1];
+	long	i, len;
+	WIN32_FILE_ATTRIBUTE_DATA	data;
+	
+	len = MAX_PATH;
+	for(i = 0; i < MAX_PATH && len == MAX_PATH; i++)
+	{
+		my_path[i] = path[i];
+		if(my_path[i] == 0)
+			len = i;
+	}
+	if(len == MAX_PATH)
+		return 0;
+	i = -1;
+	do{
+		i++;
+		my_path[len+i] = DEFAULT_STORAGE_PATH_POSTFIX[i];
+	}while(DEFAULT_STORAGE_PATH_POSTFIX[i] != 0 && i < 15);
+	if(GetFileAttributesEx(my_path, GetFileExInfoStandard, &data))
+	{
+		return (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+	}else{
+		return 0;
+	}
+}
+
+#include <projects.h>
+#pragma comment(lib,"note_prj.lib")
+void fill_in_default_path()
+{
+	HANDLE	find_handle;
+	WIN32_FIND_DATA	find_data;
+	WCHAR best_path[MAX_PATH+1];
+	int best_path_has_haggle_folder;
+	ULARGE_INTEGER best_avail, best_size;
+	long i;
+	
+	// Start with the application data folder, as a fallback:
+	if (!SHGetSpecialFolderPath(NULL, best_path, CSIDL_APPDATA, FALSE)) {
+		best_path[0] = 0;
+		best_avail.QuadPart = 0;
+		best_size.QuadPart = 0;
+		best_path_has_haggle_folder = 0;
+	}else{
+		GetDiskFreeSpaceEx(best_path, &best_avail, &best_size, NULL);
+		best_path_has_haggle_folder = has_haggle_folder(best_path);
+	}
+	fprintf(stderr,"Found data card path: \"%ls\" (size: %I64d/%I64d, haggle folder: %s)\n", 
+		best_path, best_avail, best_size,
+		best_path_has_haggle_folder?"Yes":"No");
+
+	find_handle = FindFirstFlashCard(&find_data);
+	if(find_handle != INVALID_HANDLE_VALUE)
+	{
+		do{
+			// Ignore the root directory (this has been checked for above)
+			if(find_data.cFileName[0] != 0)
+			{
+				ULARGE_INTEGER	avail, size, free;
+				int haggle_folder;
+				
+				GetDiskFreeSpaceEx(find_data.cFileName, &avail, &size, &free);
+				haggle_folder = has_haggle_folder(find_data.cFileName);
+				fprintf(stderr,"Found data card path: \"%ls\" (size: %I64d/%I64d, haggle folder: %s)\n", 
+					find_data.cFileName, avail, size,
+					haggle_folder?"Yes":"No");
+				// is this a better choice than the previous one?
+				// FIXME: should there be any case when a memory card is not used?
+				if(1)
+				{
+					// Yes.
+					
+					// Save this as the path to use:
+					for(i = 0; i < MAX_PATH; i++)
+						best_path[i] = find_data.cFileName[i];
+					best_avail = avail;
+					best_size = size;
+					best_path_has_haggle_folder = haggle_folder;
+				}
+			}
+		}while(FindNextFlashCard(find_handle, &find_data));
+
+		FindClose(find_handle);
+	}
+	// Convert the path to normal characters.
+	for(i = 0; i < MAX_PATH; i++)
+		path[i] = (char) best_path[i];
+}
+
 const char *platform_get_path(path_type_t type, const char *append)
 {
-        wchar_t login1[MAX_PATH];
 	long len = 0;
+	
+        wchar_t login1[MAX_PATH];
         int wintype = 0;
         
         switch (type) {
@@ -163,6 +255,9 @@ const char *platform_get_path(path_type_t type, const char *append)
                         break;
                 case PLATFORM_PATH_DATA:
                         wintype = CSIDL_APPDATA;
+						fill_in_default_path();
+						len = strlen(path);
+						goto path_valid;
                         break;
                 case PLATFORM_PATH_TEMP:
                         wintype = CSIDL_APPDATA;
@@ -177,8 +272,7 @@ const char *platform_get_path(path_type_t type, const char *append)
 	for (len = 0; login1[len] != 0; len++)
 		path[len] = (char) login1[len];
 
-	path[len] = '\0';
-
+path_valid:
         if (type == PLATFORM_PATH_PROGRAM || 
 		type == PLATFORM_PATH_DATA || 
 		type == PLATFORM_PATH_TEMP) {
@@ -197,32 +291,58 @@ const char *platform_get_path(path_type_t type, const char *append)
 
 const char *platform_get_path(path_type_t type, const char *append)
 {
-        wchar_t *login1;
+#if 0 // Only on Windows Vista
+	wchar_t *login1;
+#else
+	wchar_t login1[256];
+#endif
 	long len = 0;
+#if 0 // Only on Windows Vista
         GUID wintype;
-        
+#else
+	int folder;
+#endif
         switch (type) {
                 case PLATFORM_PATH_PROGRAM:
+#if 0 // Only on Windows Vista
                         wintype = FOLDERID_ProgramFiles;
-                        break;
+#else
+			folder = CSIDL_PROGRAM_FILES;
+#endif
+			break;
                 case PLATFORM_PATH_DATA:
+#if 0 // Only on Windows Vista
                         wintype = FOLDERID_LocalAppData;
+#else
+			folder = CSIDL_LOCAL_APPDATA;
+#endif
                         break;
                 case PLATFORM_PATH_TEMP:
+#if 0 // Only on Windows Vista
                         wintype = FOLDERID_LocalAppData;
+#else
+			folder = CSIDL_LOCAL_APPDATA;
+#endif
                         break;
                 default:
                         return NULL;
         }
 
-	if (SHGetKnownFolderPath(&wintype, 0, NULL, &login1) != S_OK) {
+#if 0 // Only on Windows Vista
+	if (SHGetKnownFolderPath(&wintype, 0, NULL, &login1) != S_OK)
+#else
+	if(SHGetFolderPath(NULL, folder, NULL, SHGFP_TYPE_CURRENT, login1) != S_OK)
+#endif
+	{
 		return NULL;
 	}
 	for (len = 0; login1[len] != 0; len++)
 		path[len] = (char) login1[len];
 
 	path[len] = '\0';
+#if 0 // Only on Windows Vista
 	CoTaskMemFree(login1);
+#endif
 
         if (type == PLATFORM_PATH_PROGRAM || 
 		type == PLATFORM_PATH_DATA || 

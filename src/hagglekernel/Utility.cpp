@@ -239,21 +239,97 @@ char *fill_in_default_path()
         return fill_prefix_and_suffix(login);
 }
 #elif defined(OS_WINDOWS_MOBILE)
+static bool has_haggle_folder(LPCWSTR path)
+{
+	WCHAR	my_path[MAX_PATH+1];
+	long	i, len;
+	WIN32_FILE_ATTRIBUTE_DATA	data;
+	
+	len = MAX_PATH;
+	for(i = 0; i < MAX_PATH && len == MAX_PATH; i++)
+	{
+		my_path[i] = path[i];
+		if(my_path[i] == 0)
+			len = i;
+	}
+	if(len == MAX_PATH)
+		return false;
+	i = -1;
+	do{
+		i++;
+		my_path[len+i] = DEFAULT_STORAGE_PATH_SUFFIX[i];
+	}while(DEFAULT_STORAGE_PATH_SUFFIX[i] != 0 && i < 15);
+	if(GetFileAttributesEx(my_path, GetFileExInfoStandard, &data))
+	{
+		return (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+	}else{
+		return false;
+	}
+}
+
+#include <projects.h>
+#pragma comment(lib,"note_prj.lib")
 char *fill_in_default_path()
 {
-        wchar_t login1[MAX_PATH];
-	char login[MAX_PATH];
+	HANDLE	find_handle;
+	WIN32_FIND_DATA	find_data;
+	char path[MAX_PATH+1];
+	WCHAR best_path[MAX_PATH+1];
+	bool best_path_has_haggle_folder;
+	ULARGE_INTEGER best_avail, best_size;
 	long i;
-
-	if (!SHGetSpecialFolderPath(NULL, login1, CSIDL_APPDATA, FALSE)) {
-		printf("Unable to get user name!\n");
-		return NULL;
+	
+	// Start with the application data folder, as a fallback:
+	if (!SHGetSpecialFolderPath(NULL, best_path, CSIDL_APPDATA, FALSE)) {
+		best_path[0] = 0;
+		best_avail.QuadPart = 0;
+		best_size.QuadPart = 0;
+		best_path_has_haggle_folder = false;
+	}else{
+		GetDiskFreeSpaceEx(best_path, &best_avail, &best_size, NULL);
+		best_path_has_haggle_folder = has_haggle_folder(best_path);
 	}
-	for (i = 0; login1[i] != 0; i++)
-		login[i] = (char) login1[i];
-	login[i] = 0;
+	fprintf(stderr,"Found data card path: \"%ls\" (size: %I64d/%I64d, haggle folder: %s)\n", 
+		best_path, best_avail, best_size,
+		best_path_has_haggle_folder?"Yes":"No");
 
-        return fill_prefix_and_suffix(login);
+	find_handle = FindFirstFlashCard(&find_data);
+	if(find_handle != INVALID_HANDLE_VALUE)
+	{
+		do{
+			// Ignore the root directory (this has been checked for above)
+			if(find_data.cFileName[0] != 0)
+			{
+				ULARGE_INTEGER	avail, size, free;
+				bool haggle_folder;
+				
+				GetDiskFreeSpaceEx(find_data.cFileName, &avail, &size, &free);
+				haggle_folder = has_haggle_folder(find_data.cFileName);
+				fprintf(stderr,"Found data card path: \"%ls\" (size: %I64d/%I64d, haggle folder: %s)\n", 
+					find_data.cFileName, avail, size,
+					haggle_folder?"Yes":"No");
+				// is this a better choice than the previous one?
+				// FIXME: should there be any case when a memory card is not used?
+				if(true)
+				{
+					// Yes.
+					
+					// Save this as the path to use:
+					for(i = 0; i < MAX_PATH; i++)
+						best_path[i] = find_data.cFileName[i];
+					best_avail = avail;
+					best_size = size;
+					best_path_has_haggle_folder = haggle_folder;
+				}
+			}
+		}while(FindNextFlashCard(find_handle, &find_data));
+
+		FindClose(find_handle);
+	}
+	// Convert the path to normal characters.
+	for(i = 0; i < MAX_PATH; i++)
+		path[i] = (char) best_path[i];
+	return fill_prefix_and_suffix(path);
 }
 #elif defined(OS_WINDOWS_XP) || defined(OS_WINDOWS_2000)	
 char *fill_in_default_path()
