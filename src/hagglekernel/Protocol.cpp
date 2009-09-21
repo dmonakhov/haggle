@@ -546,54 +546,30 @@ void Protocol::removeData(size_t len)
 	bufferDataLen -= len;
 }
 
-// NOT CONST: because we modify the last string whenever a bad message type 
-// number arrives.
-static char *controlMessage[6] = 
-	{
-		(char *) "ACK",
-		(char *) "ACCEPT",
-		(char *) "REJECT",
-		(char *) "TERMINATE",
-		(char *) "Bad control message",
-		/*
-			The ctrlmsg field "type" is an 8-bit value, so it can be converted
-			into at most 3 digits, thus the three "0"s.
-			
-			The entire string will be replaced, but the text is here as a 
-			placeholder to make sure the string is long enough
-		*/
-		(char *) "Unknown message type=000"
-	};
-
-// This returns const, because we don't want the caller to modify the original
-// strings.
-const char *Protocol::ctrlmsgToStr(struct ctrlmsg *m) const
+const string Protocol::ctrlmsgToStr(struct ctrlmsg *m) const
 {
         if (!m)
-                return controlMessage[4];
+                return "Bad control message";
 
         // Return the right string based on type:
         switch (m->type) {
                 case CTRLMSG_TYPE_ACK:
-                        return controlMessage[0];
-                        break;
+			return "ACK";
                 case CTRLMSG_TYPE_ACCEPT:
-                        return controlMessage[1];
-                        break;
+                        return "ACCEPT";
                 case CTRLMSG_TYPE_REJECT:
-                        return controlMessage[2];
-                        break;
-                case CTRLMSG_TYPE_TERMINATE:
-                        return controlMessage[3];
-                        break;
-                default:
-                        // Sure, this is not _completely_ thread-safe, but
-						// it is unlikely to be a severe problem.
-                        snprintf(controlMessage[5], 30, "Unknown message type=%u", m->type);
-						return controlMessage[5];
+			return "REJECT";
+		case CTRLMSG_TYPE_TERMINATE:
+			return "TERMINATE";
+		default:
+		{
+			char buf[30];
+                        snprintf(buf, 30, "Unknown message type=%u", m->type);
+			return buf;
+		}
         }
         // Shouldn't be able to get here, but still...
-        return controlMessage[4];
+        return "Bad control message";
 }
 
 
@@ -609,9 +585,9 @@ ProtocolEvent Protocol::sendControlMessage(struct ctrlmsg *m)
 		pEvent = sendData(m, sizeof(struct ctrlmsg), 0, &bytesRead);
 		
 		if (pEvent == PROT_EVENT_SUCCESS) {
-			HAGGLE_DBG("Sent %u bytes control message '%s'\n", bytesRead, ctrlmsgToStr(m));
+			HAGGLE_DBG("Sent %u bytes control message '%s'\n", bytesRead, ctrlmsgToStr(m).c_str());
 		} else if (pEvent == PROT_EVENT_PEER_CLOSED) {
-			HAGGLE_ERR("Could not send control message '%s': peer closed\n", ctrlmsgToStr(m));
+			HAGGLE_ERR("Could not send control message '%s': peer closed\n", ctrlmsgToStr(m).c_str());
 		} else {
 			switch (getProtocolError()) {
 				case PROT_ERROR_BAD_HANDLE:
@@ -625,9 +601,9 @@ ProtocolEvent Protocol::sendControlMessage(struct ctrlmsg *m)
 			}
 		}
 	} else if (pEvent == PROT_EVENT_TIMEOUT) {
-		HAGGLE_DBG("Protocol timed out while waiting to send control message '%s'\n", ctrlmsgToStr(m));
+		HAGGLE_DBG("Protocol timed out while waiting to send control message '%s'\n", ctrlmsgToStr(m).c_str());
 	} else {
-		HAGGLE_ERR("Protocol was not writeable when sending control message '%s'\n",ctrlmsgToStr(m));
+		HAGGLE_ERR("Protocol was not writeable when sending control message '%s'\n", ctrlmsgToStr(m).c_str());
 	}
 
         return pEvent;
@@ -657,7 +633,7 @@ ProtocolEvent Protocol::receiveControlMessage(struct ctrlmsg *m)
 
 			// Did we get it?
 			if (pEvent == PROT_EVENT_SUCCESS) {
-                                HAGGLE_DBG("Got control message '%s', %lu bytes\n", ctrlmsgToStr(m), bytesReceived);
+                                HAGGLE_DBG("Got control message '%s', %lu bytes\n", ctrlmsgToStr(m).c_str(), bytesReceived);
                                 break;
                         } else if (pEvent == PROT_EVENT_ERROR) {
                                 switch (getProtocolError()) {
