@@ -20,7 +20,6 @@
 #include <bluetooth/sdp.h>
 #include <bluetooth/sdp_lib.h>
 
-#include <linux/netlink.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 

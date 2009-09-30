@@ -32,6 +32,7 @@ struct dbus_handle {
 #endif
 
 #if defined(ENABLE_ETHERNET)
+#include <asm/types.h>
 #include <linux/netlink.h>
 struct netlink_handle {
         int sock;
