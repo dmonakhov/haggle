@@ -264,10 +264,14 @@ then
 			AC_SUBST(DBUS_LIBS)	
 		fi
 		CPPFLAGS=${save_CPPFLAGS}
-	fi				
+	fi
+
+	dnl Check for inotify (needed by filedrop)
+	AC_CHECK_HEADERS([linux/inotify.h],have_inotify=yes,have_inotify=no)
 fi
 
 AM_CONDITIONAL(HAVE_DBUS, [test x$have_dbus = xyes])
+AM_CONDITIONAL(HAVE_INOTIFY, [test x$have_inotify = xyes])
 
 dnl extractor checking
 	

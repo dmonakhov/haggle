@@ -903,7 +903,7 @@ ProtocolEvent Protocol::sendDataObjectNow(const DataObjectRef& dObj)
 
 			// Did we get it?                        
 			if (pEvent == PROT_EVENT_SUCCESS) {
-                                HAGGLE_DBG("Received control message '%s'\n", ctrlmsgToStr(&m));
+                                HAGGLE_DBG("Received control message '%s'\n", ctrlmsgToStr(&m).c_str());
 				// Yes, check it:
 				if (m.type == CTRLMSG_TYPE_ACCEPT) {
 					// ACCEPT message. Keep on going.
@@ -946,9 +946,9 @@ ProtocolEvent Protocol::sendDataObjectNow(const DataObjectRef& dObj)
 
         if (pEvent == PROT_EVENT_SUCCESS) {
                 if (m.type == CTRLMSG_TYPE_ACK) {
-                        HAGGLE_DBG("Received '%s'\n", ctrlmsgToStr(&m));
+                        HAGGLE_DBG("Received '%s'\n", ctrlmsgToStr(&m).c_str());
                 } else {
-                        HAGGLE_ERR("Control message malformed: expected 'ACK', got '%s'\n", ctrlmsgToStr(&m));
+                        HAGGLE_ERR("Control message malformed: expected 'ACK', got '%s'\n", ctrlmsgToStr(&m).c_str());
                         pEvent = PROT_EVENT_ERROR;
                 }
         } else {
