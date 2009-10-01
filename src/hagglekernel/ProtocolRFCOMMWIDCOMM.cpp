@@ -645,6 +645,11 @@ ProtocolEvent ProtocolRFCOMMClient::waitForEvent(DataObjectRef &dObj, Timeval *t
 	return PROT_EVENT_ERROR;
 }
 
+void ProtocolRFCOMMClient::hookShutdown()
+{
+	closeConnection();
+}
+
 ProtocolRFCOMMServer::ProtocolRFCOMMServer(const InterfaceRef& localIface, ProtocolManager *m,
 					   unsigned short channel) :
 	ProtocolRFCOMM(localIface, NULL, channel, PROT_FLAG_SERVER, m)

@@ -130,8 +130,20 @@ void ProtocolManager::onDeleteProtocolEvent(Event * e)
 
 	delete p;
 
-	if (getState() == MANAGER_STATE_SHUTDOWN && protocol_registry.empty()) {
-		unregisterWithKernel();
+	if (getState() == MANAGER_STATE_SHUTDOWN) {
+		if (protocol_registry.empty()) {
+			unregisterWithKernel();
+		} 
+#if defined(DEBUG)
+		else {
+			for (protocol_registry_t::iterator it = protocol_registry.begin(); it != protocol_registry.end(); it++) {
+				Protocol *p = (*it).second;
+
+				HAGGLE_DBG("Protocol \'%s\' still registered\n", p->getName());
+			}
+
+		}
+#endif
 	}
 }
 

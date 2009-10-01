@@ -221,6 +221,8 @@ void WIDCOMMBluetooth::OnDiscoveryComplete()
 	UINT16 num_records;
 	CSdpDiscoveryRec *records;
 
+	HAGGLE_DBG("Discovery complete, checking result...\n");
+
 	if (GetLastDiscoveryResult(bdaddr, &num_records) != DISCOVERY_RESULT_SUCCESS)
 		goto out;
 
@@ -252,6 +254,7 @@ void WIDCOMMBluetooth::OnDiscoveryComplete()
 out:
 	discoveryResult = (int)num_records;
 	isInDiscovery = false;
+	HAGGLE_DBG("Setting discovery complete event\n");
 	SetEvent(hDiscoveryEvent);
 }
 
@@ -259,7 +262,7 @@ int WIDCOMMBluetooth::_doDiscovery(const RemoteDevice *rd, GUID *guid, widcomm_d
 {
 	BD_ADDR bdaddr;
 
-	if (!rd || isInDiscovery || !IsDeviceReady())
+	if (!rd || isInDiscovery || IsDeviceReady() == FALSE)
 		return -1;
 
 	isInDiscovery = true;

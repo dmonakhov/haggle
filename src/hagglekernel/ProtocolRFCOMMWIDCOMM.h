@@ -122,6 +122,7 @@ public:
 	bool setNonblock(bool block = false);
         ProtocolEvent connectToPeer();
 	void closeConnection();
+	void hookShutdown();
    
 	/**
            Functions that are overridden from class Protocol.
