@@ -17,11 +17,6 @@
 
 #include <libcpphaggle/Platform.h>
 /*
-	The default path were we put data store files.
-*/
-#define DEFAULT_DATASTORE_PATH HAGGLE_DEFAULT_STORAGE_PATH 
-
-/*
 	Forward declarations of all data types declared in this file. This is to
 	avoid circular dependencies. If/when a data type is added to this file,
 	remember to add it here.

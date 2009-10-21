@@ -41,6 +41,20 @@ extern char *hdsp;
 	This is created the first time it is used.
 */
 #define HAGGLE_DEFAULT_STORAGE_PATH (hdsp?hdsp:hdsp = fill_in_default_path())
+/*
+	Default path to were to put the data store.
+*/
+#if defined(OS_WINDOWS_MOBILE)
+/*
+	Why this? Because on windows mobile, if you run the data base against an 
+	SD card, the entire machine may lock up.
+*/
+extern char *ddsp;
+#define DEFAULT_DATASTORE_PATH (ddsp?ddsp:ddsp = fill_in_default_datastore_path())
+char *fill_in_default_datastore_path(void);
+#else
+#define DEFAULT_DATASTORE_PATH HAGGLE_DEFAULT_STORAGE_PATH
+#endif
 
 char *fill_in_default_path(void);
 

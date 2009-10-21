@@ -331,6 +331,26 @@ char *fill_in_default_path()
 		path[i] = (char) best_path[i];
 	return fill_prefix_and_suffix(path);
 }
+
+char *fill_in_default_datastore_path()
+{
+	char path[MAX_PATH+1];
+	WCHAR best_path[MAX_PATH+1];
+	long i;
+	
+	// Start with the application data folder, as a fallback:
+	if (!SHGetSpecialFolderPath(NULL, best_path, CSIDL_APPDATA, FALSE)) {
+		best_path[0] = 0;
+	}else{
+		GetDiskFreeSpaceEx(best_path, &best_avail, &best_size, NULL);
+	}
+	
+	// Convert the path to normal characters.
+	for(i = 0; i < MAX_PATH; i++)
+		path[i] = (char) best_path[i];
+	return fill_prefix_and_suffix(path);
+}
+
 #elif defined(OS_WINDOWS_XP) || defined(OS_WINDOWS_2000)	
 char *fill_in_default_path()
 {
