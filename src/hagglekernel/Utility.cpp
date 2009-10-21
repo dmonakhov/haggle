@@ -332,10 +332,12 @@ char *fill_in_default_path()
 	return fill_prefix_and_suffix(path);
 }
 
+char *ddsp;
 char *fill_in_default_datastore_path()
 {
 	char path[MAX_PATH+1];
 	WCHAR best_path[MAX_PATH+1];
+	ULARGE_INTEGER best_avail, best_size;
 	long i;
 	
 	// Start with the application data folder, as a fallback:
