@@ -170,7 +170,7 @@ static void daemonize()
 }
 #endif
 
-#define PID_FILE string(HAGGLE_DEFAULT_STORAGE_PATH).append("/haggle.pid")
+#define PID_FILE string(DEFAULT_DATASTORE_PATH).append("/haggle.pid")
 
 enum {
         HAGGLE_PROCESS_BAD_PID = -3,
@@ -185,6 +185,10 @@ static int write_pid_file(const pid_t pid)
         char buf[BUFLEN];
         string pidfile = PID_FILE;
 
+	if (!create_path(DEFAULT_DATASTORE_PATH)) {
+		HAGGLE_ERR("Could not create directory path \'%s\'\n", DEFAULT_DATASTORE_PATH);
+		return false;
+	}
         FILE *fp = fopen(pidfile.c_str(), "r");
 
 	if (fp) {
