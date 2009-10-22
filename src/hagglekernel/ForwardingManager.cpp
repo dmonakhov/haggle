@@ -50,6 +50,8 @@ ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 	forwardingModule = new ForwarderProphet(this);
 	kernel->getDataStore()->readRepository(new RepositoryEntry("ForwardingManager", "Forwarder state"), forwardRepositoryCallback);
 	
+	// Search out any forwarding data objects in the data store. See the 
+	// declaration of myMetricDO in Forwarder.h.
 	kernel->getDataStore()->doFilterQuery(new Filter("Forward=*"), forwardDobjCallback);
 	
 	forwardQueryCallback = newEventCallback(onForwardQueryResult);
@@ -467,9 +469,13 @@ void ForwardingManager::onForwardQueryResult(Event *e)
 			if (newest) {
 				HAGGLE_DBG("Deleting old forwarding objects from data store\n");
 				if (current->getCreateTime() > newest->getCreateTime()) {
+					// Delete the older forwarding data object, so we don't 
+					// clutter up the data store with old data.
 					kernel->getDataStore()->deleteDataObject(newest);
 					newest = current;
 				} else {
+					// Delete this data object, so we don't clutter up the data
+					// store with old data.
 					kernel->getDataStore()->deleteDataObject(current);
 				}
 			} else {

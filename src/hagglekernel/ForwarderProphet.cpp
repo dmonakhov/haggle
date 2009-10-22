@@ -96,6 +96,9 @@ void ForwarderProphet::updateMetricDO(void)
 		// Create a new, empty, data object:
 		newDO = new DataObject((const char *) NULL, 0);
 		
+		// Forwarding data objects are intentionally persistent. See the 
+		// declaration of myMetricDO in Forwarder.h.
+		
 		// Add the "Forward" attribute:
 		newDO->addAttribute("Forward", 
                                 kernel->getThisNode()->getIdStr());

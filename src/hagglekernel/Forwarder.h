@@ -40,6 +40,15 @@ public:
 		The forwarding manager sends this data object to any and all new nodes 
 		when they are encountered.
 		
+		This data object should be persistent, to avoid having to use an 
+		additional storage format. The forwarding manager assumes that this is 
+		so, and:
+			1) asks the data store for all forwarding data objects when haggle 
+			   starts up, and uses addMetricDO() to provide them to the 
+			   forwarding module,
+			2) deletes old data objects from the same node whenever a forwarding
+			   data object is recieved from that node.
+		
 		FIXME: The name of this reference is bad. It should be renamed.
 	*/
 	DataObjectRef myMetricDO;
