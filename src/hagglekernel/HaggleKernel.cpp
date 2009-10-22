@@ -39,7 +39,7 @@ HaggleKernel::HaggleKernel(DataStore *ds , const string _storagepath) :
 	char hostname[HOSTNAME_LEN];
 
 #if defined(OS_WINDOWS_MOBILE) || defined(OS_ANDROID)
-	if (!Trace::trace.enableFileTrace(storagepath))
+	if (!Trace::trace.enableFileTrace())
 		HAGGLE_ERR("Could not enable file tracing\n");
 #endif
 	if (!ds) {
