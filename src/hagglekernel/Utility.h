@@ -51,9 +51,11 @@ extern char *hdsp;
 */
 extern char *ddsp;
 #define DEFAULT_DATASTORE_PATH (ddsp?ddsp:ddsp = fill_in_default_datastore_path())
+#define DEFAULT_LOG_STORAGE_PATH (ddsp?ddsp:ddsp = fill_in_default_datastore_path())
 char *fill_in_default_datastore_path(void);
 #else
 #define DEFAULT_DATASTORE_PATH HAGGLE_DEFAULT_STORAGE_PATH
+#define DEFAULT_LOG_STORAGE_PATH HAGGLE_DEFAULT_STORAGE_PATH
 #endif
 
 char *fill_in_default_path(void);

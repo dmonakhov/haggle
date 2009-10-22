@@ -115,6 +115,11 @@ bool Trace::enableFileTrace(const string path)
 	if (traceFile)
 		return false;
 	
+	if (!create_path(path.c_str())) {
+		HAGGLE_ERR("Could not create directory path \'%s\'\n", path.c_str());
+		return false;
+	}
+
 	string fpath = path + PLATFORM_PATH_DELIMITER + "haggle.log";
 	
 	traceFile = fopen(fpath.c_str(), "w");

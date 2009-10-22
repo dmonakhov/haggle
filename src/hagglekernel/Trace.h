@@ -85,7 +85,7 @@ public:
 	static Trace trace;
 	int write(const TraceType_t type, const char *func, const char *fmt, ...);
 	int writeWithoutTimestamp(const char *fmt, ...);
-	bool enableFileTrace(const string path = HAGGLE_DEFAULT_STORAGE_PATH);
+	bool enableFileTrace(const string path = DEFAULT_LOG_STORAGE_PATH);
 	bool disableFileTrace();
 	void enable() { enabled = true; }
 	void disable() { enabled = false; }
