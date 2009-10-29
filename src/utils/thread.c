@@ -20,8 +20,6 @@
 	This implementation borrows heavily from the Haggle "Thread.cpp" file.
 */
 
-#include <libhaggle/haggle.h>
-
 #include "thread.h"
 
 #include <stdlib.h>
@@ -77,7 +75,7 @@ void mutex_destroy(mutex m)
 	free(m);
 }
 
-bool mutex_lock(mutex m)
+int mutex_lock(mutex m)
 #if defined(OS_WINDOWS)
 {
 	return WaitForSingleObject(m->mutex,INFINITE) == WAIT_OBJECT_0;
@@ -121,7 +119,7 @@ void *
 #endif
 }
 
-bool thread_start(void thread_func(int), int param)
+int thread_start(void thread_func(int), int param)
 {
 #ifdef OS_WINDOWS
 	HANDLE	thrHandle;
@@ -164,10 +162,10 @@ bool thread_start(void thread_func(int), int param)
 		goto fail_start;
 #endif
 
-	return true;
+	return 1==1;
 fail_start:
 	free(arg);
 fail_malloc:
 fail_func:
-	return false;
+	return 0==1;
 }

@@ -17,16 +17,14 @@
 
 #include <string.h>
 #include <signal.h>
-#include <pthread.h>
 #include <stdio.h>
 #ifdef OS_UNIX
 #include <unistd.h>
 #endif
 
-#include "prng.h"
+#include "thread.h"
 
-pthread_mutex_t mutex;
-pthread_cond_t cond;
+mutex signalling_mutex;
 
 void on_interest_list(haggle_dobj_t *dobj, void *arg)
 {	
@@ -52,7 +50,8 @@ void on_interest_list(haggle_dobj_t *dobj, void *arg)
                 }
         }
 
-        pthread_cond_signal(&cond);
+	if(signalling_mutex != NULL)
+		mutex_unlock(signalling_mutex);
 }
 
 int main(int argc, char *argv[])
@@ -77,9 +76,6 @@ int main(int argc, char *argv[])
 	char *file_name = NULL;
 	long attr_weight = 1;
 	
-        pthread_mutex_init(&mutex, NULL);
-        pthread_cond_init(&cond, NULL);
-
 	// Parse command-line arguments:
 	for(i = 1; i < argc; i++)
 	{
@@ -234,8 +230,6 @@ int main(int argc, char *argv[])
 		case command_new_dataobject:
 		{
 			struct dataobject *dObj;
-			struct timeval tv;
-			gettimeofday(&tv, NULL);
 			
 			// New data object:
 			if(file_name == NULL)
@@ -245,8 +239,8 @@ int main(int argc, char *argv[])
 			
 			if(dObj != NULL)
 			{
-				// Set create time:
-				haggle_dataobject_set_createtime(dObj, &tv);
+				// Set create time to "now":
+				haggle_dataobject_set_createtime(dObj, NULL);
 				// Add attribute:
 				haggle_dataobject_add_attribute(
 					dObj, 
@@ -266,13 +260,20 @@ int main(int argc, char *argv[])
 		case command_get_interests:
 		{
 			haggle_ipc_register_event_interest(haggle_, LIBHAGGLE_EVENT_INTEREST_LIST, on_interest_list);
-			pthread_mutex_lock(&mutex);
-			
-			// Get interests:
-			haggle_ipc_get_application_interests_async(haggle_);
-			haggle_event_loop_run_async(haggle_);
-			pthread_cond_wait(&cond, &mutex);
-			pthread_mutex_unlock(&mutex);
+			signalling_mutex = mutex_create();
+			if(signalling_mutex != NULL)
+			{
+				// Lock the mutex (it's unlocked by default):
+				mutex_lock(signalling_mutex);
+				// Get interests:
+				haggle_ipc_get_application_interests_async(haggle_);
+				haggle_event_loop_run_async(haggle_);
+				// Wait for on_interest_list to be called:
+				mutex_lock(signalling_mutex);
+				mutex_destroy(signalling_mutex);
+			}else{
+				printf("Unable to comply: failed to create needed mutex\n");
+			}
 			haggle_event_loop_stop(haggle_);
 
 		}
@@ -320,7 +321,5 @@ int main(int argc, char *argv[])
 	// Release the haggle handle:
 	haggle_handle_free(haggle_);
 fail_haggle:
-        pthread_cond_destroy(&cond);
-        pthread_mutex_destroy(&mutex);
 	return retval;
 }

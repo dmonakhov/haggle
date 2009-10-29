@@ -20,6 +20,12 @@
 	Minimalistic threading API.
 */
 
+#ifdef __cplusplus
+extern "C" {
+#else
+#define bool int
+#endif
+
 typedef struct mutex_s *mutex;
 
 // Creates a new mutex
@@ -38,7 +44,15 @@ void mutex_unlock(mutex m);
 /*
 	Starts a new thread which will execute "thead_func" with the paramter 
 	"param" and then termintate.
+	
+	Returns true iff the function could be started.
 */
 bool thread_start(void thread_func(int), int param);
+
+#ifdef __cplusplus
+}
+#else
+#undef bool
+#endif
 
 #endif
