@@ -86,14 +86,10 @@ using namespace haggle;
 #define VIEW_MATCH_NODES_AND_DATAOBJECTS "view_match_nodes_and_dataobjects"
 /*
 	Match the attributes between nodes and dataobjects and give the ratio calculated
-	in two ways (node_ratio and dataobject_ratio):
-	1) matching_attributes / total_node_attributes
-	2) matching_attributes / total_dataobject_attributes
+	weight of matching attributes / sum over all node attribute weights (sum_weights)
 
-	|dataobject_ratio|node_ratio|dataobject_rowid|node_rowid|mcount|dataobject_timestamp
-	|dataobject_ratio|node_ratio|dataobject_rowid|node_rowid|mcount|weight|dataobject_timestamp
+	|ratio|dataobject_rowid|node_rowid|mcount|dataobject_timestamp
 
-	NOTE: That this view displays a superset of the COUNT views, but may be quicker to compute.
  */
 #define VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO "view_match_dataobjects_and_nodes_as_ratio"
 #define VIEW_MATCH_NODES_AND_DATAOBJECTS_AS_RATIO "view_match_nodes_and_dataobjects_as_ratio"
@@ -173,7 +169,7 @@ enum {
 };
 
 //------------------------------------------
-#define SQL_CREATE_TABLE_NODES_CMD "CREATE TABLE IF NOT EXISTS " TABLE_NODES " (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, type INTEGER, id BLOB UNIQUE ON CONFLICT ROLLBACK, id_str TEXT, name TEXT, bloomfilter BLOB, num_attributes INTEGER DEFAULT 0, max_matching_dataobjects INTEGER, threshold INTEGER, timestamp DATE);"
+#define SQL_CREATE_TABLE_NODES_CMD "CREATE TABLE IF NOT EXISTS " TABLE_NODES " (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, type INTEGER, id BLOB UNIQUE ON CONFLICT ROLLBACK, id_str TEXT, name TEXT, bloomfilter BLOB, num_attributes INTEGER DEFAULT 0, sum_weights INTEGER DEFAULT 0, resolution_max_matching_dataobjects INTEGER, resolution_threshold INTEGER, timestamp DATE);"
 enum {
 	table_nodes_rowid = 0,
 	table_nodes_type,
@@ -182,8 +178,9 @@ enum {
 	table_nodes_name,
 	table_nodes_bloomfilter,
 	table_nodes_num_attributes,
-	table_nodes_max_matching_dataobjects,
-	table_nodes_threshold,
+	table_nodes_sum_weights,
+	table_nodes_resolution_max_matching_dataobjects,	// resolution: max number of data object that a node is willing to recieve
+	table_nodes_resolution_threshold,					// resolution: relation threshold (only relations with a higher ratio will be considered)
 	table_nodes_timestamp
 };
 
@@ -265,9 +262,9 @@ enum {
 //------------------------------------------
 #define SQL_CREATE_TRIGGER_DEL_NODE_CMD "CREATE TRIGGER delete_" TABLE_NODES " AFTER DELETE ON " TABLE_NODES " BEGIN DELETE FROM " TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID " WHERE node_rowid=old.rowid; DELETE FROM " TABLE_INTERFACES " WHERE node_rowid=old.rowid; END;"
 //------------------------------------------
-#define SQL_CREATE_TRIGGER_INSERT_NODE_ATTRIBUTES_CMD "CREATE TRIGGER insert_" TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID " AFTER INSERT ON " TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID " BEGIN UPDATE " TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID " SET timestamp = STRFTIME('%s', 'NOW') WHERE ROWID = NEW.ROWID; UPDATE " TABLE_NODES " SET num_attributes=num_attributes+1 WHERE rowid = NEW.node_rowid; END;"
+#define SQL_CREATE_TRIGGER_INSERT_NODE_ATTRIBUTES_CMD "CREATE TRIGGER insert_" TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID " AFTER INSERT ON " TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID " BEGIN UPDATE " TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID " SET timestamp = STRFTIME('%s', 'NOW') WHERE ROWID = NEW.ROWID; UPDATE " TABLE_NODES " SET num_attributes=num_attributes+1 , sum_weights=sum_weights+NEW.weight WHERE rowid = NEW.node_rowid; END;"
 //------------------------------------------
-#define SQL_CREATE_TRIGGER_DEL_NODE_ATTRIBUTES_CMD "CREATE TRIGGER delete_" TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID " AFTER DELETE ON " TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID " BEGIN UPDATE " TABLE_NODES " SET num_attributes=num_attributes-1 WHERE rowid = OLD.node_rowid; END;"
+#define SQL_CREATE_TRIGGER_DEL_NODE_ATTRIBUTES_CMD "CREATE TRIGGER delete_" TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID " AFTER DELETE ON " TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID " BEGIN UPDATE " TABLE_NODES " SET num_attributes=num_attributes-1, sum_weights=sum_weights-OLD.weight WHERE rowid = OLD.node_rowid; END;"
 
 // Filter related:
 //------------------------------------------
@@ -417,11 +414,10 @@ enum {
 };
 
 //------------------------------------------
-#define SQL_CREATE_VIEW_DATAOBJECT_NODE_MATCH_CMD_RATED_CMD "CREATE VIEW " VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO " AS SELECT 100*mcount/d.num_attributes as dataobject_ratio, 100*mcount/n.num_attributes as node_ratio, m.* FROM " VIEW_MATCH_DATAOBJECTS_AND_NODES " as m LEFT JOIN " TABLE_NODES " as n ON m.node_rowid=n.rowid LEFT JOIN " TABLE_DATAOBJECTS " as d ON m.dataobject_rowid=d.rowid ORDER BY dataobject_ratio desc, mcount desc;"
+#define SQL_CREATE_VIEW_DATAOBJECT_NODE_MATCH_CMD_RATED_CMD "CREATE VIEW " VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO " AS SELECT 100*weight/n.sum_weights as ratio, m.* FROM " VIEW_MATCH_DATAOBJECTS_AND_NODES " as m LEFT JOIN " TABLE_NODES " as n ON m.node_rowid=n.rowid ORDER BY ratio desc, mcount desc;"
 // using count: #define SQL_CREATE_VIEW_DATAOBJECT_NODE_MATCH_CMD_RATED_CMD "CREATE VIEW " VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO " AS SELECT 100*mcount/dacount as dataobject_ratio, 100*mcount/nacount as node_ratio, m.* FROM " VIEW_MATCH_DATAOBJECTS_AND_NODES " as m LEFT JOIN " VIEW_NODE_ATTRIBUTE_COUNT " as cn ON m.node_rowid=cn.node_rowid LEFT JOIN " VIEW_DATAOBJECT_ATTRIBUTE_COUNT " as cd ON m.dataobject_rowid=cd.dataobject_rowid ORDER BY 100*mcount/nacount+100*mcount/dacount desc, mcount desc;"
 enum {
-	view_match_dataobjects_and_nodes_as_ratio_dataobject_ratio = 0,
-	view_match_dataobjects_and_nodes_as_ratio_node_ratio,
+	view_match_dataobjects_and_nodes_as_ratio_ratio = 0,
 	view_match_dataobjects_and_nodes_as_ratio_dataobject_rowid,
 	view_match_dataobjects_and_nodes_as_ratio_node_rowid,
 	view_match_dataobjects_and_nodes_as_ratio_mcount,
@@ -443,11 +439,10 @@ enum {
 };
 
 //------------------------------------------
-#define SQL_CREATE_VIEW_NODE_DATAOBJECT_MATCH_CMD_RATED_CMD "CREATE VIEW " VIEW_MATCH_NODES_AND_DATAOBJECTS_AS_RATIO " AS SELECT 100*mcount/d.num_attributes as dataobject_ratio, 100*mcount/n.num_attributes as node_ratio, m.* FROM " VIEW_MATCH_NODES_AND_DATAOBJECTS " as m LEFT JOIN " TABLE_NODES " as n ON m.node_rowid=n.rowid LEFT JOIN " TABLE_DATAOBJECTS " as d ON m.dataobject_rowid=d.rowid WHERE dataobject_not_match=0 ORDER BY node_ratio desc, mcount desc;"
+#define SQL_CREATE_VIEW_NODE_DATAOBJECT_MATCH_CMD_RATED_CMD "CREATE VIEW " VIEW_MATCH_NODES_AND_DATAOBJECTS_AS_RATIO " AS SELECT 100*weight/n.sum_weights as ratio, m.* FROM " VIEW_MATCH_NODES_AND_DATAOBJECTS " as m LEFT JOIN " TABLE_NODES " as n ON m.node_rowid=n.rowid LEFT JOIN " TABLE_DATAOBJECTS " as d ON m.dataobject_rowid=d.rowid WHERE dataobject_not_match=0 ORDER BY ratio desc, mcount desc, d.timestamp desc;"
 // using count: #define SQL_CREATE_VIEW_NODE_DATAOBJECT_MATCH_CMD_RATED_CMD "CREATE VIEW " VIEW_MATCH_NODES_AND_DATAOBJECTS_AS_RATIO " AS SELECT 100*mcount/dacount as dataobject_ratio, 100*mcount/nacount as node_ratio, m.* FROM " VIEW_MATCH_NODES_AND_DATAOBJECTS " as m LEFT JOIN " VIEW_NODE_ATTRIBUTE_COUNT " as cn ON m.node_rowid=cn.node_rowid LEFT JOIN " VIEW_DATAOBJECT_ATTRIBUTE_COUNT " as cd ON m.dataobject_rowid=cd.dataobject_rowid ORDER BY 100*mcount/nacount+100*mcount/dacount desc, mcount desc;"
 enum {
-	view_match_nodes_and_dataobjects_rated_dataobject_ratio = 0,
-	view_match_nodes_and_dataobjects_rated_node_ratio,
+	view_match_nodes_and_dataobjects_rated_ratio = 0,
 	view_match_nodes_and_dataobjects_rated_dataobject_rowid,
 	view_match_nodes_and_dataobjects_rated_node_rowid,
 	view_match_nodes_and_dataobjects_rated_mcount,
@@ -686,7 +681,7 @@ static inline char *SQL_IFACE_FROM_ROWID_CMD(const sqlite_int64 iface_rowid)
 
 static inline char *SQL_INSERT_NODE_CMD(const int type, const char *idStr, const char *name, const unsigned int maxmatchingdos, const unsigned int threshold)
 {
-	snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "INSERT INTO " TABLE_NODES " (type,id,id_str,name,bloomfilter,max_matching_dataobjects,threshold) VALUES (%d,?,\'%s\',\'%s\',?,%d,%d);", type, idStr, name, maxmatchingdos, threshold);
+	snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "INSERT INTO " TABLE_NODES " (type,id,id_str,name,bloomfilter,resolution_max_matching_dataobjects,resolution_threshold) VALUES (%d,?,\'%s\',\'%s\',?,%d,%d);", type, idStr, name, maxmatchingdos, threshold);
 
 	return sqlcmd;
 }
@@ -858,8 +853,8 @@ Node *SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 	}
 #endif
 	// Set matching limit and threshold:
-	node->setMaxDataObjectsInMatch((unsigned int)sqlite3_column_int(in_stmt, table_nodes_max_matching_dataobjects));
-	node->setMatchingThreshold((unsigned int)sqlite3_column_int(in_stmt, table_nodes_threshold));
+	node->setMaxDataObjectsInMatch((unsigned int)sqlite3_column_int(in_stmt, table_nodes_resolution_max_matching_dataobjects));
+	node->setMatchingThreshold((unsigned int)sqlite3_column_int(in_stmt, table_nodes_resolution_threshold));
 	// set bloomfilter
 	node->getBloomfilter()->setRaw((char *)sqlite3_column_blob(in_stmt, table_nodes_bloomfilter));
 
@@ -1136,7 +1131,7 @@ int SQLDataStore::findAndAddDataObjectTargets(DataObjectRef& dObj, const sqlite_
 	//Node *node = NULL;
 	int num_match = 0;
 
-	snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT * FROM %s WHERE node_ratio >= %ld AND dataobject_rowid == " INT64_FORMAT ";", VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO, ratio, dataObjectRowId);
+	snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT * FROM %s WHERE ratio >= %ld AND dataobject_rowid == " INT64_FORMAT ";", VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO, ratio, dataObjectRowId);
 
 	ret = sqlite3_prepare(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
 
@@ -2595,7 +2590,7 @@ filterQuery_cleanup:
 
 // ----- Node > Dataobjects
 
-int SQLDataStore::_doDOQuery(NodeRef &node, NodeRef alsoThisBF, DataStoreQueryResult *qr, int max_matches, unsigned int ratio, unsigned int attrMatch)
+int SQLDataStore::_doDOQuery(NodeRef &node, NodeRef alsoThisBF, DataStoreQueryResult *qr, int max_matches, unsigned int threshold, unsigned int attrMatch)
 {
 	int ret;
 	sqlite3_stmt *stmt;
@@ -2614,7 +2609,7 @@ int SQLDataStore::_doDOQuery(NodeRef &node, NodeRef alsoThisBF, DataStoreQueryRe
 	setViewLimitedNodeAttributes(node_rowid);
 	 
 	/* matching */
-	snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT * FROM " VIEW_MATCH_NODES_AND_DATAOBJECTS_AS_RATIO " WHERE dataobject_ratio >= %u AND mcount >= %u;", ratio, attrMatch);
+	snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT * FROM " VIEW_MATCH_NODES_AND_DATAOBJECTS_AS_RATIO " WHERE ratio >= %u AND mcount >= %u;", threshold, attrMatch);
 
 	ret = sqlite3_prepare(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
 
@@ -2806,9 +2801,9 @@ int SQLDataStore::_doNodeQuery(DataStoreNodeQuery *q)
 	
 	/* the actual query */
 	if (q->getMaxResp() > 0) {
-		snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT * FROM %s WHERE node_ratio >= %u AND mcount >= %u AND dataobject_not_match=0 limit %u;", VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO, q->getRatio(), q->getAttrMatch(), q->getMaxResp());
+		snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT * FROM %s WHERE ratio >= %u AND mcount >= %u AND dataobject_not_match=0 limit %u;", VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO, q->getRatio(), q->getAttrMatch(), q->getMaxResp());
 	} else {
-		snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT * FROM %s WHERE node_ratio >= %u AND mcount >= %u AND dataobject_not_match=0;", VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO, q->getRatio(), q->getAttrMatch());
+		snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT * FROM %s WHERE ratio >= %u AND mcount >= %u AND dataobject_not_match=0;", VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO, q->getRatio(), q->getAttrMatch());
 	}
 	
 	ret = sqlite3_prepare(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
@@ -3174,21 +3169,25 @@ int SQLDataStore::_dump(const EventCallback<EventHandler> *callback)
         char *dump;
         int xmlLen;
         
-        if (!callback)
+        if (!callback) {
+                HAGGLE_ERR("Invalid callback\n");
                 return -1;
-        
+        }
         doc = dumpToXML();
         
-        if (!doc)
+        if (!doc) {
+                HAGGLE_ERR("ERROR: Dump to XML failed\n");
                 return -2;
-
+        }
 	xmlDocDumpFormatMemory(doc, (xmlChar **)&dump, &xmlLen, 1);
 
         xmlFreeDoc(doc);
 
-	if (xmlLen < 0)
+	if (xmlLen < 0) {
+                HAGGLE_ERR("ERROR: xmlLen is less than zero...\n");
                 return -3;
-        
+        }
+
         kernel->addEvent(new Event(callback, new DataStoreDump(dump, xmlLen)));
 	
 	return xmlLen;
