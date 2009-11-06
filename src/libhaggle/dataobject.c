@@ -587,8 +587,13 @@ metadata_t *haggle_dataobject_to_metadata(struct dataobject *dobj)
                 metadata_t *am = metadata_new(DATAOBJECT_METADATA_ATTRIBUTE, haggle_attribute_get_value(a), dobj->m);
 
                 if (am) {
-                        metadata_set_parameter(am, DATAOBJECT_METADATA_ATTRIBUTE_NAME_PARAM, haggle_attribute_get_name(a));
-                        metadata_add(dobj->m, am);
+					metadata_set_parameter(am, DATAOBJECT_METADATA_ATTRIBUTE_NAME_PARAM, haggle_attribute_get_name(a));
+					if (haggle_attribute_get_weight(a)) {
+						char str_weight[8];
+						sprintf(str_weight, "%ld", haggle_attribute_get_weight(a));
+						metadata_set_parameter(am, DATAOBJECT_METADATA_ATTRIBUTE_WEIGHT_PARAM, str_weight);
+					}
+					metadata_add(dobj->m, am);
                 }
         }
 
