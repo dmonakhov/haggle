@@ -20,7 +20,7 @@
 #include <time.h>
 #include "utils.h"
 
-#if defined(OS_MACOSX)
+#if defined(OS_MACOSX) || defined(OS_LINUX)
 #include <stdlib.h>
 #endif
 
