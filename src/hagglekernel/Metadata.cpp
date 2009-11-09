@@ -1,4 +1,5 @@
 #include "Metadata.h"
+#include <stdio.h>
 
 Metadata::Metadata(const string _name, const string _content, Metadata *_parent) :
                 parent(_parent), name(_name), content(_content)
