@@ -77,32 +77,32 @@ bool Forwarder::isMetricDO(const DataObjectRef dObj) const
 const string Forwarder::getNodeIdFromMetricDataObject(DataObjectRef dObj) const
 {
 	if (!dObj)
-		return NULL;
+		return (char *)NULL;
 	
 	const Attribute *attr;
 	attr = dObj->getAttribute(forwardAttributeName);
 	if (attr == NULL)
-		return NULL;
+		return (char *)NULL;
 	return attr->getValue();
 }
 
 const string Forwarder::getMetricFromMetricDataObject(DataObjectRef dObj) const
 {
 	if (!dObj)
-		return NULL;
+		return (char *)NULL;
 	
 	Metadata *md;
 	md = dObj->getMetadata();
 	if (md == NULL)
-		return NULL;
+		return (char *)NULL;
 	
 	md = md->getMetadata(FORWARDING_METADATA_NAME);
 	if (md == NULL)
-		return NULL;
+		return (char *)NULL;
 	
 	md = md->getMetadata(METRIC_METADATA_NAME);
 	if (md == NULL)
-		return NULL;
+		return (char *)NULL;
 	
 	return md->getContent();
 }
