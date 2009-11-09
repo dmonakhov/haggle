@@ -157,7 +157,8 @@ class ForwarderProphet : public ForwarderAsynchronous {
 public:
 	ForwarderProphet(
 		ForwardingManager *m = NULL, 
-		const string name = "PRoPHET forwarding module");
+		const string name = "PRoPHET forwarding module",
+		const string _forwardAttributeName = "ForwarderProphetMetricForNodeID");
 	~ForwarderProphet();
 };
 

@@ -35,6 +35,7 @@ libhagglekernel_a_SOURCES = \
 	ProtocolManager.cpp \
 	ForwardingManager.cpp \
 	SecurityManager.cpp \
+	Forwarder.cpp \
 	ForwarderAsynchronous.cpp \
 	ForwarderProphet.cpp \
 	Connectivity.cpp \

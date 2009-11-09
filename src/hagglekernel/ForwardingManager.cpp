@@ -48,11 +48,18 @@ ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 	forwardRepositoryCallback = newEventCallback(onForwardRepositoryCallback);
 
 	forwardingModule = new ForwarderProphet(this);
-	kernel->getDataStore()->readRepository(new RepositoryEntry("ForwardingManager", "Forwarder state"), forwardRepositoryCallback);
+	kernel->getDataStore()->readRepository(
+		new RepositoryEntry(
+			"ForwardingManager", 
+			("Forwarder state: " + 
+				forwardingModule->forwardAttributeName).c_str()), 
+		forwardRepositoryCallback);
 	
 	// Search out any forwarding data objects in the data store. See the 
 	// declaration of myMetricDO in Forwarder.h.
-	kernel->getDataStore()->doFilterQuery(new Filter("Forward=*"), forwardDobjCallback);
+	kernel->getDataStore()->doFilterQuery(
+		new Filter(forwardingModule->forwardAttributeName + "=*"), 
+		forwardDobjCallback);
 	
 	forwardQueryCallback = newEventCallback(onForwardQueryResult);
 
@@ -99,8 +106,13 @@ ForwardingManager::~ForwardingManager()
 void ForwardingManager::onShutdown()
 {
 	// Store the forwarding module's state in the data store:
-	RepositoryEntryRef insertState(new RepositoryEntry("ForwardingManager", "Forwarder state",
-				forwardingModule->getEncodedState().c_str()), "Forwarder state insertion entry");
+	RepositoryEntryRef insertState(
+		new RepositoryEntry(
+			"ForwardingManager", 
+			("Forwarder state: " + 
+				forwardingModule->forwardAttributeName).c_str(),
+			forwardingModule->getEncodedState().c_str()), 
+			"Forwarder state insertion entry");
 	HAGGLE_DBG("Storing forwarder state: %s\n", insertState->getValue());
 	kernel->getDataStore()->insertRepository(insertState);
 
@@ -465,7 +477,7 @@ void ForwardingManager::onForwardQueryResult(Event *e)
 	*/
 	do {
 		current = qr->detachFirstDataObject();
-		if (current) {
+		if (forwardingModule->isMetricDO(current)) {
 			if (newest) {
 				HAGGLE_DBG("Deleting old forwarding objects from data store\n");
 				if (current->getCreateTime() > newest->getCreateTime()) {
@@ -625,18 +637,25 @@ void ForwardingManager::onNewDataObject(Event * e)
 	DataObjectRef dObj = e->getDataObject();
 
 	// Is this is a forwarding metric data object?
-	const Attribute *forwardingAttr = dObj->getAttribute("Forward");
-
-	if (forwardingAttr) {
-		if (forwardingAttr->getValue() != "*") {
+	if (forwardingModule->isMetricDO(dObj)) {
+		if (forwardingModule->getNodeIdFromMetricDataObject(dObj) != "*") {
+			const Attribute *forwardingAttr = 
+				dObj->getAttribute(forwardingModule->forwardAttributeName);
 			// Figure out which forwarding objects are from this node:
-			kernel->getDataStore()->doFilterQuery(new Filter(*forwardingAttr), forwardQueryCallback);
+			kernel->getDataStore()->doFilterQuery(
+				new Filter(*forwardingAttr), 
+				forwardQueryCallback);
 		}
 	}
 	
 	HAGGLE_DBG("%s - new data object, doing node query\n", getName());
 	
-	kernel->getDataStore()->doNodeQuery(dObj, 10, 1, 0, nodeQueryCallback);
+	kernel->getDataStore()->doNodeQuery(
+		dObj, 
+		MAX_NODES_TO_FIND_FOR_NEW_DATAOBJECTS, 
+		1, 
+		0, 
+		nodeQueryCallback);
 }
 
 

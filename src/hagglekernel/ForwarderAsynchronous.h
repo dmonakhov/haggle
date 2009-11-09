@@ -171,7 +171,8 @@ public:
 	ForwarderAsynchronous(
 		Timeval _aging_time_delta,
 		ForwardingManager *m = NULL, 
-		const string name = "Asynchronous forwarding module");
+		const string name = "Asynchronous forwarding module",
+		const string _forwardAttributeName = "ForwarderAsynchronousMetricForNodeID");
 	~ForwarderAsynchronous();
 	
 	/** See the parent class function with the same name. */

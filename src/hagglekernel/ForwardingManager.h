@@ -33,6 +33,8 @@ using namespace haggle;
 #include "Node.h"
 #include "Forwarder.h"
 
+#define MAX_NODES_TO_FIND_FOR_NEW_DATAOBJECTS	(10)
+
 typedef List< Pair< Pair<DataObjectRef, NodeRef>, int> > forwardingList;
 
 /** */

@@ -18,8 +18,9 @@
 ForwarderAsynchronous::ForwarderAsynchronous(
 		Timeval _aging_time_delta,
 		ForwardingManager *m, 
-		const string name) :
-	Forwarder(m, name),
+		const string name,
+		const string _forwardAttributeName) :
+	Forwarder(m, name, _forwardAttributeName),
 	next_aging_time(Timeval::now() + _aging_time_delta),
 	aging_time_delta(_aging_time_delta),
 	should_recalculate_metric_do(false)

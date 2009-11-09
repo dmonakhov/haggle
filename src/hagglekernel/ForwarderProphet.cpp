@@ -15,8 +15,15 @@
 
 #include "ForwarderProphet.h"
 
-ForwarderProphet::ForwarderProphet(ForwardingManager *m, const string name) :
-	ForwarderAsynchronous(Timeval(PROPHET_TIME_BETWEEN_AGING), m, name),
+ForwarderProphet::ForwarderProphet(
+	ForwardingManager *m, 
+	const string name, 
+	const string _forwardAttributeName) :
+	ForwarderAsynchronous(
+		Timeval(PROPHET_TIME_BETWEEN_AGING), 
+		m, 
+		name, 
+		_forwardAttributeName),
 	kernel(getManager()->getKernel()), next_id_number(1)
 {
 	// Ensure that the local node's forwarding id is 1:
@@ -89,77 +96,16 @@ void ForwarderProphet::updateMetricDO(void)
 	}
 	
 	if (shouldReplaceDO) {
-		// No need to have a reference in this function because it won't be 
-		// visible outside until this function is done with it.
-		DataObject *newDO;
-		
-		// Create a new, empty, data object:
-		newDO = new DataObject((const char *) NULL, 0);
-		
-		// Forwarding data objects are intentionally persistent. See the 
-		// declaration of myMetricDO in Forwarder.h.
-		
-		// Add the "Forward" attribute:
-		newDO->addAttribute("Forward", 
-                                kernel->getThisNode()->getIdStr());
-		
-		// Add the "PRoPHET" attribute to the forwarding section:
-		Metadata *md = newDO->getMetadata();
-                Metadata *forw = md->getMetadata("Forward");
-                
-                if (!forw) {
-                        forw = md->addMetadata("Forward");
-                }
-                forw->addMetadata("PRoPHET", forwarding_string);
-                
-		// Set the create time so that forwarding managers can sort out which is
-		// newest.
-		newDO->setCreateTime();
-		
-		myMetricDO = newDO;
+		createMetricDataObject(forwarding_string);
 	}
 }
 
 /*
-	For the moment, the format of a metric data object is as follows:
-	
-	The data object has an attribute Forward=<Node ID> showing that it is the
-	forwarding data object for the node with that node id.
-	
-	The data object also has an attribute PRoPHET=<string> which encodes the 
-	metrics. This should really be placed either under a 
-	<Forwarding>...</Forwarding> section of the data object, but since that 
-	would require changing parts of the metadata and data object code to allow,
-	and that code is currently being considered for redesign anyway, I thought 
-	I'd not do all that and use this solution for now.
-	
-	The prophet string is formatted like so:
+	The prophet metric string is formatted like so:
 		<Node ID>:<floating-point value>:<Node ID>...
 	Each value is separated by a colon character, which cannot occur in the 
 	node id or a floating point value.
 */
-
-/*
-	This function checks if a data object is a proper metric data object for 
-	this forwarding module.
-*/
-static bool isProphetMetricDO(DataObjectRef dObj)
-{
-	if (dObj->getAttribute("Forward") == NULL)
-		return false;
-	
-	if (dObj->getMetadata() == NULL)
-		return false;
-	
-	if (dObj->getMetadata()->getMetadata("Forward") == NULL)
-		return false;
-	
-	if (dObj->getMetadata()->getMetadata("Forward")->getMetadata("PRoPHET") == NULL)
-		return false;
-	
-	return true;
-}
-
 string ForwarderProphet::getMetricString(prophet_metric_table &table)
 {
 	string retval = "";
@@ -246,27 +192,25 @@ fail_malformed:;
 void ForwarderProphet::_addMetricDO(DataObjectRef &dObj)
 {
 	// Check the data object:
-	if (!isProphetMetricDO(dObj))
+	if (!isMetricDO(dObj))
 		return;
 	
 	// Figure out which node this metric is for:
 	prophet_forwarding_id node = 
-		id_for_string(dObj->getAttribute("Forward")->getValue());
+		id_for_string(getNodeIdFromMetricDataObject(dObj));
 	
 	// Get the table for that node:
 	prophet_metric_table &node_table = forwarding_table[node];
 	
 	// Get the data (no need to worry about malformed metadata as
 	// we checked it above):
-	Metadata *md = dObj->getMetadata()->getMetadata("Forward")->getMetadata("PRoPHET");
-
-        string tmp = md->getContent();
-
-        // Parse the metric string:
-        parseMetricString(node_table, tmp);
+	string tmp = getMetricFromMetricDataObject(dObj);
 	
-        // Update the public metric DO:
-        should_recalculate_metric_do = true;
+	// Parse the metric string:
+	parseMetricString(node_table, tmp);
+	
+	// Update the public metric DO:
+	should_recalculate_metric_do = true;
 }
 
 void ForwarderProphet::_ageMetric(void)

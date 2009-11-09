@@ -52,11 +52,25 @@ public:
 		FIXME: The name of this reference is bad. It should be renamed.
 	*/
 	DataObjectRef myMetricDO;
+	/**
+		This is the name of the attribute that says this is a forwarding metric
+		data object. The point of not having it as a #define is to enable the 
+		use of multiple forwarding modules. Each forwarding module should have 
+		its own attribute name, which makes it receive only forwarding objects 
+		that it can read. This also makes it possible to have different 
+		forwarding modules running at different times, because the forwarding
+		module will not delete old forwarding data objects in favor of new ones
+		from a different forwarding module.
+	*/
+	string forwardAttributeName;
 	
 	Forwarder(
 		ForwardingManager *m = NULL, 
-		const string name = "Unknown forwarding module") :
-		ManagerModule<ForwardingManager>(m, name) {}
+		const string name = "Unknown forwarding module",
+		const string _forwardAttributeName = "ForwarderMetricForNodeID") :
+		ManagerModule<ForwardingManager>(m, name),
+		forwardAttributeName(_forwardAttributeName)
+	{}
 	~Forwarder() {}
 	
 #ifdef DEBUG
@@ -72,6 +86,58 @@ public:
 		printf("================================\n");
 	}
 #endif
+	
+/*
+	For the moment, the format of a metric data object is as follows:
+	
+	The data object has an attribute <string>=<Node ID> showing that it is the
+	forwarding data object for the node with that node id. The string is used to
+	identify which forwarding module generated the information.
+	
+	The data object also has an attribute Metric=<string> which encodes the 
+	metrics. This is placed in a <Forwarding>...</Forwarding> section of the 
+	data object.
+*/
+
+	/**
+		This function creates a new forwarding data object. It takes a metric 
+		string and replaces myMetricDO with a new data object.
+		
+		This function is placed here, because most forwarding modules will need
+		to have this function, and doesn't need a different format.
+		
+		If the given string has any encoding that may break XML parsing, the 
+		generated data object will most likely not be pareseable.
+	*/
+	void createMetricDataObject(string forwardingMetric);
+	
+	/**
+		This function determines if the given data object is a metric data 
+		object for this forwarding module. It checks to see if the data object
+		has the format of a data object created by ::createMetricDataObject().
+		
+		Returns: true iff the data object conforms to the format used by 
+		::createMetricDataObject() for the current forwarding module.
+	*/
+	virtual bool isMetricDO(const DataObjectRef dObj) const;
+	
+	/**
+		This function returns a string with the node id for the node which 
+		created the given metric data object.
+		
+		Returns: if isMetricDO() would return true, a string containing a node 
+		id. Otherwise NULL.
+	*/
+	virtual const string getNodeIdFromMetricDataObject(DataObjectRef dObj) const;
+	
+	/**
+		This function returns a string with the metric for the node which 
+		created the given metric data object.
+		
+		Returns: if isMetricDO() would return true, a string containing a 
+		metric. Otherwise NULL.
+	*/
+	virtual const string getMetricFromMetricDataObject(DataObjectRef dObj) const;
 	
 	/*
 		The following functions are called by the forwarding manager as part of
