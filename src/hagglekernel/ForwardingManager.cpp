@@ -47,19 +47,7 @@ ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 	forwardDobjCallback = newEventCallback(onForwardDobjsCallback);
 	forwardRepositoryCallback = newEventCallback(onForwardRepositoryCallback);
 
-	forwardingModule = new ForwarderProphet(this);
-	kernel->getDataStore()->readRepository(
-		new RepositoryEntry(
-			"ForwardingManager", 
-			("Forwarder state: " + 
-				forwardingModule->forwardAttributeName).c_str()), 
-		forwardRepositoryCallback);
-	
-	// Search out any forwarding data objects in the data store. See the 
-	// declaration of myMetricDO in Forwarder.h.
-	kernel->getDataStore()->doFilterQuery(
-		new Filter(forwardingModule->forwardAttributeName + "=*"), 
-		forwardDobjCallback);
+	setForwardingModule(new ForwarderProphet(this));
 	
 	forwardQueryCallback = newEventCallback(onForwardQueryResult);
 
@@ -74,7 +62,13 @@ ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 ForwardingManager::~ForwardingManager()
 {
 	// Destroy the forwarding module:
-	delete forwardingModule;
+	if(forwardingModule)
+	{
+		HAGGLE_ERR(
+			"ERROR: forwarding module detected in forwarding manager "
+			"destructor. This shouldn't happen.");
+		delete forwardingModule;
+	}
 	
 	if (dataObjectQueryCallback)
 		delete dataObjectQueryCallback;
@@ -103,19 +97,49 @@ ForwardingManager::~ForwardingManager()
 		delete delayedDataObjectQueryCallback;
 }
 
+void ForwardingManager::setForwardingModule(Forwarder *forw)
+{
+	// Is there a current forwarding module?
+	if(forwardingModule)
+	{
+		// Yes. Store its state in the data store:
+		RepositoryEntryRef insertState(
+			new RepositoryEntry(
+				"ForwardingManager", 
+				("Forwarder state: " + 
+					forwardingModule->forwardAttributeName).c_str(),
+				forwardingModule->getEncodedState().c_str()), 
+				"Forwarder state insertion entry");
+		HAGGLE_DBG("Storing forwarder state: %s\n", insertState->getValue());
+		kernel->getDataStore()->insertRepository(insertState);
+		// ...and delete it:
+		delete forwardingModule;
+	}
+	// Change forwarding module:
+	forwardingModule = forw;
+	// Is there a new forwarding module?
+	if(forwardingModule)
+	{
+		// Yes. Get its state from the data store:
+		kernel->getDataStore()->readRepository(
+			new RepositoryEntry(
+				"ForwardingManager", 
+				("Forwarder state: " + 
+					forwardingModule->forwardAttributeName).c_str()), 
+			forwardRepositoryCallback);
+		
+		// Search out any forwarding data objects for this forwarding module in 
+		// the data store. See the declaration of myMetricDO in Forwarder.h.
+		kernel->getDataStore()->doFilterQuery(
+			new Filter(forwardingModule->forwardAttributeName + "=*"), 
+			forwardDobjCallback);
+	}
+}
+
 void ForwardingManager::onShutdown()
 {
-	// Store the forwarding module's state in the data store:
-	RepositoryEntryRef insertState(
-		new RepositoryEntry(
-			"ForwardingManager", 
-			("Forwarder state: " + 
-				forwardingModule->forwardAttributeName).c_str(),
-			forwardingModule->getEncodedState().c_str()), 
-			"Forwarder state insertion entry");
-	HAGGLE_DBG("Storing forwarder state: %s\n", insertState->getValue());
-	kernel->getDataStore()->insertRepository(insertState);
-
+	// Set the current forwarding module to none. See setForwardingModule().
+	setForwardingModule(NULL);
 	unregisterWithKernel();
 }
 
@@ -124,7 +148,10 @@ void ForwardingManager::onDebugCmd(Event *e)
 {
 	if (e) {
 		if (e->getDebugCmd()->getType() == DBG_CMD_PRINT_ROUTING_TABLE)
-			forwardingModule->doPrintRoutingTable();
+			if(forwardingModule)
+				forwardingModule->doPrintRoutingTable();
+			else
+				printf("No forwarding module");
 	}
 }
 #endif
@@ -225,7 +252,8 @@ bool ForwardingManager::shouldForward(DataObjectRef dObj, NodeRef node)
 
 void ForwardingManager::forwardByDelegate(DataObjectRef &dObj, NodeRef &target)
 {
-        forwardingModule->generateDelegatesFor(dObj, target);
+	if(forwardingModule)
+		forwardingModule->generateDelegatesFor(dObj, target);
 }
 
 void ForwardingManager::onDataObjectForward(Event *e)
@@ -414,7 +442,8 @@ void ForwardingManager::onForwardDobjsCallback(Event *e)
 		do {
 			dObj = qr->detachFirstDataObject();
 			if (dObj) {
-				forwardingModule->addMetricDO(dObj);
+				if(forwardingModule)
+					forwardingModule->addMetricDO(dObj);
 			}
 		} while (dObj);
 	}
@@ -432,32 +461,41 @@ void ForwardingManager::onForwardRepositoryCallback(Event *e)
 	
 	DataStoreQueryResult *qr = static_cast < DataStoreQueryResult * >(e->getData());
 	
-	// Are there any repository entries?
-	if (qr->countRepositoryEntries() != 0) {
-		RepositoryEntryRef re;
-		
-		// Then this is most likely the forwarding module's state:
-		
-		re = qr->detachFirstRepositoryEntry();
-		// Was there a repository entry? => was this really what we expected?
-		if (re) {
-			// Yes: give it to the forwarding module:
-			string str = re->getValue();
-			forwardingModule->setEncodedState(str);
+	/*
+		FIXME: we currently do not check to see if the query matches the 
+		current forwarding module, which could become a problem if you switch
+		forwarding modules before the previous state retreival has been 
+		received.
+	*/
+	if(forwardingModule)
+	{
+		// Are there any repository entries?
+		if (qr->countRepositoryEntries() != 0) {
+			RepositoryEntryRef re;
 			
-			// Remove any and all state data from the repository, to avoid 
-			// having old data in the data store to mess things up:
-			RepositoryEntryRef copy = new RepositoryEntry(re->getAuthority(), re->getKey());
-			kernel->getDataStore()->deleteRepository(copy);
+			// Then this is most likely the forwarding module's state:
+			
+			re = qr->detachFirstRepositoryEntry();
+			// Was there a repository entry? => was this really what we expected?
+			if (re) {
+				// Yes: give it to the forwarding module:
+				string str = re->getValue();
+				forwardingModule->setEncodedState(str);
+				
+				// Remove any and all state data from the repository, to avoid 
+				// having old data in the data store to mess things up:
+				RepositoryEntryRef copy = new RepositoryEntry(re->getAuthority(), re->getKey());
+				kernel->getDataStore()->deleteRepository(copy);
+			} else {
+				// No: tell the forwarding module there was no data:
+				string str = "";
+				forwardingModule->setEncodedState(str);
+			}
 		} else {
 			// No: tell the forwarding module there was no data:
 			string str = "";
 			forwardingModule->setEncodedState(str);
 		}
-	} else {
-		// No: tell the forwarding module there was no data:
-		string str = "";
-		forwardingModule->setEncodedState(str);
 	}
 	
 	delete qr;
@@ -475,26 +513,30 @@ void ForwardingManager::onForwardQueryResult(Event *e)
           Figure out which is actually the newest data object, and delete all 
           others.
 	*/
-	do {
-		current = qr->detachFirstDataObject();
-		if (forwardingModule->isMetricDO(current)) {
-			if (newest) {
-				HAGGLE_DBG("Deleting old forwarding objects from data store\n");
-				if (current->getCreateTime() > newest->getCreateTime()) {
-					// Delete the older forwarding data object, so we don't 
-					// clutter up the data store with old data.
-					kernel->getDataStore()->deleteDataObject(newest);
-					newest = current;
+	if (forwardingModule)
+	{
+		do {
+			current = qr->detachFirstDataObject();
+			if (forwardingModule->isMetricDO(current)) {
+				if (newest) {
+					HAGGLE_DBG(
+						"Deleting old forwarding object from data store\n");
+					if (current->getCreateTime() > newest->getCreateTime()) {
+						// Delete the older forwarding data object, so we don't 
+						// clutter up the data store with old data.
+						kernel->getDataStore()->deleteDataObject(newest);
+						newest = current;
+					} else {
+						// Delete this data object, so we don't clutter up the 
+						// data store with old data.
+						kernel->getDataStore()->deleteDataObject(current);
+					}
 				} else {
-					// Delete this data object, so we don't clutter up the data
-					// store with old data.
-					kernel->getDataStore()->deleteDataObject(current);
+					newest = current;
 				}
-			} else {
-				newest = current;
 			}
-		}
-	} while (current);
+		} while (current);
+	}
 	
 	delete qr;
 	
@@ -502,7 +544,8 @@ void ForwardingManager::onForwardQueryResult(Event *e)
 		Now tell the forwarding module the forwarding data has changed for that 
 		node.
 	*/
-	forwardingModule->addMetricDO(newest);
+	if (forwardingModule)
+		forwardingModule->addMetricDO(newest);
 }
 
 void ForwardingManager::onDelayedDataObjectQuery(Event *e)
@@ -531,7 +574,8 @@ void ForwardingManager::onNewNeighbor(Event *e)
 		return;
 	
 	// Tell the forwarding module that we've got a new neighbor:
-	forwardingModule->newNeighbor(node);
+	if (forwardingModule)
+		forwardingModule->newNeighbor(node);
 	
 	// Find matching data objects for the node and figure out whether it is a good
 	// delegate. But delay these operations in case we get a node update event for the
@@ -551,7 +595,8 @@ void ForwardingManager::onEndNeighbor(Event *e)
 		return;
 	
 	// Tell the forwarding module that we've got a new neighbor:
-	forwardingModule->endNeighbor(e->getNode());
+	if (forwardingModule)
+		forwardingModule->endNeighbor(e->getNode());
 }
 
 void ForwardingManager::onNodeUpdated(Event *e)
@@ -578,7 +623,8 @@ void ForwardingManager::onNodeUpdated(Event *e)
 		// Was this undefined?
 		if ((*it)->getType() == NODE_TYPE_UNDEF && node->isNeighbor()) {
 			// Yep. Tell the forwarding module that we've got a new neighbor:
-			forwardingModule->newNeighbor(node);
+			if (forwardingModule)
+				forwardingModule->newNeighbor(node);
 			break;
 		}
 		it++;
@@ -607,19 +653,25 @@ void ForwardingManager::findMatchingDataObjectsAndTargets(NodeRef& node)
 	// Check that this is an active neighbor node we can send to:
 	if (node->isNeighbor()) {
 		
-		// Send the neighbor our forwarding metric if we have one
-		if (forwardingModule->myMetricDO) {
-			HAGGLE_DBG("Sending forwarding data object to %\n", node->getName().c_str());
-			if (shouldForward(forwardingModule->myMetricDO, node)) {
-				if (addToSendList(forwardingModule->myMetricDO, node)) {
-					kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, forwardingModule->myMetricDO, node));
+		if (forwardingModule)
+		{
+			// Send the neighbor our forwarding metric if we have one
+			if (forwardingModule->myMetricDO) {
+				HAGGLE_DBG(
+					"Sending forwarding data object to %\n", 
+					node->getName().c_str());
+				if (shouldForward(forwardingModule->myMetricDO, node)) {
+					if (addToSendList(forwardingModule->myMetricDO, node)) {
+						kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, forwardingModule->myMetricDO, node));
+					}
+				} else {
+					HAGGLE_ERR("Could not forward MetricDo to neighbor\n");
 				}
-			} else {
-				HAGGLE_ERR("Could not forward MetricDo to neighbor\n");
 			}
+			// Ask the forwarding module for additional target nodes for which 
+			// this neighbor can act as delegate.
+			forwardingModule->generateTargetsFor(node);
 		}
-		// Ask the forwarding module for additional target nodes for which this neighbor can act as delegate.
-		forwardingModule->generateTargetsFor(node);
 	} else {
                 HAGGLE_ERR("Neighbor is not available, cannot send forwarding information\n");
         }
@@ -636,15 +688,19 @@ void ForwardingManager::onNewDataObject(Event * e)
 	
 	DataObjectRef dObj = e->getDataObject();
 
-	// Is this is a forwarding metric data object?
-	if (forwardingModule->isMetricDO(dObj)) {
-		if (forwardingModule->getNodeIdFromMetricDataObject(dObj) != "*") {
-			const Attribute *forwardingAttr = 
-				dObj->getAttribute(forwardingModule->forwardAttributeName);
-			// Figure out which forwarding objects are from this node:
-			kernel->getDataStore()->doFilterQuery(
-				new Filter(*forwardingAttr), 
-				forwardQueryCallback);
+	// Is this is a forwarding metric data object for the current forwarding 
+	// module?
+	if (forwardingModule)
+	{
+		if (forwardingModule->isMetricDO(dObj)) {
+			if (forwardingModule->getNodeIdFromMetricDataObject(dObj) != "*") {
+				const Attribute *forwardingAttr = 
+					dObj->getAttribute(forwardingModule->forwardAttributeName);
+				// Figure out which forwarding objects are from this node:
+				kernel->getDataStore()->doFilterQuery(
+					new Filter(*forwardingAttr), 
+					forwardQueryCallback);
+			}
 		}
 	}
 	
@@ -709,32 +765,39 @@ void ForwardingManager::onDelegateNodes(Event * e)
 
 void ForwardingManager::onSendMetric(Event * e)
 {
-	// Do we have a metric DO?
-	if (forwardingModule->myMetricDO) {
-		// Yes. Send it to all neighbors that don't already have it:
-		NodeRefList nodes;
-		
-		// Get all neighbors:
-		kernel->getNodeStore()->retrieveNeighbors(nodes);
-		
-		NodeRefList ns;
-		// For each neighbor:
-		for (NodeRefList::iterator it = nodes.begin(); it != nodes.end(); it++) {
-			// Send to that neighbor:
-			if (isNeighbor(*it) && shouldForward(forwardingModule->myMetricDO, *it)) {
-                                if (addToSendList(forwardingModule->myMetricDO, *it))
-                                        ns.push_front(*it);
-                        }
-                }
-                if (!ns.empty()) {
-			/*
-				Here, we don't send a _WILL_SEND event, because these data 
-				objects are not meant to be modified, and should eventually be 
-				removed entirely, in favor of using the node description to 
-				transmit the forwarding metric.
-			*/
-			kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, 
-                                                   forwardingModule->myMetricDO, ns));
+	// Do we have a forwarding module?
+	if (forwardingModule)
+	{
+		// Do we have a metric DO?
+		if (forwardingModule->myMetricDO) {
+			// Yes. Send it to all neighbors that don't already have it:
+			NodeRefList nodes;
+			
+			// Get all neighbors:
+			kernel->getNodeStore()->retrieveNeighbors(nodes);
+			
+			NodeRefList ns;
+			// For each neighbor:
+			for (NodeRefList::iterator it = nodes.begin(); it != nodes.end(); it++) {
+				// Send to that neighbor:
+				if (isNeighbor(*it) && shouldForward(forwardingModule->myMetricDO, *it)) {
+					if (addToSendList(forwardingModule->myMetricDO, *it))
+						ns.push_front(*it);
+				}
+			}
+			if (!ns.empty()) {
+				/*
+					Here, we don't send a _WILL_SEND event, because these data 
+					objects are not meant to be modified, and should eventually 
+					be removed entirely, in favor of using the node description 
+					to transmit the forwarding metric.
+				*/
+				kernel->addEvent(
+					new Event(
+						EVENT_TYPE_DATAOBJECT_SEND, 
+						forwardingModule->myMetricDO, 
+						ns));
+			}
 		}
 	}
 }

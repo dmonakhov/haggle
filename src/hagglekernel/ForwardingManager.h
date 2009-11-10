@@ -54,6 +54,21 @@ class ForwardingManager : public Manager
         // See comment in ForwardingManager.cpp about isNeighbor()
         bool isNeighbor(NodeRef& node);
         bool addToSendList(DataObjectRef& dObj, NodeRef& node, int repeatCount = 0);
+	/**
+		This function changes out the current forwarding module (initially none)
+		to the given forwarding module.
+		
+		The current forwarding module's state is stored in the repository before
+		the forwarding module is stopped and deleted.
+		
+		The given forwarding module's state (if any) is retreived from the 
+		repository, and all forwarding data objects that the forwarding module
+		is interested in is retreived from the data store.
+		
+		This function takes possession of the given forwarding module, and will
+		take responsibility for releasing it.
+	*/
+	void setForwardingModule(Forwarder *forw);
 public:
 	ForwardingManager(HaggleKernel *_kernel = haggleKernel);
 	~ForwardingManager();

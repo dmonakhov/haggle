@@ -178,20 +178,27 @@ public:
 	virtual void endNeighbor(NodeRef &neighbor) {}
 	
 	/**
-		Generates an event (EVENT_TYPE_TARGET_NODES) providing all the target 
-		nodes that the given node is a good delegate forwarder for.
-		
-		If no nodes are found, no event should be created.
-	*/
-	virtual void generateTargetsFor(NodeRef &neighbor) {}
-	
-	/**
 		Generates an event (EVENT_TYPE_DELEGATE_NODES) providing all the nodes 
 		that are good delegate forwarders for the given node.
+		
+		This function is given a target to which to send a data object, and 
+		answers the question: To which delegate forwarders can I send the given
+		data object, so that it will reach the given target?
 		
 		If no nodes are found, no event should be created.
 	*/
 	virtual void generateDelegatesFor(DataObjectRef &dObj, NodeRef &target) {}
+	
+	/**
+		Generates an event (EVENT_TYPE_TARGET_NODES) providing all the target 
+		nodes that the given node is a good delegate forwarder for.
+		
+		This function is given a current neighbor, and answers the question: 
+		For which nodes is the given node a good delegate forwarder?
+		
+		If no nodes are found, no event should be created.
+	*/
+	virtual void generateTargetsFor(NodeRef &neighbor) {}
 	
 	/**
 		Returns a string to store in the data base that encodes whatever 

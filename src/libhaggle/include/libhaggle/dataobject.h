@@ -68,12 +68,12 @@ typedef struct HAGGLE_API dataobject {
 #define DATAOBJECT_FLAG_ALL        ~0x0
 
 /* Global parameters */
-#define DATAOBJECT_CREATE_TIME_PARAM "create_time"
+#define DATAOBJECT_CREATE_TIME_PARAM "createTime"
 #define DATAOBJECT_PERSISTENT_PARAM "persistent"
 
 /* 'Data' portion of metadata */
 #define DATAOBJECT_METADATA_DATA "Data"
-#define DATAOBJECT_METADATA_DATA_DATALEN_PARAM "data_len"
+#define DATAOBJECT_METADATA_DATA_DATALEN_PARAM "dataLen"
 #define DATAOBJECT_METADATA_DATA_FILEPATH "FilePath"
 #define DATAOBJECT_METADATA_DATA_FILENAME "FileName"
 #define DATAOBJECT_METADATA_DATA_FILEHASH "FileHash"
