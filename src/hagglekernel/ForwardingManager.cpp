@@ -149,10 +149,12 @@ void ForwardingManager::onDebugCmd(Event *e)
 {
 	if (e) {
 		if (e->getDebugCmd()->getType() == DBG_CMD_PRINT_ROUTING_TABLE)
+		{
 			if(forwardingModule)
 				forwardingModule->doPrintRoutingTable();
 			else
 				printf("No forwarding module");
+		}
 	}
 }
 #endif

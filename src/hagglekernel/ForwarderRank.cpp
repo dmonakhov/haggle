@@ -49,8 +49,8 @@ void ForwarderRank::addMetricDO(DataObjectRef &metricDO)
 	if(!isMetricDO(metricDO))
 		return;
 
-	ranks[getNodeIdFromMetricDataObject(dObj)] = 
-		strtol(getMetricFromMetricDataObject(dObj).c_str(), NULL, 10);
+	ranks[getNodeIdFromMetricDataObject(metricDO)] = 
+		strtol(getMetricFromMetricDataObject(metricDO).c_str(), NULL, 10);
 
 	/*
 	// Output that we got a new metric do:
@@ -58,8 +58,8 @@ void ForwarderRank::addMetricDO(DataObjectRef &metricDO)
 	
 	str = 
 		"Got metric DO: " + 
-		getNodeIdFromMetricDataObject(dObj) + " - " + 
-		getMetricFromMetricDataObject(dObj);
+		getNodeIdFromMetricDataObject(metricDO) + " - " + 
+		getMetricFromMetricDataObject(metricDO);
 	HAGGLE_DBG("%s\n", str.c_str());
 	*/
 }
