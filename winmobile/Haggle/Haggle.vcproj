@@ -1522,6 +1522,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\hagglekernel\ForwarderRank.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\hagglekernel\ForwardingManager.cpp"
 				>
 			</File>
@@ -1765,6 +1769,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\hagglekernel\ForwarderProphet.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\hagglekernel\ForwarderRank.h"
 				>
 			</File>
 			<File
