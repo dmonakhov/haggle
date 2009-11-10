@@ -80,19 +80,8 @@ void ForwarderProphet::updateMetricDO(void)
 	bool shouldReplaceDO = true;
 	
 	if (myMetricDO) {
-		// Get the data:
-		Metadata *md = myMetricDO->getMetadata();
-                
-		if (md) {
-			md = md->getMetadata("Forward");
-			if (md) {
-				md = md->getMetadata("PRoPHET");
-				if (md) {
-					if (md->getContent() == forwarding_string)
-						shouldReplaceDO = false;
-				}
-			}
-		}
+		if(getMetricFromMetricDataObject(myMetricDO) == forwarding_string)
+			shouldReplaceDO = false;
 	}
 	
 	if (shouldReplaceDO) {
