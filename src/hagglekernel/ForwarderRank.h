@@ -33,7 +33,8 @@ class ForwarderRank : public Forwarder {
 public:
 	ForwarderRank(
 		ForwardingManager *m = NULL, 
-		const string name = "Rank forwarding module");
+		const string name = "Rank forwarding module",
+		const string _forwardAttributeName = "ForwarderRankMetricForNodeID");
 	~ForwarderRank();
 
 	virtual void addMetricDO(DataObjectRef &metricDO);

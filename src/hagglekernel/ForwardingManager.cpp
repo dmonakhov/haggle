@@ -17,6 +17,7 @@
 #include "ForwardingManager.h"
 #include "ForwarderEmpty.h"
 #include "ForwarderProphet.h"
+#include "ForwarderRank.h"
 
 ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 	Manager("ForwardingManager", _kernel), 

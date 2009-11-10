@@ -15,31 +15,21 @@
 
 #include "ForwarderRank.h"
 
-ForwarderRank::ForwarderRank(ForwardingManager *m, const string name) : Forwarder(m, name)
+ForwarderRank::ForwarderRank(
+	ForwardingManager *m, 
+	const string name, 
+	const string _forwardAttributeName) : 
+	Forwarder(m, name, _forwardAttributeName)
 {
-  const char *nodeId = getManager()->getKernel()->getThisNode()->getIdStr();
-  myRank = nodeId[0];
-
-	// Create a new data object:
-	myMetricDO = new DataObject((const char *) NULL, 0);
-
-	// Add the Forward=<node id>
-	myMetricDO->addAttribute("Forward", getManager()->getKernel()->getThisNode()->getIdStr());
-
-	// Get the metadata of the data object:
-	Metadata *md = myMetricDO->getMetadata();
-	// Find the "Forward" section:
-	Metadata *forw = md->getMetadata("Forward");
-	// No such section? Create one:
-	if (!forw) {
-		forw = md->addMetadata("Forward");
-	}
-	// Put in the rank in the forwarding section:
+	const char *nodeId = getManager()->getKernel()->getThisNode()->getIdStr();
+	myRank = nodeId[0];
+	
+	// Create a new forwarding data object with the rank as the metric:
 	String tmp;
 	stringprintf(tmp, "%ld", myRank);
-	forw->addMetadata("Rank", tmp);
-
-addMetricDO(myMetricDO);
+	createMetricDataObject(tmp);
+	
+	addMetricDO(myMetricDO);
 	/*
 	// Print the data object:
 	char *str;
@@ -56,31 +46,20 @@ ForwarderRank::~ForwarderRank()
 
 void ForwarderRank::addMetricDO(DataObjectRef &metricDO)
 {
-	if(!metricDO)
+	if(!isMetricDO(metricDO))
 		return;
 
-	const Attribute *attr = metricDO->getAttribute("Forward");
-	if(!attr)
-		return;
-
-	Metadata *md = metricDO->getMetadata();
-	// Find the "Forward" section:
-	Metadata *forw = md->getMetadata("Forward");
-	// No such section? This isn't valid:
-	if (!forw)
-		return;
-
-	Metadata *rank = forw->getMetadata("Rank");
-	if (!rank)
-		return;
-	
-	ranks[attr->getValue()] = strtol(rank->getContent().c_str(), NULL, 10);
+	ranks[getNodeIdFromMetricDataObject(dObj)] = 
+		strtol(getMetricFromMetricDataObject(dObj).c_str(), NULL, 10);
 
 	/*
 	// Output that we got a new metric do:
 	String str;
 	
-	str = "Got metric DO: " + attr->getValue() + " - " + rank->getContent();
+	str = 
+		"Got metric DO: " + 
+		getNodeIdFromMetricDataObject(dObj) + " - " + 
+		getMetricFromMetricDataObject(dObj);
 	HAGGLE_DBG("%s\n", str.c_str());
 	*/
 }
