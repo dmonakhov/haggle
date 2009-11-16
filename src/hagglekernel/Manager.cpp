@@ -16,6 +16,10 @@
 #include "Manager.h"
 #include "Event.h"
 #include "HaggleKernel.h"
+#include "Attribute.h"
+
+#define MANAGER_CONFIG_ATTR "ManagerConfiguration"
+#define FILTER_CONFIG MANAGER_CONFIG_ATTR "=" ATTR_WILDCARD
 
 Manager::Manager(const char *_name, HaggleKernel * _kernel) :
 		EventHandler(),
@@ -32,6 +36,14 @@ Manager::Manager(const char *_name, HaggleKernel * _kernel) :
 	setEventHandler(EVENT_TYPE_PREPARE_SHUTDOWN, _onPrepareShutdown);
 	setEventHandler(EVENT_TYPE_SHUTDOWN, _onShutdown);
 	
+	// Register filter for node descriptions
+	registerEventTypeForFilter(
+							   configEType,
+							   "Manager Configuration Filter Event",
+							   _onConfig,
+							   FILTER_CONFIG);
+	
+	
 	if (!kernel->registerManager(this)) {
 		HAGGLE_ERR("Could not register %s with kernel\n", name.c_str());
 #if HAVE_EXCEPTION
@@ -44,6 +56,8 @@ Manager::Manager(const char *_name, HaggleKernel * _kernel) :
 
 Manager::~Manager()
 {
+	// Remove the configuration filter
+	unregisterEventTypeForFilter(configEType);
 }
 
 
@@ -114,4 +128,9 @@ void Manager::_onShutdown(Event *e)
 {
 	state = MANAGER_STATE_SHUTDOWN;
 	onShutdown();
+}
+
+void Manager::_onConfig(Event *e)
+{
+	onConfig(e);
 }

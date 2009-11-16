@@ -143,6 +143,9 @@ DataManager::DataManager(HaggleKernel * _kernel, const bool _setCreateTimeOnBloo
 	RepositoryEntryRef timestamp = RepositoryEntryRef(new RepositoryEntry("DataManager", "Startup timestamp", Timeval::now().getAsString().c_str()));
 	kernel->getDataStore()->insertRepository(timestamp);
 
+	agingMaxAge = DEFAULT_AGING_MAX_AGE;
+	agingPeriod = DEFAULT_AGING_PERIOD;
+
 	agingEvent = registerEventType("Aging Event", onAging);
 	// Start aging:
 	onAging(NULL);
@@ -379,4 +382,35 @@ void DataManager::onAging(Event *e)
 		// FIXME: aging every 10 minutes is definately overkill...
 		kernel->addEvent(new Event(agingEvent, NULL, 10*60));
 	}
+}
+
+void DataManager::onConfig(Event * e)
+{
+	DataObjectRef dObj = e->getDataObject();
+	if (!dObj) return;
+	
+	// extract metadata
+	Metadata *m = dObj->getMetadata();
+	if (!m) return;
+	
+	// extract metadata relevant for ForwardingManager
+	m = m->getMetadata(this->getName());
+	if (!m) return;
+	
+	bool agingHasChanged = false;
+	
+	Metadata *tmp = NULL;
+	if ((tmp = m->getMetadata("AgingPeriod"))) {
+		agingPeriod = atoi(tmp->getContent().c_str());
+		HAGGLE_DBG("config agingPeriod=%d\n", agingPeriod);
+		agingHasChanged = true;
+	}
+	if ((tmp = m->getMetadata("AgingMaxAge"))) {
+		agingMaxAge = atoi(tmp->getContent().c_str());
+		HAGGLE_DBG("config agingMaxAge=%d\n", agingMaxAge);
+		agingHasChanged = true;
+	}
+
+	if (agingHasChanged)
+		onAging(NULL);
 }

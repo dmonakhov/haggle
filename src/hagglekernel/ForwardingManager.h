@@ -90,6 +90,7 @@ public:
 	void onTargetNodes(Event *e);
 	void onDelegateNodes(Event *e);
 	void onDelayedDataObjectQuery(Event *e);
+	void onConfig(Event *e);
 	void findMatchingDataObjectsAndTargets(NodeRef& node);
 #ifdef DEBUG
 	void onDebugCmd(Event *e);

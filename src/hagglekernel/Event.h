@@ -250,7 +250,7 @@ protected:
                 
 		return NULL;
         }
-        int addEventInterest(EventType type, EventCallback<EventHandler> *callback) {
+	int addEventInterest(EventType type, EventCallback<EventHandler> *callback) {
 		if (EVENT_TYPE_PUBLIC(type)) {
 			if (callbacks[type]) {
 				HAGGLE_ERR("EventHandler has already registered event type %d\n", type);
@@ -258,6 +258,14 @@ protected:
 				callbacks[type] = callback;
 				return 0;
 			}
+		}
+		return -1;
+	}
+	int removeEventInterest(EventType type) {
+		if (EVENT_TYPE_PUBLIC(type)) {
+			delete callbacks[type];
+			callbacks[type] = NULL;
+			return 0;
 		}
 		return -1;
 	}
@@ -276,6 +284,8 @@ protected:
 			&__CLASS__::func)
 #define setEventHandler(type, func)  \
 	addEventInterest(type, newEventCallback(func))
+#define removeEventHandler(type) \
+	removeEventInterest(type)
 #define registerEventType(name, func) \
 	Event::registerType(name, newEventCallback(func))
 #define registerEventTypeForFilter(evt, name, func, filter) \

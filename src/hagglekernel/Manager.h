@@ -70,6 +70,8 @@ private:
 	void _onStartup(Event *e);
 	void _onPrepareShutdown(Event *e);
 	void _onShutdown(Event *e);
+	void _onConfig(Event *e);
+	EventType configEType;
 protected:
         HaggleKernel *kernel;
 	virtual void onWatchableEvent(const Watchable& wbl) {}
@@ -115,6 +117,13 @@ protected:
 		onShutdown();
 	 */
 	virtual void onShutdown() { unregisterWithKernel(); }
+
+	/**
+	 This function is called when a configuration data object is sent to a haggle node.
+	 If implemented, the Manager might read the metadata to regrieve configuration
+	 information. 
+	 */
+	virtual void onConfig(Event *e) { }
 
 	bool unregisterWithKernel();
 	bool registerWithKernel();

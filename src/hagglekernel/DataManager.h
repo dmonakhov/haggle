@@ -15,6 +15,13 @@
 #ifndef _DATAMANAGER_H
 #define _DATAMANAGER_H
 
+
+// default values for simple aging
+#define DEFAULT_AGING_MAX_AGE 24*3600	// max age of data objects [s]
+#define DEFAULT_AGING_PERIOD  3600	// period between aging processes [s]
+
+
+
 /*
 	Forward declarations of all data types declared in this file. This is to
 	avoid circular dependencies. If/when a data type is added to this file,
@@ -69,6 +76,8 @@ class DataManager : public Manager
 	 */
 	Bloomfilter localBF;
 	bool setCreateTimeOnBloomfilterUpdate;
+	unsigned int agingMaxAge;
+	unsigned int agingPeriod;
 public:
         DataManager(HaggleKernel *_haggle = haggleKernel, const bool setCreateTimeOnBloomfilterUpdate = false);
         ~DataManager();
@@ -82,6 +91,7 @@ private:
 	void onDataTaskComplete(Event *e);
 	void onAging(Event *e);
 	void onShutdown();
+	void onConfig(Event *e);
 #if defined(ENABLE_METADAPARSER)
         bool onParseMetadata(Metadata *m);
 #endif
