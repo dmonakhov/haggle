@@ -51,7 +51,7 @@ typedef pthread_attr_t thread_handle_attr_t;
 #include <libhaggle/platform.h>
 #include <libhaggle/haggle.h>
 
-#define PID_FILE platform_get_path(PLATFORM_PATH_DATA, "/haggle.pid")
+#define PID_FILE platform_get_path(PLATFORM_PATH_PRIVATE, "/haggle.pid")
 
 #ifdef USE_UNIX_APPLICATION_SOCKET
 #define HAGGLE_UNIX_SOCK_PATH "/tmp/haggle.sock"

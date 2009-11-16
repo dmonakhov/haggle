@@ -204,6 +204,7 @@ char *strtok_r(char *s, const char *delim, char **last);
 
 typedef enum path_type {
         PLATFORM_PATH_PROGRAM,
+		PLATFORM_PATH_PRIVATE,
         PLATFORM_PATH_DATA,
         PLATFORM_PATH_TEMP,
 } path_type_t;

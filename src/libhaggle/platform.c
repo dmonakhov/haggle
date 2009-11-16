@@ -253,7 +253,10 @@ const char *platform_get_path(path_type_t type, const char *append)
                 case PLATFORM_PATH_PROGRAM:
                         wintype = CSIDL_PROGRAM_FILES;
                         break;
-                case PLATFORM_PATH_DATA:
+                case PLATFORM_PATH_PRIVATE:
+					wintype = CSIDL_APPDATA;
+					break;
+				case PLATFORM_PATH_DATA:
                         wintype = CSIDL_APPDATA;
 						fill_in_default_path();
 						len = strlen(path);
@@ -274,6 +277,7 @@ const char *platform_get_path(path_type_t type, const char *append)
 
 path_valid:
         if (type == PLATFORM_PATH_PROGRAM || 
+		type == PLATFORM_PATH_PRIVATE || 
 		type == PLATFORM_PATH_DATA || 
 		type == PLATFORM_PATH_TEMP) {
                 if (len + strlen(DEFAULT_STORAGE_PATH_POSTFIX) > MAX_PATH_LEN)
@@ -310,6 +314,7 @@ const char *platform_get_path(path_type_t type, const char *append)
 			folder = CSIDL_PROGRAM_FILES;
 #endif
 			break;
+                case PLATFORM_PATH_PRIVATE:
                 case PLATFORM_PATH_DATA:
 #if 0 // Only on Windows Vista
                         wintype = FOLDERID_LocalAppData;
@@ -345,6 +350,7 @@ const char *platform_get_path(path_type_t type, const char *append)
 #endif
 
         if (type == PLATFORM_PATH_PROGRAM || 
+		type == PLATFORM_PATH_PRIVATE || 
 		type == PLATFORM_PATH_DATA || 
 		type == PLATFORM_PATH_TEMP) {
                 if (len + strlen(DEFAULT_STORAGE_PATH_POSTFIX) > MAX_PATH_LEN)
@@ -367,6 +373,7 @@ const char *platform_get_path(path_type_t type, const char *append)
                 case PLATFORM_PATH_PROGRAM:
                         sprintf(path, "/system/bin");
                         break;
+                case PLATFORM_PATH_PRIVATE:
                 case PLATFORM_PATH_DATA:
                         strcpy(path, "/data/haggle");
                         break;
@@ -409,6 +416,7 @@ const char *platform_get_path(path_type_t type, const char *append)
                         // the iPhone apps are sandboxed.
                         strcpy(path, "/usr/bin");
                         break;
+                case PLATFORM_PATH_PRIVATE:
                 case PLATFORM_PATH_DATA:
                         strcpy(path, "/var/cache/haggle");
                         break;
@@ -443,6 +451,7 @@ const char *platform_get_path(path_type_t type, const char *append)
                 case PLATFORM_PATH_PROGRAM:
                         strcpy(path, "/usr/bin");
                         break;
+                case PLATFORM_PATH_PRIVATE:
                 case PLATFORM_PATH_DATA:
                         pwd = getpwuid(getuid());
 
