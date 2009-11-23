@@ -122,20 +122,36 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 		if (status == INTERFACE_STATUS_HAGGLE) {
 			report_interface = true;
 		} else if (status == INTERFACE_STATUS_UNKNOWN) {
-			unsigned char uuid[] = HAGGLE_BLUETOOTH_SDP_UUID;
-			GUID guid;
-			
-			convertUUIDBytesToGUID((char *)uuid, &guid);
-			
-			CM_DBG("Starting discovery for device %s\n", rd->name.c_str());
+			switch(ConnectivityBluetoothBase::classifyAddress(IFTYPE_BLUETOOTH, (char *)rd->bda))
+			{
+				case BLUETOOTH_ADDRESS_IS_UNKNOWN:
+				{
+					unsigned char uuid[] = HAGGLE_BLUETOOTH_SDP_UUID;
+					GUID guid;
+					
+					convertUUIDBytesToGUID((char *)uuid, &guid);
+					
+					CM_DBG("Starting discovery for device %s\n", rd->name.c_str());
 
-			int ret = WIDCOMMBluetooth::doDiscovery(rd, &guid);
+					int ret = WIDCOMMBluetooth::doDiscovery(rd, &guid);
 
-			if (ret > 0) {
-				report_interface = true;
-				conn->report_known_interface(IFTYPE_BLUETOOTH, (char *)rd->bda, true);
-			} else if (ret == 0) {
-				conn->report_known_interface(IFTYPE_BLUETOOTH, (char *)rd->bda, false);
+					if (ret > 0) {
+						report_interface = true;
+						conn->report_known_interface(IFTYPE_BLUETOOTH, (char *)rd->bda, true);
+					} else if (ret == 0) {
+						conn->report_known_interface(IFTYPE_BLUETOOTH, (char *)rd->bda, false);
+					}
+				}
+				break;
+
+				case BLUETOOTH_ADDRESS_IS_HAGGLE_NODE:
+					report_interface = true;
+					conn->report_known_interface(IFTYPE_BLUETOOTH, (char *)rd->bda, true);
+				break;
+				
+				case BLUETOOTH_ADDRESS_IS_NOT_HAGGLE_NODE:
+					conn->report_known_interface(IFTYPE_BLUETOOTH, (char *)rd->bda, false);
+				break;
 			}
 		} 
 
