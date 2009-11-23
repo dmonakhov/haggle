@@ -127,7 +127,9 @@ ConnectivityManager::~ConnectivityManager()
                 blacklist.pop_front();
                 delete iface;
         }
+#if defined(ENABLE_BLUETOOTH)
         ConnectivityBluetoothBase::clearSDPLists();
+#endif
 }
 
 void ConnectivityManager::onConfig(Event *e)
@@ -151,6 +153,7 @@ void ConnectivityManager::onConfig(Event *e)
         return;
     }
     
+#if defined(ENABLE_BLUETOOTH)
     /*
       Check for bluetooth module blacklisting/whitelisting data. For formatting
       information, see ConnectivityBluetoothBase::updateSDPList().
@@ -161,6 +164,7 @@ void ConnectivityManager::onConfig(Event *e)
     {
         ConnectivityBluetoothBase::updateSDPLists(bt);
     } 
+#endif
 }
 
 void ConnectivityManager::onBlacklistDataObject(Event *e)
