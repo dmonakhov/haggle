@@ -298,22 +298,36 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 
 		Address addy(AddressType_BTMAC, (unsigned char *) macaddr);
 		
-                status = conn->is_known_interface(IFTYPE_BLUETOOTH, macaddr);
-                
-                if (status == INTERFACE_STATUS_HAGGLE) {
+        status = conn->is_known_interface(IFTYPE_BLUETOOTH, macaddr);
+        
+        if (status == INTERFACE_STATUS_HAGGLE) {
+            report_interface = true;
+        } else if (status == INTERFACE_STATUS_UNKNOWN) {
+            switch(ConnectivityBluetoothBase::classifyAddress(IFTYPE_BLUETOOTH, macaddr))
+            {
+                case BLUETOOTH_ADDRESS_IS_UNKNOWN:
+                    channel = find_haggle_service(ii[i].bdaddr);
+                    
+                    if (channel > 0) {
                         report_interface = true;
-                } else if (status == INTERFACE_STATUS_UNKNOWN) {
-                        
-                        channel = find_haggle_service(ii[i].bdaddr);
-                        
-                        if (channel > 0) {
-				report_interface = true;
-				conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, true);
-			} else if (channel == 0) {
-				conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, false);
-			}
-                }
-
+                        conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, true);
+                    } else if (channel == 0) {
+                        conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, false);
+                    }
+                break;
+                    
+                case BLUETOOTH_ADDRESS_IS_HAGGLE_NODE:
+                    report_interface = true;
+                    conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, true);
+                break;
+                    
+                case BLUETOOTH_ADDRESS_IS_NOT_HAGGLE_NODE:
+                    conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, false);
+                break;
+            }
+        }
+        
+        
 		if (report_interface) {
                         Interface iface(IFTYPE_BLUETOOTH, macaddr, &addy, remote_name, IFFLAG_UP);
 

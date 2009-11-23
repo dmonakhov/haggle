@@ -32,7 +32,7 @@
 	Scans a bluetooth interface to find nearby haggle nodes. Reports any found
 	to the connectivity manager.
 */
-class ConnectivityBluetooth : public Connectivity
+class ConnectivityBluetooth : public ConnectivityBluetoothBase
 {
 	InterfaceRef rootInterface;
         BluetoothSDPServiceRecordHandle	mServerHandle;

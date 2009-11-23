@@ -127,6 +127,40 @@ ConnectivityManager::~ConnectivityManager()
                 blacklist.pop_front();
                 delete iface;
         }
+        ConnectivityBluetoothBase::clearSDPLists();
+}
+
+void ConnectivityManager::onConfig(Event *e)
+{
+    DataObjectRef dObj = e->getDataObject();
+    
+    if(!dObj) {
+		HAGGLE_DBG("no data object!\n");
+        return;
+    }
+    
+    if (!isValidConfigDataObject(dObj)) {
+		HAGGLE_DBG("Received INVALID config data object\n");
+		return;
+	}
+    
+    Metadata *mc = dObj->getMetadata()->getMetadata("ConnectivityManager");
+    
+    if (!mc) {
+        HAGGLE_ERR("No connectivity manager metadata in data object\n");
+        return;
+    }
+    
+    /*
+      Check for bluetooth module blacklisting/whitelisting data. For formatting
+      information, see ConnectivityBluetoothBase::updateSDPList().
+     */
+    Metadata *bt = mc->getMetadata("Bluetooth");
+    
+    if(bt)
+    {
+        ConnectivityBluetoothBase::updateSDPLists(bt);
+    } 
 }
 
 void ConnectivityManager::onBlacklistDataObject(Event *e)

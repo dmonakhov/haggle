@@ -26,6 +26,7 @@
 	remember to add it here.
 */
 class ConnectivityBluetooth;
+class ConnectivityBluetoothBase;
 
 #include "Connectivity.h"
 #include "Interface.h"
@@ -49,6 +50,46 @@ class ConnectivityBluetooth;
 	(BASE_TIME_BETWEEN_SCANS - RANDOM_TIME_AMOUNT + RANDOM_INT(2*RANDOM_TIME_AMOUNT))
 
 #define TIME_TO_WAIT_MSECS (TIME_TO_WAIT * 1000)
+
+// Return values from classifyAddress:
+#define BLUETOOTH_ADDRESS_IS_HAGGLE_NODE 0
+#define BLUETOOTH_ADDRESS_IS_NOT_HAGGLE_NODE 1
+#define BLUETOOTH_ADDRESS_IS_UNKNOWN 2
+
+class ConnectivityBluetoothBase : public Connectivity {
+private:
+    static Mutex sdpListMutex;
+	static InterfaceRefList sdpWhiteList;
+	static InterfaceRefList sdpBlackList;
+	static bool ignoreNonListedInterfaces;
+public:
+	/**
+		FIXME: I couldn't come up with a better name for this function. It 
+		should be renamed.
+		
+		This function returns one of the three return values above, depending on
+		certain things:
+			BLUETOOTH_ADDRESS_IS_HAGGLE_NODE:
+				This is returned if the address is whitelisted.
+			BLUETOOTH_ADDRESS_IS_NOT_HAGGLE_NODE:
+				This is returned if the address is blacklisted, or if it is not
+				whitelisted, and ignoreNonListedInterfaces is true.
+			BLUETOOTH_ADDRESS_IS_UNKNOWN:
+				This is returned if the address is neither whitelisted or 
+				blacklisted, and ignoreNonListedInterfaces is false.
+	*/
+	static int classifyAddress(const Interface &iface);
+	/**
+		See the other version of this function.
+	*/
+	static int classifyAddress(const InterfaceType_t type, const char *identifier);
+	
+    static void updateSDPLists(Metadata *md);
+    static void clearSDPLists();
+
+	ConnectivityBluetoothBase(ConnectivityManager *m, const string name = "Unnamed bluetooth connectivity");
+	~ConnectivityBluetoothBase();
+};
 
 #define _IN_CONNECTIVITYBLUETOOTH_H
 
