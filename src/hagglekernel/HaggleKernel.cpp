@@ -270,11 +270,102 @@ void HaggleKernel::shutdown()
 	addEvent(new Event(EVENT_TYPE_PREPARE_SHUTDOWN));
 }
 
+// FIXME: this file should most likely reside next to the haggle binary, or in
+// some other non-volatile place.
+#define STARTUP_DATAOBJECT_PATH (string(DEFAULT_DATASTORE_PATH).append("/startup.do"))
+
+void HaggleKernel::readStartupDataObjectFile(void)
+{
+	FILE	*fp;
+	long	i,len;
+	ssize_t	k;
+	size_t	j;
+	char	*data;
+	// Not using a ref here, because it's faster not to, and no other thread
+	// could possibly see this data object before we put it into an event,
+	// at which time it will be made into a data object reference anyway.
+	DataObject	*theDO = NULL;
+	
+	// Open file:
+	fp = fopen(STARTUP_DATAOBJECT_PATH.c_str(), "r");
+	// Did we succeed?
+	if(fp != NULL)
+	{
+		// Yes.
+		
+		// Figure out how large the file is.
+		fseek(fp, 0, SEEK_END);
+		// No, this does not handle files larger than 2^31 bytes, but that 
+		// shouldn't be a problem, and could be easily fixed if necessary.
+		len = ftell(fp);
+		fseek(fp, 0, SEEK_SET);
+		
+		// Allocate space to put the data in:
+		data = (char *) malloc(sizeof(char) * len);
+		if(data != NULL)
+		{
+			// Read the data:
+			if(fread(data, len, 1, fp) == 1)
+			{
+				// Success! Now create data object(s):
+				i = 0;
+				while(i < len)
+				{
+					if(theDO == NULL)
+						theDO = new DataObject((InterfaceRef) NULL);
+					
+					k = theDO->putData(&(data[i]), len - i, &j);
+					// Check return value:
+					if(k < 0)
+					{
+						// Error occured, stop everything:
+						HAGGLE_ERR(
+							"Error parsing startup data object "
+							"(byte %ld of %ld)\n", i, len);
+						i = len;
+					}else{
+						// No error, check if we're done:
+						if(k == 0 || j == 0)
+						{
+							// Done with this data object:
+							addEvent(
+								new Event(
+									EVENT_TYPE_DATAOBJECT_RECEIVED, 
+									DataObjectRef(theDO)));
+							// Should absolutely not deallocate this, since it 
+							// is in the event queue:
+							theDO = NULL;
+							// These bytes have been consumed:
+							i += k;
+						}else if(k > 0)
+						{
+							// These bytes have been consumed:
+							i += k;
+						}
+					}
+				}
+				// Clean up:
+				if(theDO)
+				{
+					delete theDO;
+				}
+			}
+			free(data);
+		}
+		// Close the file:
+		fclose(fp);
+	}else{
+		// Else: No. But that's ok.
+	}
+}
+
 void HaggleKernel::run()
 {
 	bool shutdownmode = false;
 	
 	addEvent(new Event(EVENT_TYPE_PREPARE_STARTUP));
+	
+	readStartupDataObjectFile();
 	
 	while (registry.size()) {
 		Watch w;

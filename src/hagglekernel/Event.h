@@ -60,6 +60,15 @@ typedef int EventType;
 	These are the different haggle events, and a short description of what they
 	mean and what managers can/should do about them.
 	
+	EVENT_TYPE_PREPARE_STARTUP:
+	FIXME: Undocumented. Please fill in.
+	
+	EVENT_TYPE_STARTUP:
+	FIXME: Undocumented. Please fill in.
+	
+	EVENT_TYPE_PREPARE_SHUTDOWN:
+	FIXME: Undocumented. Please fill in.
+	
 	EVENT_TYPE_SHUTDOWN:
 	This event is posted once when the haggle kernel is starting to shut down, 
 	and is a signal to all managers that they should deregister.

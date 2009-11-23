@@ -69,6 +69,12 @@ class HaggleKernel : public EventQueue
 	registry_t registry;
 	const string storagepath; // Path to where we can write files, etc.
 	void closeAllSockets();
+	
+	/**
+		This function is called by the run() function to locate and read the
+		startup data object file, and add the content to the event queue.
+	*/
+	void readStartupDataObjectFile(void);
 public:
 	
 	InterfaceStore *getInterfaceStore() { return &interfaceStore; }
