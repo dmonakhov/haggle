@@ -29,7 +29,6 @@ libhagglekernel_a_SOURCES = \
 	Queue.cpp \
 	Policy.cpp \
 	Manager.cpp \
-	ManagerModule.cpp \
 	NodeManager.cpp \
 	DataManager.cpp \
 	ProtocolManager.cpp \
