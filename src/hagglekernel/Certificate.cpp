@@ -20,9 +20,27 @@
 #include <openssl/x509.h>
 #include <openssl/opensslv.h>
 #include <openssl/bn.h>
+#include <openssl/err.h>
 
 #include <string.h>
 #include <base64.h>
+
+// The reason for this function being a macro, is so that HAGGLE_DBG can 
+// specify which function called writeErrors().
+#define writeErrors(prefix) \
+{ \
+	unsigned long writeErrors_e; \
+	char writeErrors_buf[256]; \
+	do{ \
+		writeErrors_e = ERR_get_error(); \
+		if(writeErrors_e != 0) \
+			HAGGLE_DBG( \
+				prefix "%s\n", \
+				ERR_error_string( \
+					writeErrors_e, \
+					writeErrors_buf)); \
+	}while(writeErrors_e != 0); \
+}
 
 Certificate::Certificate(X509 *_x) : 
 #ifdef DEBUG_LEAKS
@@ -316,6 +334,7 @@ bool Certificate::sign(RSA *key)
 	
 	if (!pkey) {
 		HAGGLE_ERR("Could not allocate EVP_PKEY\n");
+		writeErrors("");
 		return false;
 	}
 	
@@ -325,6 +344,8 @@ bool Certificate::sign(RSA *key)
 		hasSignature = res = true;
 	
 	EVP_PKEY_free(pkey);
+	
+	writeErrors("");
 	
 	return res;
 }
@@ -340,16 +361,20 @@ bool Certificate::verifySignature(RSA *key)
 	
 	if (!pkey) {
 		HAGGLE_ERR("Could not allocate EVP_PKEY\n");
+		writeErrors("");
 		return false;
 	}
 	
 	EVP_PKEY_set1_RSA(pkey, key);
 	
-	if (X509_verify(x, pkey)) {
+	// X509 apparently returns 0 or -1 on failure:
+	if (X509_verify(x, pkey) == 1) {
 		verified = res = true;
 	}
 	
 	EVP_PKEY_free(pkey);
+	
+	writeErrors("");
 	
 	return res;
 }
