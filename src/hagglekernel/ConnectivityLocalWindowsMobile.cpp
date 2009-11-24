@@ -333,7 +333,11 @@ bool ConnectivityLocal::run()
 		if (reenableBluetoothStack) {
 			Sleep(2000);
 			reenableBluetoothStack = false;
+#if defined(WIDCOMM_BLUETOOTH)
+			BthSetMode(0);
+#else
 			BthSetMode(BTH_DISCOVERABLE);
+#endif
 		}
 #endif
 

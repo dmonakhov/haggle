@@ -1550,10 +1550,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\hagglekernel\ManagerModule.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\hagglekernel\Metadata.cpp"
 				>
 			</File>
