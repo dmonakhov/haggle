@@ -367,7 +367,8 @@ bool Certificate::verifySignature(RSA *key)
 	
 	EVP_PKEY_set1_RSA(pkey, key);
 	
-	if (X509_verify(x, pkey)) {
+	// X509 apparently returns 0 or -1 on failure:
+	if (X509_verify(x, pkey) == 1) {
 		verified = res = true;
 	}
 	
