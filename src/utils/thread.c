@@ -21,11 +21,15 @@
 */
 
 #include "thread.h"
+#include "prng.h"
+
+#if defined(WIN32) || defined(WINCE)
+#define OS_WINDOWS
+#endif
 
 #include <stdlib.h>
 #if defined(OS_WINDOWS)
 #include <windows.h>
-#include <vector>
 #elif defined(OS_LINUX) || defined(OS_MACOSX)
 #define HAS_PTHREADS
 #include <pthread.h>
@@ -110,6 +114,9 @@ void *
 #endif
 	start_thread(run_arg arg)
 {
+#ifdef OS_WINDOWS
+	prng_init();
+#endif
 	((void (*)(int))(arg->func))(arg->param);
 	free(arg);
 #ifdef HAS_PTHREADS

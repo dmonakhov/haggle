@@ -1481,6 +1481,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\utils\thread.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\utils\utils.c"
 				>
 			</File>
@@ -1508,6 +1512,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\utils\prng.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\utils\thread.h"
 				>
 			</File>
 			<File

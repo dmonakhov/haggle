@@ -20,6 +20,8 @@
 extern "C" {
 #endif
 
+#include "prng.h"
+
 // If compiling for Android, also define OS_LINUX
 #if defined(OS_ANDROID)
 #ifndef OS_LINUX
@@ -86,7 +88,7 @@ void buf2str(const char* buf, char* str, int len);
 void str2buf(const char* str, char* buf, int len);
 unsigned short in_cksum(const unsigned short *addr, register int len, unsigned short csum);
 
-#define RANDOM_INT(max) ((unsigned int)(max*((double)rand() / RAND_MAX)))
+#define RANDOM_INT(max) ((unsigned int)(max*(((double)prng_uint32()) / ((double)0xFFFFFFFF))))
 
 /**
 	This function makes the current thread sleep for at least the given number

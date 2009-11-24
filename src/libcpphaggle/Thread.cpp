@@ -28,6 +28,7 @@
 
 // For TRACE macro
 #include <haggleutils.h>
+#include <prng.h>
 
 namespace haggle {
 
@@ -156,6 +157,9 @@ void Thread::registryPrint()
 
 start_ret_t start_thread(void *arg)
 {
+#ifdef OS_WINDOWS
+	prng_init();
+#endif
 	Runnable *runObj = static_cast < Runnable * >(arg);
 	Thread *thr = runObj->thr;
 #if HAVE_EXCEPTION	
