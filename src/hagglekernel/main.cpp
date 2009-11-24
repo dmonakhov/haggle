@@ -451,7 +451,7 @@ int run_haggle()
 #endif
       
         /* Seed the random number generator */
-	srand(Timeval::now().getMicroSeconds());
+	prng_init();
 
         kernel = new HaggleKernel(new SQLDataStore(recreateDataStore));
 
