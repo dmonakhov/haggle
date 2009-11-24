@@ -21,6 +21,24 @@
 #include <openssl/bio.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
+#include <openssl/err.h>
+
+// The reason for this function being a macro, is so that HAGGLE_DBG can 
+// specify which function called writeErrors().
+#define writeErrors(prefix) \
+{ \
+	unsigned long writeErrors_e; \
+	char writeErrors_buf[256]; \
+	do{ \
+		writeErrors_e = ERR_get_error(); \
+		if(writeErrors_e != 0) \
+			HAGGLE_DBG( \
+				prefix "%s\n", \
+				ERR_error_string( \
+					writeErrors_e, \
+					writeErrors_buf)); \
+	}while(writeErrors_e != 0); \
+}
 
 /* 
  Private and public key of certificate authority in PEM format.
@@ -188,10 +206,12 @@ bool SecurityHelper::verifyDataObject(DataObjectRef& dObj, CertificateRef& cert)
 		HAGGLE_ERR("No signature in data object, cannot verify\n");
 		return false;
 	}	
+	writeErrors("(not this): ");
 	
 	if (RSA_verify(NID_sha1, dObj->getId(), sizeof(DataObjectId_t), 
 		       const_cast<unsigned char *>(dObj->getSignature()), dObj->getSignatureLength(), key) != 1) {
 		char buf[10000];
+		writeErrors("");
 		dObj->getRawMetadata(buf, sizeof(buf));
 		HAGGLE_DBG("Signature is invalid:\n%s\n", buf);
 		dObj->setSignatureStatus(DATAOBJECT_SIGNATURE_INVALID);
@@ -238,9 +258,18 @@ void SecurityHelper::doTask(SecurityTask *task)
 						if (task->cert->isVerified()) {
 							HAGGLE_DBG("Certificate is valid, adding to store\n");
 							getManager()->storeCertificate(task->cert, true);
+						}else{
+							HAGGLE_DBG("Invalid certificate.\n");
 						}
+					}else{
+						HAGGLE_DBG(
+							"Unable to create certificate from metadata\n");
 					}
+				}else{
+					HAGGLE_DBG("No certificate in metadata\n");
 				}
+			}else{
+				HAGGLE_DBG("No security metadata\n");
 			}
                         break;
                 case SECURITY_TASK_VERIFY_DATAOBJECT:
@@ -358,7 +387,7 @@ SecurityManager::SecurityManager(HaggleKernel *_haggle, const SecurityLevel_t sl
 
 	HAGGLE_DBG("Successfully read CA's public key\n");
 
-	EventType etype = registerEventType("SecurityTaskEvent", onSecurityTaskComplete);
+	etype = registerEventType("SecurityTaskEvent", onSecurityTaskComplete);
 
 	HAGGLE_DBG("Security level is set to %s\n", security_level_names[securityLevel]);
 	
@@ -368,6 +397,8 @@ SecurityManager::SecurityManager(HaggleKernel *_haggle, const SecurityLevel_t sl
 		HAGGLE_DBG("Starting security helper...\n");
 		helper->start();
 	}
+	// Load ssl error strings. Needed by ERR_error_string()
+	ERR_load_crypto_strings();
 }
 
 SecurityManager::~SecurityManager()
@@ -388,6 +419,9 @@ SecurityManager::~SecurityManager()
 	
 	if (onRepositoryDataCallback)
 		delete onRepositoryDataCallback;
+	
+	// Release ssl error strings.
+	ERR_free_strings();
 }
 
 void SecurityManager::onPrepareStartup()

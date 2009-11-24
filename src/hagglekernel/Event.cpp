@@ -794,14 +794,25 @@ int Event::registerType(const char *name, EventCallback < EventHandler > *_callb
 int Event::unregisterType(EventType _type)
 {
 	if (!EVENT_TYPE_PRIVATE(_type))
+	{
+		HAGGLE_ERR("Tried to delete event non-private event type %d\n", _type);
 		return -1;
+	}
 
-	HAGGLE_DBG("Deleting event type %s\n", eventNames[_type]);
+	if(privCallbacks[privTypeToCallbackIndex(_type)] != NULL)
+	{
+		HAGGLE_DBG("Deleting event type %d: %s\n", _type, eventNames[_type]);
 
-	delete privCallbacks[privTypeToCallbackIndex(_type)];
-	privCallbacks[privTypeToCallbackIndex(_type)] = NULL;
-	free(const_cast < char *>(eventNames[_type]));
-	eventNames[_type] = NULL;
+		delete privCallbacks[privTypeToCallbackIndex(_type)];
+		privCallbacks[privTypeToCallbackIndex(_type)] = NULL;
+		free(const_cast < char *>(eventNames[_type]));
+		eventNames[_type] = NULL;
 
-	return --num_event_types;
+		return --num_event_types;
+	}else{
+		HAGGLE_ERR(
+			"Tried to delete empty event type %d, double delete?\n", 
+			_type);
+		return -1;
+	}
 }

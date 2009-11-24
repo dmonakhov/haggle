@@ -62,7 +62,7 @@ class Certificate
 	char *x509_PEM_str;
 	
 	bool createDigest(unsigned char digest[SHA_DIGEST_LENGTH], const string data) const;
-
+	
 	Certificate(X509 *_x);
 	Certificate(const string& _subject, const string& _issuer, const string& _validity, const NodeId_t _owner, RSA *_pubKey);
 public:
