@@ -48,6 +48,15 @@ struct bloomfilter *bloomfilter_new(float error_rate, unsigned int capacity)
 	
 	salts = (salt_t *)BLOOMFILTER_GET_SALTS(bf);
 
+	{
+	// Seed the rand() function's state. rand() should probably be replaced
+	// by prng_uint8() or prnguint32(), but I don't know if there would be any
+	// bad effects of doing that.
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	srand(tv.tv_usec);
+	}
+	
 	/* Create salts for hash functions */
 	for (i = 0; i < k; i++) {
 		salts[i] = (salt_t)rand();
