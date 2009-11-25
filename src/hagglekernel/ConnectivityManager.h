@@ -124,7 +124,6 @@ class ConnectivityManager : public Manager
 protected:
     virtual void onConfig(Event *e);
 public:	
-	EventType garbageEType;
 	EventType deleteConnectivityEType;
 
 	/*
@@ -257,7 +256,6 @@ public:
         void onDeleteConnectivity(Event *e);
         void onReceivedDataObject(Event *e);
         void onFailedToSendDataObject(Event *e);
-        void on_GC_snooped_ifaces(Event *e);
         void onNewPolicy(Event *e);
 
 	void onStartup();
