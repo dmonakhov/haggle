@@ -16,6 +16,7 @@
 #include <libhaggle/list.h>
 #include <string.h>
 #include <libxml/tree.h>
+#include "debug.h"
 
 static int metadata_xml_parse(metadata_t *m, xmlNodePtr xn)
 {

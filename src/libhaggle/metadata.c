@@ -15,6 +15,7 @@
 #include "metadata.h"
 #include <stdio.h>
 #include <string.h>
+#include "debug.h"
 
 static inline void metadata_iterator_init(struct metadata_iterator *it, list_t *head, const char *name)
 {
