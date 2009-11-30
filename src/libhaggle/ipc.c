@@ -498,8 +498,9 @@ static int spawn_daemon_internal(const char *daemonpath)
 	}
 
 #elif defined(OS_WINDOWS)
+	{
 	PROCESS_INFORMATION pi;
-	bool ret;
+	int ret;
 #if defined(OS_WINDOWS_MOBILE) || defined(OS_WINDOWS_VISTA)
 	wchar_t *path = strtowstr(daemonpath);
 #else
@@ -517,6 +518,7 @@ static int spawn_daemon_internal(const char *daemonpath)
 		LIBHAGGLE_ERR("Could not create process\n");
 		ret = HAGGLE_ERROR;
 		goto fail_start;
+	}
 	}
 #endif
 	

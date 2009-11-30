@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "debug.h"
 
 #ifdef OS_WINDOWS
 /*
