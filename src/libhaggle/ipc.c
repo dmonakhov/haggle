@@ -437,26 +437,66 @@ int haggle_daemon_pid(unsigned long *pid)
 
 static int spawn_daemon_internal(const char *daemonpath)
 {
+	int ret = HAGGLE_ERROR;
+	int status;
+	SOCKET sock;
+	fd_set readfds;
+	struct timeval tv;
+	int time_left;
+	int maxfd = 0;
+	
+#if defined(OS_WINDOWS)
+	if (num_handles == 0) {
+		int iResult = 0;
+		WSADATA wsaData;
+
+		// Make sure Winsock is initialized
+		iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
+
+		if (iResult != 0) {
+			ret = HAGGLE_WSA_ERROR;
+			goto fail_setup;
+		}
+	}
+#endif
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+
+	if (sock == INVALID_SOCKET) {
+		ret = HAGGLE_SOCKET_ERROR;
+		haggle_set_socket_error();
+		goto fail_sock;
+	}
+	
+	haggle_addr.sin_family = AF_INET;
+	haggle_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	haggle_addr.sin_port = htons(8788);
+	if(bind(sock, (struct sockaddr *) &haggle_addr, sizeof(haggle_addr)) == 
+		SOCKET_ERROR)
+	{
+		ret = HAGGLE_SOCKET_ERROR;
+		haggle_set_socket_error();
+		goto fail_start;
+	}
 #if defined(OS_UNIX)
 #define PATH_LEN 200
 	char cmd[PATH_LEN];
+	
+	if (!daemonpath)
+	{
+		ret = HAGGLE_ERROR;
+		goto fail_start;
+	}
 
-        if (!daemonpath)
-                return HAGGLE_ERROR;
+	snprintf(cmd, PATH_LEN, "%s -d", daemonpath);
+	
+	LIBHAGGLE_DBG("Trying to spawn daemon using %s\n", daemonpath);
 
-        snprintf(cmd, PATH_LEN, "%s -d", daemonpath);
-        
-        LIBHAGGLE_DBG("Trying to spawn daemon using %s\n", daemonpath);
+	if (system(cmd) != 0) {
+		LIBHAGGLE_ERR("could not start Haggle daemon\n");
+		ret = HAGGLE_ERROR;
+		goto fail_start;
+	}
 
-        if (system(cmd) != 0) {
-                fprintf(stderr, "could not start Haggle daemon\n");
-                return HAGGLE_ERROR;
-        }
-
-        /* Sleep a couple of seconds, just to let Haggle start before
-           we the application tries to connect. */
-
-        sleep(3);
 #elif defined(OS_WINDOWS)
 	PROCESS_INFORMATION pi;
 	bool ret;
@@ -475,18 +515,52 @@ static int spawn_daemon_internal(const char *daemonpath)
 #endif
 	if (ret == 0) {
 		LIBHAGGLE_ERR("Could not create process\n");
-		return HAGGLE_ERROR;
+		ret = HAGGLE_ERROR;
+		goto fail_start;
 	}
-	/* Sleep a couple of seconds, just to let Haggle start before
-           the application tries to connect. The time needed can vary
-	   depending on the speed of the device. We try to be conservative...
-	   */
-	Sleep(8000);
 #endif
-        if (haggle_daemon_pid(NULL) != 0)
-                return 1;
+	
+	// Wait for 60 seconds max.
+	time_left = 60;
+	tv.tv_sec = 1;
+	tv.tv_usec = 0;
+	do{
+		FD_ZERO(&readfds);
+		FD_SET(sock, &readfds);
+		
+		maxfd = sock;
+		
+		status = select(maxfd + 1, &readfds, NULL, NULL, &tv);
 
-        return HAGGLE_ERROR;
+		if (status < 0) {
+			ret = HAGGLE_SOCKET_ERROR;
+			haggle_set_socket_error();
+		} else if (ret == 0) {
+			// Timeout!
+			
+			// FIXME: call a callback function to provide feedback.
+			time_left--;
+			tv.tv_sec = 1;
+			tv.tv_usec = 0;
+			if(time_left == 0)
+				ret = HAGGLE_DAEMON_ERROR;
+		} else if (FD_ISSET(sock, &readfds)) {
+			// FIXME: should probably check that the message is a correct data 
+			// object first...
+			ret = HAGGLE_NO_ERROR;
+		}
+	}while(ret == HAGGLE_ERROR);
+	
+fail_start:
+	CLOSE_SOCKET(sock);
+fail_sock:
+#if defined(WIN32) || defined(WINCE)
+	if (num_handles == 0) {
+		WSACleanup();
+	}
+fail_setup:;
+#endif
+	return ret;
 }
 
 int haggle_daemon_spawn(const char *daemonpath)
@@ -617,7 +691,7 @@ int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ig
 	if (!dobj) {
 		CLOSE_SOCKET(hh->sock);
 		free(hh);
-                //fprintf(stderr, "could not allocate data object\n");
+                //LIBHAGGLE_ERR("could not allocate data object\n");
 		return HAGGLE_ALLOC_ERROR;
 	}
 

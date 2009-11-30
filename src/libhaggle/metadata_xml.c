@@ -109,7 +109,7 @@ metadata_t *metadata_xml_new_from_xml(const char *raw, size_t len)
         doc = xmlParseMemory(raw, len);
         
         if (!doc) {
-                fprintf(stderr, "initDoc failed for:\n%s\n", raw);
+                LIBHAGGLE_ERR("initDoc failed for:\n%s\n", raw);
                 return NULL;
         }
 
@@ -123,7 +123,7 @@ metadata_t *metadata_xml_new_from_xml(const char *raw, size_t len)
         }
 
         if (!metadata_xml_parse(m, xmlDocGetRootElement(doc))) {
-                fprintf(stderr, "Parse XML failed\n");
+                LIBHAGGLE_ERR("Parse XML failed\n");
                 xmlFreeDoc(doc);
                 metadata_free(m);
                 return NULL;

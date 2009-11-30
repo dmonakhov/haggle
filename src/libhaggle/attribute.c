@@ -242,7 +242,7 @@ struct attributelist *haggle_attributelist_new_from_string(const char *str)
 			namevalue[i] = strtok_r(token, "=", &save_ptr2);
 			
 			if  (!namevalue[i]) {
-				fprintf(stderr, "bad name-value-pair in string\n");
+				LIBHAGGLE_ERR("bad name-value-pair in string\n");
 				haggle_attributelist_free(al);
 				free(wstr);
 				return NULL;
@@ -257,7 +257,7 @@ struct attributelist *haggle_attributelist_new_from_string(const char *str)
 
 	if (n == 0) {
 		haggle_attributelist_free(al);
-		fprintf(stderr, "%s: Bad attribute string \'%s\'\n", __FUNCTION__, str);
+		LIBHAGGLE_ERR("%s: Bad attribute string \'%s\'\n", __FUNCTION__, str);
 		return NULL;
 	}
 

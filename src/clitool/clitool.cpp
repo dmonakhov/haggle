@@ -67,6 +67,7 @@ int main(int argc, char *argv[])
 		command_new_dataobject,
 		command_blacklist,
 		command_shutdown,
+		command_start,
 		command_fail,
 		command_none
 	} command = command_none;
@@ -119,6 +120,9 @@ int main(int argc, char *argv[])
 		}else if(command == command_none && strcmp(argv[i], "shutdown") == 0)
 		{
 			command = command_shutdown;
+		}else if(command == command_none && strcmp(argv[i], "start") == 0)
+		{
+			command = command_start;
 		}else{
 			printf("Unrecognized parameter: %s\n", argv[i]);
 			command = command_fail;
@@ -175,6 +179,8 @@ int main(int argc, char *argv[])
 "clitool [-p <name of program>] [-f <filename>] new <attribute>\n"
 "clitool [-p <name of program>] get\n"
 "clitool [-p <name of program>] blacklist <Ethernet MAC address>\n"
+"clitool [-p <name of program>] shutdown\n"
+"clitool [-p <name of program>] start\n"
 "\n"
 "-p          Allows this program to masquerade as another.\n"
 "-f          Allows this program to add a file as content to a data object.\n"
@@ -186,6 +192,7 @@ int main(int argc, char *argv[])
 "get         Tries to retrieve all interests for this application.\n"
 "blacklist   Toggles blacklisting of the given interface.\n"
 "shutdown    Terminates haggle\n"
+"start       Starts haggle\n"
 "\n"
 "Attributes are specified as such: <name>=<value>[:<weight>]. Name and value\n"
 "are text strings, and weight is an optional integer. Name can of course not\n"
@@ -200,11 +207,14 @@ int main(int argc, char *argv[])
 	
 	set_trace_level(1);
 	
-	// Find Haggle:
-        retval = haggle_handle_get(progname, &haggle_);
+	if(command != command_start)
+	{
+		// Find Haggle:
+		retval = haggle_handle_get(progname, &haggle_);
 
-	if(retval != HAGGLE_NO_ERROR)
-		goto fail_haggle;
+		if(retval != HAGGLE_NO_ERROR)
+			goto fail_haggle;
+	}
 	
 	switch(command)
 	{
@@ -311,6 +321,15 @@ int main(int argc, char *argv[])
 		}
 		break;	
 			
+		case command_start:
+		{
+			retval = haggle_daemon_spawn(NULL);
+			if(retval != HAGGLE_NO_ERROR)
+				printf("Haggle error: %d\n", retval);
+			retval = 0;
+		}
+		break;	
+			
 		// Shouldn't be able to get here:
 		default:
 		break;
@@ -319,7 +338,8 @@ int main(int argc, char *argv[])
 	retval = 0;
 	
 	// Release the haggle handle:
-	haggle_handle_free(haggle_);
+	if(command != command_start)
+		haggle_handle_free(haggle_);
 fail_haggle:
 	return retval;
 }

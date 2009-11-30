@@ -200,7 +200,7 @@ void fill_in_default_path()
 		GetDiskFreeSpaceEx(best_path, &best_avail, &best_size, NULL);
 		best_path_has_haggle_folder = has_haggle_folder(best_path);
 	}
-	fprintf(stderr,"Found data card path: \"%ls\" (size: %I64d/%I64d, haggle folder: %s)\n", 
+	LIBHAGGLE_ERR("Found data card path: \"%ls\" (size: %I64d/%I64d, haggle folder: %s)\n", 
 		best_path, best_avail, best_size,
 		best_path_has_haggle_folder?"Yes":"No");
 
@@ -216,7 +216,7 @@ void fill_in_default_path()
 				
 				GetDiskFreeSpaceEx(find_data.cFileName, &avail, &size, &free);
 				haggle_folder = has_haggle_folder(find_data.cFileName);
-				fprintf(stderr,"Found data card path: \"%ls\" (size: %I64d/%I64d, haggle folder: %s)\n", 
+				LIBHAGGLE_ERR("Found data card path: \"%ls\" (size: %I64d/%I64d, haggle folder: %s)\n", 
 					find_data.cFileName, avail, size,
 					haggle_folder?"Yes":"No");
 				// is this a better choice than the previous one?

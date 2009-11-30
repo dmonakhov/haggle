@@ -164,6 +164,50 @@ ApplicationManager::~ApplicationManager()
 		delete onRetrieveAppNodesCallback;
 }
 
+void ApplicationManager::onStartup()
+{
+	/*
+		This function is called when haggle has finished starting up. Here
+		we wish to tell any application waiting for haggle to start up that
+		we've finished. We do this by sending a data object to a specific UDP
+		port. Any application that is waiting for haggle to start will be 
+		listening on that port.
+	*/
+	
+	// We need a fake application node, for the protocol to be selected 
+	// properly
+	NodeRef fakeAppNode = 
+		new Node(NODE_TYPE_APPLICATION, "Startup application node");
+	
+	// Set up the address to the application:
+	Address addr("udp://127.0.0.1:8788");
+	// Reuse whatever is written in the URL above, to minimize the number of 
+	// hardcoded values:
+	short port = addr.getProtocolPortOrChannel();
+	// Create an interface for the address:
+	InterfaceRef iface = new Interface(IFTYPE_APPLICATION_PORT, &port, &addr);
+	// Mark the interface as up:
+	iface->up();
+	
+	// Add the interface to the node:
+	fakeAppNode->addInterface(iface);
+	
+	// A minimalistic data object:
+	static const char *doCode =
+		"<Haggle>"
+			// This one is needed to make sending over UDP work:
+			"<Attr name=\"" HAGGLE_ATTR_CONTROL_NAME "\"/>"
+		"</Haggle>";
+	
+	// Create data object:
+	DataObjectRef fakeDO =
+		new DataObject(doCode, strlen(doCode));
+	
+	// Send data object:
+	kernel->addEvent(
+		new Event(EVENT_TYPE_DATAOBJECT_SEND, fakeDO, fakeAppNode));
+}
+
 // Updates the "this node" with all attributes that the application nodes have: 
 void ApplicationManager::onRetrieveAppNodes(Event *e)
 {

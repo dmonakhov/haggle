@@ -111,6 +111,7 @@ class ApplicationManager : public Manager
         void onApplicationFilterMatchEvent(Event *e);
 	void onPrepareShutdown();
 	void onShutdown();
+	void onStartup();
 public:
         ApplicationManager(HaggleKernel *_kernel = haggleKernel);
         ~ApplicationManager();
