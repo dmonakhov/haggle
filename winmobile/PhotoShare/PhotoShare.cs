@@ -86,7 +86,7 @@ namespace PhotoShare
                         {
                                 int ret = HaggleHandle.SpawnDaemon();
 
-                                if (ret != 1)
+                                if (ret != 0)
                                 {
                                         MessageBox.Show("Could not launch Haggle daemon, error=" + ret);
                                         return false;
