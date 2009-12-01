@@ -448,6 +448,7 @@ void haggle_dataobject_free(struct dataobject *dobj)
 	dobj = NULL;
 }
 
+#define CREATETIME_ASSTRING_FORMAT "%ld.%06ld"
 /*
 	This function must work in the exact same way as the corresponding calcId()-function
 	in the Haggle kernel's code (DataObject.cpp)
@@ -472,8 +473,19 @@ int haggle_dataobject_calculate_id(const struct dataobject *dobj, dataobject_id_
 			SHA1_Update(&ctxt, (unsigned char *)&w, sizeof(w));
 		}
 	}
-	// FIXME: If this data object has a create time, add that to the ID.
 	
+	// If this data object has a create time, add that to the ID.
+	if (dobj->createtime.tv_sec != 0) {
+		char buf[20];
+
+		snprintf(
+			buf, 
+			20, 
+			CREATETIME_ASSTRING_FORMAT, 
+			(long)dobj->createtime.tv_sec, 
+			(long)dobj->createtime.tv_usec);
+		SHA1_Update(&ctxt, (unsigned char *)buf, strlen(buf));
+	}
 
 	/*
 	 If the data object has associated data, we add the data's file hash.
@@ -539,7 +551,7 @@ metadata_t *haggle_dataobject_to_metadata(struct dataobject *dobj)
 		sec = dobj->createtime.tv_sec;
 		usec = dobj->createtime.tv_usec;
 		
-		sprintf(createtime, "%ld.%06ld", sec, usec);
+		sprintf(createtime, CREATETIME_ASSTRING_FORMAT, sec, usec);
 		metadata_set_parameter(dobj->m, DATAOBJECT_CREATE_TIME_PARAM, createtime);
 	}
 	

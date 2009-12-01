@@ -2139,6 +2139,13 @@ int SQLDataStore::_deleteDataObject(const DataObjectId_t &id, bool shouldReportR
 	char *sql_cmd;
 	sqlite3_stmt *stmt;
 	const char *tail;
+	char idStr[MAX_DATAOBJECT_ID_STR_LEN];
+	int len = 0;
+
+	// Generate a readable string of the Id
+	for (int i = 0; i < DATAOBJECT_ID_LEN; i++) {
+		len += sprintf(idStr + len, "%02x", id[i] & 0xff);
+	}
 	
 	if (shouldReportRemoval) {
 		DataObjectRef dObj = getDataObjectFromRowId(getDataObjectRowId(id));
@@ -2148,6 +2155,10 @@ int SQLDataStore::_deleteDataObject(const DataObjectId_t &id, bool shouldReportR
 		if (dObj) {
 			kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_DELETED, dObj));
 		} else {
+			HAGGLE_ERR(
+				"Tried to report removal of a data object that "
+				"isn't in the data store. (id=%s)\n",
+				idStr);
 			// there should not be a data object to delete, so done.
 			return -1;
 		}
@@ -2177,13 +2188,6 @@ int SQLDataStore::_deleteDataObject(const DataObjectId_t &id, bool shouldReportR
 		HAGGLE_DBG("Could not delete dataobject : %s\n", sqlite3_errmsg(db));
 		return -1;
 	} else {
-		char idStr[MAX_DATAOBJECT_ID_STR_LEN];
-		int len = 0;
-
-		// Generate a readable string of the Id
-		for (int i = 0; i < DATAOBJECT_ID_LEN; i++) {
-			len += sprintf(idStr + len, "%02x", id[i] & 0xff);
-		}
 		if (ret == SQLITE_ROW) {
 			HAGGLE_DBG("SQLITE_ROW Deleted data object %s\n", idStr);
 		} else if (ret == SQLITE_DONE) {

@@ -27,7 +27,7 @@
 mutex signalling_mutex;
 
 void on_interest_list(haggle_dobj_t *dobj, void *arg)
-{	
+{
         // Loop through and list interests:
         bool not_done = true;
         int i = 0;
@@ -54,6 +54,11 @@ void on_interest_list(haggle_dobj_t *dobj, void *arg)
 		mutex_unlock(signalling_mutex);
 }
 
+void on_dataobject(haggle_dobj_t *dobj, void *arg)
+{
+	printf("New data object received:\n%s\n", haggle_dataobject_get_raw(dobj));
+}
+
 int main(int argc, char *argv[])
 {
 	int retval = 1;
@@ -65,6 +70,7 @@ int main(int argc, char *argv[])
 		command_delete_interest,
 		command_get_interests,
 		command_new_dataobject,
+		command_delete_dataobject,
 		command_blacklist,
 		command_shutdown,
 		command_start,
@@ -76,6 +82,7 @@ int main(int argc, char *argv[])
 	char *attr_value = NULL;
 	char *file_name = NULL;
 	long attr_weight = 1;
+	bool add_create_time = true;
 	
 	// Parse command-line arguments:
 	for(i = 1; i < argc; i++)
@@ -90,6 +97,9 @@ int main(int argc, char *argv[])
 			i++;
 			if(i < argc)
 				file_name = argv[i];
+		}else if(strcmp(argv[i], "-n") == 0)
+		{
+			add_create_time = false;
 		}else if(command == command_none && strcmp(argv[i], "add") == 0)
 		{
 			command = command_add_interest;
@@ -105,6 +115,12 @@ int main(int argc, char *argv[])
 		}else if(command == command_none && strcmp(argv[i], "new") == 0)
 		{
 			command = command_new_dataobject;
+			i++;
+			if(i < argc)
+				command_parameter = argv[i];
+		}else if(command == command_none && strcmp(argv[i], "rm") == 0)
+		{
+			command = command_delete_dataobject;
 			i++;
 			if(i < argc)
 				command_parameter = argv[i];
@@ -139,6 +155,7 @@ int main(int argc, char *argv[])
 		case command_add_interest:
 		case command_delete_interest:
 		case command_new_dataobject:
+		case command_delete_dataobject:
 			// Parse the argument:
 			if(command_parameter != NULL)
 			{
@@ -176,12 +193,14 @@ int main(int argc, char *argv[])
 "Usage:\n"
 "clitool [-p <name of program>] add <attribute>\n"
 "clitool [-p <name of program>] del <attribute>\n"
-"clitool [-p <name of program>] [-f <filename>] new <attribute>\n"
+"clitool [-p <name of program>] [-f <filename>] [-n] new <attribute>\n"
+"clitool [-p <name of program>] [-f <filename>] [-n] rm <attribute>\n"
 "clitool [-p <name of program>] get\n"
 "clitool [-p <name of program>] blacklist <Ethernet MAC address>\n"
 "clitool [-p <name of program>] shutdown\n"
 "clitool [-p <name of program>] start\n"
 "\n"
+"-n          Do not add a create time to the data object.\n"
 "-p          Allows this program to masquerade as another.\n"
 "-f          Allows this program to add a file as content to a data object.\n"
 "add         Tries to add <attribute> to the list of interests for this\n"
@@ -189,6 +208,7 @@ int main(int argc, char *argv[])
 "del         Tries to remove <attribute> from the list of interests for this\n"
 "            application.\n"
 "new         Creates and publishes a new data object with the given attribute\n"
+"rm          Adds, then removes a data object with the given attribute.\n"
 "get         Tries to retrieve all interests for this application.\n"
 "blacklist   Toggles blacklisting of the given interface.\n"
 "shutdown    Terminates haggle\n"
@@ -250,7 +270,8 @@ int main(int argc, char *argv[])
 			if(dObj != NULL)
 			{
 				// Set create time to "now":
-				haggle_dataobject_set_createtime(dObj, NULL);
+				if(add_create_time)
+					haggle_dataobject_set_createtime(dObj, NULL);
 				// Add attribute:
 				haggle_dataobject_add_attribute(
 					dObj, 
@@ -263,6 +284,60 @@ int main(int argc, char *argv[])
 				
 				// Publish:
 				haggle_ipc_publish_dataobject(haggle_, dObj);
+			}
+		}
+		break;
+		
+		case command_delete_dataobject:
+		{
+			struct dataobject *dObj;
+			haggle_ipc_register_event_interest(haggle_, LIBHAGGLE_EVENT_NEW_DATAOBJECT, on_dataobject);
+			
+			// New data object:
+			if(file_name == NULL)
+				dObj = haggle_dataobject_new();
+			else
+				dObj = haggle_dataobject_new_from_file(file_name);
+			
+			if(dObj != NULL)
+			{
+				// Set create time to "now":
+				if(add_create_time)
+					haggle_dataobject_set_createtime(dObj, NULL);
+				// Add attribute:
+				haggle_dataobject_add_attribute(
+					dObj, 
+					attr_name, 
+					attr_value);
+				// Make sure the data object is permanent:
+				haggle_dataobject_set_flags(
+					dObj, 
+					DATAOBJECT_FLAG_PERSISTENT);
+				
+				printf("Starting event loop:\n");
+				// Run the haggle event loop, to get data object events:
+				haggle_event_loop_run_async(haggle_);
+				
+				// During this time, the application should receive any other 
+				// objects (like node descriptions):
+				sleep(3);
+				
+				printf("Adding data object:\n");
+				// Publish:
+				haggle_ipc_publish_dataobject(haggle_, dObj);
+				
+				// During this time, the application should receive the object:
+				sleep(3);
+				
+				printf("Deleting data object:\n");
+				// Delete:
+				haggle_ipc_delete_data_object(haggle_, dObj);
+				
+				// During this time, the application should NOT receive the 
+				// object:
+				sleep(3);
+				
+				haggle_event_loop_stop(haggle_);
 			}
 		}
 		break;
