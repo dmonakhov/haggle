@@ -20,6 +20,7 @@
 		D318485F0E5BB90D002AE6D6 /* liblibhaggle.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D3CAD56B0E23E40E00E9B3D9 /* liblibhaggle.a */; };
 		D31849690E5BB9BB002AE6D6 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D3CAD5920E23E6C000E9B3D9 /* CoreFoundation.framework */; };
 		D318496B0E5BB9F2002AE6D6 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D3CAD58D0E23E6B300E9B3D9 /* CoreServices.framework */; };
+		D320CDD110B2A40B00C78F03 /* Forwarder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D320CDD010B2A40A00C78F03 /* Forwarder.cpp */; };
 		D32C3E1F0F16339300D028F9 /* Condition.h in Headers */ = {isa = PBXBuildFile; fileRef = D32C3E000F1630C800D028F9 /* Condition.h */; };
 		D32C3E200F16339300D028F9 /* Exception.h in Headers */ = {isa = PBXBuildFile; fileRef = D32C3E010F1630C800D028F9 /* Exception.h */; };
 		D32C3E210F16339300D028F9 /* HashMap.h in Headers */ = {isa = PBXBuildFile; fileRef = D32C3E020F1630C800D028F9 /* HashMap.h */; };
@@ -73,7 +74,6 @@
 		D384C5B00F4D718100E55BC7 /* InterfaceStore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D3F44D5B0E83DF40005981E6 /* InterfaceStore.cpp */; };
 		D384C5B10F4D718100E55BC7 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D3F44D5D0E83DF40005981E6 /* main.cpp */; };
 		D384C5B20F4D718100E55BC7 /* Manager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D3F44D610E83DF40005981E6 /* Manager.cpp */; };
-		D384C5B30F4D718100E55BC7 /* ManagerModule.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D3F44D630E83DF40005981E6 /* ManagerModule.cpp */; };
 		D384C5B50F4D718100E55BC7 /* Metadata.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D384C57F0F4D70C400E55BC7 /* Metadata.cpp */; };
 		D384C5B70F4D718100E55BC7 /* MetadataParser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D384C5800F4D70C400E55BC7 /* MetadataParser.cpp */; };
 		D384C5B80F4D718100E55BC7 /* Node.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D3F44D660E83DF40005981E6 /* Node.cpp */; };
@@ -111,6 +111,10 @@
 		D39264750F44F25E0014F6B6 /* libcrypto.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D39264740F44F25E0014F6B6 /* libcrypto.dylib */; };
 		D3B2ED1C0F521FC4009C8EA9 /* webserver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D3B2ED1A0F521F9D009C8EA9 /* webserver.cpp */; };
 		D3B2ED240F5220FC009C8EA9 /* liblibhaggle.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D3CAD56B0E23E40E00E9B3D9 /* liblibhaggle.a */; };
+		D3B4DCF210C6C41600DC16C8 /* prng.c in Sources */ = {isa = PBXBuildFile; fileRef = D3B4DCEE10C6C41600DC16C8 /* prng.c */; };
+		D3B4DCF310C6C41600DC16C8 /* prng.h in Headers */ = {isa = PBXBuildFile; fileRef = D3B4DCEF10C6C41600DC16C8 /* prng.h */; };
+		D3B4DCF410C6C41600DC16C8 /* thread.c in Sources */ = {isa = PBXBuildFile; fileRef = D3B4DCF010C6C41600DC16C8 /* thread.c */; };
+		D3B4DCF510C6C41600DC16C8 /* thread.h in Headers */ = {isa = PBXBuildFile; fileRef = D3B4DCF110C6C41600DC16C8 /* thread.h */; };
 		D3B6F1C80FC4A8CF0081CB2B /* counting_bloomfilter.c in Sources */ = {isa = PBXBuildFile; fileRef = D3B6F1C50FC4A8CF0081CB2B /* counting_bloomfilter.c */; };
 		D3B6F1C90FC4A8CF0081CB2B /* counting_bloomfilter.h in Headers */ = {isa = PBXBuildFile; fileRef = D3B6F1C60FC4A8CF0081CB2B /* counting_bloomfilter.h */; };
 		D3B6F1CA0FC4A8CF0081CB2B /* haggleutils.h in Headers */ = {isa = PBXBuildFile; fileRef = D3B6F1C70FC4A8CF0081CB2B /* haggleutils.h */; };
@@ -234,6 +238,7 @@
 		D3056C630F4E2FC700EF864F /* GenericQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GenericQueue.h; path = ../src/libcpphaggle/include/libcpphaggle/GenericQueue.h; sourceTree = SOURCE_ROOT; };
 		D3056C640F4E2FC700EF864F /* Map.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Map.h; path = ../src/libcpphaggle/include/libcpphaggle/Map.h; sourceTree = SOURCE_ROOT; };
 		D31848150E5BB7E6002AE6D6 /* filedrop */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = filedrop; sourceTree = BUILT_PRODUCTS_DIR; };
+		D320CDD010B2A40A00C78F03 /* Forwarder.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Forwarder.cpp; path = ../src/hagglekernel/Forwarder.cpp; sourceTree = SOURCE_ROOT; };
 		D32C3E000F1630C800D028F9 /* Condition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Condition.h; path = ../src/libcpphaggle/include/libcpphaggle/Condition.h; sourceTree = SOURCE_ROOT; };
 		D32C3E010F1630C800D028F9 /* Exception.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Exception.h; path = ../src/libcpphaggle/include/libcpphaggle/Exception.h; sourceTree = SOURCE_ROOT; };
 		D32C3E020F1630C800D028F9 /* HashMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HashMap.h; path = ../src/libcpphaggle/include/libcpphaggle/HashMap.h; sourceTree = SOURCE_ROOT; };
@@ -263,6 +268,10 @@
 		D39264420F44ED690014F6B6 /* Certificate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Certificate.h; path = ../src/hagglekernel/Certificate.h; sourceTree = SOURCE_ROOT; };
 		D39264740F44F25E0014F6B6 /* libcrypto.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcrypto.dylib; path = usr/lib/libcrypto.dylib; sourceTree = SDKROOT; };
 		D3B2ED1A0F521F9D009C8EA9 /* webserver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = webserver.cpp; path = ../src/webserver/webserver.cpp; sourceTree = SOURCE_ROOT; };
+		D3B4DCEE10C6C41600DC16C8 /* prng.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = prng.c; path = ../src/utils/prng.c; sourceTree = SOURCE_ROOT; };
+		D3B4DCEF10C6C41600DC16C8 /* prng.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = prng.h; path = ../src/utils/prng.h; sourceTree = SOURCE_ROOT; };
+		D3B4DCF010C6C41600DC16C8 /* thread.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = thread.c; path = ../src/utils/thread.c; sourceTree = SOURCE_ROOT; };
+		D3B4DCF110C6C41600DC16C8 /* thread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = thread.h; path = ../src/utils/thread.h; sourceTree = SOURCE_ROOT; };
 		D3B6F1C50FC4A8CF0081CB2B /* counting_bloomfilter.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = counting_bloomfilter.c; path = ../src/utils/counting_bloomfilter.c; sourceTree = SOURCE_ROOT; };
 		D3B6F1C60FC4A8CF0081CB2B /* counting_bloomfilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = counting_bloomfilter.h; path = ../src/utils/counting_bloomfilter.h; sourceTree = SOURCE_ROOT; };
 		D3B6F1C70FC4A8CF0081CB2B /* haggleutils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = haggleutils.h; path = ../src/utils/haggleutils.h; sourceTree = SOURCE_ROOT; };
@@ -341,7 +350,6 @@
 		D3F44D5D0E83DF40005981E6 /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = ../src/hagglekernel/main.cpp; sourceTree = SOURCE_ROOT; };
 		D3F44D610E83DF40005981E6 /* Manager.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Manager.cpp; path = ../src/hagglekernel/Manager.cpp; sourceTree = SOURCE_ROOT; };
 		D3F44D620E83DF40005981E6 /* Manager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Manager.h; path = ../src/hagglekernel/Manager.h; sourceTree = SOURCE_ROOT; };
-		D3F44D630E83DF40005981E6 /* ManagerModule.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ManagerModule.cpp; path = ../src/hagglekernel/ManagerModule.cpp; sourceTree = SOURCE_ROOT; };
 		D3F44D640E83DF40005981E6 /* ManagerModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ManagerModule.h; path = ../src/hagglekernel/ManagerModule.h; sourceTree = SOURCE_ROOT; };
 		D3F44D650E83DF40005981E6 /* Metadata.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Metadata.h; path = ../src/hagglekernel/Metadata.h; sourceTree = SOURCE_ROOT; };
 		D3F44D660E83DF40005981E6 /* Node.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Node.cpp; path = ../src/hagglekernel/Node.cpp; sourceTree = SOURCE_ROOT; };
@@ -806,6 +814,7 @@
 				D3F44D450E83DF40005981E6 /* DebugManager.cpp */,
 				D3F44D470E83DF40005981E6 /* Event.cpp */,
 				D3F44D4A0E83DF40005981E6 /* Filter.cpp */,
+				D320CDD010B2A40A00C78F03 /* Forwarder.cpp */,
 				4207998C0F372BA300B7BB49 /* ForwarderAsynchronous.cpp */,
 				420799830F372B6600B7BB49 /* ForwarderProphet.cpp */,
 				D3F44D4C0E83DF40005981E6 /* ForwardingManager.cpp */,
@@ -814,7 +823,6 @@
 				D3F44D5B0E83DF40005981E6 /* InterfaceStore.cpp */,
 				D3F44D5D0E83DF40005981E6 /* main.cpp */,
 				D3F44D610E83DF40005981E6 /* Manager.cpp */,
-				D3F44D630E83DF40005981E6 /* ManagerModule.cpp */,
 				D384C57F0F4D70C400E55BC7 /* Metadata.cpp */,
 				D384C5800F4D70C400E55BC7 /* MetadataParser.cpp */,
 				D3F44D660E83DF40005981E6 /* Node.cpp */,
@@ -902,6 +910,8 @@
 		D3F44EB70E83E110005981E6 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				D3B4DCEE10C6C41600DC16C8 /* prng.c */,
+				D3B4DCF010C6C41600DC16C8 /* thread.c */,
 				D3B6F1C50FC4A8CF0081CB2B /* counting_bloomfilter.c */,
 				D3F44E190E83E025005981E6 /* base64.c */,
 				D3F44E1B0E83E025005981E6 /* bloomfilter.c */,
@@ -913,6 +923,8 @@
 		D3F44EB80E83E116005981E6 /* Headers */ = {
 			isa = PBXGroup;
 			children = (
+				D3B4DCEF10C6C41600DC16C8 /* prng.h */,
+				D3B4DCF110C6C41600DC16C8 /* thread.h */,
 				D3B6F1C60FC4A8CF0081CB2B /* counting_bloomfilter.h */,
 				D3B6F1C70FC4A8CF0081CB2B /* haggleutils.h */,
 				D3F44E1A0E83E025005981E6 /* base64.h */,
@@ -943,6 +955,8 @@
 				D3F44EFF0E83E221005981E6 /* utils.h in Headers */,
 				D3B6F1C90FC4A8CF0081CB2B /* counting_bloomfilter.h in Headers */,
 				D3B6F1CA0FC4A8CF0081CB2B /* haggleutils.h in Headers */,
+				D3B4DCF310C6C41600DC16C8 /* prng.h in Headers */,
+				D3B4DCF510C6C41600DC16C8 /* thread.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1230,7 +1244,6 @@
 				D384C5B00F4D718100E55BC7 /* InterfaceStore.cpp in Sources */,
 				D384C5B10F4D718100E55BC7 /* main.cpp in Sources */,
 				D384C5B20F4D718100E55BC7 /* Manager.cpp in Sources */,
-				D384C5B30F4D718100E55BC7 /* ManagerModule.cpp in Sources */,
 				D384C5B50F4D718100E55BC7 /* Metadata.cpp in Sources */,
 				D384C5B70F4D718100E55BC7 /* MetadataParser.cpp in Sources */,
 				D384C5B80F4D718100E55BC7 /* Node.cpp in Sources */,
@@ -1255,6 +1268,7 @@
 				D384C5CB0F4D718100E55BC7 /* Utility.cpp in Sources */,
 				D384C5CC0F4D718100E55BC7 /* XMLMetadata.cpp in Sources */,
 				D3B6F1CD0FC4A9330081CB2B /* Bloomfilter.cpp in Sources */,
+				D320CDD110B2A40B00C78F03 /* Forwarder.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1282,6 +1296,8 @@
 				D3F44EEB0E83E215005981E6 /* bloomfilter.c in Sources */,
 				D3F44EF10E83E215005981E6 /* utils.c in Sources */,
 				D3B6F1C80FC4A8CF0081CB2B /* counting_bloomfilter.c in Sources */,
+				D3B4DCF210C6C41600DC16C8 /* prng.c in Sources */,
+				D3B4DCF410C6C41600DC16C8 /* thread.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

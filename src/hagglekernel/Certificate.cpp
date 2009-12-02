@@ -33,13 +33,9 @@
 	char writeErrors_buf[256]; \
 	do{ \
 		writeErrors_e = ERR_get_error(); \
-		if(writeErrors_e != 0) \
-			HAGGLE_DBG( \
-				prefix "%s\n", \
-				ERR_error_string( \
-					writeErrors_e, \
-					writeErrors_buf)); \
-	}while(writeErrors_e != 0); \
+		if (writeErrors_e != 0) \
+			HAGGLE_DBG(prefix "%s\n", ERR_error_string(writeErrors_e, writeErrors_buf)); \
+	}  while(writeErrors_e != 0); \
 }
 
 Certificate::Certificate(X509 *_x) : 
@@ -142,12 +138,12 @@ Certificate::~Certificate()
 // Should somehow autodetect the OpenSSL capabilities/version. 
 // One problem is MacOS X, because the headers say OpenSSL version 0.9.8j, but
 // the library is 0.9.7
-#if defined(OS_ANDROID)
+//#if defined(OS_ANDROID)
 // RSA_generate_key() is deprecated and removed in the Android OpenSSL version
 #define HAVE_RSA_GENERATE_KEY_EX 1
-#else
-#define HAVE_RSA_GENERATE_KEY_EX 0
-#endif
+//#else
+//#define HAVE_RSA_GENERATE_KEY_EX 0
+//#endif
 
 Certificate *Certificate::create(const string subject, const string issuer, const string validity, const NodeId_t owner, RSA **privKey)
 {
@@ -342,10 +338,10 @@ bool Certificate::sign(RSA *key)
 		
 	if (X509_sign(x, pkey, EVP_sha1())) 
 		hasSignature = res = true;
+	else
+		writeErrors("");
 	
 	EVP_PKEY_free(pkey);
-	
-	writeErrors("");
 	
 	return res;
 }
@@ -370,12 +366,12 @@ bool Certificate::verifySignature(RSA *key)
 	// X509 apparently returns 0 or -1 on failure:
 	if (X509_verify(x, pkey) == 1) {
 		verified = res = true;
+	} else {
+		writeErrors("");		
 	}
 	
 	EVP_PKEY_free(pkey);
-	
-	writeErrors("");
-	
+		
 	return res;
 }
 

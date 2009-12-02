@@ -14,6 +14,7 @@ LOCAL_SRC_FILES := \
 	../utils/bloomfilter.c \
 	../utils/counting_bloomfilter.c \
 	../utils/utils.c \
+	../utils/prng.c \
 	Address.cpp \
 	ApplicationManager.cpp \
 	Attribute.cpp \
@@ -34,6 +35,7 @@ LOCAL_SRC_FILES := \
 	DebugManager.cpp \
 	Event.cpp \
 	Filter.cpp \
+	Forwarder.cpp \
 	ForwardingManager.cpp \
 	ForwarderAsynchronous.cpp \
 	ForwarderProphet.cpp \
@@ -42,7 +44,6 @@ LOCAL_SRC_FILES := \
 	InterfaceStore.cpp \
 	main.cpp \
 	Manager.cpp \
-	ManagerModule.cpp \
 	Node.cpp \
 	NodeManager.cpp \
 	NodeStore.cpp \

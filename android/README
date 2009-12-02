@@ -44,7 +44,9 @@ have 'generic' instead of 'dream', depending on what target you built
 for). You may manually transfer the binaries and libraries to your
 Android device using, e.g., the 'adb push' command (or the provided
 'install_haggle.sh' script), or you may create a new system image
-(which now includes Haggle) and then flash your device with it.
+(which now includes Haggle) and then flash your device with it. If 
+you want to compile against another target than 'generic', you may
+have to run, e.g., 'lunch htc_dream-eng' to change target.
 
 The basic components of Haggle that are of interest for Android are
 the Haggle executable ('haggle') and the application programming
