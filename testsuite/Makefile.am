@@ -25,7 +25,7 @@ CPPFLAGS += \
 	-I$(top_srcdir)/src/utils \
 	-I$(top_srcdir)/src/libcpphaggle/include \
 	-I$(top_srcdir)/src/libhaggle/include \
-	-I$(LIBXML2_INCLUDE_DIR)
+	$(XML_CPPFLAGS)
 libhagglemain_a_SOURCES = hagglemain.cpp
 
 all-local:

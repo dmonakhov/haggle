@@ -182,7 +182,7 @@ static void user_account_destroy(user_account u)
 
 std::list<user_account>		accounts;
 
-mutex	pop3_mutex;
+mutex_t	pop3_mutex;
 
 // Returns NULL if the email can't be found in the inbox
 // WARNING: requires the mutex to be locked!

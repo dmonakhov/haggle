@@ -15,8 +15,8 @@
 
 #include "testhlp.h"
 
-#include "utils.h"
-#include "bloomfilter.h"
+#include <utils.h>
+#include <bloomfilter.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -31,35 +31,10 @@
 #include <time.h>
 #endif
 
-static void prng_init(void)
-{
-#if defined(OS_MACOSX)
-	// No need for initialization
-#elif defined(OS_LINUX)
-	srandom(time(NULL));
-#elif defined(OS_WINDOWS)
-	SYSTEMTIME sysTime;
-	GetSystemTime(&sysTime);
-
-	srand(sysTime.wSecond + sysTime.wMilliseconds);
-#endif
-}
-
-static unsigned char prng_uint8(void)
-{
-#if defined(OS_MACOSX)
-	return arc4random() & 0xFF;
-#elif defined(OS_LINUX)
-	return random() & 0xFF;
-#elif defined(OS_WINDOWS)
-	return rand() & 0xFF;
-#endif
-}
-
-#define BLOOMFILTER_SIZE				1000
+#define BLOOMFILTER_SIZE 1000
 // Birthday principe: this should be _much_ lower than BLOOMFILTER_SIZE to 
 // reasonably avoid accidental collisions:
-#define NUMBER_OF_DATA_OBJECTS			100
+#define NUMBER_OF_DATA_OBJECTS 100
 // This must be less than NUMBER_OF_DATA_OBJECTS for the tests to work:
 #define NUMBER_OF_DATA_OBJECTS_INSERTED	75
 #ifdef COUNTING_BLOOMFILTER

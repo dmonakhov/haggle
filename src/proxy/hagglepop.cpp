@@ -21,7 +21,7 @@
 #include <string.h>
 #include <signal.h>
 
-static mutex	shutdown_mutex;
+static mutex_t shutdown_mutex;
 
 // Signal handler: shuts down the program nicely upon Ctrl-C, rather than
 // letting the system crash with open network ports, etc.

@@ -29,9 +29,10 @@ class SQLDataStore;
 #define DEFAULT_DATASTORE_FILENAME "haggle.db"
 #define DEFAULT_DATASTORE_FILEPATH DEFAULT_DATASTORE_PATH
 
-#include <sqlite3.h>
+#include <libxml/parser.h>
 #include <libxml/tree.h> // For dumping to XML
 
+#include <sqlite3.h>
 #include "DataObject.h"
 #include "Metadata.h"
 

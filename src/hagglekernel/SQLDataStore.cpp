@@ -15,7 +15,8 @@
 #include <sqlite3.h>
 #include <string.h>
 #include <math.h>
-#include <libxml/tree.h>
+#include <libxml/parser.h>
+#include <libxml/tree.h> // For dumping to XML
 
 #include "SQLDataStore.h"
 #include "DataObject.h"

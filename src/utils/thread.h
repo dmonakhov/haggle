@@ -17,7 +17,7 @@
 #define thread_h
 
 /*
-	Minimalistic threading API.
+	Minimalistic cross-platform threading API.
 */
 
 #ifdef __cplusplus
@@ -26,20 +26,20 @@ extern "C" {
 #define bool int
 #endif
 
-typedef struct mutex_s *mutex;
+typedef struct mutex_s *mutex_t;
 
 // Creates a new mutex
-mutex mutex_create(void);
+mutex_t mutex_create(void);
 
 // Disposes of all resources associated with a mutex.
-void mutex_destroy(mutex m);
+void mutex_destroy(mutex_t m);
 
 // Locks the mutex. Returns true iff the mutex could be locked.
 // (Failiure may indicate that the mutex was destroyed by another thread.)
-bool mutex_lock(mutex m);
+bool mutex_lock(mutex_t m);
 
 // Unlocks the mutex.
-void mutex_unlock(mutex m);
+void mutex_unlock(mutex_t m);
 
 /*
 	Starts a new thread which will execute "thead_func" with the paramter 

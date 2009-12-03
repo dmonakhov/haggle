@@ -23,7 +23,7 @@
 #include <signal.h>
 #endif
 
-static mutex	shutdown_mutex;
+static mutex_t	shutdown_mutex;
 
 #ifndef OS_WINDOWS_MOBILE
 // Signal handler: shuts down the program nicely upon Ctrl-C, rather than

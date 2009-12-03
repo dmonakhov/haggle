@@ -3,8 +3,8 @@
 HAGGLE_KERNEL_DIR=$(top_srcdir)/src/hagglekernel/
 UTILS_DIR=$(top_srcdir)/src/utils/
 LIBCPPHAGGLE_DIR=$(top_srcdir)/src/libcpphaggle/
-CPPFLAGS += -I$(HAGGLE_KERNEL_DIR) -I$(UTILS_DIR) -I$(LIBCPPHAGGLE_DIR)include/ -I.. -I$(LIBXML2_INCLUDE_DIR)
-LDFLAGS = -lxml2
+CPPFLAGS += -I$(HAGGLE_KERNEL_DIR) -I$(UTILS_DIR) -I$(LIBCPPHAGGLE_DIR)include/ -I.. $(XML_CPPFLAGS)
+LDFLAGS = $(XML_LIBS)
 if OS_LINUX
 LDFLAGS += -lpthread
 endif

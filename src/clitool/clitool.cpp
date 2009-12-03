@@ -24,7 +24,7 @@
 
 #include "thread.h"
 
-mutex signalling_mutex;
+mutex_t signalling_mutex;
 
 void on_interest_list(haggle_dobj_t *dobj, void *arg)
 {
