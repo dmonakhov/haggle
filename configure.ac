@@ -609,6 +609,7 @@ AC_CONFIG_FILES([Makefile
 		 testsuite/test_utils/Makefile 
 		 testsuite/test_dObj/Makefile
 		 testsuite/test_kernel/Makefile
+		 testsuite/test_security/Makefile
                  $extra_config_files])
 AC_OUTPUT
 

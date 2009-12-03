@@ -41,7 +41,7 @@ class SecurityManager;
 #include "DataObject.h"
 #include "Event.h"
 
-#define CA_ISSUER_NAME "Haggle reviewer"
+#define CA_ISSUER_NAME "Haggle CA"
 
 typedef enum {
 	SECURITY_LEVEL_LOW = 0, // No security enabled.

@@ -57,6 +57,7 @@ Certificate::Certificate(X509 *_x) :
 	if (X509_NAME_get_text_by_NID(issuer_name, NID_commonName, buf, 200))
 		issuer = buf;
 	
+        HAGGLE_DBG("Subject=\'%s\' issuer=\'%s\'\n", subject.c_str(), issuer.c_str());
 	// TODO: set validity
 }
 
@@ -120,7 +121,9 @@ LeakMonitor(LEAK_TYPE_CERTIFICATE),
 	X509_NAME_add_entry_by_txt(issuer_name, "CN", MBSTRING_ASC, (const unsigned char *)issuer.c_str(), -1, -1, 0); 
 	X509_NAME_add_entry_by_txt(issuer_name, "O", MBSTRING_ASC, (const unsigned char *)"Haggle", -1, -1, 0);  
 	
-	X509_set_issuer_name(x, issuer_name); 
+	X509_set_issuer_name(x, issuer_name);
+        
+        HAGGLE_DBG("Subject=\'%s\' issuer=\'%s\'\n", subject.c_str(), issuer.c_str());
 }
 
 Certificate::~Certificate()
@@ -321,6 +324,17 @@ bool Certificate::isSubject(const string subject) const
 	return this->subject == subject;
 }
 
+bool Certificate::sign(EVP_PKEY *key)
+{
+	bool res = false;
+	
+	if (X509_sign(x, key, EVP_sha1())) 
+		hasSignature = res = true;
+	else
+		writeErrors("");
+
+	return res;
+}
 
 bool Certificate::sign(RSA *key)
 {
@@ -335,14 +349,28 @@ bool Certificate::sign(RSA *key)
 	}
 	
 	EVP_PKEY_set1_RSA(pkey, key);
-		
-	if (X509_sign(x, pkey, EVP_sha1())) 
-		hasSignature = res = true;
-	else
-		writeErrors("");
+	
+        res = sign(pkey);
 	
 	EVP_PKEY_free(pkey);
 	
+	return res;
+}
+
+bool Certificate::verifySignature(EVP_PKEY *key)
+{
+	bool res = false;
+	
+	if (verified)
+		return true;
+
+	// X509 apparently returns 0 or -1 on failure:
+	if (X509_verify(x, key) == 1) {
+		verified = res = true;
+	} else {
+		writeErrors("");		
+	}
+		
 	return res;
 }
 
@@ -363,12 +391,7 @@ bool Certificate::verifySignature(RSA *key)
 	
 	EVP_PKEY_set1_RSA(pkey, key);
 	
-	// X509 apparently returns 0 or -1 on failure:
-	if (X509_verify(x, pkey) == 1) {
-		verified = res = true;
-	} else {
-		writeErrors("");		
-	}
+        res = verifySignature(pkey);
 	
 	EVP_PKEY_free(pkey);
 		
@@ -403,7 +426,8 @@ string Certificate::toString() const
 static char *X509ToPEMAlloc(X509 *x)
 {
 	char *x509_str = NULL;
-	int len  = 0;
+	size_t plen  = 0;
+        int len = 0;
 
 	if (!x)
 		return NULL;
@@ -413,30 +437,33 @@ static char *X509ToPEMAlloc(X509 *x)
 	if (!bp)
 		return NULL;
 	
-	if (!PEM_write_bio_X509(bp, x))
+	if (!PEM_write_bio_X509_AUX(bp, x))
 		goto done;
 	
 	/* Get the length of the data written */	
-	len = BIO_ctrl_pending(bp);	
+	plen = BIO_ctrl_pending(bp);	
 	
-	if (len <= 0)
+	if (plen == 0)
 		goto done;
 	
+        printf("X509ToPEMAlloc plen=%d\n", plen);
+
 	/* Allocate enough memory to hold the PEM string */
-	x509_str = (char *)malloc(len + 1);
+	x509_str = (char *)malloc(plen + 1);
 	
 	if (!x509_str)
 		goto done;
 	
-	len = BIO_read(bp, x509_str, len);
+	len = BIO_read(bp, x509_str, plen);
 	
 	if (len <= 0) {
 		free(x509_str);
 		x509_str = NULL;
-	}
-	
-	x509_str[len] = '\0';
-	
+	} else {
+                x509_str[len] = '\0';
+        }	
+        
+        printf("X509ToPEMAlloc read len=%d\n", len);
 done:
 	BIO_free(bp);
 	
@@ -445,6 +472,9 @@ done:
 
 const char *Certificate::toPEM() const
 {
+        if (!x)
+                return NULL;
+
 	if (!x509_PEM_str)	
 		const_cast<Certificate *>(this)->x509_PEM_str = X509ToPEMAlloc(x);
 	
@@ -478,62 +508,64 @@ Metadata *Certificate::toMetadata() const
         return m;
 }
 
-Certificate *Certificate::fromPEM(const string pem)
+Certificate *Certificate::fromPEM(const char *pem)
 {
 	X509 *x = NULL;
 	Certificate *c = NULL;
+        int ret = 0;
 
 	BIO *bp = BIO_new(BIO_s_mem());
 	
 	if (!bp)
 		return NULL;
 	
-	if (!BIO_puts(bp, pem.c_str()))
+        ret = BIO_puts(bp, pem);
+        
+	if (!ret)
 		goto done;
 	
-	x = PEM_read_bio_X509(bp, &x, NULL, NULL);
-	
-	if (x) {
+        printf("fromPEM ret=%d\n", ret);
+
+        x = PEM_read_bio_X509_AUX(bp, NULL, 0, NULL);
+        
+	if (x != NULL) {
 		c = new Certificate(x);
 	}
-	
 done:
 	BIO_free(bp);
 	
 	return c;
+}
+
+Certificate *Certificate::fromPEM(const string& pem)
+{
+	return fromPEM(pem.c_str());
 }
 
 Certificate *Certificate::fromMetadata(const Metadata& m)
 {
-	X509 *x = NULL;
-	Certificate *c = NULL;
-	
 	if (m.getName() != "Certificate")
 		return NULL;
 	
-	BIO *bp = BIO_new(BIO_s_mem());
-	
-	if (!bp)
-		return NULL;
-	
-	if (!BIO_puts(bp, m.getContent().c_str()))
-		goto done;
-	
-	x = PEM_read_bio_X509(bp, &x, NULL, NULL);
-	
-	if (x) {
-		c = new Certificate(x);
-	}
-	
-done:
-	BIO_free(bp);
-	
-	return c;
+        return fromPEM(m.getContent());
+}
+
+void Certificate::print(FILE *fp)
+{
+        X509_print_fp(fp, x);
 }
 
 bool operator==(const Certificate& c1, const Certificate& c2)
 {
-	return (X509_cmp(c1.x, c2.x) && c1.subject == c2.subject && c1.validity == c2.validity && c1.issuer == c2.issuer);
+        
+        printf("X509_issuer_and_serial_cmp(): %d\n", X509_issuer_and_serial_cmp(c1.x, c2.x));
+        printf("X509_issuer_name_cmp(): %d\n", X509_issuer_name_cmp(c1.x, c2.x));
+        printf("X509_subject_name_cmp(): %d\n", X509_subject_name_cmp(c1.x, c2.x));
+
+        printf("X509_cmp(): %d\n", X509_cmp(c1.x, c2.x));
+
+        writeErrors("");
+	return (X509_cmp(c1.x, c2.x) == 0 && c1.subject == c2.subject && /* c1.validity == c2.validity && */ c1.issuer == c2.issuer);
 }
 
 bool operator!=(const Certificate& c1, const Certificate& c2)

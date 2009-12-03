@@ -97,12 +97,14 @@ public:
 	/**
 	 Sign the certificate using the private key of the issuer (certificate authority).
 	 */ 
+	bool sign(EVP_PKEY *key);
 	bool sign(RSA *key);
 	/**
 	 Verify the signature in the certificate using the public key of the issuer (certificate authority).
 	 If the verification is successful, the certificate will be marked as verified and isVerified() will
 	 return true.
 	 */
+	bool verifySignature(EVP_PKEY *key);
 	bool verifySignature(RSA *key);
 	bool isOwner(const NodeId_t owner) const;
 	bool isSubject(const string subject) const;
@@ -116,8 +118,10 @@ public:
 	const char *toPEM() const;
 	string toString() const;
 	Metadata *toMetadata() const;
-	static Certificate *fromPEM(const string pem);
+        static Certificate *fromPEM(const char *pem);
+	static Certificate *fromPEM(const string& pem);
 	static Certificate *fromMetadata(const Metadata& m);
+        void print(FILE *fp);
 	friend bool operator==(const Certificate& c1, const Certificate& c2);
 	friend bool operator!=(const Certificate& c1, const Certificate& c2);
 };

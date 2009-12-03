@@ -29,15 +29,12 @@
 { \
 	unsigned long writeErrors_e; \
 	char writeErrors_buf[256]; \
-	do{ \
+	do { \
 		writeErrors_e = ERR_get_error(); \
-		if(writeErrors_e != 0) \
-			HAGGLE_DBG( \
-				prefix "%s\n", \
-				ERR_error_string( \
-					writeErrors_e, \
-					writeErrors_buf)); \
-	}while(writeErrors_e != 0); \
+		if (writeErrors_e != 0) \
+			HAGGLE_DBG(prefix "%s\n", \
+				ERR_error_string(writeErrors_e, writeErrors_buf)); \
+	} while(writeErrors_e != 0); \
 }
 
 /* 
@@ -237,7 +234,14 @@ void SecurityHelper::doTask(SecurityTask *task)
 				if (!task->cert->sign(getManager()->caPrivKey)) {
 					HAGGLE_ERR("Signing of certificate failed\n");
 				}
-			
+                                
+                                if (task->cert->verifySignature(getManager()->caPubKey)) {
+                                        HAGGLE_DBG("Certificate signature is OK!\n");
+                                        printf("%s\n", task->cert->toString().c_str());
+                                } else {
+                                        HAGGLE_DBG("Certificate signature is INVALID!\n");
+                                }
+
 				getManager()->storeCertificate(task->cert);		
 			}
                         break;
@@ -258,17 +262,17 @@ void SecurityHelper::doTask(SecurityTask *task)
 						if (task->cert->isVerified()) {
 							HAGGLE_DBG("Certificate is valid, adding to store\n");
 							getManager()->storeCertificate(task->cert, true);
-						}else{
+						} else {
 							HAGGLE_DBG("Invalid certificate.\n");
+                                                        printf("%s", task->cert->toString().c_str());
 						}
-					}else{
-						HAGGLE_DBG(
-							"Unable to create certificate from metadata\n");
+					} else {
+						HAGGLE_DBG("Unable to create certificate from metadata\n");
 					}
-				}else{
+				} else {
 					HAGGLE_DBG("No certificate in metadata\n");
 				}
-			}else{
+			} else {
 				HAGGLE_DBG("No security metadata\n");
 			}
                         break;
@@ -300,6 +304,10 @@ bool SecurityHelper::run()
 {	
 	HAGGLE_DBG("SecurityHelper running...\n");
 	
+        /* This function must be called to load crypto algorithms used
+         * for signing and verification of certificates. */
+        OpenSSL_add_all_algorithms();
+
 	while (!shouldExit()) {
 		QueueEvent_t qe;
 		SecurityTask *task = NULL;
@@ -330,6 +338,8 @@ void SecurityHelper::cleanup()
 		taskQ.retrieve(&task);
 		delete task;
 	}
+        // Unload OpenSSL algorithms
+        EVP_cleanup();
 }
 
 const char *security_level_names[] = { "LOW", "MEDIUM", "HIGH" };
@@ -369,7 +379,15 @@ SecurityManager::SecurityManager(HaggleKernel *_haggle, const SecurityLevel_t sl
 #endif
 	
 	onRepositoryDataCallback = newEventCallback(onRepositoryData);
-	
+
+        /* This function must be called to load crypto algorithms used
+         * for signing and verification of certificates. */
+        OpenSSL_add_all_algorithms();
+
+#if defined(DEBUG)
+	/* Load ssl error strings. Needed by ERR_error_string() */
+	ERR_load_crypto_strings();
+#endif	
         // -- retrieve CA key from memory
 	caPrivKey = stringToRSAKey(ca_private_key, KEY_TYPE_PRIVATE);
 	
@@ -397,8 +415,6 @@ SecurityManager::SecurityManager(HaggleKernel *_haggle, const SecurityLevel_t sl
 		HAGGLE_DBG("Starting security helper...\n");
 		helper->start();
 	}
-	// Load ssl error strings. Needed by ERR_error_string()
-	ERR_load_crypto_strings();
 }
 
 SecurityManager::~SecurityManager()
@@ -419,9 +435,14 @@ SecurityManager::~SecurityManager()
 	
 	if (onRepositoryDataCallback)
 		delete onRepositoryDataCallback;
-	
+
+        // Unload OpenSSL algorithms
+        EVP_cleanup();
+
+#if defined(DEBUG)
 	// Release ssl error strings.
 	ERR_free_strings();
+#endif
 }
 
 void SecurityManager::onPrepareStartup()
