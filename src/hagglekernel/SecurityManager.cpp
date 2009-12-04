@@ -304,10 +304,6 @@ bool SecurityHelper::run()
 {	
 	HAGGLE_DBG("SecurityHelper running...\n");
 	
-        /* This function must be called to load crypto algorithms used
-         * for signing and verification of certificates. */
-        OpenSSL_add_all_algorithms();
-
 	while (!shouldExit()) {
 		QueueEvent_t qe;
 		SecurityTask *task = NULL;
@@ -338,8 +334,6 @@ void SecurityHelper::cleanup()
 		taskQ.retrieve(&task);
 		delete task;
 	}
-        // Unload OpenSSL algorithms
-        EVP_cleanup();
 }
 
 const char *security_level_names[] = { "LOW", "MEDIUM", "HIGH" };

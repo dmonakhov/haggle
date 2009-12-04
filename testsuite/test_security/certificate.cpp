@@ -150,7 +150,8 @@ int main(int argc, char *argv[])
                 success &= tmp_succ;
                 print_pass(tmp_succ);
 
-                printf("\n%s\n", cert->toString().c_str());
+                //printf("\n%s\n", cert->toString().c_str());
+                //cert->print();
 
                 print_over_test_str(1, "Verifying certificate...");
 
@@ -160,17 +161,19 @@ int main(int argc, char *argv[])
                 print_pass(tmp_succ);
 
                 const char *pem = cert->toPEM();
+                //cert->writePEM("/tmp/cert.pem");
 
+                
                 if (!pem) {
                         fprintf(stderr, "Could not convert certificate to PEM string\n");
                         delete cert;
                         return 0;
                 }
-
-                printf("PEM string:\n%s\n", pem);
+                //printf("PEM string:\n%s\n", pem);
                 //printf("PEM string:\n%s\n", cert->toPEM());
-               
+                
                 Certificate *cert2 = Certificate::fromPEM(pem);
+                //Certificate *cert2 = Certificate::readPEM("/tmp/cert.pem");
                 
                 if (!cert2) {
                         fprintf(stderr, "Could not convert PEM string to certificate\n");
@@ -178,7 +181,7 @@ int main(int argc, char *argv[])
                         return 0;
                 }
 
-                const char *pem2 = cert2->toPEM();
+                //const char *pem2 = cert2->toPEM();
 
                 if (*cert != *cert2) {
                         printf("Certificate created from PEM is NOT identical to the source certificate!!!\n");
@@ -186,10 +189,11 @@ int main(int argc, char *argv[])
                         printf("Certificate created from PEM is identical to the source certificate!\n");
                 }
                 
-                printf("PEM2 string:\n%s\n", cert2->toPEM());
+                //printf("PEM2\n");
+                //cert2->print();
+                
+                //cert2->sign(ca_privKey);       
 
-                //cert->print(stdout);
-                //cert2->print(stdout);
 
                 print_over_test_str(1, "Verifying certificate created from PEM string...");
 
@@ -198,7 +202,7 @@ int main(int argc, char *argv[])
                 success &= tmp_succ;
                 print_pass(tmp_succ);
 
-                printf("\n%s\n", cert2->toString().c_str());
+                //printf("\n%s\n", cert2->toString().c_str());
 
                 Metadata *m = cert2->toMetadata();
 

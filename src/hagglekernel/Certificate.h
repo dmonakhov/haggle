@@ -24,6 +24,7 @@
 #include <openssl/sha.h>
 #include <openssl/rsa.h>
 #include <openssl/x509.h>
+#include <stdio.h>
 
 using namespace haggle;
 
@@ -115,13 +116,17 @@ public:
 	const unsigned char *getOwnerId() const { return owner; }
 	const string& getIssuer() const { return issuer; }	
 	const string& getSubject() const { return subject; }
+        int writePEM(const char *file);
+        int writePEM(FILE *fp = stdout);
+        static Certificate *readPEM(const char *file);
+        static Certificate *readPEM(FILE *fp);
 	const char *toPEM() const;
 	string toString() const;
 	Metadata *toMetadata() const;
         static Certificate *fromPEM(const char *pem);
 	static Certificate *fromPEM(const string& pem);
 	static Certificate *fromMetadata(const Metadata& m);
-        void print(FILE *fp);
+        void print(FILE *fp = stdout);
 	friend bool operator==(const Certificate& c1, const Certificate& c2);
 	friend bool operator!=(const Certificate& c1, const Certificate& c2);
 };
