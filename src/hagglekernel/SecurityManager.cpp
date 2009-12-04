@@ -235,13 +235,6 @@ void SecurityHelper::doTask(SecurityTask *task)
 					HAGGLE_ERR("Signing of certificate failed\n");
 				}
                                 
-                                if (task->cert->verifySignature(getManager()->caPubKey)) {
-                                        HAGGLE_DBG("Certificate signature is OK!\n");
-                                        printf("%s\n", task->cert->toString().c_str());
-                                } else {
-                                        HAGGLE_DBG("Certificate signature is INVALID!\n");
-                                }
-
 				getManager()->storeCertificate(task->cert);		
 			}
                         break;
@@ -264,7 +257,7 @@ void SecurityHelper::doTask(SecurityTask *task)
 							getManager()->storeCertificate(task->cert, true);
 						} else {
 							HAGGLE_DBG("Invalid certificate.\n");
-                                                        printf("%s", task->cert->toString().c_str());
+                                                        //printf("%s", task->cert->toString().c_str());
 						}
 					} else {
 						HAGGLE_DBG("Unable to create certificate from metadata\n");
