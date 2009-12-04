@@ -154,8 +154,7 @@ void ConnectivityManager::onConfig(Event *e)
      */
     Metadata *bt = mc->getMetadata("Bluetooth");
     
-    if(bt)
-    {
+    if(bt) {
         ConnectivityBluetoothBase::updateSDPLists(bt);
     } 
 #endif

@@ -24,6 +24,7 @@
 class HaggleKernel;
 
 #include <time.h>
+#include <stdio.h>
 
 #include <libcpphaggle/Platform.h>
 #include <libcpphaggle/Timeval.h>
@@ -70,11 +71,20 @@ class HaggleKernel : public EventQueue
 	const string storagepath; // Path to where we can write files, etc.
 	void closeAllSockets();
 	
+	// FIXME: this file should most likely reside next to the haggle binary, or in
+	// some other non-volatile place.
+#define STARTUP_DATAOBJECT_PATH (string(DEFAULT_DATASTORE_PATH).append("/startup.do"))
+	
+	// Use a configuration data object with proper file ending so that it is easily 
+	// parsed as XML by editors. Keep the old path for backwards compatibility
+#define CONFIG_DATAOBJECT_PATH (string(DEFAULT_DATASTORE_PATH).append("/config.xml"))
+		
 	/**
 		This function is called by the run() function to locate and read the
 		startup data object file, and add the content to the event queue.
-	*/
-	void readStartupDataObjectFile(void);
+	 */
+	bool readStartupDataObject(FILE *fp = stdin);
+	bool readStartupDataObjectFile(string cfgObjPath = CONFIG_DATAOBJECT_PATH);
 public:
 	
 	InterfaceStore *getInterfaceStore() { return &interfaceStore; }

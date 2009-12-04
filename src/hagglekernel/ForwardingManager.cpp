@@ -63,8 +63,7 @@ ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 ForwardingManager::~ForwardingManager()
 {
 	// Destroy the forwarding module:
-	if(forwardingModule)
-	{
+	if (forwardingModule) {
 		HAGGLE_ERR(
 			"ERROR: forwarding module detected in forwarding manager "
 			"destructor. This shouldn't happen.");
@@ -101,11 +100,9 @@ ForwardingManager::~ForwardingManager()
 void ForwardingManager::setForwardingModule(Forwarder *forw)
 {
 	// Is there a current forwarding module?
-	if(forwardingModule)
-	{
+	if (forwardingModule) {
 		// Yes. Store its state in the data store:
-		RepositoryEntryRef insertState(
-			new RepositoryEntry(
+		RepositoryEntryRef insertState(new RepositoryEntry(
 				"ForwardingManager", 
 				("Forwarder state: " + 
 					forwardingModule->forwardAttributeName).c_str(),
@@ -119,8 +116,7 @@ void ForwardingManager::setForwardingModule(Forwarder *forw)
 	// Change forwarding module:
 	forwardingModule = forw;
 	// Is there a new forwarding module?
-	if(forwardingModule)
-	{
+	if (forwardingModule) {
 		// Yes. Get its state from the data store:
 		kernel->getDataStore()->readRepository(
 			new RepositoryEntry(
@@ -148,9 +144,8 @@ void ForwardingManager::onShutdown()
 void ForwardingManager::onDebugCmd(Event *e)
 {
 	if (e) {
-		if (e->getDebugCmd()->getType() == DBG_CMD_PRINT_ROUTING_TABLE)
-		{
-			if(forwardingModule)
+		if (e->getDebugCmd()->getType() == DBG_CMD_PRINT_ROUTING_TABLE) {
+			if (forwardingModule)
 				forwardingModule->doPrintRoutingTable();
 			else
 				printf("No forwarding module");
@@ -470,8 +465,7 @@ void ForwardingManager::onForwardRepositoryCallback(Event *e)
 		forwarding modules before the previous state retreival has been 
 		received.
 	*/
-	if(forwardingModule)
-	{
+	if (forwardingModule) {
 		// Are there any repository entries?
 		if (qr->countRepositoryEntries() != 0) {
 			RepositoryEntryRef re;
@@ -516,14 +510,12 @@ void ForwardingManager::onForwardQueryResult(Event *e)
           Figure out which is actually the newest data object, and delete all 
           others.
 	*/
-	if (forwardingModule)
-	{
+	if (forwardingModule) {
 		do {
 			current = qr->detachFirstDataObject();
 			if (forwardingModule->isMetricDO(current)) {
 				if (newest) {
-					HAGGLE_DBG(
-						"Deleting old forwarding object from data store\n");
+					HAGGLE_DBG("Deleting old forwarding object %s from data store\n", newest->getIdStr());
 					if (current->getCreateTime() > newest->getCreateTime()) {
 						// Delete the older forwarding data object, so we don't 
 						// clutter up the data store with old data.
@@ -693,8 +685,7 @@ void ForwardingManager::onNewDataObject(Event * e)
 
 	// Is this is a forwarding metric data object for the current forwarding 
 	// module?
-	if (forwardingModule)
-	{
+	if (forwardingModule) {
 		if (forwardingModule->isMetricDO(dObj)) {
 			if (forwardingModule->getNodeIdFromMetricDataObject(dObj) != "*") {
 				const Attribute *forwardingAttr = 
@@ -720,7 +711,7 @@ void ForwardingManager::onNewDataObject(Event * e)
 
 void ForwardingManager::onTargetNodes(Event * e)
 {
-	const NodeRef	&node = e->getNode();
+	const NodeRef &node = e->getNode();
 	const NodeRefList &nodes = e->getNodeList();
 	
 	// Ask the data store for data objects bound for the nodes for which the 
@@ -769,38 +760,36 @@ void ForwardingManager::onDelegateNodes(Event * e)
 void ForwardingManager::onSendMetric(Event * e)
 {
 	// Do we have a forwarding module?
-	if (forwardingModule)
-	{
-		// Do we have a metric DO?
-		if (forwardingModule->myMetricDO) {
-			// Yes. Send it to all neighbors that don't already have it:
-			NodeRefList nodes;
-			
-			// Get all neighbors:
-			kernel->getNodeStore()->retrieveNeighbors(nodes);
-			
-			NodeRefList ns;
-			// For each neighbor:
-			for (NodeRefList::iterator it = nodes.begin(); it != nodes.end(); it++) {
-				// Send to that neighbor:
-				if (isNeighbor(*it) && shouldForward(forwardingModule->myMetricDO, *it)) {
-					if (addToSendList(forwardingModule->myMetricDO, *it))
-						ns.push_front(*it);
-				}
+	if (!forwardingModule) 
+		return;
+	
+	// Do we have a metric DO?
+	if (forwardingModule->myMetricDO) {
+		// Yes. Send it to all neighbors that don't already have it:
+		NodeRefList nodes;
+		
+		// Get all neighbors:
+		kernel->getNodeStore()->retrieveNeighbors(nodes);
+		
+		NodeRefList ns;
+		// For each neighbor:
+		for (NodeRefList::iterator it = nodes.begin(); it != nodes.end(); it++) {
+			// Send to that neighbor:
+			if (isNeighbor(*it) && shouldForward(forwardingModule->myMetricDO, *it)) {
+				if (addToSendList(forwardingModule->myMetricDO, *it))
+					ns.push_front(*it);
 			}
-			if (!ns.empty()) {
-				/*
-					Here, we don't send a _WILL_SEND event, because these data 
-					objects are not meant to be modified, and should eventually 
-					be removed entirely, in favor of using the node description 
-					to transmit the forwarding metric.
-				*/
-				kernel->addEvent(
-					new Event(
-						EVENT_TYPE_DATAOBJECT_SEND, 
-						forwardingModule->myMetricDO, 
-						ns));
-			}
+		}
+		if (!ns.empty()) {
+			/*
+			 Here, we don't send a _WILL_SEND event, because these data 
+			 objects are not meant to be modified, and should eventually 
+			 be removed entirely, in favor of using the node description 
+			 to transmit the forwarding metric.
+			 */
+			kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, 
+						   forwardingModule->myMetricDO, 
+						   ns));
 		}
 	}
 }
@@ -818,20 +807,27 @@ void ForwardingManager::sendMetric(void)
  - <ForwardingModule>Prophet</ForwardingModule>		(Prophet)
  - <ForwardingModule>...</ForwardingModule>			(else: ForwarderEmpty)
  */ 
-void ForwardingManager::onConfig(Event * e)
+void ForwardingManager::onConfig(Event *e)
 {
 	DataObjectRef dObj = e->getDataObject();
-	if (!dObj) return;
+	
+	if (!dObj) 
+		return;
 	
 	// extract metadata
 	Metadata *m = dObj->getMetadata();
-	if (!m) return;
+	
+	if (!m) 
+		return;
 
 	// extract metadata relevant for ForwardingManager
 	m = m->getMetadata(this->getName());
-	if (!m) return;
+	
+	if (!m) 
+		return;
 
 	Metadata *tmp = NULL;
+	
 	if ((tmp = m->getMetadata("ForwardingModule"))) {
 		String moduleName = tmp->getContent();
 		HAGGLE_DBG("config Forwarding Module > %s\n", moduleName.c_str());

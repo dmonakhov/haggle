@@ -170,12 +170,12 @@ Certificate::~Certificate()
 // Should somehow autodetect the OpenSSL capabilities/version. 
 // One problem is MacOS X, because the headers say OpenSSL version 0.9.8j, but
 // the library is 0.9.7
-//#if defined(OS_ANDROID)
+#if defined(OS_ANDROID)
 // RSA_generate_key() is deprecated and removed in the Android OpenSSL version
 #define HAVE_RSA_GENERATE_KEY_EX 1
-//#else
-//#define HAVE_RSA_GENERATE_KEY_EX 0
-//#endif
+#else
+#define HAVE_RSA_GENERATE_KEY_EX 0
+#endif
 
 Certificate *Certificate::create(const string subject, const string issuer, const string validity, const NodeId_t owner, RSA **privKey)
 {
