@@ -19,6 +19,7 @@
 #include <haggleutils.h>
 #include <Certificate.h>
 #include <Node.h>
+#include <DataObject.h>
 
 #include <openssl/bio.h>
 #include <openssl/pem.h>
@@ -104,6 +105,60 @@ static const char *RSAPrivKeyToString(RSA *key)
 	return buffer;
 }
 #endif // 0
+
+static bool signDataObject(DataObjectRef& dObj, RSA *key)
+{
+	unsigned char *signature;
+	
+	if (!key || !dObj) 
+		return false;
+	
+	unsigned int siglen = RSA_size(key);
+	
+	signature = (unsigned char *)malloc(siglen);
+	
+	if (!signature)
+		return false;
+	
+	if (RSA_sign(NID_sha1, dObj->getId(), sizeof(DataObjectId_t), signature, &siglen, key) != 1) {
+		free(signature);
+		return false;
+	}
+
+        //NodeId_t id = { 6 };
+	
+	dObj->setSignature("foo", signature, siglen);
+	
+	// Do not free the allocated signature as it is now owned by the data object...
+	
+	return true;
+}
+
+static bool verifyDataObject(DataObjectRef& dObj, CertificateRef& cert) 
+{
+	RSA *key = cert->getPubKey();
+	
+	// Cannot verify without signature
+	if (!dObj->getSignature()) {
+		fprintf(stderr, "No signature in data object, cannot verify\n");
+		return false;
+	}
+	
+	if (RSA_verify(NID_sha1, dObj->getId(), sizeof(DataObjectId_t), 
+		       const_cast<unsigned char *>(dObj->getSignature()), dObj->getSignatureLength(), key) != 1) {
+		char buf[10000];
+		dObj->getRawMetadata(buf, sizeof(buf));
+		fprintf(stderr, "Signature is invalid:\n%s\n", buf);
+		dObj->setSignatureStatus(DATAOBJECT_SIGNATURE_INVALID);
+		return false;
+	}
+
+        printf("Signature is valid\n");
+	dObj->setSignatureStatus(DATAOBJECT_SIGNATURE_VALID);
+	
+	return true;
+}
+
 
 #if defined(OS_WINDOWS)
 int haggle_test_metadata(void)
@@ -213,7 +268,7 @@ int main(int argc, char *argv[])
                         return 0;
                 }
                 
-                Certificate *cert3 = Certificate::fromMetadata(*m);
+                CertificateRef cert3 = Certificate::fromMetadata(*m);
                 
                 delete m;
 
@@ -233,9 +288,19 @@ int main(int argc, char *argv[])
 
                 //printf("\n%s\n", cert3->toString().c_str());
 
+                DataObjectRef dObj = new DataObject();
+                
+                dObj->addAttribute("foo", "bar");
+                signDataObject(dObj, privKey);
+
+                print_over_test_str(1, "Verifying signature in data object...");
+                tmp_succ = verifyDataObject(dObj, cert3);
+                
+                success &= tmp_succ;
+                print_pass(tmp_succ);
+
                 delete cert;
                 delete cert2;
-                delete cert3;
 
 		return success ? 0 : 1;
 	} catch(Exception &) {
