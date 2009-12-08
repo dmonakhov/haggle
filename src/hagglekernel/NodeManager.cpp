@@ -42,11 +42,7 @@ NodeManager::NodeManager(HaggleKernel * _haggle) :
 #define __CLASS__ NodeManager
 
 	// Register filter for node descriptions
-	registerEventTypeForFilter(
-		nodeDescriptionEType,
-		"NodeManager NodeDescription Filter Event",	
-		onReceiveNodeDescription,
-		FILTER_NODEDESCRIPTION);
+	registerEventTypeForFilter(nodeDescriptionEType, "NodeDescription", onReceiveNodeDescription, FILTER_NODEDESCRIPTION);
 
 	setEventHandler(EVENT_TYPE_LOCAL_INTERFACE_UP, onLocalInterfaceUp);
 	setEventHandler(EVENT_TYPE_LOCAL_INTERFACE_DOWN, onLocalInterfaceDown);

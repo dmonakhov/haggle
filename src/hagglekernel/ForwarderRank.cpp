@@ -15,21 +15,21 @@
 
 #include "ForwarderRank.h"
 
-ForwarderRank::ForwarderRank(
-	ForwardingManager *m, 
-	const string name, 
-	const string _forwardAttributeName) : 
-	Forwarder(m, name, _forwardAttributeName)
+ForwarderRank::ForwarderRank(ForwardingManager *m) : 
+	Forwarder(m, "RANK")
 {
 	const char *nodeId = getManager()->getKernel()->getThisNode()->getIdStr();
 	myRank = nodeId[0];
 	
 	// Create a new forwarding data object with the rank as the metric:
-	String tmp;
+	
+	/*
+	 String tmp;
 	stringprintf(tmp, "%ld", myRank);
 	createMetricDataObject(tmp);
 	
 	addMetricDO(myMetricDO);
+	 */
 	/*
 	// Print the data object:
 	char *str;
@@ -44,14 +44,15 @@ ForwarderRank::~ForwarderRank()
 {
 }
 
-void ForwarderRank::addMetricDO(DataObjectRef &metricDO)
+bool ForwarderRank::addForwardingMetadata(DataObjectRef& dObj, Metadata *parent)
 {
+	/*
 	if(!isMetricDO(metricDO))
 		return;
 
 	ranks[getNodeIdFromMetricDataObject(metricDO)] = 
 		strtol(getMetricFromMetricDataObject(metricDO).c_str(), NULL, 10);
-
+*/
 	/*
 	// Output that we got a new metric do:
 	String str;
@@ -62,6 +63,7 @@ void ForwarderRank::addMetricDO(DataObjectRef &metricDO)
 		getMetricFromMetricDataObject(metricDO);
 	HAGGLE_DBG("%s\n", str.c_str());
 	*/
+	return false;
 }
 
 void ForwarderRank::newNeighbor(NodeRef &neighbor)
@@ -95,14 +97,4 @@ void ForwarderRank::generateDelegatesFor(DataObjectRef &dObj, NodeRef &target)
 
 	if (!delegateList.empty())
 		getManager()->getKernel()->addEvent(new Event(EVENT_TYPE_DELEGATE_NODES, dObj, target, delegateList));
-}
-
-
-string ForwarderRank::getEncodedState(void)
-{
-	return "";
-}
-
-void ForwarderRank::setEncodedState(string &state)
-{
 }

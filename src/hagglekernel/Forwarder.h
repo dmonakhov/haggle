@@ -24,6 +24,7 @@ class Forwarder;
 
 #include "ManagerModule.h"
 #include "ForwardingManager.h"
+#include "RepositoryEntry.h"
 
 /**
 	Forwarding module base class.
@@ -34,110 +35,42 @@ class Forwarder;
 */
 class Forwarder : public ManagerModule<ForwardingManager> {
 public:
-	/**
-		This metric data object should be initialized and managed by the module.
-		
-		The forwarding manager sends this data object to any and all new nodes 
-		when they are encountered.
-		
-		This data object should be persistent, to avoid having to use an 
-		additional storage format. The forwarding manager assumes that this is 
-		so, and:
-			1) asks the data store for all forwarding data objects when haggle 
-			   starts up, and uses addMetricDO() to provide them to the 
-			   forwarding module,
-			2) deletes old data objects from the same node whenever a forwarding
-			   data object is recieved from that node.
-		
-		FIXME: The name of this reference is bad. It should be renamed.
-	*/
-	DataObjectRef myMetricDO;
-	/**
-		This is the name of the attribute that says this is a forwarding metric
-		data object. The point of not having it as a #define is to enable the 
-		use of multiple forwarding modules. Each forwarding module should have 
-		its own attribute name, which makes it receive only forwarding objects 
-		that it can read. This also makes it possible to have different 
-		forwarding modules running at different times, because the forwarding
-		module will not delete old forwarding data objects in favor of new ones
-		from a different forwarding module.
-	*/
-	string forwardAttributeName;
-	
-	Forwarder(
-		ForwardingManager *m = NULL, 
-		const string name = "Unknown forwarding module",
-		const string _forwardAttributeName = "ForwarderMetricForNodeID") :
-		ManagerModule<ForwardingManager>(m, name),
-		forwardAttributeName(_forwardAttributeName)
-	{}
+	Forwarder(ForwardingManager *m = NULL, 
+		const string name = "Unknown forwarding module") :
+		ManagerModule<ForwardingManager>(m, name) {}
 	~Forwarder() {}
 	
-#ifdef DEBUG
-	/**
-		Used by the forwarding manager to print the routing table. Will print 
-		a bit of text to show where the routing table starts and stops, and call
-		printRoutingTable().
-	*/
-	void doPrintRoutingTable(void)
-	{
-		printf("========= Routing table ========\n");
-		printRoutingTable();
-		printf("================================\n");
-	}
-#endif
-	
-/*
-	For the moment, the format of a metric data object is as follows:
-	
-	The data object has an attribute <string>=<Node ID> showing that it is the
-	forwarding data object for the node with that node id. The string is used to
-	identify which forwarding module generated the information.
-	
-	The data object also has an attribute Metric=<string> which encodes the 
-	metrics. This is placed in a <Forwarding>...</Forwarding> section of the 
-	data object.
-*/
+	// Only useful for asynchronous modules
+	virtual void quit() {}
 
-	/**
-		This function creates a new forwarding data object. It takes a metric 
-		string and replaces myMetricDO with a new data object.
-		
-		This function is placed here, because most forwarding modules will need
-		to have this function, and doesn't need a different format.
-		
-		If the given string has any encoding that may break XML parsing, the 
-		generated data object will most likely not be pareseable.
-	*/
-	void createMetricDataObject(string forwardingMetric);
+	DataObjectRef createRoutingInformationDataObject();
 	
+	virtual bool addRoutingInformation(DataObjectRef& dObj, Metadata *m) { return false; }
 	/**
-		This function determines if the given data object is a metric data 
-		object for this forwarding module. It checks to see if the data object
-		has the format of a data object created by ::createMetricDataObject().
-		
-		Returns: true iff the data object conforms to the format used by 
-		::createMetricDataObject() for the current forwarding module.
+		This function determines if the given data object contains routing information
+		for this forwarding module. 
+	 
+		Returns: true iff the data object routing information created by this forwarding module.
 	*/
-	virtual bool isMetricDO(const DataObjectRef dObj) const;
+	virtual bool hasRoutingInformation(const DataObjectRef& dObj) const;
 	
 	/**
 		This function returns a string with the node id for the node which 
-		created the given metric data object.
+		created the routing information
 		
-		Returns: if isMetricDO() would return true, a string containing a node 
-		id. Otherwise NULL.
+		Returns: if routing information is valid, a string containing a node id. 
+		Otherwise NULL.
 	*/
-	virtual const string getNodeIdFromMetricDataObject(DataObjectRef dObj) const;
+	virtual const string getNodeIdFromRoutingInformation(const DataObjectRef& dObj) const;
 	
 	/**
 		This function returns a string with the metric for the node which 
 		created the given metric data object.
 		
-		Returns: if isMetricDO() would return true, a string containing a 
+		Returns: if routing information is valid, a string containing a 
 		metric. Otherwise NULL.
 	*/
-	virtual const string getMetricFromMetricDataObject(DataObjectRef dObj) const;
+	virtual const Metadata *getRoutingInformation(const DataObjectRef& dObj) const;
 	
 	/*
 		The following functions are called by the forwarding manager as part of
@@ -164,8 +97,7 @@ public:
 		Also, the given metric data object may have been sent before, due to 
 		limitations in the forwarding manager.
 	*/
-	virtual void addMetricDO(DataObjectRef &metricDO) {}
-	
+	virtual void newRoutingInformation(DataObjectRef& dObj) {}	
 	/**
 		Called when a neighbor node is discovered.
 	*/
@@ -200,29 +132,10 @@ public:
 	*/
 	virtual void generateTargetsFor(NodeRef &neighbor) {}
 	
-	/**
-		Returns a string to store in the data base that encodes whatever 
-		information the forwarding algorithm needs to recreate it's internal
-		state after shutdown.
-		
-		Called by the forwarding manager as part of the shutdown procedure. The
-		string is stored in the database (as a repository entry), and given to
-		the forwarder using setEncodedState() at haggle startup.
-	*/
-	virtual string getEncodedState(void) { return ""; }
+	virtual void generateRoutingInformationDataObject(NodeRef& neighbor) {}
 	
-	/**
-		Called by the forwarding manager as part of the startup procedure. The
-		given string is either one returned by getEncodedState() for this kind
-		of module, one returned by getEncodedState() for another kind of module,
-		or the empty string.
-		
-		This function shall be called by the forwarding manager as soon as it
-		retrieves the string from the data store. This does not mean it will be
-		called before any other function, however. This must be taken into 
-		consideration when writing the module.
-	*/
-	virtual void setEncodedState(string &state) {}
+	virtual size_t getSaveState(RepositoryEntryList& rel) { return 0; }
+	virtual bool setSaveState(RepositoryEntryRef& e) { return false; }
 	
 #ifdef DEBUG
 	/**

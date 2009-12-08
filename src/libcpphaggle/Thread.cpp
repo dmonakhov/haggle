@@ -536,7 +536,7 @@ void Thread::cancelableSleep(unsigned long msecs)
 	w.waitTimeout(msecs);
 }
 
-const char *Runnable::getName() 
+const char *Runnable::getName() const
 { 
 	return name.c_str(); 
 }

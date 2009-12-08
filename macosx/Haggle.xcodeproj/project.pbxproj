@@ -15,6 +15,7 @@
 		425C159C0E79406400D9D1AB /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 425C159B0E79406400D9D1AB /* IOKit.framework */; };
 		42829F080E76FD3200AC9875 /* libhaggleutils.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D3CAD5590E23E37B00E9B3D9 /* libhaggleutils.a */; };
 		42BC121B0E902EDD00C7D7ED /* filedropMacOSX.c in Sources */ = {isa = PBXBuildFile; fileRef = 42BC121A0E902EDD00C7D7ED /* filedropMacOSX.c */; };
+		D305CF8E10CDC65100D3218D /* ForwarderRank.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D305CF8C10CDC65100D3218D /* ForwarderRank.cpp */; };
 		D318485B0E5BB8A2002AE6D6 /* libpthread.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D3CAD5870E23E63800E9B3D9 /* libpthread.dylib */; };
 		D318485C0E5BB8B1002AE6D6 /* libxml2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D3CAD5850E23E61000E9B3D9 /* libxml2.dylib */; };
 		D318485F0E5BB90D002AE6D6 /* liblibhaggle.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D3CAD56B0E23E40E00E9B3D9 /* liblibhaggle.a */; };
@@ -237,6 +238,8 @@
 		8DD76F6C0486A84900D96B5E /* Haggle */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Haggle; sourceTree = BUILT_PRODUCTS_DIR; };
 		D3056C630F4E2FC700EF864F /* GenericQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GenericQueue.h; path = ../src/libcpphaggle/include/libcpphaggle/GenericQueue.h; sourceTree = SOURCE_ROOT; };
 		D3056C640F4E2FC700EF864F /* Map.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Map.h; path = ../src/libcpphaggle/include/libcpphaggle/Map.h; sourceTree = SOURCE_ROOT; };
+		D305CF8C10CDC65100D3218D /* ForwarderRank.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ForwarderRank.cpp; path = ../src/hagglekernel/ForwarderRank.cpp; sourceTree = SOURCE_ROOT; };
+		D305CF8D10CDC65100D3218D /* ForwarderRank.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ForwarderRank.h; path = ../src/hagglekernel/ForwarderRank.h; sourceTree = SOURCE_ROOT; };
 		D31848150E5BB7E6002AE6D6 /* filedrop */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = filedrop; sourceTree = BUILT_PRODUCTS_DIR; };
 		D320CDD010B2A40A00C78F03 /* Forwarder.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Forwarder.cpp; path = ../src/hagglekernel/Forwarder.cpp; sourceTree = SOURCE_ROOT; };
 		D32C3E000F1630C800D028F9 /* Condition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Condition.h; path = ../src/libcpphaggle/include/libcpphaggle/Condition.h; sourceTree = SOURCE_ROOT; };
@@ -727,8 +730,8 @@
 			isa = PBXGroup;
 			children = (
 				D3F44D160E83DF40005981E6 /* Address.h */,
-				D3F44D180E83DF40005981E6 /* ApplicationManager.h */,
 				D3F44D1A0E83DF40005981E6 /* Attribute.h */,
+				D3F44D180E83DF40005981E6 /* ApplicationManager.h */,
 				D3F44D1C0E83DF40005981E6 /* BenchmarkManager.h */,
 				D3B6F1CC0FC4A9330081CB2B /* Bloomfilter.h */,
 				D39264420F44ED690014F6B6 /* Certificate.h */,
@@ -754,6 +757,7 @@
 				4207998B0F372BA300B7BB49 /* ForwarderAsynchronous.h */,
 				4207998A0F372BA300B7BB49 /* ForwarderEmpty.h */,
 				420799890F372BA300B7BB49 /* ForwarderProphet.h */,
+				D305CF8D10CDC65100D3218D /* ForwarderRank.h */,
 				D3F44D4D0E83DF40005981E6 /* ForwardingManager.h */,
 				D3F44D4F0E83DF40005981E6 /* HaggleKernel.h */,
 				D3F44D5A0E83DF40005981E6 /* Interface.h */,
@@ -817,6 +821,7 @@
 				D320CDD010B2A40A00C78F03 /* Forwarder.cpp */,
 				4207998C0F372BA300B7BB49 /* ForwarderAsynchronous.cpp */,
 				420799830F372B6600B7BB49 /* ForwarderProphet.cpp */,
+				D305CF8C10CDC65100D3218D /* ForwarderRank.cpp */,
 				D3F44D4C0E83DF40005981E6 /* ForwardingManager.cpp */,
 				D3F44D4E0E83DF40005981E6 /* HaggleKernel.cpp */,
 				D3F44D590E83DF40005981E6 /* Interface.cpp */,
@@ -1269,6 +1274,7 @@
 				D384C5CC0F4D718100E55BC7 /* XMLMetadata.cpp in Sources */,
 				D3B6F1CD0FC4A9330081CB2B /* Bloomfilter.cpp in Sources */,
 				D320CDD110B2A40B00C78F03 /* Forwarder.cpp in Sources */,
+				D305CF8E10CDC65100D3218D /* ForwarderRank.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

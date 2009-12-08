@@ -280,10 +280,15 @@ void DebugManager::dumpTo(SOCKET client_sock, DataStoreDump *dump)
                 free(buf);
         }
 	
+	/*
+	 
+	 FIXME: With the new forwarding this thing is broken.
+	 
         Manager *mgr = kernel->getManager((char *)"ForwardingManager");
 	
         if (mgr) {
                 ForwardingManager *fmgr = (ForwardingManager *) mgr;
+		
                 DataObjectRef dObj = fmgr->getForwarder()->myMetricDO;
                 if (dObj) {
                         char *buf;
@@ -307,6 +312,7 @@ void DebugManager::dumpTo(SOCKET client_sock, DataStoreDump *dump)
                         }
                 }
         }
+	*/
         NodeRefList nl;
 	
         kernel->getNodeStore()->retrieveNeighbors(nl);

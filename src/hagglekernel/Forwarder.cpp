@@ -15,94 +15,85 @@
 
 #include "Forwarder.h"
 
-#define FORWARDING_METADATA_NAME	("Forwarding")
-#define METRIC_METADATA_NAME		("Metric")
-
-void Forwarder::createMetricDataObject(string forwardingMetric)
+DataObjectRef Forwarder::createRoutingInformationDataObject()
 {
 	// No need to have a reference in this function because it won't be 
 	// visible outside until this function is done with it.
-	DataObject *newDO;
+	DataObjectRef dObj = new DataObject((const char *) NULL, 0);
 	
-	// Create a new, empty, data object:
-	newDO = new DataObject((const char *) NULL, 0);
-	
-	// Forwarding data objects are intentionally persistent. See the 
-	// declaration of myMetricDO in Forwarder.h.
-	
-	// Add the attribute that says this is a forwarding metric data object:
-	newDO->addAttribute(
-		forwardAttributeName, 
-		getManager()->getKernel()->getThisNode()->getIdStr());
+	dObj->setPersistent(false);
+	dObj->addAttribute("Forwarding", getName());
 	
 	// Add the metric data to the forwarding section:
-	Metadata *md = newDO->getMetadata();
-	Metadata *forw = md->getMetadata(FORWARDING_METADATA_NAME);
+	Metadata *md = dObj->getMetadata()->addMetadata(getManager()->getName());
 	
-	if (!forw) {
-		forw = md->addMetadata(FORWARDING_METADATA_NAME);
+	md = md->addMetadata(getName());
+	md->setParameter("node_id", getKernel()->getThisNode()->getIdStr());
+	
+	if (!addRoutingInformation(dObj, md)) {
+		HAGGLE_ERR("Could not add routing information\n");
+		return NULL;
 	}
-	forw->addMetadata(METRIC_METADATA_NAME, forwardingMetric);
 	
-	// Set the create time so that forwarding managers can sort out which is
-	// newest.
-	newDO->setCreateTime();
-	
-	myMetricDO = newDO;
+	return dObj;
 }
 
-bool Forwarder::isMetricDO(const DataObjectRef dObj) const
+bool Forwarder::hasRoutingInformation(const DataObjectRef& dObj) const
 {
 	if (!dObj)
-		return false;
-	
-	if (dObj->getAttribute(forwardAttributeName) == NULL)
 		return false;
 	
 	if (dObj->getMetadata() == NULL)
 		return false;
 	
-	if (dObj->getMetadata()->getMetadata(FORWARDING_METADATA_NAME) == NULL)
-		return false;
+	Metadata *m = dObj->getMetadata()->getMetadata(getManager()->getName());
 	
-	if (dObj->
-			getMetadata()->
-				getMetadata(FORWARDING_METADATA_NAME)->
-					getMetadata(METRIC_METADATA_NAME) == NULL)
+	if (m == NULL)
 		return false;
-	
+		
+	if (!m->getMetadata(getName()))
+		return false;
+	    
 	return true;
 }
 
-const string Forwarder::getNodeIdFromMetricDataObject(DataObjectRef dObj) const
+const string Forwarder::getNodeIdFromRoutingInformation(const DataObjectRef& dObj) const
 {
-	if (!dObj)
+	if (!dObj || !dObj->getMetadata())
 		return (char *)NULL;
 	
-	const Attribute *attr;
-	attr = dObj->getAttribute(forwardAttributeName);
-	if (attr == NULL)
+	Metadata *m = dObj->getMetadata()->getMetadata(getManager()->getName());
+	
+	if (!m)
 		return (char *)NULL;
-	return attr->getValue();
+	
+	m = m->getMetadata(getName());
+	
+	if (!m)
+		return (char *)NULL;
+	
+	return m->getParameter("node_id");
 }
 
-const string Forwarder::getMetricFromMetricDataObject(DataObjectRef dObj) const
+const Metadata *Forwarder::getRoutingInformation(const DataObjectRef& dObj) const
 {
 	if (!dObj)
-		return (char *)NULL;
+		return NULL;
 	
-	Metadata *md;
-	md = dObj->getMetadata();
+	Metadata *md = dObj->getMetadata();
+	
 	if (md == NULL)
-		return (char *)NULL;
+		return NULL;
 	
-	md = md->getMetadata(FORWARDING_METADATA_NAME);
+	md = md->getMetadata(getManager()->getName());
+	
 	if (md == NULL)
-		return (char *)NULL;
+		return NULL;
 	
-	md = md->getMetadata(METRIC_METADATA_NAME);
+	md = md->getMetadata(getName());
+	
 	if (md == NULL)
-		return (char *)NULL;
+		return NULL;
 	
-	return md->getContent();
+	return md;
 }

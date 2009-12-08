@@ -95,6 +95,14 @@ public:
 	{
                 return manager;
         }
+	
+        /**
+	 Returns the manager this module belongs to.
+	 */
+        const theManager *getManager() const
+	{
+                return manager;
+        }
         /**
         	Adds an event to the main haggle event queue. See events and event
         	queues for information about how to create and handle events.

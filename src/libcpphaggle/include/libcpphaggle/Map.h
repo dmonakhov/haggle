@@ -63,6 +63,7 @@ public:
 		
 		iterator(size_type _i, map_type *_map) : i(_i), map(_map) {}
 	public:
+		iterator(const iterator& _it) : i(_it.i), map(_it.map) {}
 		iterator() : i(0), map(NULL) {}
 		~iterator() {}
 		
@@ -127,7 +128,8 @@ public:
 		
 		const_iterator(size_type _i, map_type *_map) : i(_i), map(_map) {}
 	public:
-		const_iterator(const iterator& _it) : i(0), map(NULL) {}
+		const_iterator(const const_iterator& _it) : i(_it.i), map(_it.map) {}
+		const_iterator(const iterator& _it) : i(_it.i), map(_it.map) {}
 		const_iterator() : i(0), map(NULL) {}
 		~const_iterator() {}
 		
@@ -266,23 +268,23 @@ private:
 	/**
 		Figures out wether or not the given key is in the map.
 		
-		Returns: <iterator,true> if the key is in the map, and the iterator
+		Returns: <pos,true> if the key is in the map, and pos
                 indicates the position. If the key is not in the map, the function
-                returns <iterator,false> and the iterator indicates the position the
+                returns <before,false> and before indicates the position the
                 element should be inserted at.
 			
 	*/
-	Pair<iterator, bool> _find(const Key& k,
+	Pair<size_type, bool> _find(const Key& k,
                                    size_type left_min, 
                                    size_type right_max,
                                    size_type before,
-                                   bool find_first = false)
+                                   bool find_first = false) const
 	{
 		size_type pos, left_max, right_min;
 		
 		// Dummy check:
 		if (right_max == npos || left_min > right_max) {
-			return make_pair(iterator(before, this), false);
+			return make_pair(before, false);
 		}
 		// Find the middle:
 		pos = (right_max - left_min + 1)/2 + left_min;
@@ -312,9 +314,9 @@ private:
                         }
                 }
 		// Found exact match:
-		return make_pair(iterator(pos, this), true);
+		return make_pair(pos, true);
 	}
-	Pair<iterator, bool> _find(const Key& k, bool find_first = false)
+	Pair<size_type, bool> _find(const Key& k, bool find_first = false) const
 	{
 		return _find(k, 0, number_of_entries-1, 0, find_first);
 	}
@@ -370,23 +372,23 @@ public:
 	 */
 	iterator find(const Key& k)
 	{
-		Pair<iterator, bool> tmp;
+		Pair<size_type, bool> tmp;
 		
 		tmp = _find(k, true);
 		
 		if (tmp.second)
-			return tmp.first;
+			return iterator(tmp.first, this);
 		else
 			return end();
 	}
 	const_iterator find(const Key& k) const
 	{
-		Pair<const_iterator, bool> tmp;
+		Pair<size_type, bool> tmp;
 		
-		tmp = const_cast<BasicMap<Key,Value> *>(this)->_find(k, true);
+		tmp = _find(k, true);
 		
 		if (tmp.second)
-			return tmp.first;
+			return const_iterator(tmp.first, this);
 		else
 			return end();
 	}
@@ -460,17 +462,17 @@ public:
 	}
 	iterator insert(const member& x) 
 	{
-                Pair<iterator, bool> tmp = _find(x.first, true);
-		return _insert(tmp.first, x);
+                Pair<size_type, bool> tmp = _find(x.first, true);
+		return _insert(iterator(tmp.first, this), x);
 	}
 	Pair<iterator, bool> insert_unique(const member& x)
 	{
-                Pair<iterator, bool> tmp = _find(x.first);
+                Pair<size_type, bool> tmp = _find(x.first);
 		
 		if (tmp.second)
-			return make_pair(tmp.first, false);
+			return make_pair(iterator(tmp.first, this), false);
 		else
-			return make_pair(_insert(tmp.first, x), true);
+			return make_pair(_insert(iterator(tmp.first, this), x), true);
         }
 	
         void erase(iterator pos)
@@ -509,12 +511,12 @@ public:
 	*/
 	Value &operator[](const Key& k)
 	{
-		Pair<iterator, bool> tmp = _find(k);
+		Pair<size_type, bool> tmp = _find(k);
 		              
 		if (tmp.second)
-			return (*tmp.first).second;
+			return the_map[tmp.first]->second;
 		else
-			return (*insert_unique(tmp.first, make_pair(k, Value()))).second;
+			return (*insert_unique(iterator(tmp.first, this), make_pair(k, Value()))).second;
 	}
         
         BasicMap<Key, Value>& operator=(const BasicMap<Key, Value>& m) {

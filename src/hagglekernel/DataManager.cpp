@@ -178,7 +178,7 @@ DataManager::~DataManager()
 	
 	if (onInsertedDataObjectCallback)
 		delete onInsertedDataObjectCallback;
-	if(onGetLocalBFCallback)
+	if (onGetLocalBFCallback)
 		delete onGetLocalBFCallback;
 }
 

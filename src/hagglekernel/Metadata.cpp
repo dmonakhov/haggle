@@ -74,6 +74,11 @@ Metadata *Metadata::getMetadata(const string name, unsigned int n)
         return (*r.first).second;
 }
 
+const Metadata *Metadata::getMetadata(const string name, unsigned int n) const
+{
+        return const_cast<Metadata *>(this)->getMetadata(name, n);
+}
+
 Metadata *Metadata::getNextMetadata()
 {
         if (r.first == registry.end() || r.first == r.second)
@@ -85,6 +90,11 @@ Metadata *Metadata::getNextMetadata()
                 return NULL;
 
         return (*r.first).second;
+}
+
+const Metadata *Metadata::getNextMetadata() const
+{
+	return const_cast<Metadata *>(this)->getNextMetadata();
 }
 
 string& Metadata::setParameter(const string name, const string value)
@@ -104,7 +114,7 @@ string& Metadata::setParameter(const string name, const unsigned int value)
 {
 	char tmp[32];
 	sprintf(tmp, "%u", value);
-	return setParameter(name,tmp);
+	return setParameter(name, tmp);
 }
 
 bool Metadata::removeParameter(const string name)
@@ -112,15 +122,15 @@ bool Metadata::removeParameter(const string name)
         return param_registry.erase(name) == 1;
 }
 
-const char *Metadata::getParameter(const string name)
+const char *Metadata::getParameter(const string name) const
 {
-        parameter_registry_t::iterator it;
+        parameter_registry_t::const_iterator it;
 
         it = param_registry.find(name);
 
         if (it == param_registry.end())
                 return NULL;
-        
+        		
         return (*it).second.c_str();
 }
 

@@ -104,7 +104,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
 		reference or an interface reference while calling this function.
 	*/
-		bool stored(string idStr, bool mustBeNeighbor = false);
+	bool stored(string idStr, bool mustBeNeighbor = false);
 	/**
 		Add a new node to the node store.
 		
