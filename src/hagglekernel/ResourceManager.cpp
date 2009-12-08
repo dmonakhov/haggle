@@ -39,7 +39,7 @@ ResourceManager::ResourceManager(HaggleKernel *kernel) :
 		throw ManagerException(-1, "Could not create onCheckStatusCallback");
 #endif
         }
-	onCheckStatusEvent(NULL);
+	
 	HAGGLE_DBG("Started Resource monitor\n");
 }
 
@@ -47,6 +47,11 @@ ResourceManager::~ResourceManager()
 {
 	delete resMon;
 	delete onCheckStatusCallback;
+}
+
+void ResourceManager::onStartup()
+{
+	onCheckStatusEvent(NULL);
 }
 
 void ResourceManager::onShutdown()

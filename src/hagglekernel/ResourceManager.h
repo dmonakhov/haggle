@@ -29,6 +29,7 @@ class ResourceManager : public Manager
 	ResourceMonitor *resMon;
 	EventCallback<EventHandler> *onCheckStatusCallback;
 	void onShutdown();
+	void onStartup();
 	void onCheckStatusEvent(Event *e);
 public:
 	ResourceManager(HaggleKernel *kernel);
