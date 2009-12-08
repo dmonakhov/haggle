@@ -124,6 +124,7 @@ ConnectivityManager::~ConnectivityManager()
 #if defined(ENABLE_BLUETOOTH)
         ConnectivityBluetoothBase::clearSDPLists();
 #endif
+	Event::unregisterType(deleteConnectivityEType);
 }
 
 void ConnectivityManager::onConfig(Event *e)

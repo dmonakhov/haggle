@@ -31,24 +31,20 @@ class ForwarderRank : public Forwarder {
 	long myRank;
 	Map< String, long > ranks;
 public:
-	ForwarderRank(
-		ForwardingManager *m = NULL, 
-		const string name = "Rank forwarding module",
-		const string _forwardAttributeName = "ForwarderRankMetricForNodeID");
+	ForwarderRank(ForwardingManager *m = NULL);
 	~ForwarderRank();
 
-	virtual void addMetricDO(DataObjectRef &metricDO);
-	
+	bool addForwardingMetadata(DataObjectRef& dObj, Metadata *parent);
 	/**
 		Called when a neighbor node is discovered.
 	*/
-	virtual void newNeighbor(NodeRef &neighbor);
+	void newNeighbor(NodeRef &neighbor);
 
 
 	/**
 		Called when a node just ended being a neighbor.
 	*/
-	virtual void endNeighbor(NodeRef &neighbor);
+	void endNeighbor(NodeRef &neighbor);
 	
 	/**
 		Generates an event (EVENT_TYPE_TARGET_NODES) providing all the target 
@@ -56,7 +52,7 @@ public:
 		
 		If no nodes are found, no event should be created.
 	*/
-	virtual void generateTargetsFor(NodeRef &neighbor);
+	void generateTargetsFor(NodeRef &neighbor);
 	
 	/**
 		Generates an event (EVENT_TYPE_DELEGATE_NODES) providing all the nodes 
@@ -64,31 +60,7 @@ public:
 		
 		If no nodes are found, no event should be created.
 	*/
-	virtual void generateDelegatesFor(DataObjectRef &dObj, NodeRef &target);
-	
-	/**
-		Returns a string to store in the data base that encodes whatever 
-		information the forwarding algorithm needs to recreate it's internal
-		state after shutdown.
-		
-		Called by the forwarding manager as part of the shutdown procedure. The
-		string is stored in the database (as a repository entry), and given to
-		the forwarder using setEncodedState() at haggle startup.
-	*/
-	virtual string getEncodedState(void);
-	
-	/**
-		Called by the forwarding manager as part of the startup procedure. The
-		given string is either one returned by getEncodedState() for this kind
-		of module, one returned by getEncodedState() for another kind of module,
-		or the empty string.
-		
-		This function shall be called by the forwarding manager as soon as it
-		retrieves the string from the data store. This does not mean it will be
-		called before any other function, however. This must be taken into 
-		consideration when writing the module.
-	*/
-	virtual void setEncodedState(string &state);
+	void generateDelegatesFor(DataObjectRef &dObj, NodeRef &target);
 };
 
 #endif

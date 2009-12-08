@@ -30,25 +30,26 @@ class ForwarderProphet;
 	Prophet forwarding ids are only used internally in the forwarderprophet 
 	manager module, but for technical reasons it needs to be defined here.
 */
-typedef unsigned long prophet_forwarding_id;
+typedef unsigned long prophet_node_id_t;
 
 // Symbolic constant for the local node.
-#define this_node	((prophet_forwarding_id) 1)
+#define this_node_id ((prophet_node_id_t) 1)
 
-typedef Map<prophet_forwarding_id, double> prophet_metric_table;
+typedef Pair<double, Timeval> prophet_metric_t;
+typedef Map<prophet_node_id_t, prophet_metric_t> prophet_rib_t;
 
 /**
 	Proof-of-concept PRoPHET routing module.
 */
 class ForwarderProphet : public ForwarderAsynchronous {
-// Age every 10 minutes:
-#define PROPHET_TIME_BETWEEN_AGING	(10*60)
-
-// Aging constant:
-#define PROPHET_AGING_CONSTANT	(0.1)
-
-// Initialization constant:
-#define PROPHET_INITIALIZATION_CONSTANT	(0.5)
+	
+// Prophet constants (as per draft v4):
+#define PROPHET_P_ENCOUNTER (0.75)
+#define PROPHET_ALPHA (0.5)
+#define PROPHET_BETA (0.25)
+#define PROPHET_GAMMA (0.999)
+#define PROPHET_AGING_TIME_UNIT (10) // 10 minutes
+#define PROPHET_AGING_CONSTANT (0.1)
         
         HaggleKernel *kernel;
         
@@ -58,61 +59,48 @@ class ForwarderProphet : public ForwarderAsynchronous {
 		is used. This means that this forwarding module cannot handle more than
 		2^32 other nodes.
 	*/
-	Map<string, prophet_forwarding_id>	nodeid_to_id_number;
+	Map<string, prophet_node_id_t> nodeid_to_id_number;
 	/**
 		In order to reduce the amount of memory taken up by the forwarding 
 		table, this mapping between forwarding manager id numbers and node ids 
 		is used. This means that this forwarding module cannot handle more than
 		2^32 other nodes.
 	*/
-	Map<prophet_forwarding_id, string>	id_number_to_nodeid;
+	Map<prophet_node_id_t, string> id_number_to_nodeid;
 	/**
 		The next id number to use. Since the default value for a 
-		prophet_forwarding_id in a map is 0, this should never be 0, in order 
+		prophet_node_id_t in a map is 0, this should never be 0, in order 
 		to avoid confusion.
 	*/
-	prophet_forwarding_id				next_id_number;
+	prophet_node_id_t next_id_number;
 	
 	/**
 		This is the local node's internal PRoPHET metrics.
 	*/
-	prophet_metric_table my_metrics;
+	prophet_rib_t rib;
+	Timeval rib_timestamp;
 	/**
 		This is a mapping of id numbers (of other nodes) to those nodes' public
 		metrics.
 	*/
-	Map<prophet_forwarding_id, prophet_metric_table> forwarding_table;
+	Map<prophet_node_id_t, prophet_rib_t> neighbor_ribs;
+	
+	size_t getSaveState(RepositoryEntryList& rel);
+	bool setSaveState(RepositoryEntryRef& e);
 	
 	/**
-		This function returns the nonzero id number for the given node id 
-		string. It ensures that the node id is in the nodeid_to_id_number map
-		and that the returned id number is nonzero. If the node id wasn't in the
-		map to begin with, it is inserted, along with a new id number.
-	*/
-	prophet_forwarding_id id_for_string(string nodeid);
+	 This function returns the nonzero id number for the given node id 
+	 string. It ensures that the node id is in the nodeid_to_id_number map
+	 and that the returned id number is nonzero. If the node id wasn't in the
+	 map to begin with, it is inserted, along with a new id number.
+	 */
+	prophet_node_id_t id_for_string(const string& nodeid);
 	
-	/**
-		This function returns a metric string that can be parsed by 
-		::parseMetricString().
-	*/
-	string getMetricString(prophet_metric_table &table);
+	prophet_metric_t& age_metric(prophet_metric_t& metric, bool force = false);
 	
-	/**
-		This function parses a metric string that was created by 
-		::getMetricString().
-	*/
-	void parseMetricString(prophet_metric_table &table, string &metric);
+	bool newRoutingInformation(const Metadata *m);
 	
-	/**
-		Does the actual work of addMetricDO.
-	*/
-	void _addMetricDO(DataObjectRef &dObj);
-	
-	/**
-		Ages the local metrics:
-	*/
-	void _ageMetric(void);
-	
+	bool addRoutingInformation(DataObjectRef& dObj, Metadata *parent);
 	/**
 		Does the actual work of newNeighbor.
 	*/
@@ -132,33 +120,15 @@ class ForwarderProphet : public ForwarderAsynchronous {
 		Does the actual work of getDelegatesFor.
 	*/
 	void _generateDelegatesFor(DataObjectRef &dObj, NodeRef &target);
-	
-	/**
-		Does the actual work of getEncodedState.
-	*/
-	void _getEncodedState(string *state);
-	
-	/**
-		Does the actual work of setEncodedState.
-	*/
-	void _setEncodedState(string *state);
 #ifdef DEBUG
 	/**
 		Does the actual work or printRoutingTable().
 	*/
 	void _printRoutingTable(void);
 #endif
-	
-	/**
-		Creates a new metric data object.
-	*/
-	void updateMetricDO(void);
-	
+		
 public:
-	ForwarderProphet(
-		ForwardingManager *m = NULL, 
-		const string name = "PRoPHET forwarding module",
-		const string _forwardAttributeName = "ForwarderProphetMetricForNodeID");
+	ForwarderProphet(ForwardingManager *m = NULL, const EventType type = -1);
 	~ForwarderProphet();
 };
 

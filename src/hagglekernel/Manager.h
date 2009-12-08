@@ -131,7 +131,7 @@ public:
         Manager(const char *_name, HaggleKernel *_kernel = haggleKernel);
         ~Manager();
         
-        const char *getName() {
+        const char *getName() const {
                 return name.c_str();
         }
 	HaggleKernel *getKernel() {

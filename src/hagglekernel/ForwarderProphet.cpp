@@ -14,29 +14,61 @@
  */
 
 #include "ForwarderProphet.h"
+#include "XMLMetadata.h"
 
-ForwarderProphet::ForwarderProphet(
-	ForwardingManager *m, 
-	const string name, 
-	const string _forwardAttributeName) :
-	ForwarderAsynchronous(
-		Timeval(PROPHET_TIME_BETWEEN_AGING), 
-		m, 
-		name, 
-		_forwardAttributeName),
-	kernel(getManager()->getKernel()), next_id_number(1)
+#include <math.h>
+
+ForwarderProphet::ForwarderProphet(ForwardingManager *m, const EventType type) :
+	ForwarderAsynchronous(m, type, "PRoPHET"),
+	kernel(getManager()->getKernel()), next_id_number(1),
+	rib_timestamp(Timeval::now())
 {
 	// Ensure that the local node's forwarding id is 1:
-	id_for_string(kernel->getThisNode()->getIdStr());       
+	id_for_string(kernel->getThisNode()->getIdStr());
 }
 
 ForwarderProphet::~ForwarderProphet()
 {
 }
 
-prophet_forwarding_id ForwarderProphet::id_for_string(string nodeid)
+size_t ForwarderProphet::getSaveState(RepositoryEntryList& rel)
 {
-	prophet_forwarding_id &retval = nodeid_to_id_number[nodeid];
+	for (prophet_rib_t::iterator it = rib.begin(); it != rib.end(); it++) {
+		char value[256];
+		snprintf(value, 256, "%lf:%s", (*it).second.first, (*it).second.second.getAsString().c_str());
+		//printf("Repository value is %s\n", value);
+		rel.push_back(new RepositoryEntry(getName(), id_number_to_nodeid[(*it).first].c_str(), value));
+	}
+	
+	return rel.size();
+}
+
+bool ForwarderProphet::setSaveState(RepositoryEntryRef& e)
+{
+	if (strcmp(e->getAuthority(), getName()) != 0)
+		return false;
+	
+	string value = e->getValue();
+	
+	// Find the separating ':' character in the string
+	size_t pos = value.find(':');
+	
+	prophet_metric_t& metric = rib[id_for_string(e->getKey())];
+	
+	// The first part of the value is the P_ab metric
+	metric.first = strtod(value.substr(0, pos).c_str(), NULL);
+	// The second part is the timeval string
+	metric.second = Timeval(value.substr(pos + 1));
+	
+	//printf("metric2=%lf, timeval2=%s\n", metric.first, metric.second.getAsString().c_str());
+	rib_timestamp = Timeval::now();
+	
+	return true;
+}
+
+prophet_node_id_t ForwarderProphet::id_for_string(const string& nodeid)
+{
+	prophet_node_id_t &retval = nodeid_to_id_number[nodeid];
 
 	if (retval == 0) {
 		retval = next_id_number;
@@ -46,182 +78,104 @@ prophet_forwarding_id ForwarderProphet::id_for_string(string nodeid)
 	return retval;
 }
 
-void ForwarderProphet::updateMetricDO(void)
+prophet_metric_t& ForwarderProphet::age_metric(prophet_metric_t& metric, bool force)
 {
-	prophet_metric_table public_forwarding_table;
+	Timeval now = Timeval::now();
 	
-	// Go through all possible node ids:
-	// Skip 0, because it refers to no node, and 1, because it refers to this
-	// node.
-	for (prophet_forwarding_id i = 2; i < next_id_number; i++) {
-		double public_metric;
+	if (metric.second == 0) {
+		/* The metric is new, so we do not age it, but instead
+		   we set its age timestamp to the current time.
+		 */
+		metric.second = now;
+		return metric;
+	}
 		
-		// Assume a maximum metric of what the local metric is to start with:
-		public_metric = my_metrics[i];
+	unsigned int K = (now - metric.second).getSeconds() / PROPHET_AGING_TIME_UNIT;
+	
+	if (K > 0) {
+		double &P_ab = metric.first;
+		/*
+		 Age according to the Prophet draft:
+		 
+			P_(A,B) = P_(A,B)_old * gamma^K (2)
+		 */
+		P_ab = P_ab * pow(PROPHET_GAMMA, K);
 		
-		for (Map<prophet_forwarding_id, prophet_metric_table>::iterator jt = 
-				forwarding_table.begin();
-			jt != forwarding_table.end(); jt++) {
-			double tmp;
-			
-			// The forwarding metric via this node is:
-			// (my chance of forwarding)*(his chance of forwarding)
-			tmp = my_metrics[jt->first]*jt->second[i];
-			// Get the maximum metric:
-			if (public_metric < tmp)
-				public_metric = tmp;
+		if (P_ab < 0.000001) {
+			// Let's say it's 0:
+			P_ab = 0.0;
 		}
 		
-		// Put the new value into the table:
-		public_forwarding_table[i] = public_metric;
+		metric.second = now;
 	}
 	
-	string forwarding_string = getMetricString(public_forwarding_table);
-	bool shouldReplaceDO = true;
+	rib_timestamp = Timeval::now();
 	
-	if (myMetricDO) {
-		if(getMetricFromMetricDataObject(myMetricDO) == forwarding_string)
-			shouldReplaceDO = false;
-	}
-	
-	if (shouldReplaceDO) {
-		createMetricDataObject(forwarding_string);
-	}
+	return metric;
 }
 
-/*
-	The prophet metric string is formatted like so:
-		<Node ID>:<floating-point value>:<Node ID>...
-	Each value is separated by a colon character, which cannot occur in the 
-	node id or a floating point value.
-*/
-string ForwarderProphet::getMetricString(prophet_metric_table &table)
-{
-	string retval = "";
-	prophet_metric_table::iterator it;
-	char tmp[32];
+bool ForwarderProphet::newRoutingInformation(const Metadata *m)
+{	
+	if (!m || m->getName() != getName())
+		return false;
 	
-	for (it = table.begin(); it != table.end(); it++) {
-		if (it->second != 0.0) {
-			sprintf(tmp, "%f", it->second);
-			retval += id_number_to_nodeid[it->first];
-			retval += ':';
-			retval += tmp;
-			retval += ':';
+	const Metadata *mm = m->getMetadata("Metric");
+	prophet_node_id_t node_b_id = id_for_string(m->getParameter("node_id"));
+	prophet_rib_t &neighbor_rib = neighbor_ribs[node_b_id];
+	
+	while (mm) {
+		prophet_node_id_t node_c_id = id_for_string(mm->getParameter("node_id"));
+		double &P_bc = neighbor_rib[node_c_id].first;
+		// Read the metric from the neighbor's metadata:
+		sscanf(mm->getContent().c_str(), "%lf", &P_bc);
+		
+		//printf("P_bc=%lf\n", P_bc);
+		
+		if (node_c_id != this_node_id) {
+			double &P_ab = age_metric(rib[node_b_id]).first;
+			double &P_ac = age_metric(rib[node_c_id]).first;
+		
+			/* 
+			 From the Prophet draft:
+			 
+			 P_(A,C) = P_(A,C)_old + ( 1 - P_(A,C)_old ) * P_(A,B) *
+			 P_(B,C) * beta                                (3)
+			 
+			 As a special case, the P-value for a node itself is always defined to
+			 be 1 (i.e., P_(A,A)=1).
+			*/
+			P_ac = P_ac + (1 - P_ac) * P_ab * P_bc * PROPHET_BETA;
+		}
+		
+		mm = mm->getNextMetadata();
+	}
+	
+	rib_timestamp = Timeval::now();
+	
+	return true;
+}
+
+bool ForwarderProphet::addRoutingInformation(DataObjectRef& dObj, Metadata *parent)
+{
+	if (!dObj || !parent)
+		return false;
+	
+	parent->setParameter("node_id", kernel->getThisNode()->getIdStr());
+	
+	prophet_rib_t::iterator it;
+	
+	for (it = rib.begin(); it != rib.end(); it++) {
+		if (it->second.first != 0.0) {
+			char metric[32];
+			sprintf(metric, "%lf", age_metric(it->second).first);
+			Metadata *mm = parent->addMetadata("Metric", metric);
+			mm->setParameter("node_id", id_number_to_nodeid[it->first]);
 		}
 	}
 	
-	return retval;
-}
-
-void ForwarderProphet::parseMetricString(prophet_metric_table &table, string &metric)
-{
-	// Extract as byte array:
-	const char *str = metric.c_str();
-	
-	// This holds one node id:
-	char node_id[MAX_NODE_ID_STR_LEN];
-	// Looping variables:
-	long i, len;
-	
-	// Clean out the table: 
-	table.clear();
-	
-	len = metric.length();
-	i = 0;
-	while (i < len) {
-		long node_start = i;
-		double metric;
+	dObj->setCreateTime(rib_timestamp);
 		
-		// Find and copy the node id:
-		while (i < len && 
-                       (i - node_start) < MAX_NODE_ID_STR_LEN && 
-                       str[i] != ':') {
-			node_id[i - node_start] = str[i];
-			i++;
-		}
-		// Check that we didn't overrun the end of the string:
-		if (i >= len)
-			goto fail_end_of_string;
-		// Check that we didn't overrun the end of the node id buffer:
-		if ((i - node_start) > MAX_NODE_ID_STR_LEN)
-			goto fail_malformed;
-
-		// NULL-terminate the node id:
-		node_id[i - node_start] = '\0';
-		
-		// Move to the beginning of the metric:
-		i++;
-		
-		// Read the metric:
-		sscanf(&(str[i]), "%lf", &metric);
-		
-		// Check that the metric isn't out of bounds:
-		if (metric < 0.0 || metric >= 1.0)
-			goto fail_malformed;
-		
-		// Insert the metric in the map:
-		table[id_for_string(node_id)] = metric;
-		
-		// Move past the metric:
-		while (i < len && str[i] != ':')
-			i++;
-		// Move beyond the last colon:
-		// Please note that there is really no point in checking if we've 
-		// already moved past the end of the buffer.
-		i++;
-
-		// This happens if we encounter the end of the string while parsing:
-fail_end_of_string:;
-		// This happens if the data is malformed or broken in some way:
-fail_malformed:;
-	}
-}
-
-void ForwarderProphet::_addMetricDO(DataObjectRef &dObj)
-{
-	// Check the data object:
-	if (!isMetricDO(dObj))
-		return;
-	
-	// Figure out which node this metric is for:
-	prophet_forwarding_id node = 
-		id_for_string(getNodeIdFromMetricDataObject(dObj));
-	
-	// Get the table for that node:
-	prophet_metric_table &node_table = forwarding_table[node];
-	
-	// Get the data (no need to worry about malformed metadata as
-	// we checked it above):
-	string tmp = getMetricFromMetricDataObject(dObj);
-	
-	// Parse the metric string:
-	parseMetricString(node_table, tmp);
-	
-	// Update the public metric DO:
-	should_recalculate_metric_do = true;
-}
-
-void ForwarderProphet::_ageMetric(void)
-{
-	for (prophet_metric_table::iterator it = my_metrics.begin();
-             it != my_metrics.end(); it++) {
-                
-		// Is this node a neighbor?
-		NodeRef node = getKernel()->getNodeStore()->retrieve(id_number_to_nodeid[it->first]);
-                
-		if (node && !node->isNeighbor()) {
-			// Update our private metric regarding this node:
-			it->second *= PROPHET_AGING_CONSTANT;
-			// Is this metric close to 0?
-			if (it->second < 0.000001) {
-				// Let's say it's 0:
-				it->second = 0.0;
-			}
-		}
-	}
-	// Update the public metric DO:
-	should_recalculate_metric_do = true;
+	return true;
 }
 
 void ForwarderProphet::_newNeighbor(NodeRef &neighbor)
@@ -231,16 +185,15 @@ void ForwarderProphet::_newNeighbor(NodeRef &neighbor)
 		return;
 	
 	// Update our private metric regarding this node:
-	prophet_forwarding_id neighbor_id = id_for_string(neighbor->getIdStr());
+	prophet_node_id_t neighbor_id = id_for_string(neighbor->getIdStr());
 	
-	// Remember that my_metrics[neighbor_id] is an log(n) operation - do it 
+	// Remember that rib[neighbor_id] is an log(n) operation - do it 
 	// sparingly:
-	double &value = my_metrics[neighbor_id];
+	double &P_ab = rib[neighbor_id].first;
 	
-	value = value + (1 - value) * PROPHET_INITIALIZATION_CONSTANT;
-
-	// Update the public metric DO:
-	should_recalculate_metric_do = true;
+	P_ab = P_ab + (1 - P_ab) * PROPHET_P_ENCOUNTER;
+	
+	rib_timestamp = Timeval::now();
 }
 
 void ForwarderProphet::_endNeighbor(NodeRef &neighbor)
@@ -250,49 +203,53 @@ void ForwarderProphet::_endNeighbor(NodeRef &neighbor)
 		return;
 	
 	// Update our private metric regarding this node:
-	prophet_forwarding_id neighbor_id = id_for_string(neighbor->getIdStr());
+	prophet_node_id_t neighbor_id = id_for_string(neighbor->getIdStr());
 	
-	// Remember that my_metrics[neighbor_id] is an log(n) operation - do it 
+	// Remember that rib[neighbor_id] is an log(n) operation - do it 
 	// sparingly:
-	double &value = my_metrics[neighbor_id];
+	prophet_metric_t &metric = rib[neighbor_id];
+	double &P_ab = metric.first;
 	
-        value = value * PROPHET_AGING_CONSTANT;
+	// Age only by one time interval when neigbhors go away (i.e., PROPHET_GAMMA^K, where K=1)
+        P_ab = P_ab * PROPHET_GAMMA;
         
         // Is this metric close to 0?
-        if (value < 0.000001) {
+        if (P_ab < 0.000001) {
                 // Let's say it's 0:
-                value = 0.0;
+                P_ab = 0.0;
         }
-	
-	// Update the public metric DO:
-	should_recalculate_metric_do = true;
+	metric.second = Timeval::now();
+	rib_timestamp = metric.second;
 }
 
 void ForwarderProphet::_generateTargetsFor(NodeRef &neighbor)
 {
 	NodeRefList lst;
 	// Figure out which forwarding table to look in:
-	prophet_forwarding_id neighbor_id = id_for_string(neighbor->getIdStr());
-	prophet_metric_table &the_table = forwarding_table[neighbor_id];
+	prophet_node_id_t neighbor_id = id_for_string(neighbor->getIdStr());
+	prophet_rib_t &neighbor_rib = neighbor_ribs[neighbor_id];
 	
 	// Go through the neighbor's forwarding table:
-	for (prophet_metric_table::iterator it = the_table.begin();
-		it != the_table.end();
-		it++) {
+	for (prophet_rib_t::iterator it = neighbor_rib.begin(); it != neighbor_rib.end(); it++) {
 		// Skip ourselves and that neighbor (if these accidentally ended up in 
 		// that table)
-		if (it->first != this_node && it->first != neighbor_id) {
+		if (it->first != this_node_id && it->first != neighbor_id) {
 			// Does the neighbor node have a better chance of forwarding to this
 			// node than we do?
-			if (it->second > my_metrics[it->first]) {
+			// In other words, as the Prophet draft puts it, is P_bc > P_ac?
+			double &P_ac = age_metric(rib[it->first]).first;
+			double &P_bc = it->second.first;
+			
+			if (P_bc > P_ac) {
 				// Yes: insert this node into the list of targets for this 
 				// delegate forwarder.
 				
-				NodeRef new_node = new Node(id_number_to_nodeid[it->first].c_str(), NODE_TYPE_PEER, "PRoPHET target node");
+				NodeRef target = new Node(id_number_to_nodeid[it->first].c_str(), NODE_TYPE_PEER, "PRoPHET target node");
                                 
-				if (new_node) {
-					lst.push_back(new_node);
-                                        HAGGLE_DBG("Neighbor '%s' is a good delegate for target '%s' [my_metric=%lf, neighbor_metric=%lf]\n", neighbor->getName().c_str(), new_node->getName().c_str(), my_metrics[it->first], it->second);
+				if (target) {
+					lst.push_back(target);
+                                        HAGGLE_DBG("Neighbor '%s' is a good delegate for target '%s' [my_metric=%lf, neighbor_metric=%lf]\n", 
+						   neighbor->getName().c_str(), target->getName().c_str(), P_ac, P_bc);
                                 }
 			}
 		}
@@ -307,89 +264,78 @@ void ForwarderProphet::_generateDelegatesFor(DataObjectRef &dObj, NodeRef &targe
 {
 	NodeRefList lst;
 	// Figure out which node to look for:
-	prophet_forwarding_id	target_id = id_for_string(target->getIdStr());
-	// Store this value, since it is an O(log(n)) operation to do:
-	double min_value = my_metrics[target_id];
+	prophet_node_id_t target_id = id_for_string(target->getIdStr());
+	
+	// Retreive this value once, since it is an O(log(n)) operation to do:
+	// We age the metric first since the target is not a neighbor
+	double &P_ac = age_metric(rib[target_id]).first;
 	
 	// Go through the neighbor's forwarding table:
-	for (Map<prophet_forwarding_id, prophet_metric_table>::iterator it = 
-			forwarding_table.begin();
-		it != forwarding_table.end();
-		it++) {
+	for (Map<prophet_node_id_t, prophet_rib_t>::iterator it = neighbor_ribs.begin(); it != neighbor_ribs.end(); it++) {
 		// Exclude ourselves and the target node from the list of good delegate
 		// forwarders:
-		if (it->first != this_node && it->first != target_id) {
-                        NodeRef new_node = new Node(id_number_to_nodeid[it->first].c_str(), NODE_TYPE_PEER, "PRoPHET delegate node");
-			// Would this be a good delegate?
-			if (min_value < it->second[target_id]) {
-				// Yes: insert this node into the list of delegate forwarders 
-				// for this target.
-				
+		if (it->first != this_node_id && it->first != target_id) {
+                        NodeRef delegate = new Node(id_number_to_nodeid[it->first].c_str(), NODE_TYPE_PEER, "PRoPHET delegate node");
 			
-				if (new_node) {
-					lst.push_back(new_node);
-                                        HAGGLE_DBG("Node '%s' is a good delegate for target '%s' [my_metric=%lf, neighbor_metric=%lf]\n", new_node->getName().c_str(), target->getName().c_str(), min_value, it->second[target_id]);
-                                } 
-			} else {
-                                HAGGLE_DBG("Node '%s' is NOT a good delegate for target '%s' [my_metric=%lf, neighbor_metric=%lf]\n", new_node->getName().c_str(), target->getName().c_str(), min_value, it->second[target_id]);
-                        }
+			if (delegate) {
+				// Do not age P_bc since the metric is for a current neighbor... or should we?
+				// The draft is not really clear on how to age metrics for neighbors 
+				double &P_bc = it->second[target_id].first;
+				
+				// Would this be a good delegate?
+				if (P_bc > P_ac) {
+					// Yes: insert this node into the list of delegate forwarders 
+					// for this target.
+					
+					lst.push_back(delegate);
+					HAGGLE_DBG("Node '%s' is a good delegate for target '%s' [my_metric=%lf, neighbor_metric=%lf]\n", 
+						   delegate->getName().c_str(), target->getName().c_str(), P_ac, P_bc);
+					
+				} else {
+					HAGGLE_DBG("Node '%s' is NOT a good delegate for target '%s' [my_metric=%lf, neighbor_metric=%lf]\n", 
+						   delegate->getName().c_str(), target->getName().c_str(), P_ac, P_bc);
+				}
+			}
 		}
 	}
 	
 	if (!lst.empty()) {
 		kernel->addEvent(new Event(EVENT_TYPE_DELEGATE_NODES, dObj, target, lst));
 	} else {
-                HAGGLE_DBG("No delegates found for target %s\n", 
-                           target->getName().c_str());
+                HAGGLE_DBG("No delegates found for target %s\n", target->getName().c_str());
         }
-}
-
-void ForwarderProphet::_getEncodedState(string *state)
-{
-	*state = "PRoPHET=" + getMetricString(my_metrics);
-}
-
-void ForwarderProphet::_setEncodedState(string *state)
-{
-	// Make sure this is a correct PRoPHET state string:
-	if (strncmp("PRoPHET=", state->c_str(), 8) == 0) {
-		string tmp = &(state->c_str()[8]);
-		parseMetricString(my_metrics, tmp);
-	}
 }
 
 #ifdef DEBUG
 void ForwarderProphet::_printRoutingTable(void)
 {
-	printf("PRoPHET routing table:\n");
+	printf("%s routing table:\n", getName());
 	
-	for (Map<prophet_forwarding_id, string>::iterator it = 
-			id_number_to_nodeid.begin();
-		it != id_number_to_nodeid.end();
-		it++) {
+	for (Map<prophet_node_id_t, string>::iterator it = 
+	     id_number_to_nodeid.begin(); it != id_number_to_nodeid.end(); it++) {
 		printf("%ld: %s\n", it->first, it->second.c_str());
 	}
+		
+	printf("internal: {");
+	prophet_rib_t::iterator jt = rib.begin();
 	
-	{
-		printf("internal: {");
-		prophet_metric_table::iterator jt = my_metrics.begin();
-		while (jt != my_metrics.end()) {
-			printf("%ld: %f", jt->first, jt->second);
-			jt++;
-			if (jt != my_metrics.end())
-				printf(", ");
-		}
-		printf("}\n");
+	while (jt != rib.end()) {
+		// Only age metrics if the node is not a neighbor
+		bool isNeighbor = getKernel()->getNodeStore()->stored(id_number_to_nodeid[jt->first], true);
+		
+		printf("%ld: %lf", jt->first, isNeighbor ? jt->second.first : age_metric(jt->second).first);
+		jt++;
+		if (jt != rib.end())
+			printf(", ");
 	}
+	printf("}\n");
 	
-	for (Map<prophet_forwarding_id, prophet_metric_table>::iterator it = 
-			forwarding_table.begin();
-		it != forwarding_table.end();
-		it++) {
+	for (Map<prophet_node_id_t, prophet_rib_t>::iterator it = 
+	     neighbor_ribs.begin(); it != neighbor_ribs.end(); it++) {
 		printf("%ld: {", it->first);;
-		prophet_metric_table::iterator jt = it->second.begin();
+		prophet_rib_t::iterator jt = it->second.begin();
 		while (jt != it->second.end()) {
-			printf("%ld: %f", jt->first, jt->second);
+			printf("%ld: %lf", jt->first, jt->second.first);
 			jt++;
 			if (jt != it->second.end())
 				printf(", ");

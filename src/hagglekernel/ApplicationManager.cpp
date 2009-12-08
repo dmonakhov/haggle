@@ -192,20 +192,13 @@ void ApplicationManager::onStartup()
 	// Add the interface to the node:
 	fakeAppNode->addInterface(iface);
 	
-	// A minimalistic data object:
-	static const char *doCode =
-		"<Haggle>"
-			// This one is needed to make sending over UDP work:
-			"<Attr name=\"" HAGGLE_ATTR_CONTROL_NAME "\"/>"
-		"</Haggle>";
-	
 	// Create data object:
-	DataObjectRef fakeDO =
-		new DataObject(doCode, strlen(doCode));
+	DataObjectRef fakeDO = new DataObject(NULL, 0);
+	
+	fakeDO->addAttribute(HAGGLE_ATTR_CONTROL_NAME);
 	
 	// Send data object:
-	kernel->addEvent(
-		new Event(EVENT_TYPE_DATAOBJECT_SEND, fakeDO, fakeAppNode));
+	kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, fakeDO, fakeAppNode));
 }
 
 // Updates the "this node" with all attributes that the application nodes have: 

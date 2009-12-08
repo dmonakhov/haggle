@@ -402,7 +402,7 @@ public:
 	/**
 		Get the name of the Runnable. May be overridden by derived classes.
 	 */
-	virtual const char *getName();
+	virtual const char *getName() const;
         /** Constructor */
         Runnable(const string _name = "Runnable");
 

@@ -15,48 +15,35 @@
 
 #include "ForwarderAsynchronous.h"
 
-ForwarderAsynchronous::ForwarderAsynchronous(
-		Timeval _aging_time_delta,
-		ForwardingManager *m, 
-		const string name,
-		const string _forwardAttributeName) :
-	Forwarder(m, name, _forwardAttributeName),
-	next_aging_time(Timeval::now() + _aging_time_delta),
-	aging_time_delta(_aging_time_delta),
-	should_recalculate_metric_do(false)
+ForwarderAsynchronous::ForwarderAsynchronous(ForwardingManager *m, const EventType type, const string name) :
+	Forwarder(m, name), eventType(type)
 {
-	// Check this:
-	if (aging_time_delta <= 0) {
-#if HAVE_EXCEPTION
-		throw Exception(0, "Time delta cannot be zero or less!\n");
-#else
-                return;
-#endif
-	}
-	// Start the thread:
-	start();
 }
 
 ForwarderAsynchronous::~ForwarderAsynchronous()
 {
-	// Tell the thread to quit:
-	actionQueue.insert(new FP_Action(FP_quit,NULL,NULL,NULL,NULL));
-	// Make sure noone else adds stuff to the queue:
-	actionQueue.close();
-	// Wait for the thread to terminate:
 	stop();
 }
 
-void ForwarderAsynchronous::addMetricDO(DataObjectRef &metricDO)
+void ForwarderAsynchronous::quit()
 {
-	if (!metricDO)
+	if (isRunning()) {
+		// Tell the thread to quit:
+		taskQ.insert(new ForwardingTask(FWD_TASK_QUIT));
+		// Make sure noone else adds stuff to the queue:
+		taskQ.close();
+		
+		// Wait until the thread finishes
+		join();
+	}
+}
+
+void ForwarderAsynchronous::newRoutingInformation(DataObjectRef &dObj)
+{
+	if (!dObj)
                 return;
         
-        actionQueue.insert(new FP_Action(FP_add_metric,metricDO,NULL,NULL,NULL));
-#ifdef DEBUG
-        //actionQueue.insert(new FP_Action(FP_print_table,NULL,NULL,NULL, NULL));
-#endif
-
+        taskQ.insert(new ForwardingTask(FWD_TASK_NEW_ROUTING_INFO, dObj));
 }
 
 void ForwarderAsynchronous::newNeighbor(NodeRef &neighbor)
@@ -64,10 +51,7 @@ void ForwarderAsynchronous::newNeighbor(NodeRef &neighbor)
 	if (!neighbor)
                 return;
 
-        actionQueue.insert(new FP_Action(FP_new_neighbor,NULL,neighbor,NULL,NULL));
-#ifdef DEBUG
-        //actionQueue.insert(new FP_Action(FP_print_table,NULL,NULL,NULL, NULL));
-#endif
+        taskQ.insert(new ForwardingTask(FWD_TASK_NEW_NEIGHBOR, neighbor));
 }
 
 void ForwarderAsynchronous::endNeighbor(NodeRef &neighbor)
@@ -75,10 +59,7 @@ void ForwarderAsynchronous::endNeighbor(NodeRef &neighbor)
 	if (!neighbor)
                 return;
         
-        actionQueue.insert(new FP_Action(FP_end_neighbor,NULL,neighbor,NULL,NULL));
-#ifdef DEBUG
-        //actionQueue.insert(new FP_Action(FP_print_table,NULL,NULL,NULL,NULL));
-#endif
+        taskQ.insert(new ForwardingTask(FWD_TASK_END_NEIGHBOR, neighbor));
 }
 
 void ForwarderAsynchronous::generateTargetsFor(NodeRef &neighbor)
@@ -86,265 +67,103 @@ void ForwarderAsynchronous::generateTargetsFor(NodeRef &neighbor)
 	if (!neighbor)
 		return;
 	
-	// Retreive the result:
-	actionQueue.insert(
-		new FP_Action(FP_generate_targets_for,NULL,neighbor,NULL,NULL));
+	taskQ.insert(new ForwardingTask(FWD_TASK_GENERATE_TARGETS, neighbor));
 }
 
 void ForwarderAsynchronous::generateDelegatesFor(DataObjectRef &dObj, NodeRef &target)
 {
-	if (!target)
+	if (!dObj || !target)
 		return;
 	
-	// Retreive the result:
-	actionQueue.insert(new FP_Action(FP_generate_delegates_for, dObj, target, NULL, NULL));
+	taskQ.insert(new ForwardingTask(FWD_TASK_GENERATE_DELEGATES, dObj, target));
 }
 
-string ForwarderAsynchronous::getEncodedState(void)
+void ForwarderAsynchronous::generateRoutingInformationDataObject(NodeRef& node)
 {
-	Mutex theMutex;
-	string retval;
-	
-	// This mutex is used to synchronize execution with the actionQueue thread.
-	// We lock it here, then wait for the other thread to unlock it before
-	// continuing
-	theMutex.lock();
-	// Retreive the result:
-	actionQueue.insert(new FP_Action(FP_get_encoded_state, NULL, NULL, &retval, &theMutex));
-	// Wait for other thread to unlock mutex, which means retval should be valid.
-	theMutex.lock();
-	
-	return retval;
-}
-
-void ForwarderAsynchronous::setEncodedState(string &state)
-{
-	Mutex theMutex;
-	
-	/*
-		This has to be done synchronously, even though it doesn't return a 
-		value, because we cannot be sure when the state string is deallocated.
-	*/
-	// This mutex is used to synchronize execution with the actionQueue thread.
-	// We lock it here, then wait for the other thread to unlock it before
-	// continuing
-	theMutex.lock();
-	// Retreive the result:
-	actionQueue.insert(new FP_Action(FP_set_encoded_state, NULL, NULL, &state, &theMutex));
-	// Wait for other thread to unlock mutex, which means retval should be valid.
-	theMutex.lock();
+	taskQ.insert(new ForwardingTask(FWD_TASK_GENERATE_ROUTING_INFO_DATA_OBJECT, node));
 }
 
 #ifdef DEBUG
 void ForwarderAsynchronous::printRoutingTable(void)
 {
-	Mutex theMutex;
-	
-	// Print table synchronously, by waiting on a mutex
-	theMutex.lock();
-	actionQueue.insert(new FP_Action(FP_print_table, NULL, NULL, NULL, &theMutex));
-	theMutex.lock();
+	taskQ.insert(new ForwardingTask(FWD_TASK_PRINT_RIB, NULL, NULL));
 }
 #endif
 
 bool ForwarderAsynchronous::run(void)
 {
-	/*
-		The reason for having two different event processing loops is because
-		the first one is waiting for setEncodedState() to be called. This may 
-		happen after calls to "synchronous" functions (those that specify a 
-		mutex) above, which have to be handled so that the kernel thread doesn't
-		stop working, which would prevent setEncodedState() from being called.
-	*/
-	{
-	List<FP_Action *> to_be_processed_later;
-	bool has_set_state = false;
-	while (!shouldExit() && !has_set_state)
-	{
-		FP_Action	*action;
-		Timeval		time_left;
+	while (!shouldExit()) {
+		ForwardingTask *task = NULL;
 		
-		action = NULL;
-		time_left = next_aging_time - Timeval::now();
-		
-		switch(actionQueue.retrieve(&action, &time_left))
-		{
+		switch (taskQ.retrieve(&task)) {
 			default:
-				if(action)
-					delete action;
-			break;
-			
+				if (task)
+					delete task;
+				break;
 			case QUEUE_TIMEOUT:
 				/*
-					This shouldn't happen - but we make sure the module doesn't
-					break if it does. This means that it has either taken an 
-					exceptionally long time to get the state string, or that it
-					is not coming. Either one is problematic.
-				*/
-				HAGGLE_DBG(
-					"WARNING: one aging time expired before "
-					"setting the state.\n");
-				next_aging_time += aging_time_delta;
-				//_ageMetric();
-				
-				if(action)
-					delete action;
-			break;
-			
+				 This shouldn't happen - but we make sure the module doesn't
+				 break if it does. This means that it has either taken an 
+				 exceptionally long time to get the state string, or that it
+				 is not coming. Either one is problematic.
+				 */
+				HAGGLE_DBG("WARNING: timeout occurred in forwarder task queue.\n");
+				break;
 			case QUEUE_ELEMENT:
-				switch(action->action)
-				{
-					// These actions should be saved and done later:
-					case FP_add_metric:
-					case FP_new_neighbor:
-					case FP_end_neighbor:
-					case FP_generate_targets_for:
-					case FP_generate_delegates_for:
-						to_be_processed_later.push_back(action);
-					break;
-					
-					// These actions can be safely ignored (there is nothing in
-					// the routing tables, so no data to return).
-					case FP_get_encoded_state:
-						// There isn't anything to get, so don't even call the 
-						// function.
+				switch (task->getType()) {
+					case FWD_TASK_NEW_ROUTING_INFO:
+						newRoutingInformation(getRoutingInformation(task->getDataObject()));
+						break;
+					case FWD_TASK_NEW_NEIGHBOR:
+						_newNeighbor(task->getNode());
+						break;
+					case FWD_TASK_END_NEIGHBOR:
+						_endNeighbor(task->getNode());
+						break;
+					case FWD_TASK_GENERATE_TARGETS:
+						_generateTargetsFor(task->getNode());
+						break;
 						
-						// Unlock the mutex:
-						if(action->toBeUnlocked)
-							action->toBeUnlocked->unlock();
-						delete action;
-					break;
-					
-					case FP_set_encoded_state:
-						// YAY!
-						has_set_state = true;
-						_setEncodedState(action->theString);
-						if(action->toBeUnlocked)
-							action->toBeUnlocked->unlock();
-						delete action;
-					break;
-					
+					case FWD_TASK_GENERATE_DELEGATES:
+						_generateDelegatesFor(task->getDataObject(), task->getNode());
+						break;
+					case FWD_TASK_GENERATE_ROUTING_INFO_DATA_OBJECT:
+						task->setDataObject(createRoutingInformationDataObject());
+						addEvent(new Event(eventType, task));
+						task = NULL;
+						break;
 #ifdef DEBUG
-					case FP_print_table:
+					case FWD_TASK_PRINT_RIB:
 						_printRoutingTable();
-						if(action->toBeUnlocked)
-							action->toBeUnlocked->unlock();
-						delete action;
-					break;
+						break;
 #endif
-					
-					case FP_quit:
-						// Already? Fine.
-                                                cancel();
-						if(action->toBeUnlocked)
-							action->toBeUnlocked->unlock();
-						delete action;
-					break;
-				}
-			break;
-		}
-	}
-	// Reinsert all the actions that were stored to be dealt with later above
-	while(!to_be_processed_later.empty())
-	{
-		FP_Action	*action;
-		
-		action = to_be_processed_later.front();
-		to_be_processed_later.pop_front();
-		actionQueue.insert(action);
-	}
-	}
-	
-	while (!shouldExit()) {
-		FP_Action	*action;
-		Timeval		time_left;
-		bool		timeout_recalculates_metric_do;
-		
-		action = NULL;
-		timeout_recalculates_metric_do = false;
-		time_left = next_aging_time - Timeval::now();
-		// Should we recalculate the metric data object (and the aging time is 
-		// not too close)?
-		if(should_recalculate_metric_do && time_left > Timeval(2,0))
-		{
-			time_left = Timeval(2,0);
-			timeout_recalculates_metric_do = true;
-		}
-		
-		switch(actionQueue.retrieve(&action, &time_left))
-		{
-			default:
-			break;
-			
-			case QUEUE_TIMEOUT:
-				// Should we recalculate the metric do?
-				if(timeout_recalculates_metric_do)
-				{
-					DataObjectRef oldMetric = myMetricDO;
-					// Yes: Recalculate it:
-					updateMetricDO();
-					
-					if(myMetricDO != oldMetric)
-						getManager()->sendMetric();
-					// It's fresh:
-					should_recalculate_metric_do = false;
-				}else{
-					// No? Then it's time to age the metrics:
-					next_aging_time += aging_time_delta;
-					_ageMetric();
-					// Now we should recalculate the metric do:
-					should_recalculate_metric_do = true;
-				}
-			break;
-			
-			case QUEUE_ELEMENT:
-				switch(action->action)
-				{
-					case FP_add_metric:
-						_addMetricDO(action->theDO);
-					break;
-					
-					case FP_new_neighbor:
-						_newNeighbor(action->theNode);
-					break;
-                                        case FP_end_neighbor:
-						_endNeighbor(action->theNode);
-					break;
-					
-					case FP_generate_targets_for:
-						_generateTargetsFor(action->theNode);
-					break;
-					
-					case FP_generate_delegates_for:
-						_generateDelegatesFor(action->theDO, action->theNode);
-					break;
-					
-					case FP_get_encoded_state:
-						_getEncodedState(action->theString);
-					break;
-					
-					case FP_set_encoded_state:
-						// Eh.. this shouldn't happen, but ok...
-						_setEncodedState(action->theString);
-						HAGGLE_DBG("setEncodedState() called more than once\n");
-					break;
-					
-#ifdef DEBUG
-					case FP_print_table:
-						_printRoutingTable();
-					break;
-#endif
-					
-					case FP_quit:
+					case FWD_TASK_QUIT:
+						/*
+							When the forwarding module is asked to quit,
+							the forwarding manager should save any of its
+							state. Return this state to the manager in a 
+							callback.
+						 */
+						if (eventType) {
+							task->setRepositoryEntryList(new RepositoryEntryList());
+							
+							if (task->getRepositoryEntryList()) {
+								getSaveState(*task->getRepositoryEntryList());
+							}
+						}
+						// Always send the callback to ensure the manager is notified
+						// that the module is done.
+						HAGGLE_DBG("Forwarding module %s QUITs\n", getName());
+						addEvent(new Event(eventType, task));
+						task = NULL;
+						
 						cancel();
-					break;
+						break;
 				}
-				if (action->toBeUnlocked)
-					action->toBeUnlocked->unlock();
-			break;
+				break;
 		}
-		if(action)
-			delete action;
+		if (task)
+			delete task;
 	}
 	return false;
 }

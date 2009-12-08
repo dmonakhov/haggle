@@ -70,11 +70,14 @@ class Metadata
         const string& getName() { return name; }
         bool removeMetadata(const string name);
         Metadata *getMetadata(const string name, unsigned int n = 0);    
-	Metadata *getNextMetadata();
+        const Metadata *getMetadata(const string name, unsigned int n = 0) const;    
+	Metadata *getNextMetadata();	
+	const Metadata *getNextMetadata() const;
+	
         string& setParameter(const string name, const string value);
         string& setParameter(const string name, const unsigned int n);
         bool removeParameter(const string name);
-        const char *getParameter(const string name);
+        const char *getParameter(const string name) const;
         string& setContent(const string content);
         const string& getContent() const;
 };

@@ -35,54 +35,47 @@ class ForwarderAsynchronous;
 	This enum is used in the actions to tell the run loop what to do.
 */
 typedef enum {
-	// Add newMetricDO's metric data to the routing table
-	FP_add_metric,
+	// Add bew metric data to the routing table
+	FWD_TASK_NEW_ROUTING_INFO,
 	// This neighbor was just seen in the neighborhood
-	FP_new_neighbor,
+	FWD_TASK_NEW_NEIGHBOR,
 	// This neighbor just left the neighborhood
-	FP_end_neighbor,
+	FWD_TASK_END_NEIGHBOR,
 	// Get the nodes that delegateNode is a good delegate forwarder for
-	FP_generate_targets_for,
+	FWD_TASK_GENERATE_TARGETS,
 	// Get the nodes that are good delegate forwarders for this node
-	FP_generate_delegates_for,
-	// Get an encoded version of the internal state
-	FP_get_encoded_state,
-	// Set the internal state using an encoded version
-	FP_set_encoded_state,
+	FWD_TASK_GENERATE_DELEGATES,
+	FWD_TASK_GENERATE_ROUTING_INFO_DATA_OBJECT,
 #ifdef DEBUG
 	// Print the routing table:
-	FP_print_table,
+	FWD_TASK_PRINT_RIB,
 #endif
 	// Terminate the run loop
-	FP_quit
-} FP_action_type;
+	FWD_TASK_QUIT
+} ForwardingTaskType_t;
 
 /**
 	These action elements are used to send data to the run loop, in order to
 	make processing asynchronous.
 */
-class FP_Action {
+class ForwardingTask {
+private:
+	ForwardingTaskType_t type;
+	DataObjectRef dObj;
+	NodeRef	node;
+	RepositoryEntryList *rel;
 public:
-	FP_action_type	action;
-	DataObjectRef	theDO;
-	NodeRef			theNode;
-	string			*theString;
-	// If this is set to a non-NULL value, then after the action is perfomed, 
-	// this mutex is unlocked to simulate synchronous operation.
-	Mutex			*toBeUnlocked;
-	FP_Action(
-		FP_action_type _action,
-		DataObjectRef _theDO,
-		NodeRef _theNode,
-		string *_theString,
-		Mutex *_toBeUnlocked) :
-			action(_action), 
-			theDO(_theDO), 
-			theNode(_theNode), 
-			theString(_theString), 
-			toBeUnlocked(_toBeUnlocked)
-		{}
-	~FP_Action() {}
+	ForwardingTask(ForwardingTaskType_t _type, DataObjectRef _dObj = NULL, NodeRef _node = NULL) :
+		type(_type), dObj(_dObj), node(_node), rel(NULL) {}
+	ForwardingTask(ForwardingTaskType_t _type, NodeRef _node) :
+		type(_type), dObj(NULL), node(_node), rel(NULL) {}
+	DataObjectRef& getDataObject() { return dObj; }
+	void setDataObject(DataObjectRef _dObj) { dObj = _dObj; }
+	NodeRef& getNode() { return node; }
+	RepositoryEntryList *getRepositoryEntryList() { return rel; }
+	void setRepositoryEntryList(RepositoryEntryList *_rel) { if (!rel) {rel = _rel;} }
+	const ForwardingTaskType_t getType() const { return type; }
+	~ForwardingTask() { if (rel) delete rel; }
 };
 
 /**
@@ -91,39 +84,17 @@ public:
 	thread.
 */
 class ForwarderAsynchronous : public Forwarder {
-	/**
-		This is maintained as the next time (roughly) that the algorithm should
-		age its own internal metric.
-	*/
-	Timeval	next_aging_time;
-	/**
-		This is the difference in time between calls to _ageMetric.
-	*/
-	Timeval aging_time_delta;
+	const EventType eventType;
 	
-	GenericQueue<FP_Action *> actionQueue;
-	
-	/**
+	GenericQueue<ForwardingTask *> taskQ;	/**
 		Main run loop for the prophet forwarder.
 	*/
 	bool run(void);
 protected:
-	
 	/**
-		True if the metric data object is out-of-date.
+		Does the actual work of newForwardingDataObject.
 	*/
-	bool should_recalculate_metric_do;
-	
-	/**
-		Does the actual work of addMetricDO.
-	*/
-	virtual void _addMetricDO(DataObjectRef &dObj) {}
-	
-	/**
-		Ages the local metrics. This function will be called once every 
-		aging_time_delta seconds.
-	*/
-	virtual void _ageMetric(void) {}
+	virtual bool newRoutingInformation(const Metadata *m) { return false; }
 	
 	/**
 		Does the actual work of newNeighbor.
@@ -144,39 +115,21 @@ protected:
 		Does the actual work of getDelegatesFor.
 	*/
 	virtual void _generateDelegatesFor(DataObjectRef &dObj, NodeRef &target) {}
-	
-	/**
-		Does the actual work of getEncodedState.
-	*/
-	virtual void _getEncodedState(string *state) {}
-	
-	/**
-		Does the actual work of setEncodedState.
-	*/
-	virtual void _setEncodedState(string *state) {}
-	
+		
 #ifdef DEBUG
 	/**
 		Does the actual work or printRoutingTable().
 	*/
 	virtual void _printRoutingTable(void) {}
 #endif
-	
-	/**
-		Creates a new metric data object.
-	*/
-	virtual void updateMetricDO(void) {}
-	
 public:
-	ForwarderAsynchronous(
-		Timeval _aging_time_delta,
-		ForwardingManager *m = NULL, 
-		const string name = "Asynchronous forwarding module",
-		const string _forwardAttributeName = "ForwarderAsynchronousMetricForNodeID");
+	ForwarderAsynchronous(ForwardingManager *m = NULL, const EventType type = -1, const string name = "Asynchronous forwarding module");
 	~ForwarderAsynchronous();
 	
+	void quit();
+	
 	/** See the parent class function with the same name. */
-	void addMetricDO(DataObjectRef &metricDO);
+	void newRoutingInformation(DataObjectRef& dObj);
 	/** See the parent class function with the same name. */
 	void newNeighbor(NodeRef &neighbor);
 	/** See the parent class function with the same name. */
@@ -185,10 +138,7 @@ public:
 	void generateTargetsFor(NodeRef &neighbor);
 	/** See the parent class function with the same name. */
 	void generateDelegatesFor(DataObjectRef &dObj, NodeRef &target);
-	/** See the parent class function with the same name. */
-	string getEncodedState(void);
-	/** See the parent class function with the same name. */
-	void setEncodedState(string &state);
+	void generateRoutingInformationDataObject(NodeRef &neighbor);
 #ifdef DEBUG
 	/** See the parent class function with the same name. */
 	void printRoutingTable(void);

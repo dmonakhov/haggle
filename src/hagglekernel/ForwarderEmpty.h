@@ -28,11 +28,9 @@ class ForwarderEmpty;
 */
 class ForwarderEmpty : public Forwarder {
 public:
-	ForwarderEmpty(
-		ForwardingManager *m = NULL, 
-		const string name = "Empty forwarding module",
-		const string _forwardAttributeName = "ForwarderEmptyMetricForNodeID") :
-		Forwarder(m, name, _forwardAttributeName) {}
+	ForwarderEmpty(ForwardingManager *m = NULL, 
+		const string name = "Empty forwarding module") :
+		Forwarder(m, name) {}
 	~ForwarderEmpty() {}
 };
 
