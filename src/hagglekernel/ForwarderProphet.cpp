@@ -18,13 +18,17 @@
 
 #include <math.h>
 
-ForwarderProphet::ForwarderProphet(ForwardingManager *m, const EventType type) :
+ForwarderProphet::ForwarderProphet(ForwardingManager *m, const EventType type, 
+				   const ForwardingStrategy _forwarding_strategy) :
 	ForwarderAsynchronous(m, type, "PRoPHET"),
 	kernel(getManager()->getKernel()), next_id_number(1),
-	rib_timestamp(Timeval::now())
+	rib_timestamp(Timeval::now()), forwarding_strategy(_forwarding_strategy)
 {
 	// Ensure that the local node's forwarding id is 1:
 	id_for_string(kernel->getThisNode()->getIdStr());
+	
+	HAGGLE_DBG("Forwarding module \'%s\' initialized with forwarding strategy \'%s\'\n", 
+		   getName(), forwarding_strategy.getName().c_str()); 
 }
 
 ForwarderProphet::~ForwarderProphet()
@@ -60,7 +64,10 @@ bool ForwarderProphet::setSaveState(RepositoryEntryRef& e)
 	// The second part is the timeval string
 	metric.second = Timeval(value.substr(pos + 1));
 	
-	//printf("metric2=%lf, timeval2=%s\n", metric.first, metric.second.getAsString().c_str());
+	/*
+	 printf("orig string=%s metric2=%lf, timeval2=%s\n", 
+		e->getValue(), metric.first, metric.second.getAsString().c_str());
+	*/
 	rib_timestamp = Timeval::now();
 	
 	return true;
@@ -77,7 +84,11 @@ prophet_node_id_t ForwarderProphet::id_for_string(const string& nodeid)
 	}
 	return retval;
 }
-
+/*
+ This function takes a metric and ages it if the time since the last aging is
+ larger than PROPHET_AGING_TIME_UNIT.
+ Typically, this function is called every time a metric is accessed.
+ */
 prophet_metric_t& ForwarderProphet::age_metric(prophet_metric_t& metric, bool force)
 {
 	Timeval now = Timeval::now();
@@ -113,7 +124,12 @@ prophet_metric_t& ForwarderProphet::age_metric(prophet_metric_t& metric, bool fo
 	
 	return metric;
 }
-
+/*
+ This function is called every time new routing information is received from
+ a neighbor. The input is the part of the metadata which contains the
+ routing information. This means that the metadata could originally be part 
+ of any data object.
+ */
 bool ForwarderProphet::newRoutingInformation(const Metadata *m)
 {	
 	if (!m || m->getName() != getName())
@@ -136,6 +152,8 @@ bool ForwarderProphet::newRoutingInformation(const Metadata *m)
 			double &P_ac = age_metric(rib[node_c_id]).first;
 		
 			/* 
+			 Compute the transitative increase in metric.
+			 
 			 From the Prophet draft:
 			 
 			 P_(A,C) = P_(A,C)_old + ( 1 - P_(A,C)_old ) * P_(A,B) *
@@ -155,11 +173,17 @@ bool ForwarderProphet::newRoutingInformation(const Metadata *m)
 	return true;
 }
 
+/*
+ Add routing information to a data object.
+ The parameter "parent" is the location in the data object where the routing 
+ information should be inserted.
+ */ 
 bool ForwarderProphet::addRoutingInformation(DataObjectRef& dObj, Metadata *parent)
 {
 	if (!dObj || !parent)
 		return false;
 	
+	// Add first our own node ID.
 	parent->setParameter("node_id", kernel->getThisNode()->getIdStr());
 	
 	prophet_rib_t::iterator it;
@@ -169,6 +193,7 @@ bool ForwarderProphet::addRoutingInformation(DataObjectRef& dObj, Metadata *pare
 			char metric[32];
 			sprintf(metric, "%lf", age_metric(it->second).first);
 			Metadata *mm = parent->addMetadata("Metric", metric);
+			// Mark which node this metric was for.
 			mm->setParameter("node_id", id_number_to_nodeid[it->first]);
 		}
 	}
@@ -210,7 +235,12 @@ void ForwarderProphet::_endNeighbor(NodeRef &neighbor)
 	prophet_metric_t &metric = rib[neighbor_id];
 	double &P_ab = metric.first;
 	
-	// Age only by one time interval when neigbhors go away (i.e., PROPHET_GAMMA^K, where K=1)
+	/* 
+	 Age by one time interval when neigbhors go away 
+	 (i.e., PROPHET_GAMMA^K, where K=1)
+	 
+	 NOTE: This is an out of draft addition to Prophet.
+	 */
         P_ab = P_ab * PROPHET_GAMMA;
         
         // Is this metric close to 0?
@@ -240,7 +270,7 @@ void ForwarderProphet::_generateTargetsFor(NodeRef &neighbor)
 			double &P_ac = age_metric(rib[it->first]).first;
 			double &P_bc = it->second.first;
 			
-			if (P_bc > P_ac) {
+			if (forwarding_strategy(P_ac, P_bc)) {
 				// Yes: insert this node into the list of targets for this 
 				// delegate forwarder.
 				
@@ -283,7 +313,7 @@ void ForwarderProphet::_generateDelegatesFor(DataObjectRef &dObj, NodeRef &targe
 				double &P_bc = it->second[target_id].first;
 				
 				// Would this be a good delegate?
-				if (P_bc > P_ac) {
+				if (forwarding_strategy(P_ac, P_bc)) {
 					// Yes: insert this node into the list of delegate forwarders 
 					// for this target.
 					

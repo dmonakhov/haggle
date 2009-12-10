@@ -215,16 +215,21 @@ void ForwardingManager::onRepositoryData(Event *e)
 	// This event either reports the forwarding module's state
 	qr = static_cast < DataStoreQueryResult * >(e->getData());
 	
-	if (forwardingModule) {
+	if (forwardingModule) {		
 		if (qr->countRepositoryEntries() > 0) {
+			unsigned int n = 0;
 			// Then this is most likely the forwarding module's state:
-			RepositoryEntryRef re = qr->detachFirstRepositoryEntry();
+			RepositoryEntryRef re;
 			
-			// Was there a repository entry? => was this really what we expected?
-			if (re && strcmp(re->getAuthority(), forwardingModule->getName()) == 0) {
-				HAGGLE_DBG("Setting saved state for module \'%s\'\n", re->getAuthority());
-				forwardingModule->setSaveState(re);
+			while ((re = qr->detachFirstRepositoryEntry())) {
+				// Was there a repository entry? => was this really what we expected?
+				if (strcmp(re->getAuthority(), forwardingModule->getName()) == 0) {
+					forwardingModule->setSaveState(re);
+					n++;
+				}
 			}
+			HAGGLE_DBG("Restored %u entries of saved state for module \'%s\'\n", 
+				   n, forwardingModule->getName());
 		}
 	} else {
 		HAGGLE_DBG("No saved state for forwarding module \'%s\'\n", forwardingModule->getName());

@@ -25,7 +25,9 @@ class ForwarderProphet;
 #include "ForwarderAsynchronous.h"
 
 #include <libcpphaggle/Map.h>
+#include <libcpphaggle/String.h>
 
+using namespace haggle;
 /**
 	Prophet forwarding ids are only used internally in the forwarderprophet 
 	manager module, but for technical reasons it needs to be defined here.
@@ -42,16 +44,56 @@ typedef Map<prophet_node_id_t, prophet_metric_t> prophet_rib_t;
 	Proof-of-concept PRoPHET routing module.
 */
 class ForwarderProphet : public ForwarderAsynchronous {
-	
-// Prophet constants (as per draft v4):
+	// Prophet constants (as per draft v4):
 #define PROPHET_P_ENCOUNTER (0.75)
 #define PROPHET_ALPHA (0.5)
 #define PROPHET_BETA (0.25)
 #define PROPHET_GAMMA (0.999)
-#define PROPHET_AGING_TIME_UNIT (10) // 10 minutes
+#define PROPHET_AGING_TIME_UNIT (10*60) // 10 minutes
 #define PROPHET_AGING_CONSTANT (0.1)
-        
-        HaggleKernel *kernel;
+#define NF_max (5) // Not sure what a good number is here...
+	
+private:  
+	// A forwarding strategy class that can implement
+	// the strategies proposed in the Prophet draft.
+	// With this class it is possible to dynamically set the forwarding
+	// strategy
+	class ForwardingStrategy {
+	private:
+		const string name;
+	protected:
+		// Allow no instances of this base strategy
+		ForwardingStrategy(const string& _name = "No strategy") : name(_name) {}
+	public:
+		virtual ~ForwardingStrategy() {}
+		const string& getName() const { return name; }
+		//
+		virtual bool operator() (const double& P_ad, const double& P_bd, const unsigned int& NF = 0) const
+		{
+			return false;
+		}
+	};
+	
+	class GRTR : public ForwardingStrategy 
+	{
+	public:
+		GRTR() : ForwardingStrategy("GRTR") {}
+		bool operator() (const double& P_ad, const double& P_bd, const unsigned int& NF = 0) const
+		{
+			return (P_bd > P_ad);
+		}
+	};
+	
+	class GTMX : public ForwardingStrategy 
+	{
+	public:
+		GTMX() : ForwardingStrategy("GTMX") {}
+		bool operator() (const double& P_ad, const double& P_bd, const unsigned int& NF = 0) const
+		{
+			return (P_bd > P_ad && NF < NF_max);
+		}
+	};
+	HaggleKernel *kernel;
         
 	/**
 		In order to reduce the amount of memory taken up by the forwarding 
@@ -126,10 +168,12 @@ class ForwarderProphet : public ForwarderAsynchronous {
 	*/
 	void _printRoutingTable(void);
 #endif
-		
+	ForwardingStrategy forwarding_strategy;
 public:
-	ForwarderProphet(ForwardingManager *m = NULL, const EventType type = -1);
+	ForwarderProphet(ForwardingManager *m = NULL, const EventType type = -1, 
+			 const ForwardingStrategy _forwarding_strategy = GRTR());
 	~ForwarderProphet();
+        	
 };
 
 #endif
