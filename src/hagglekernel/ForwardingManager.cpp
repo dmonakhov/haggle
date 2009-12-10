@@ -633,17 +633,20 @@ void ForwardingManager::findMatchingDataObjectsAndTargets(NodeRef& node)
 	if (!node)
 		return;
 	
-	HAGGLE_DBG("%s doing data object query for node %s [id=%s]\n", 
-		   getName(), node->getName().c_str(), node->getIdStr());
-	
 	// Check that this is an active neighbor node we can send to:
 	if (node->isNeighbor()) {
 		// Ask the forwarding module for additional target nodes for which 
 		// this neighbor can act as delegate.
+		
+		HAGGLE_DBG("%s trying to find targets for which neighbor %s [id=%s] is a good delegate\n", 
+			   getName(), node->getName().c_str(), node->getIdStr());
 		forwardingModule->generateTargetsFor(node);
 	} else {
                 HAGGLE_ERR("Neighbor is not available, cannot send forwarding information\n");
         }
+	
+	HAGGLE_DBG("%s doing data object query for node %s [id=%s]\n", 
+		   getName(), node->getName().c_str(), node->getIdStr());
 	
 	// Ask the data store for data objects bound for the node:
 	kernel->getDataStore()->doDataObjectQuery(node, 1, dataObjectQueryCallback);

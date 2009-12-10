@@ -259,18 +259,21 @@ void ForwarderProphet::_generateTargetsFor(NodeRef &neighbor)
 	prophet_node_id_t neighbor_id = id_for_string(neighbor->getIdStr());
 	prophet_rib_t &neighbor_rib = neighbor_ribs[neighbor_id];
 	
+	HAGGLE_DBG("%s: Finding targets for which neighbor '%s' is a good delegate\n", 
+		   getName(), neighbor->getName().c_str());
+		   
 	// Go through the neighbor's forwarding table:
 	for (prophet_rib_t::iterator it = neighbor_rib.begin(); it != neighbor_rib.end(); it++) {
 		// Skip ourselves and that neighbor (if these accidentally ended up in 
 		// that table)
 		if (it->first != this_node_id && it->first != neighbor_id) {
 			// Does the neighbor node have a better chance of forwarding to this
-			// node than we do?
-			// In other words, as the Prophet draft puts it, is P_bc > P_ac?
-			double &P_ac = age_metric(rib[it->first]).first;
-			double &P_bc = it->second.first;
+			// node target than we do?
+			// In other words, as the Prophet draft puts it, is P_bd > P_ad?
+			double &P_ad = age_metric(rib[it->first]).first;
+			double &P_bd = it->second.first;
 			
-			if (forwarding_strategy(P_ac, P_bc)) {
+			if (forwarding_strategy(P_ad, P_bd)) {
 				// Yes: insert this node into the list of targets for this 
 				// delegate forwarder.
 				
@@ -279,7 +282,7 @@ void ForwarderProphet::_generateTargetsFor(NodeRef &neighbor)
 				if (target) {
 					lst.push_back(target);
                                         HAGGLE_DBG("Neighbor '%s' is a good delegate for target '%s' [my_metric=%lf, neighbor_metric=%lf]\n", 
-						   neighbor->getName().c_str(), target->getName().c_str(), P_ac, P_bc);
+						   neighbor->getName().c_str(), target->getName().c_str(), P_ad, P_bd);
                                 }
 			}
 		}
@@ -298,7 +301,7 @@ void ForwarderProphet::_generateDelegatesFor(DataObjectRef &dObj, NodeRef &targe
 	
 	// Retreive this value once, since it is an O(log(n)) operation to do:
 	// We age the metric first since the target is not a neighbor
-	double &P_ac = age_metric(rib[target_id]).first;
+	double &P_ad = age_metric(rib[target_id]).first;
 	
 	// Go through the neighbor's forwarding table:
 	for (Map<prophet_node_id_t, prophet_rib_t>::iterator it = neighbor_ribs.begin(); it != neighbor_ribs.end(); it++) {
@@ -310,20 +313,20 @@ void ForwarderProphet::_generateDelegatesFor(DataObjectRef &dObj, NodeRef &targe
 			if (delegate) {
 				// Do not age P_bc since the metric is for a current neighbor... or should we?
 				// The draft is not really clear on how to age metrics for neighbors 
-				double &P_bc = it->second[target_id].first;
+				double &P_bd = it->second[target_id].first;
 				
 				// Would this be a good delegate?
-				if (forwarding_strategy(P_ac, P_bc)) {
+				if (forwarding_strategy(P_ad, P_bd)) {
 					// Yes: insert this node into the list of delegate forwarders 
 					// for this target.
 					
 					lst.push_back(delegate);
 					HAGGLE_DBG("Node '%s' is a good delegate for target '%s' [my_metric=%lf, neighbor_metric=%lf]\n", 
-						   delegate->getName().c_str(), target->getName().c_str(), P_ac, P_bc);
+						   delegate->getName().c_str(), target->getName().c_str(), P_ad, P_bd);
 					
 				} else {
 					HAGGLE_DBG("Node '%s' is NOT a good delegate for target '%s' [my_metric=%lf, neighbor_metric=%lf]\n", 
-						   delegate->getName().c_str(), target->getName().c_str(), P_ac, P_bc);
+						   delegate->getName().c_str(), target->getName().c_str(), P_ad, P_bd);
 				}
 			}
 		}
