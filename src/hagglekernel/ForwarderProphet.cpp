@@ -308,7 +308,9 @@ void ForwarderProphet::_generateDelegatesFor(DataObjectRef &dObj, NodeRef &targe
 		// Exclude ourselves and the target node from the list of good delegate
 		// forwarders:
 		if (it->first != this_node_id && it->first != target_id) {
-                        NodeRef delegate = new Node(id_number_to_nodeid[it->first].c_str(), NODE_TYPE_PEER, "PRoPHET delegate node");
+                        //NodeRef delegate = new Node(id_number_to_nodeid[it->first].c_str(), NODE_TYPE_PEER, "PRoPHET delegate node");
+			
+			NodeRef delegate = kernel->getNodeStore()->retrieve(id_number_to_nodeid[it->first], true);
 			
 			if (delegate) {
 				// Do not age P_bc since the metric is for a current neighbor... or should we?

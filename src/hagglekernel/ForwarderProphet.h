@@ -70,6 +70,7 @@ private:
 		//
 		virtual bool operator() (const double& P_ad, const double& P_bd, const unsigned int& NF = 0) const
 		{
+			HAGGLE_DBG("Forwarding strategy \'%s\': is %lf > %lf?\n", getName().c_str(), P_bd, P_ad);
 			return false;
 		}
 	};
