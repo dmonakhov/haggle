@@ -19,7 +19,7 @@
 #include <math.h>
 
 ForwarderProphet::ForwarderProphet(ForwardingManager *m, const EventType type, 
-				   const ForwardingStrategy _forwarding_strategy) :
+				   ForwardingStrategy *_forwarding_strategy) :
 	ForwarderAsynchronous(m, type, "PRoPHET"),
 	kernel(getManager()->getKernel()), next_id_number(1),
 	rib_timestamp(Timeval::now()), forwarding_strategy(_forwarding_strategy)
@@ -28,11 +28,13 @@ ForwarderProphet::ForwarderProphet(ForwardingManager *m, const EventType type,
 	id_for_string(kernel->getThisNode()->getIdStr());
 	
 	HAGGLE_DBG("Forwarding module \'%s\' initialized with forwarding strategy \'%s\'\n", 
-		   getName(), forwarding_strategy.getName().c_str()); 
+		   getName(), forwarding_strategy->getName().c_str()); 
 }
 
 ForwarderProphet::~ForwarderProphet()
 {
+	if (forwarding_strategy)
+		delete forwarding_strategy;
 }
 
 size_t ForwarderProphet::getSaveState(RepositoryEntryList& rel)
@@ -273,7 +275,7 @@ void ForwarderProphet::_generateTargetsFor(NodeRef &neighbor)
 			double &P_ad = age_metric(rib[it->first]).first;
 			double &P_bd = it->second.first;
 			
-			if (forwarding_strategy(P_ad, P_bd)) {
+			if ((*forwarding_strategy)(P_ad, P_bd)) {
 				// Yes: insert this node into the list of targets for this 
 				// delegate forwarder.
 				
@@ -318,7 +320,7 @@ void ForwarderProphet::_generateDelegatesFor(DataObjectRef &dObj, NodeRef &targe
 				double &P_bd = it->second[target_id].first;
 				
 				// Would this be a good delegate?
-				if (forwarding_strategy(P_ad, P_bd)) {
+				if ((*forwarding_strategy)(P_ad, P_bd)) {
 					// Yes: insert this node into the list of delegate forwarders 
 					// for this target.
 					

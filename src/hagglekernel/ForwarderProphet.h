@@ -68,11 +68,7 @@ private:
 		virtual ~ForwardingStrategy() {}
 		const string& getName() const { return name; }
 		//
-		virtual bool operator() (const double& P_ad, const double& P_bd, const unsigned int& NF = 0) const
-		{
-			HAGGLE_DBG("Forwarding strategy \'%s\': is %lf > %lf?\n", getName().c_str(), P_bd, P_ad);
-			return false;
-		}
+		virtual bool operator() (const double& P_ad, const double& P_bd, const unsigned int& NF = 0) const = 0;	
 	};
 	
 	class GRTR : public ForwardingStrategy 
@@ -81,8 +77,7 @@ private:
 		GRTR() : ForwardingStrategy("GRTR") {}
 		bool operator() (const double& P_ad, const double& P_bd, const unsigned int& NF = 0) const
 		{
-			HAGGLE_DBG("Forwarding strategy \'%s\': is %lf > %lf?\n", getName().c_str(), P_bd, P_ad);
-			return (P_bd > P_ad);
+			return P_bd > P_ad ? true : false;
 		}
 	};
 	
@@ -170,10 +165,10 @@ private:
 	*/
 	void _printRoutingTable(void);
 #endif
-	ForwardingStrategy forwarding_strategy;
+	ForwardingStrategy *forwarding_strategy;
 public:
 	ForwarderProphet(ForwardingManager *m = NULL, const EventType type = -1, 
-			 const ForwardingStrategy _forwarding_strategy = GRTR());
+			 ForwardingStrategy *_forwarding_strategy = new GRTR());
 	~ForwarderProphet();
         	
 };
