@@ -373,7 +373,7 @@ class Reference {
            Assignment operator. This allows references to be assigned to one 
            another, which makes the reference behave even more like a pointer.
 	*/
-	Reference<T>& operator=(Reference<T>& eo)
+	Reference<T>& operator=(const Reference<T>& eo)
 	{
 		// Handle self-assignment:
 		if (this == &eo)
@@ -393,15 +393,7 @@ class Reference {
 		
 		return *this;
 	}
-	/**
-	 Assignment operator. This allows references to be assigned to one 
-	 another, which makes the reference behave even more like a pointer.
-	 */
-	const Reference<T>& operator=(const Reference<T>& eo) const
-	{
-		const_cast<Reference<T>&>(*this) = const_cast<Reference<T>&>(eo);
-		return *this;
-	}
+	
 	/**
            This function provides direct access to the referenced object. In case 
            this is absolutely necessary.

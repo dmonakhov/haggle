@@ -158,6 +158,8 @@ void WIDCOMMBluetooth::OnInquiryComplete(BOOL success, short num_responses)
 	SetEvent(hInquiryEvent);
 }
 
+#define INQUIRY_TIMEOUT (20000)
+
 int WIDCOMMBluetooth::_doInquiry(widcomm_inquiry_callback_t callback, void *data, bool async)
 {
 	if (isInInquiry || !IsDeviceReady())
@@ -181,12 +183,12 @@ int WIDCOMMBluetooth::_doInquiry(widcomm_inquiry_callback_t callback, void *data
 	// Once we successfully started the inquiry, the isInInquiry boolean
 	// will be reset to 'false' by the OnInquiryComplete callback
 	if (!async) {
-		printf("Waiting for inquiry to complete\n");
-		if (WaitForSingleObject(hInquiryEvent, INFINITE) == WAIT_FAILED) {
-			fprintf(stderr, "Inquiry failed\n");
+		HAGGLE_DBG("Waiting for inquiry to complete\n");
+		if (WaitForSingleObject(hInquiryEvent, INQUIRY_TIMEOUT) == WAIT_FAILED) {
+			HAGGLE_ERR("Inquiry TIMEOUT after %u s\n", INQUIRY_TIMEOUT/1000);
 			return -1;
 		}
-		printf("Inquiry completed\n");
+		HAGGLE_DBG("Inquiry completed\n");
 		return inquiryResult;
 	}
 	return 0;
@@ -258,6 +260,8 @@ out:
 	SetEvent(hDiscoveryEvent);
 }
 
+#define DISCOVERY_TIMEOUT (30000)
+
 int WIDCOMMBluetooth::_doDiscovery(const RemoteDevice *rd, GUID *guid, widcomm_discovery_callback_t callback, void *data, bool async)
 {
 	BD_ADDR bdaddr;
@@ -285,8 +289,8 @@ int WIDCOMMBluetooth::_doDiscovery(const RemoteDevice *rd, GUID *guid, widcomm_d
 	// will be reset to 'false' by the OnDiscoveryComplete callback
 	if (!async) {
 		HAGGLE_DBG("Waiting for discovery to complete\n");
-		if (WaitForSingleObject(hDiscoveryEvent, INFINITE) == WAIT_FAILED) {
-			HAGGLE_ERR("Discovery failed\n");
+		if (WaitForSingleObject(hDiscoveryEvent, DISCOVERY_TIMEOUT) == WAIT_FAILED) {
+			HAGGLE_ERR("Discovery TIMEOUT after %u s\n", DISCOVERY_TIMEOUT/1000);
 			return -1;
 		}
 		HAGGLE_DBG("Discovery completed\n");
