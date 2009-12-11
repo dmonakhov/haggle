@@ -19,13 +19,13 @@
 /*
 	This function makes sure an interface is in the table.
 */
-InterfaceStatus_t Connectivity::report_interface(const InterfaceRef& found, const InterfaceRef& found_by,
+InterfaceStatus_t Connectivity::report_interface(InterfaceRef& found, const InterfaceRef& found_by,
 								      ConnectivityInterfacePolicy *add_callback(void))
 {
 	return getManager()->report_interface(found, found_by, add_callback);
 }
 
-InterfaceStatus_t Connectivity::report_interface(const Interface *found, const InterfaceRef &found_by, 
+InterfaceStatus_t Connectivity::report_interface(Interface *found, const InterfaceRef &found_by, 
 				 ConnectivityInterfacePolicy *add_callback(void))
 {
 	return getManager()->report_interface(found, found_by, add_callback);
@@ -66,12 +66,12 @@ InterfaceStatus_t Connectivity::is_known_interface(const Interface *iface)
 	return getManager()->is_known_interface(iface);
 }
 
-void Connectivity::delete_interface(const InterfaceRef& iface)
+void Connectivity::delete_interface(InterfaceRef iface)
 {
 	getManager()->delete_interface(iface);
 }
 
-void Connectivity::delete_interface(const Interface *iface)
+void Connectivity::delete_interface(Interface *iface)
 {
 	getManager()->delete_interface(iface);
 }

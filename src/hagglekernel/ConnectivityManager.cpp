@@ -129,35 +129,35 @@ ConnectivityManager::~ConnectivityManager()
 
 void ConnectivityManager::onConfig(Event *e)
 {
-    DataObjectRef dObj = e->getDataObject();
-    
-    if(!dObj) {
-		HAGGLE_DBG("no data object!\n");
-        return;
-    }
-    
-    if (!isValidConfigDataObject(dObj)) {
-		HAGGLE_DBG("Received INVALID config data object\n");
+	DataObjectRef dObj = e->getDataObject();
+	
+	if (!dObj) {
+		HAGGLE_ERR("no data object!\n");
 		return;
 	}
-    
-    Metadata *mc = dObj->getMetadata()->getMetadata("ConnectivityManager");
-    
-    if (!mc) {
-        HAGGLE_ERR("No connectivity manager metadata in data object\n");
-        return;
-    }
-    
+	
+	if (!isValidConfigDataObject(dObj)) {
+		HAGGLE_ERR("Received INVALID config data object\n");
+		return;
+	}
+	
+	Metadata *mc = dObj->getMetadata()->getMetadata("ConnectivityManager");
+	
+	if (!mc) {
+		HAGGLE_ERR("No connectivity manager metadata in data object\n");
+		return;
+	}
+	
 #if defined(ENABLE_BLUETOOTH)
-    /*
-      Check for bluetooth module blacklisting/whitelisting data. For formatting
-      information, see ConnectivityBluetoothBase::updateSDPList().
-     */
-    Metadata *bt = mc->getMetadata("Bluetooth");
-    
-    if(bt) {
-        ConnectivityBluetoothBase::updateSDPLists(bt);
-    } 
+	/*
+	 Check for bluetooth module blacklisting/whitelisting data. For formatting
+	 information, see ConnectivityBluetoothBase::updateSDPList().
+	 */
+	Metadata *bt = mc->getMetadata("Bluetooth");
+	
+	if (bt) {
+		ConnectivityBluetoothBase::updateSDPLists(bt);
+	} 
 #endif
 }
 
@@ -422,7 +422,7 @@ InterfaceStatus_t ConnectivityManager::report_known_interface(const InterfaceRef
 /*
   This function makes sure an interface is in the table.
 */
-InterfaceStatus_t ConnectivityManager::report_interface(const Interface *found, const InterfaceRef& found_by, ConnectivityInterfacePolicy *add_callback(void))
+InterfaceStatus_t ConnectivityManager::report_interface(Interface *found, const InterfaceRef& found_by, ConnectivityInterfacePolicy *add_callback(void))
 {
 	bool was_added;
 	
@@ -451,7 +451,7 @@ InterfaceStatus_t ConnectivityManager::report_interface(const Interface *found, 
 	return INTERFACE_STATUS_HAGGLE;
 }
 
-InterfaceStatus_t ConnectivityManager::report_interface(const InterfaceRef &found, const InterfaceRef& found_by, ConnectivityInterfacePolicy *add_callback(void))
+InterfaceStatus_t ConnectivityManager::report_interface(InterfaceRef& found, const InterfaceRef& found_by, ConnectivityInterfacePolicy *add_callback(void))
 {
 	bool was_added;
 	
@@ -488,9 +488,12 @@ static ConnectivityInterfacePolicy *onReceivedDataObject_helper(void)
 }
 
 /*
-  The connectivity manager watches all incoming data objects to see
-  if the source of the received data object is not a registered
-  neighbor.
+ The connectivity manager watches all incoming data objects to see
+ if the source of the received data object is not a registered
+ neighbor. This may happen in case a data object is received from
+ a neighbor that has not yet been discovered (this happens typically
+ with Bluetooth, but can also happen with WiFi due to periodic neighbor 
+ discovery).
 */
 void ConnectivityManager::onReceivedDataObject(Event *e)
 {
@@ -525,11 +528,10 @@ void ConnectivityManager::onReceivedDataObject(Event *e)
 			remoteIface->setFlag(IFFLAG_SNOOPED);
 			if (remoteIface->getType() == IFTYPE_BLUETOOTH)
 				report_interface(remoteIface, localIface, newConnectivityInterfacePolicyTTL2);
-			else if(
-				remoteIface->getType() == IFTYPE_ETHERNET ||
+			else if (remoteIface->getType() == IFTYPE_ETHERNET ||
 				remoteIface->getType() == IFTYPE_WIFI)
 				report_interface(remoteIface, localIface, newConnectivityInterfacePolicyTTL3);
-			else{
+			else {
 				// hmm... this shouldn't happen. If it does we've added an 
 				// interface type and forgotten to add it above.
 				HAGGLE_DBG("Snooped unknown interface type.");
@@ -567,7 +569,7 @@ void ConnectivityManager::onFailedToSendDataObject(Event *e)
 	}
 }
 
-void ConnectivityManager::report_dead(const InterfaceRef &iface)
+void ConnectivityManager::report_dead(InterfaceRef iface)
 {
 	iface->down();
 
@@ -598,7 +600,7 @@ void ConnectivityManager::report_dead(const InterfaceRef &iface)
 	}
 }
 
-void ConnectivityManager::delete_interface(const InterfaceRef &iface)
+void ConnectivityManager::delete_interface(InterfaceRef &iface)
 {
 	InterfaceRefList dead;
         
@@ -609,7 +611,7 @@ void ConnectivityManager::delete_interface(const InterfaceRef &iface)
 	}
 }
 
-void ConnectivityManager::delete_interface(const Interface *iface)
+void ConnectivityManager::delete_interface(Interface *iface)
 {
 	InterfaceRefList dead;
 

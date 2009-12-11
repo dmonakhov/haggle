@@ -117,7 +117,7 @@ class ConnectivityManager : public Manager
 	// This mutex protects the known interface registry
 	Mutex ifMutex;
 
-	void report_dead(const InterfaceRef &iface);
+	void report_dead(InterfaceRef iface);
 
 	// This will start a new connectivity on the given Interface (must be a local interface).
 	void spawn_connectivity(const InterfaceRef& iface);
@@ -188,9 +188,9 @@ public:
 		@returns INTERFACE_STATUS_NONE if the interface was not previously known,
 		or INTERFACE_STATUS_HAGGLE if it was.
 	*/
-	InterfaceStatus_t report_interface(const Interface *found, const InterfaceRef &found_by, 
+	InterfaceStatus_t report_interface(Interface *found, const InterfaceRef &found_by, 
 			      ConnectivityInterfacePolicy *add_callback(void));
-	InterfaceStatus_t report_interface(const InterfaceRef &found, const InterfaceRef &found_by, 
+	InterfaceStatus_t report_interface(InterfaceRef &found, const InterfaceRef &found_by, 
 			      ConnectivityInterfacePolicy *add_callback(void));
         /**
         	Utility function to check whether an interface already exists in the
@@ -235,11 +235,11 @@ public:
 	/**
         	Utility function to delete an interface
         */
-        void delete_interface(const Interface *iface);
+        void delete_interface(Interface *iface);
 	/**
 		Utility function to delete an interface by reference.
 	*/
-	void delete_interface(const InterfaceRef &iface);
+	void delete_interface(InterfaceRef &iface);
 	/**
         	Utility function to delete an interface by type and identifier.
         */

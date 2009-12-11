@@ -287,9 +287,9 @@ class DataObject
 	DataState_t getDataState() const { return dataState; }
         bool dataIsVerifiable() const { return hasDataHash; }
 
-	DataObjectSignatureStatus_t getSignatureStatus() { return signatureStatus; }
+	DataObjectSignatureStatus_t getSignatureStatus() const { return signatureStatus; }
 	void setSignatureStatus(DataObjectSignatureStatus_t s) { signatureStatus = s; }
-	const string &getSignee() { return signee; }
+	const string &getSignee() const { return signee; }
 	void setSignee(const string s) { signee = s; }
 	bool hasValidSignature() const { return signatureStatus == DATAOBJECT_SIGNATURE_VALID; }
 	bool shouldVerifySignature() const { return signatureStatus == DATAOBJECT_SIGNATURE_UNVERIFIED; }
@@ -318,10 +318,12 @@ class DataObject
 	bool isThisNodeDescription() const { return isThisNodeDesc; }
 
 	// Metadata functions
+	const Metadata *toMetadata() const;
 	Metadata *toMetadata();
         Metadata *getMetadata();
-        ssize_t getRawMetadata(char *raw, size_t len);
-	bool getRawMetadataAlloc(char **raw, size_t *len);
+        const Metadata *getMetadata() const;
+        ssize_t getRawMetadata(char *raw, size_t len) const;
+	bool getRawMetadataAlloc(char **raw, size_t *len) const;
         
 		// Thumbnail functions
         /**
@@ -423,7 +425,7 @@ class DataObject
            NULL: this function was not successful, meaning that the returned boject
            can (of course) not be used to retrieve data.
 	*/
-	DataObjectDataRetrieverRef getDataObjectDataRetriever(void);
+	DataObjectDataRetrieverRef getDataObjectDataRetriever(void) const;
 
 	
         // Attribute functions

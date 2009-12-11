@@ -50,13 +50,13 @@ protected:
 		Utility function to call the same-named function in the Connectivity
 		Manager.
 	*/
-	InterfaceStatus_t report_interface(const InterfaceRef& found, const InterfaceRef& found_by, 
+	InterfaceStatus_t report_interface(InterfaceRef& found, const InterfaceRef& found_by, 
 			      ConnectivityInterfacePolicy *add_callback(void));
 	/**
 		Utility function to call the same-named function in the Connectivity
 		Manager.
 	*/
-	InterfaceStatus_t report_interface(const Interface *found, const InterfaceRef& found_by, 
+	InterfaceStatus_t report_interface(Interface *found, const InterfaceRef& found_by, 
 			  ConnectivityInterfacePolicy *add_callback(void));
 	
 	/**
@@ -87,12 +87,12 @@ protected:
 	/**
 		Utility function to delete an interface by reference.
 	*/
-	void delete_interface(const Interface *iface);
+	void delete_interface(Interface *iface);
 	
 	/**
 		Utility function to delete an interface by reference.
 	*/
-	void delete_interface(const InterfaceRef &iface);
+	void delete_interface(InterfaceRef iface);
 
 	/**
 		Utility function to delete an interface by its name.

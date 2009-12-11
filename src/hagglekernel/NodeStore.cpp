@@ -92,7 +92,7 @@ bool NodeStore::_stored(const char *id, bool mustBeNeighbor)
 	return false;
 }
 
-bool NodeStore::_stored(string idStr, bool mustBeNeighbor)
+bool NodeStore::_stored(const string idStr, bool mustBeNeighbor)
 {
 	for (NodeStore::iterator it = begin(); it != end(); it++) {
 		NodeRecord *nr = *it;
@@ -137,14 +137,14 @@ bool NodeStore::stored(const char *id, bool mustBeNeighbor)
 	return (id ? _stored(id, mustBeNeighbor) : false);
 }
 
-bool NodeStore::stored(string idStr, bool mustBeNeighbor)
+bool NodeStore::stored(const string idStr, bool mustBeNeighbor)
 {
         Mutex::AutoLocker l(mutex);
 
 	return _stored(idStr, mustBeNeighbor);
 }
 
-bool NodeStore::add(const NodeRef &node)
+bool NodeStore::add(NodeRef &node)
 {
         Mutex::AutoLocker l(mutex);
 
@@ -333,7 +333,7 @@ NodeStore::size_type NodeStore::retrieveNeighbors(NodeRefList& nl)
 	return n;
 }
 
-bool NodeStore::update(const NodeRef &node, NodeRefList *nl)
+bool NodeStore::update(NodeRef &node, NodeRefList *nl)
 {
         Mutex::AutoLocker l(mutex);
 	bool found = false;

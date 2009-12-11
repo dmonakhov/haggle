@@ -113,12 +113,12 @@ class Reference {
                    Constructor.
 		*/
 		RefCounter(T *_obj, unsigned long _identifier, string _name) : 
-                                countMutex(string("Reference:countMutex") + "[" + _name + "]"),
-                                refcount(1),
-                                objectMutex(string("Reference:objectMutex") + "[" + _name + "]"),
-                                obj(_obj), 
-                                identifier(_identifier), 
-                                name(_name)
+			countMutex(string("Reference:countMutex") + "[" + _name + "]"),
+			refcount(1),
+			objectMutex(string("Reference:objectMutex") + "[" + _name + "]"),
+			obj(_obj), 
+			identifier(_identifier), 
+			name(_name)
 		{
                         Mutex::AutoLocker l(Reference<T>::objectsMutex);
 			Reference<T>::objects.insert(ReferencePair(obj, this));
@@ -206,7 +206,8 @@ class Reference {
                    This, like Reference::operator->, allows the Reference to be 
                    treated like a pointer to the object it is a reference to.
 		*/
-		T *operator->() const { return obj; }
+		T *operator->() { return obj; }
+		const T *operator->() const { return obj; }
 	};
 	
 	/**
@@ -220,6 +221,30 @@ class Reference {
            The data for this reference
 	*/
 	RefCounter *refCount;
+	
+	// Called by constructor(s)
+	void inline init(T *_obj, const string _name)
+	{
+		// NULL is ok, but we don't need a RefCounter to it.
+		if (!_obj)
+			return;
+		
+		objectsMutex.lock();
+		typename ReferenceMap::iterator it = objects.find(_obj);
+		
+		if (it != objects.end()) {
+			refCount = (RefCounter *) (*it).second;
+			refCount->inc_count();
+			objectsMutex.unlock();
+			return;
+		}
+		
+		objectsMutex.unlock();
+		
+		refCount = new RefCounter(_obj, totNum, _name);
+		
+		totNum++;
+	}
     public:
 
 	/**
@@ -277,28 +302,10 @@ class Reference {
 		
            Will throw an exception if the given object is already refcounted.
 	*/
-	Reference(T *_obj = NULL, const string _name = "Unknown Reference") : 
-                        refCount(NULL)
+	Reference(const T *_obj = NULL, const string _name = "Unknown Reference") : 
+		refCount(NULL)
 	{
-		// NULL is ok, but we don't need a RefCounter to it.
-		if (!_obj)
-			return;
-
-		objectsMutex.lock();
-		typename ReferenceMap::iterator it = objects.find(_obj);
-		
-		if (it != objects.end()) {
-			refCount = (RefCounter *) (*it).second;
-			refCount->inc_count();
-			objectsMutex.unlock();
-			return;
-		}
-
-		objectsMutex.unlock();
-
-		refCount = new RefCounter(_obj, totNum, _name);
-		
-		totNum++;
+		init(const_cast<T *>(_obj), _name);
 	}
 	
 	/**
@@ -316,6 +323,7 @@ class Reference {
 		// REFERENCE_DBG("object %s identifier=%lu increasing refcount to %ld\n", 
                 // 				refCount->name.c_str(), refCount->identifier, refCount->count());
 	};
+	
 	
 	/**
            Destructor.
@@ -346,19 +354,26 @@ class Reference {
            The lock proxy ensures that the object is locked while calling 
            functions.
 	*/
-	LockProxy operator->() const
+	LockProxy operator->()
+	{
+		if (refCount != NULL)
+			return LockProxy(const_cast<T *>(refCount->obj), &refCount->objectMutex);
+		else
+			return LockProxy(NULL, NULL);
+	}
+	
+	const LockProxy operator->() const
 	{
 		if (refCount != NULL)
 			return LockProxy(refCount->obj, &refCount->objectMutex);
 		else
 			return LockProxy(NULL, NULL);
 	}
-	
 	/**
            Assignment operator. This allows references to be assigned to one 
            another, which makes the reference behave even more like a pointer.
 	*/
-	Reference<T>& operator=(const Reference<T>& eo)
+	Reference<T>& operator=(Reference<T>& eo)
 	{
 		// Handle self-assignment:
 		if (this == &eo)
@@ -378,7 +393,15 @@ class Reference {
 		
 		return *this;
 	}
-
+	/**
+	 Assignment operator. This allows references to be assigned to one 
+	 another, which makes the reference behave even more like a pointer.
+	 */
+	const Reference<T>& operator=(const Reference<T>& eo) const
+	{
+		const_cast<Reference<T>&>(*this) = const_cast<Reference<T>&>(eo);
+		return *this;
+	}
 	/**
            This function provides direct access to the referenced object. In case 
            this is absolutely necessary.
@@ -449,7 +472,6 @@ class Reference {
 	{
 		return (this->refCount != NULL);
 	}
-	
 	//static void *operator new(size_t size) { throw Exception(0, "Heap allocation not allowed"); }
 };
 

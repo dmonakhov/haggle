@@ -137,9 +137,14 @@ bool ForwarderProphet::newRoutingInformation(const Metadata *m)
 	if (!m || m->getName() != getName())
 		return false;
 	
-	const Metadata *mm = m->getMetadata("Metric");
 	prophet_node_id_t node_b_id = id_for_string(m->getParameter("node_id"));
 	prophet_rib_t &neighbor_rib = neighbor_ribs[node_b_id];
+	
+	HAGGLE_DBG("New %s routing information received from node [id=%s]\n",
+		   getName(),
+		   m->getParameter("node_id"));
+	
+	const Metadata *mm = m->getMetadata("Metric");
 	
 	while (mm) {
 		prophet_node_id_t node_c_id = id_for_string(mm->getParameter("node_id"));
@@ -147,7 +152,7 @@ bool ForwarderProphet::newRoutingInformation(const Metadata *m)
 		// Read the metric from the neighbor's metadata:
 		sscanf(mm->getContent().c_str(), "%lf", &P_bc);
 		
-		//printf("P_bc=%lf\n", P_bc);
+		//printf("node_c_str=%s node_c_id=%u P_bc=%lf\n", mm->getParameter("node_id"), node_c_id, P_bc);
 		
 		if (node_c_id != this_node_id) {
 			double &P_ab = age_metric(rib[node_b_id]).first;
@@ -167,7 +172,7 @@ bool ForwarderProphet::newRoutingInformation(const Metadata *m)
 			P_ac = P_ac + (1 - P_ac) * P_ab * P_bc * PROPHET_BETA;
 		}
 		
-		mm = mm->getNextMetadata();
+		mm = m->getNextMetadata();
 	}
 	
 	rib_timestamp = Timeval::now();
@@ -205,7 +210,7 @@ bool ForwarderProphet::addRoutingInformation(DataObjectRef& dObj, Metadata *pare
 	return true;
 }
 
-void ForwarderProphet::_newNeighbor(NodeRef &neighbor)
+void ForwarderProphet::_newNeighbor(const NodeRef &neighbor)
 {
 	// We don't handle routing to anything but other haggle nodes:
 	if (neighbor->getType() != NODE_TYPE_PEER)
@@ -223,7 +228,7 @@ void ForwarderProphet::_newNeighbor(NodeRef &neighbor)
 	rib_timestamp = Timeval::now();
 }
 
-void ForwarderProphet::_endNeighbor(NodeRef &neighbor)
+void ForwarderProphet::_endNeighbor(const NodeRef &neighbor)
 {
 	// We don't handle routing to anything but other haggle nodes:
 	if (neighbor->getType() != NODE_TYPE_PEER)
@@ -254,7 +259,7 @@ void ForwarderProphet::_endNeighbor(NodeRef &neighbor)
 	rib_timestamp = metric.second;
 }
 
-void ForwarderProphet::_generateTargetsFor(NodeRef &neighbor)
+void ForwarderProphet::_generateTargetsFor(const NodeRef &neighbor)
 {
 	NodeRefList lst;
 	// Figure out which forwarding table to look in:
@@ -295,7 +300,7 @@ void ForwarderProphet::_generateTargetsFor(NodeRef &neighbor)
 	}
 }
 
-void ForwarderProphet::_generateDelegatesFor(DataObjectRef &dObj, NodeRef &target)
+void ForwarderProphet::_generateDelegatesFor(const DataObjectRef &dObj, const NodeRef &target)
 {
 	NodeRefList lst;
 	// Figure out which node to look for:

@@ -423,12 +423,12 @@ int Node::removeAttribute(const string name, const string value)
 	return n;
 }
 
-const Attribute *Node::getAttribute(const string name, const string value, const unsigned int n)
+const Attribute *Node::getAttribute(const string name, const string value, const unsigned int n) const
 {
 	return dObj->getAttribute(name, value, n);
 }
 
-const Attributes *Node::getAttributes()
+const Attributes *Node::getAttributes() const
 {
 	return dObj->getAttributes();
 }
@@ -604,18 +604,18 @@ void Node::removeEventInterest(long type)
 		Event::unregisterType(type);
 }
 
-bool Node::hasEventInterest(long type)
+bool Node::hasEventInterest(long type) const
 {
 	return eventInterests.find(type) != eventInterests.end();
 }
 
 #ifdef DEBUG
-void Node::printInterfaces()
+void Node::printInterfaces() const
 {
 	int n = 0;
 	
-	for (InterfaceRefList::iterator it = interfaces.begin(); it != interfaces.end(); it++)  {
-		const InterfaceRef iface = *it;
+	for (InterfaceRefList::const_iterator it = interfaces.begin(); it != interfaces.end(); it++)  {
+		const InterfaceRef& iface = *it;
 		iface.lock();
 		const Addresses *addrs = iface->getAddresses();
 
@@ -633,7 +633,7 @@ void Node::printInterfaces()
 bool Node::addInterface(InterfaceRef inIfaceRef)
 {
 	for (InterfaceRefList::iterator it = interfaces.begin(); it != interfaces.end(); it++) {
-		InterfaceRef ifaceRef = *it;
+		InterfaceRef& ifaceRef = *it;
 		if (inIfaceRef == ifaceRef) {
 			// Node already has interface - ignore.
 			return false;
@@ -646,10 +646,10 @@ bool Node::addInterface(InterfaceRef inIfaceRef)
 }
 
 // Mark an interface as up
-bool Node::setInterfaceUp(InterfaceRef inIfaceRef)
+bool Node::setInterfaceUp(const InterfaceRef inIfaceRef)
 {
 	for (InterfaceRefList::iterator it = interfaces.begin(); it != interfaces.end(); it++) {
-		InterfaceRef ifaceRef = *it;
+		InterfaceRef& ifaceRef = *it;
 		if (inIfaceRef == ifaceRef && !ifaceRef->isUp()) {
 			ifaceRef->up();
 			setCreateTime();
@@ -660,10 +660,10 @@ bool Node::setInterfaceUp(InterfaceRef inIfaceRef)
 }
 
 // Mark an interface as down.
-bool Node::setInterfaceDown(InterfaceRef inIfaceRef)
+bool Node::setInterfaceDown(const InterfaceRef inIfaceRef)
 {
 	for (InterfaceRefList::iterator it = interfaces.begin(); it != interfaces.end(); it++) {
-		InterfaceRef ifaceRef = *it;
+		InterfaceRef& ifaceRef = *it;
 		if (inIfaceRef == ifaceRef && ifaceRef->isUp()) {
 			ifaceRef->down();
 			setCreateTime();
@@ -673,10 +673,10 @@ bool Node::setInterfaceDown(InterfaceRef inIfaceRef)
 	return false;
 }
 
-bool Node::removeInterface(InterfaceRef inIfaceRef)
+bool Node::removeInterface(const InterfaceRef& inIfaceRef)
 {
 	for (InterfaceRefList::iterator it = interfaces.begin(); it != interfaces.end(); it++) {
-		InterfaceRef ifaceRef = *it;
+		InterfaceRef& ifaceRef = *it;
 		if (inIfaceRef == ifaceRef) {
 			if (ifaceRef->isUp()) {
 				ifaceRef->down();
@@ -695,12 +695,12 @@ const InterfaceRefList *Node::getInterfaces() const
 	return &interfaces;
 } 
 
-unsigned int Node::numActiveInterfaces()
+unsigned int Node::numActiveInterfaces() const
 {
         unsigned int num = 0;
 
         for (InterfaceRefList::const_iterator it = interfaces.begin(); it != interfaces.end(); it++) {
-		InterfaceRef iface = *it;
+		const InterfaceRef& iface = *it;
 		if (iface->isUp()) {
 			num++;
 		}
@@ -708,10 +708,10 @@ unsigned int Node::numActiveInterfaces()
 	return num;
 }
 
-bool Node::hasInterface(const InterfaceRef inIfaceRef) 
+bool Node::hasInterface(const InterfaceRef inIfaceRef) const
 {
-	for (InterfaceRefList::iterator it = interfaces.begin(); it != interfaces.end(); it++) {
-		InterfaceRef ifaceRef = *it;
+	for (InterfaceRefList::const_iterator it = interfaces.begin(); it != interfaces.end(); it++) {
+		const InterfaceRef& ifaceRef = *it;
 		
 		if (inIfaceRef == ifaceRef) {
 			return true;
@@ -722,7 +722,7 @@ bool Node::hasInterface(const InterfaceRef inIfaceRef)
 bool Node::isAvailable() const
 {
 	for (InterfaceRefList::const_iterator it = interfaces.begin(); it != interfaces.end(); it++) {
-		InterfaceRef iface = *it;
+		const InterfaceRef& iface = *it;
 		if (iface->isUp()) {
 			return true;
 		}
@@ -761,7 +761,13 @@ DataObjectRef Node::getDataObject(bool withBloomfilter) const
 	return ndObj;
 }
 
+
 Bloomfilter *Node::getBloomfilter(void)
+{
+	return doBF;
+}
+
+const Bloomfilter *Node::getBloomfilter(void) const
 {
 	return doBF;
 }

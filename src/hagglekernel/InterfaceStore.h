@@ -82,7 +82,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on an 
 		interface reference while calling this function.
 	*/
-	InterfaceRef addupdate(const Interface *iface, const Interface *parent, ConnectivityInterfacePolicy *add_callback(void), bool *was_added = NULL);
+	InterfaceRef addupdate(Interface *iface, const Interface *parent, ConnectivityInterfacePolicy *add_callback(void), bool *was_added = NULL);
 	/**
 		Add or update an interface to the store given previously unreferenced interfaces.
 		Returns: If successful (i.e., the interface was added or updated), a valid interface 
@@ -92,7 +92,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on an 
 		interface reference while calling this function.
 	*/
-	InterfaceRef addupdate(const Interface *iface, const InterfaceRef &parent, ConnectivityInterfacePolicy *add_callback(void), bool *was_added = NULL);
+	InterfaceRef addupdate(Interface *iface, const InterfaceRef &parent, ConnectivityInterfacePolicy *add_callback(void), bool *was_added = NULL);
 	/**
 		Add or update an interface to the store given interface references. The optional argument "was_added"
 		can be passed if the caller wants to know whether the Interface was added to the data store
@@ -104,7 +104,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on an 
 		interface reference while calling this function.
 	*/
-	InterfaceRef addupdate(const InterfaceRef& iface, const InterfaceRef& parent, ConnectivityInterfacePolicy *add_callback(void), bool *was_added = NULL);
+	InterfaceRef addupdate(InterfaceRef& iface, const InterfaceRef& parent, ConnectivityInterfacePolicy *add_callback(void), bool *was_added = NULL);
 	/**
 		Retrieve a reference to an interface from the store given another reference.
 		The reference passed as in argument might reference a copy of an interface

@@ -546,7 +546,7 @@ class DataObjectDataRetrieverImplementation : public DataObjectDataRetriever {
            deleted. Just in case it would be in charge of deleting its file or 
            something.
         */
-        DataObjectRef dObj;
+        const DataObjectRef dObj;
         /// The metadata header
         unsigned char *header;
         /// The length of the metadata header (above):
@@ -558,13 +558,13 @@ class DataObjectDataRetrieverImplementation : public DataObjectDataRetriever {
         /// The amount of data left to read from the data file:
         size_t bytes_left;
 	
-        DataObjectDataRetrieverImplementation(DataObjectRef _dObj);
+        DataObjectDataRetrieverImplementation(const DataObjectRef _dObj);
         ~DataObjectDataRetrieverImplementation();
 	
         ssize_t retrieve(void *data, size_t len, bool getHeaderOnly);
 };
 
-DataObjectDataRetrieverImplementation::DataObjectDataRetrieverImplementation(DataObjectRef _dObj) :
+DataObjectDataRetrieverImplementation::DataObjectDataRetrieverImplementation(const DataObjectRef _dObj) :
                 dObj(_dObj), header(NULL), header_len(0), fp(NULL), header_bytes_left(0), bytes_left(0)
 { 
          if (dObj->getDataLen() > 0 || dObj->getDynamicDataLen()) {
@@ -584,7 +584,11 @@ DataObjectDataRetrieverImplementation::DataObjectDataRetrieverImplementation(Dat
                         fseek(fp, 0L, SEEK_END);
                         bytes_left = ftell(fp);
                         fseek(fp, 0L, SEEK_SET);
-			dObj->setDataLen(bytes_left);
+			// FIXME: Not so nice to modify the read-only data object here. Should try to find
+			// a better solution...
+			dObj.lock();
+			const_cast<DataObject*>(dObj.getObj())->setDataLen(bytes_left);
+			dObj.unlock();
                 } else
                         bytes_left = dObj->getDataLen();
         } else {
@@ -632,7 +636,7 @@ DataObjectDataRetrieverImplementation::~DataObjectDataRetrieverImplementation()
                 free(header);
 }
 
-DataObjectDataRetrieverRef DataObject::getDataObjectDataRetriever(void)
+DataObjectDataRetrieverRef DataObject::getDataObjectDataRetriever(void) const
 {
        return new DataObjectDataRetrieverImplementation(this);
 }
@@ -1112,6 +1116,17 @@ Metadata *DataObject::getMetadata()
         return toMetadata();
 }
 
+const Metadata *DataObject::getMetadata() const
+{
+        return toMetadata();
+}
+
+
+const Metadata *DataObject::toMetadata() const
+{
+	return const_cast<DataObject *>(this)->toMetadata();
+}
+
 Metadata *DataObject::toMetadata()
 {
 	if (!metadata)
@@ -1209,7 +1224,7 @@ Metadata *DataObject::toMetadata()
         return metadata;
 }
 
-ssize_t DataObject::getRawMetadata(char *raw, size_t len)
+ssize_t DataObject::getRawMetadata(char *raw, size_t len) const
 {
         if (!toMetadata())
                 return -1;
@@ -1217,7 +1232,7 @@ ssize_t DataObject::getRawMetadata(char *raw, size_t len)
         return metadata->getRaw(raw, len);
 } 
 
-bool DataObject::getRawMetadataAlloc(char **raw, size_t *len)
+bool DataObject::getRawMetadataAlloc(char **raw, size_t *len) const
 {
         if (!toMetadata())
                 return false;

@@ -143,22 +143,22 @@ private:
 	/**
 		Does the actual work of newNeighbor.
 	*/
-	void _newNeighbor(NodeRef &neighbor);
+	void _newNeighbor(const NodeRef &neighbor);
 
 	/**
 		Does the actual work of endNeighbor.
 	*/
-	void _endNeighbor(NodeRef &neighbor);
+	void _endNeighbor(const NodeRef &neighbor);
 	
 	/**
 		Does the actual work of getTargetsFor.
 	*/
-	void _generateTargetsFor(NodeRef &neighbor);
+	void _generateTargetsFor(const NodeRef &neighbor);
 	
 	/**
 		Does the actual work of getDelegatesFor.
 	*/
-	void _generateDelegatesFor(DataObjectRef &dObj, NodeRef &target);
+	void _generateDelegatesFor(const DataObjectRef &dObj, const NodeRef &target);
 #ifdef DEBUG
 	/**
 		Does the actual work or printRoutingTable().

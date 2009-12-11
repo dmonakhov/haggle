@@ -41,7 +41,7 @@ class NodeStore : protected List<NodeRecord *>
         bool _stored(const NodeRef &node, bool mustBeNeighbor = false);
         bool _stored(const Node &node, bool mustBeNeighbor = false);
         bool _stored(const char *id, bool mustBeNeighbor = false);
-	bool _stored(string idStr, bool mustBeNeighbor = false);
+	bool _stored(const string idStr, bool mustBeNeighbor = false);
 public:
 	/**
 		The Critiera class is a matching functor that can be
@@ -104,14 +104,14 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
 		reference or an interface reference while calling this function.
 	*/
-	bool stored(string idStr, bool mustBeNeighbor = false);
+	bool stored(const string idStr, bool mustBeNeighbor = false);
 	/**
 		Add a new node to the node store.
 		
 		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
 		reference or an interface reference while calling this function.
 	*/
-        bool add(const NodeRef &node);
+        bool add(NodeRef &node);
 	/**
 		Add a new node to the node store.
 		
@@ -237,7 +237,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
 		reference or an interface reference while calling this function.
 	*/
-        bool update(const NodeRef &inNode, NodeRefList *nl = NULL);
+        bool update(NodeRef &inNode, NodeRefList *nl = NULL);
 
 	
 #ifdef DEBUG

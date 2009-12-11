@@ -45,14 +45,13 @@ public:
 
 	DataObjectRef createRoutingInformationDataObject();
 	
-	virtual bool addRoutingInformation(DataObjectRef& dObj, Metadata *m) { return false; }
 	/**
-		This function determines if the given data object contains routing information
-		for this forwarding module. 
+	 This function determines if the given data object contains routing information
+	 for this forwarding module. 
 	 
-		Returns: true iff the data object routing information created by this forwarding module.
-	*/
-	virtual bool hasRoutingInformation(const DataObjectRef& dObj) const;
+	 Returns: true iff the data object routing information created by this forwarding module.
+	 */
+	bool hasRoutingInformation(const DataObjectRef& dObj) const;
 	
 	/**
 		This function returns a string with the node id for the node which 
@@ -61,7 +60,7 @@ public:
 		Returns: if routing information is valid, a string containing a node id. 
 		Otherwise NULL.
 	*/
-	virtual const string getNodeIdFromRoutingInformation(const DataObjectRef& dObj) const;
+	const string getNodeIdFromRoutingInformation(const DataObjectRef& dObj) const;
 	
 	/**
 		This function returns a string with the metric for the node which 
@@ -70,8 +69,15 @@ public:
 		Returns: if routing information is valid, a string containing a 
 		metric. Otherwise NULL.
 	*/
-	virtual const Metadata *getRoutingInformation(const DataObjectRef& dObj) const;
+	const Metadata *getRoutingInformation(const DataObjectRef& dObj) const;
 	
+	/**
+		A forwarding module should implement addRoutingInformation() in order
+		to generate the Metadata containing routing information which is specific
+		for that forwarding module.
+	 */
+	virtual bool addRoutingInformation(DataObjectRef& dObj, Metadata *m) { return false; }
+
 	/*
 		The following functions are called by the forwarding manager as part of
 		event processing in the kernel. They are therefore called from the 
@@ -82,8 +88,7 @@ public:
 		actually need to do their job. This means that functions can be declared
 		here (and called by the forwarding manager) that only one forwarding 
 		algorithm actually uses.
-	*/
-	
+	*/		
 	/**
 		Called when a data object has come in that has a "Routing" attribute.
 		
@@ -97,17 +102,17 @@ public:
 		Also, the given metric data object may have been sent before, due to 
 		limitations in the forwarding manager.
 	*/
-	virtual void newRoutingInformation(DataObjectRef& dObj) {}	
+	virtual void newRoutingInformation(const DataObjectRef& dObj) {}	
 	/**
 		Called when a neighbor node is discovered.
 	*/
-	virtual void newNeighbor(NodeRef &neighbor) {}
+	virtual void newNeighbor(const NodeRef &neighbor) {}
 
 
 	/**
 		Called when a node just ended being a neighbor.
 	*/
-	virtual void endNeighbor(NodeRef &neighbor) {}
+	virtual void endNeighbor(const NodeRef &neighbor) {}
 	
 	/**
 		Generates an event (EVENT_TYPE_DELEGATE_NODES) providing all the nodes 
@@ -119,7 +124,7 @@ public:
 		
 		If no nodes are found, no event should be created.
 	*/
-	virtual void generateDelegatesFor(DataObjectRef &dObj, NodeRef &target) {}
+	virtual void generateDelegatesFor(const DataObjectRef &dObj, const NodeRef &target) {}
 	
 	/**
 		Generates an event (EVENT_TYPE_TARGET_NODES) providing all the target 
@@ -130,9 +135,9 @@ public:
 		
 		If no nodes are found, no event should be created.
 	*/
-	virtual void generateTargetsFor(NodeRef &neighbor) {}
+	virtual void generateTargetsFor(const NodeRef &neighbor) {}
 	
-	virtual void generateRoutingInformationDataObject(NodeRef& neighbor) {}
+	virtual void generateRoutingInformationDataObject(const NodeRef& neighbor) {}
 	
 	virtual size_t getSaveState(RepositoryEntryList& rel) { return 0; }
 	virtual bool setSaveState(RepositoryEntryRef& e) { return false; }

@@ -225,8 +225,8 @@ public:
 	void removeEventInterest(long type);
 
 	bool setFilterEvent(long feid);
-	long getFilterEvent() { return filterEventId; }
-	bool hasEventInterest(long type);
+	long getFilterEvent() const { return filterEventId; }
+	bool hasEventInterest(long type) const;
 
 	// Functions to access and manipulate the node's interfaces
 	/**
@@ -236,7 +236,7 @@ public:
 	/**
 	The given interface is the property of the caller.
 	*/
-	bool removeInterface(InterfaceRef iface);
+	bool removeInterface(const InterfaceRef& iface);
 	/**
 	The returned interface list is the property of the node.
 	*/
@@ -244,23 +244,23 @@ public:
 	/**
 	The given interface is the property of the caller.
 	*/
-	bool hasInterface(const InterfaceRef iface);
+	bool hasInterface(const InterfaceRef iface) const;
 
         /**
            Returns the number of interfaces marked as up.
          */
-        unsigned int numActiveInterfaces();
+        unsigned int numActiveInterfaces() const;
 	/**
 	The given interface is the property of the caller.
 	*/
-	bool setInterfaceDown(InterfaceRef iface);
+	bool setInterfaceDown(const InterfaceRef iface);
 	/**
 	The given interface is the property of the caller.
 	*/
-	bool setInterfaceUp(InterfaceRef iface);
+	bool setInterfaceUp(const InterfaceRef iface);
 
 #ifdef DEBUG
-	void printInterfaces();
+	void printInterfaces() const;
 #endif
 	// Node status functions
 	bool hasExchangedNodeDescription() const {
@@ -293,10 +293,11 @@ public:
         int addAttribute(const string name, const string value, const unsigned long weight = 1);
         int removeAttribute(const Attribute &a);
         int removeAttribute(const string name, const string value = "*");
-        const Attribute *getAttribute(const string name, const string value = "*", const unsigned int n = 0);
-        const Attributes *getAttributes();
+        const Attribute *getAttribute(const string name, const string value = "*", const unsigned int n = 0) const;
+        const Attributes *getAttributes() const;
 
         // Bloomfilter functions
+	const Bloomfilter *getBloomfilter() const;
 	Bloomfilter *getBloomfilter();
 	void setBloomfilter(const char *base64, const bool set_create_time = false);
 	void setBloomfilter(const Bloomfilter& bf, const bool set_create_time = false);

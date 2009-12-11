@@ -62,17 +62,17 @@ typedef enum {
 */
 class ForwardingTask {
 private:
-	ForwardingTaskType_t type;
+	const ForwardingTaskType_t type;
 	DataObjectRef dObj;
 	NodeRef	node;
 	RepositoryEntryList *rel;
 public:
-	ForwardingTask(ForwardingTaskType_t _type, DataObjectRef _dObj = NULL, NodeRef _node = NULL) :
+	ForwardingTask(const ForwardingTaskType_t _type, const DataObjectRef& _dObj = NULL, const NodeRef& _node = NULL) :
 		type(_type), dObj(_dObj), node(_node), rel(NULL) {}
-	ForwardingTask(ForwardingTaskType_t _type, NodeRef _node) :
+	ForwardingTask(const ForwardingTaskType_t _type, const NodeRef& _node) :
 		type(_type), dObj(NULL), node(_node), rel(NULL) {}
 	DataObjectRef& getDataObject() { return dObj; }
-	void setDataObject(DataObjectRef _dObj) { dObj = _dObj; }
+	void setDataObject(const DataObjectRef& _dObj) { dObj = _dObj; }
 	NodeRef& getNode() { return node; }
 	RepositoryEntryList *getRepositoryEntryList() { return rel; }
 	void setRepositoryEntryList(RepositoryEntryList *_rel) { if (!rel) {rel = _rel;} }
@@ -101,22 +101,22 @@ protected:
 	/**
 		Does the actual work of newNeighbor.
 	*/
-	virtual void _newNeighbor(NodeRef &neighbor) {}
+	virtual void _newNeighbor(const NodeRef &neighbor) {}
 	
 	/**
 		Does the actual work of endNeighbor.
 	*/
-	virtual void _endNeighbor(NodeRef &neighbor) {}
+	virtual void _endNeighbor(const NodeRef &neighbor) {}
 	
 	/**
 		Does the actual work of getTargetsFor.
 	*/
-	virtual void _generateTargetsFor(NodeRef &neighbor) {}
+	virtual void _generateTargetsFor(const NodeRef &neighbor) {}
 	
 	/**
 		Does the actual work of getDelegatesFor.
 	*/
-	virtual void _generateDelegatesFor(DataObjectRef &dObj, NodeRef &target) {}
+	virtual void _generateDelegatesFor(const DataObjectRef &dObj, const NodeRef &target) {}
 		
 #ifdef DEBUG
 	/**
@@ -145,16 +145,16 @@ public:
 	void quit();
 	
 	/** See the parent class function with the same name. */
-	void newRoutingInformation(DataObjectRef& dObj);
+	void newRoutingInformation(const DataObjectRef& dObj);
 	/** See the parent class function with the same name. */
-	void newNeighbor(NodeRef &neighbor);
+	void newNeighbor(const NodeRef &neighbor);
 	/** See the parent class function with the same name. */
-	void endNeighbor(NodeRef &neighbor);
+	void endNeighbor(const NodeRef &neighbor);
 	/** See the parent class function with the same name. */
-	void generateTargetsFor(NodeRef &neighbor);
+	void generateTargetsFor(const NodeRef &neighbor);
 	/** See the parent class function with the same name. */
-	void generateDelegatesFor(DataObjectRef &dObj, NodeRef &target);
-	void generateRoutingInformationDataObject(NodeRef &neighbor);
+	void generateDelegatesFor(const DataObjectRef &dObj, const NodeRef &target);
+	void generateRoutingInformationDataObject(const NodeRef &neighbor);
 #ifdef DEBUG
 	/** See the parent class function with the same name. */
 	void printRoutingTable(void);

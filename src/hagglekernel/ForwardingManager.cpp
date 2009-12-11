@@ -661,9 +661,7 @@ void ForwardingManager::onRoutingInformation(Event *e)
 	DataObjectRef dObj = e->getDataObject();
 	
 	if (forwardingModule && forwardingModule->hasRoutingInformation(dObj)) {
-		HAGGLE_DBG("New routing information received\n");
 		forwardingModule->newRoutingInformation(dObj);
-		// Do not find query for nodes when we have a forwarding data object.
 		return;
 	}
 }
@@ -674,8 +672,6 @@ void ForwardingManager::onNewDataObject(Event *e)
 		return;
 	
 	DataObjectRef dObj = e->getDataObject();
-	
-	HAGGLE_DBG("New data object received\n");
 	
 	if (dObj->isPersistent()) {
 		HAGGLE_DBG("%s - new data object, doing node query\n", getName());

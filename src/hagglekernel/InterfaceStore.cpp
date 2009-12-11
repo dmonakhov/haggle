@@ -111,7 +111,7 @@ bool InterfaceStore::stored(const InterfaceType_t type, const char *identifier)
 	return false;
 }
 
-InterfaceRef InterfaceStore::addupdate(const InterfaceRef &iface, const InterfaceRef& parent, ConnectivityInterfacePolicy *add_callback(void), bool *was_added)
+InterfaceRef InterfaceStore::addupdate(InterfaceRef &iface, const InterfaceRef& parent, ConnectivityInterfacePolicy *add_callback(void), bool *was_added)
 {
 	InterfaceRef parentStore;
 
@@ -164,7 +164,7 @@ InterfaceRef InterfaceStore::addupdate(const InterfaceRef &iface, const Interfac
 	return iface;
 }
 
-InterfaceRef InterfaceStore::addupdate(const Interface *iface, const InterfaceRef &parent, ConnectivityInterfacePolicy *add_callback(void), bool *was_added)
+InterfaceRef InterfaceStore::addupdate(Interface *iface, const InterfaceRef &parent, ConnectivityInterfacePolicy *add_callback(void), bool *was_added)
 {
 	InterfaceRef parentRef;
 
@@ -211,7 +211,7 @@ InterfaceRef InterfaceStore::addupdate(const Interface *iface, const InterfaceRe
 	return ifaceRef;
 }
 
-InterfaceRef InterfaceStore::addupdate(const Interface *iface, const Interface *parent, ConnectivityInterfacePolicy *add_callback(void), bool *was_added)
+InterfaceRef InterfaceStore::addupdate(Interface *iface, const Interface *parent, ConnectivityInterfacePolicy *add_callback(void), bool *was_added)
 {
 	InterfaceRef parentStore;
 
