@@ -241,11 +241,16 @@ const Addresses *Interface::getAddresses() const
 Address *Interface::getAddressByType(const AddressType_t _type)
 {
 	for (Addresses::iterator it = addresses.begin(); it != addresses.end(); it++) {
-		if((*it)->getType() == _type) {
+		if ((*it)->getType() == _type) {
 			return *it;
 		}
 	}
 	return NULL;
+}
+
+const Address *Interface::getAddressByType(const AddressType_t _type) const
+{
+	return const_cast<Interface *>(this)->getAddressByType(_type);
 }
 
 void Interface::setFlag(const flag_t flag)

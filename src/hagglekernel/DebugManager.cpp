@@ -51,7 +51,7 @@ SOCKET openSocket(int port);
 
 DebugManager::DebugManager(HaggleKernel * _kernel, bool interactive) : 
                 Manager("DebugManager", _kernel), onFindRepositoryKeyCallback(NULL), 
-                onDumpDataStoreCallback(NULL),server_sock(-1), console(INVALID_STDIN)
+                onDumpDataStoreCallback(NULL), server_sock(-1), console(INVALID_STDIN)
 {
 #define __CLASS__ DebugManager
 #if defined(DEBUG)

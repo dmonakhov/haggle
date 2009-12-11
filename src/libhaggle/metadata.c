@@ -218,6 +218,7 @@ const char *metadata_set_content(metadata_t *m, const char *content)
         return m->content;
 }
 
+#ifdef DEBUG
 void metadata_print(metadata_t *m)
 {
         list_t *pos, *tmp;
@@ -235,6 +236,7 @@ void metadata_print(metadata_t *m)
                 metadata_print(mc);
         }
 }
+#endif
 
 metadata_t *metadata_get_next(metadata_t *m)
 {

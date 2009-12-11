@@ -190,6 +190,7 @@ public:
 		
 		The returned address is the property of the interface.
 	*/
+	const Address *getAddressByType(AddressType_t type) const;
 	Address *getAddressByType(AddressType_t type);
 	
 	/** 

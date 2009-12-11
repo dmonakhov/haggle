@@ -480,13 +480,6 @@ InterfaceStatus_t ConnectivityManager::report_interface(InterfaceRef& found, con
 	return INTERFACE_STATUS_HAGGLE;
 }
 
-static ConnectivityInterfacePolicy *onReceivedDataObject_helper(void)
-{
-	Timeval then(5);
-	
-	return new ConnectivityInterfacePolicyTime(then);
-}
-
 /*
  The connectivity manager watches all incoming data objects to see
  if the source of the received data object is not a registered

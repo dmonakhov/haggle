@@ -60,7 +60,9 @@ metadata_t *metadata_get_next(metadata_t *m);
 metadata_t *metadata_get(metadata_t *m, const char *name);
 int metadata_set_parameter(metadata_t *m, const char *name, const char *value);
 const char *metadata_get_parameter(const metadata_t *m, const char *name);
+#ifdef DEBUG
 void metadata_print(metadata_t *m);
+#endif
 
 #include "metadata_xml.h"
 #define metadata_new_from_raw(raw, len) metadata_xml_new_from_xml((raw), (len))

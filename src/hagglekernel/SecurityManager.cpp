@@ -25,6 +25,7 @@
 
 // The reason for this function being a macro, is so that HAGGLE_DBG can 
 // specify which function called writeErrors().
+#if defined(DEBUG)
 #define writeErrors(prefix) \
 { \
 	unsigned long writeErrors_e; \
@@ -36,6 +37,9 @@
 				ERR_error_string(writeErrors_e, writeErrors_buf)); \
 	} while(writeErrors_e != 0); \
 }
+#else
+#define writeErrors(prefix)
+#endif
 
 /* 
  Private and public key of certificate authority in PEM format.

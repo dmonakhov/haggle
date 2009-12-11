@@ -27,16 +27,21 @@
 
 // The reason for this function being a macro, is so that HAGGLE_DBG can 
 // specify which function called writeErrors().
+#if defined(DEBUG)
 #define writeErrors(prefix) \
 { \
 	unsigned long writeErrors_e; \
-	char writeErrors_buf[256]; \
+	char writeErrors_buf[256] = { 0 }; \
 	do{ \
 		writeErrors_e = ERR_get_error(); \
-		if (writeErrors_e != 0) \
+		if (writeErrors_e != 0) { \
 			HAGGLE_DBG(prefix "%s\n", ERR_error_string(writeErrors_e, writeErrors_buf)); \
+		} \
 	}  while(writeErrors_e != 0); \
 }
+#else
+#define writeErrors(prefix)
+#endif
 
 #define SERIAL_RAND_BITS  128
 

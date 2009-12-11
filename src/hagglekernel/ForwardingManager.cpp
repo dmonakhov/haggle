@@ -39,8 +39,9 @@ ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 	setEventHandler(EVENT_TYPE_TARGET_NODES, onTargetNodes);
 	setEventHandler(EVENT_TYPE_DELEGATE_NODES, onDelegateNodes);
 
+#if defined(DEBUG)
 	setEventHandler(EVENT_TYPE_DEBUG_CMD, onDebugCmd);
-
+#endif
 	moduleEventType = registerEventType(getName(), onForwardingTaskComplete);
 	
 #if HAVE_EXCEPTION

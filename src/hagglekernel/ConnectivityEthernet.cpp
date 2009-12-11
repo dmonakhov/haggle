@@ -97,7 +97,7 @@ ConnEthIfaceListElement::ConnEthIfaceListElement(const InterfaceRef &_iface) :
 	struct sockaddr	*my_addr = NULL;
 	socklen_t my_addr_len = -1;
 	bool has_broadcast = false;
-	Address	*addr;
+	Address *addr;
 	int on = 1;
 	
 	addr = iface->getAddressByType(AddressType_EthMAC);
@@ -148,8 +148,7 @@ ConnEthIfaceListElement::ConnEthIfaceListElement(const InterfaceRef &_iface) :
 				my_addr4.sin_port = htons(0);
 				
 				// Fill in the broadcast address to send to:
-				broadcast_addr_len = 
-                                                addr->fillInBroadcastSockaddr(&broadcast_addr, 
+				broadcast_addr_len = addr->fillInBroadcastSockaddr(&broadcast_addr, 
                                                                               HAGGLE_UDP_CONNECTIVITY_PORT);
 			}
 		}
