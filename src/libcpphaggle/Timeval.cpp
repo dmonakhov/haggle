@@ -28,6 +28,13 @@ Timeval Timeval::now()
 	return Timeval(t);
 }
 	
+	
+Timeval::Timeval()
+{
+	t.tv_sec = 0;
+	t.tv_usec = 0;
+}
+	
 Timeval::Timeval(const Timeval &tv) : t(tv.t)
 {
 }
@@ -41,12 +48,11 @@ Timeval::Timeval(const long seconds, const long microseconds)
 	t.tv_sec = seconds;
 	t.tv_usec = microseconds;
 	
-	/*
-	  Does it really make sense to allow any of the in arguments to be negative?
-	 */
-	while (t.tv_usec < 0) {
-		t.tv_sec--;
-		t.tv_usec += 1000000;
+	if (t.tv_usec <= -1000000) {
+		while (t.tv_usec < 0) {
+			t.tv_sec--;
+			t.tv_usec += 1000000;
+		}
 	}
 	while (t.tv_usec >= 1000000) {
 		t.tv_sec++;
@@ -64,6 +70,12 @@ Timeval::Timeval(const string str)
 	
 	t.tv_sec = sec;
 	t.tv_usec = usec;
+}
+	
+Timeval::Timeval(const double _t)
+{
+	t.tv_sec = _t;
+	t.tv_usec = (_t - t.tv_sec) * 1000000.0;
 }
 
 Timeval& Timeval::setNow()
@@ -91,7 +103,11 @@ const string Timeval::getAsString() const
 {
 	char buf[20];
 
-	snprintf(buf, 20, ASSTRING_FORMAT, (long)t.tv_sec, (long)t.tv_usec);
+	if (t.tv_usec < 0) {
+		snprintf(buf, 20, "-"ASSTRING_FORMAT, (long)t.tv_sec, (long)t.tv_usec * -1);
+	} else {
+		snprintf(buf, 20, ASSTRING_FORMAT, (long)t.tv_sec, (long)t.tv_usec);
+	}
 
 	return string(buf);
 }

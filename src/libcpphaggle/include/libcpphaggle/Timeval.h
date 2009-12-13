@@ -29,9 +29,11 @@ class Timeval {
 	struct timeval t;
 public:
 	static Timeval now();
+	Timeval();
 	Timeval(const Timeval &tv);
-	Timeval(const struct timeval& t);
-	Timeval(const long seconds = 0, const long microseconds = 0);
+	Timeval(const struct timeval& _t);
+	Timeval(const long seconds, const long microseconds);
+	Timeval(const double _t);
 	Timeval(const string str);
 	/*
 	  Set Timeval to current time.

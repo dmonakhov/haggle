@@ -348,14 +348,14 @@ void ConnectivityEthernet::cancelDiscovery(void)
 
 void ConnectivityEthernet::setPolicy(PolicyRef newPolicy)
 {
-	PolicyType_t	pol;
-	if(!newPolicy)
+	PolicyType_t pol;
+	
+	if (!newPolicy)
 		return;
 	
 	pol = newPolicy->getPowerPolicy();
 	
-	switch(pol)
-	{
+	switch (pol) {
 		case POLICY_RESOURCE_UNLIMITED:
 			beaconInterval = 2;
 		break;
@@ -374,6 +374,11 @@ void ConnectivityEthernet::setPolicy(PolicyRef newPolicy)
 	}
 }
 
+
+// This is jitter in the range [ -1000000 : 1000000 ] microseconds.
+
+#define BEACON_JITTER ((prng_uint32() % 2000000) - 1000000)
+
 bool ConnectivityEthernet::run()
 {
 	Watch w;
@@ -382,6 +387,7 @@ bool ConnectivityEthernet::run()
 	char buffer[BUFLEN];
 	struct haggle_beacon *beacon = (struct haggle_beacon *) buffer;
 	Timeval next_beacon_time;
+	u_int32_t prev_seqno = 0;
 	
 	/*
 		HOTFIX: report the root interface as being local and existing.
@@ -408,7 +414,16 @@ bool ConnectivityEthernet::run()
 			
 			timeout = next_beacon_time - timeout;
 		}
-
+		
+		// Add jitter to the timeout, but only when we actually sent 
+		// a beacon (i.e., wait() returned due to a timeout).
+		if (seqno > prev_seqno) {
+			Timeval jitter(0, BEACON_JITTER);
+			prev_seqno = seqno;
+			timeout += jitter;
+			next_beacon_time += jitter;
+		}
+		
 		w.reset();
 
 		waitRet = w.wait(&timeout); 
@@ -417,7 +432,7 @@ bool ConnectivityEthernet::run()
 			InterfaceRefList downedIfaces;
 			int ret;
 
-			// Timeout
+			// Timeout --> send next beacon
 			seqno++;
 			
 			synchronized(ifaceListMutex) {
