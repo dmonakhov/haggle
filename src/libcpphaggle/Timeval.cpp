@@ -27,20 +27,33 @@ Timeval Timeval::now()
 	gettimeofday(&t, NULL);
 	return Timeval(t);
 }
-	
-	
+
 Timeval::Timeval()
 {
 	t.tv_sec = 0;
 	t.tv_usec = 0;
 }
-	
+
+void Timeval::adjust(void)
+{
+	while (t.tv_usec < 0) {
+		t.tv_sec--;
+		t.tv_usec += 1000000;
+	}
+	while (t.tv_usec >= 1000000) {
+		t.tv_sec++;
+		t.tv_usec -= 1000000;
+	}
+}
+
 Timeval::Timeval(const Timeval &tv) : t(tv.t)
 {
+	adjust();
 }
 
 Timeval::Timeval(const struct timeval& _t) : t(_t)
 {
+	adjust();
 }
 
 Timeval::Timeval(const long seconds, const long microseconds)
@@ -48,16 +61,7 @@ Timeval::Timeval(const long seconds, const long microseconds)
 	t.tv_sec = seconds;
 	t.tv_usec = microseconds;
 	
-	if (t.tv_usec <= -1000000) {
-		while (t.tv_usec < 0) {
-			t.tv_sec--;
-			t.tv_usec += 1000000;
-		}
-	}
-	while (t.tv_usec >= 1000000) {
-		t.tv_sec++;
-		t.tv_usec -= 1000000;
-	}
+	adjust();
 }
 
 #define ASSTRING_FORMAT "%ld.%06ld"
@@ -70,17 +74,20 @@ Timeval::Timeval(const string str)
 	
 	t.tv_sec = sec;
 	t.tv_usec = usec;
+	adjust();
 }
 	
 Timeval::Timeval(const double _t)
 {
 	t.tv_sec = (long)_t;
 	t.tv_usec = (long)((_t - t.tv_sec) * 1000000.0);
+	adjust();
 }
 
 Timeval& Timeval::setNow()
 {
 	gettimeofday(&t, NULL);
+	adjust();
 	return *this;
 }
 
@@ -103,8 +110,8 @@ const string Timeval::getAsString() const
 {
 	char buf[20];
 
-	if (t.tv_usec < 0) {
-		snprintf(buf, 20, "-"ASSTRING_FORMAT, (long)t.tv_sec, (long)t.tv_usec * -1);
+	if (t.tv_sec < 0) {
+		snprintf(buf, 20, "-"ASSTRING_FORMAT, -(long)(t.tv_sec-1), 1000000 - (long)t.tv_usec);
 	} else {
 		snprintf(buf, 20, ASSTRING_FORMAT, (long)t.tv_sec, (long)t.tv_usec);
 	}

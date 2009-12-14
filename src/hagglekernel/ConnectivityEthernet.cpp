@@ -386,8 +386,8 @@ bool ConnectivityEthernet::run()
 #define BUFLEN 200
 	char buffer[BUFLEN];
 	struct haggle_beacon *beacon = (struct haggle_beacon *) buffer;
-	Timeval next_beacon_time;
-	u_int32_t prev_seqno = 0;
+	Timeval next_beacon_time, next_beacon_time_unjittered;
+	u_int32_t prev_seqno = seqno+1;
 	
 	/*
 		HOTFIX: report the root interface as being local and existing.
@@ -399,6 +399,7 @@ bool ConnectivityEthernet::run()
 	socketIndex = w.add(listenSock); 
 	
 	next_beacon_time = Timeval::now();
+	next_beacon_time_unjittered = next_beacon_time;
 		
 	while (!shouldExit()) {
 		Timeval timeout;
@@ -409,19 +410,21 @@ bool ConnectivityEthernet::run()
 		if (!w.getRemainingTime(&timeout)) {
 			timeout = Timeval::now();
 			
-			while (timeout > next_beacon_time)
-				next_beacon_time += beaconInterval;
+			// Has the timeout expired, and a new beacon been sent?
+			if (timeout > next_beacon_time && 
+				prev_seqno != seqno)
+			{
+				// Reset the "beacon sent" test:
+				prev_seqno = seqno;
+				// Move the next beacon time into the future:
+				while (timeout > next_beacon_time_unjittered)
+					next_beacon_time_unjittered += beaconInterval;
+				// Add jitter to the timeout:
+				next_beacon_time = 
+					next_beacon_time_unjittered + Timeval(0, BEACON_JITTER);
+			}
 			
 			timeout = next_beacon_time - timeout;
-		}
-		
-		// Add jitter to the timeout, but only when we actually sent 
-		// a beacon (i.e., wait() returned due to a timeout).
-		if (seqno > prev_seqno) {
-			Timeval jitter(0, BEACON_JITTER);
-			prev_seqno = seqno;
-			timeout += jitter;
-			next_beacon_time += jitter;
 		}
 		
 		w.reset();

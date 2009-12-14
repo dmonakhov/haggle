@@ -22,11 +22,14 @@
 namespace haggle {
 /**
 	Conveniance class to work with struct timeval.
-	Timeval's behavior for negative times is not really defined, so beware.
-	However, it is perfectly fine to substract a smaller Timeval from a larger one.
+	Timeval's behavior for negative times might be viewed as somewhat strange:
+	the tv_usec variable is always positive, which means that -0.5 seconds is 
+	represented by {-1,500000}, i.e. -1 second + 500000 microseconds.
 */
 class Timeval {
 	struct timeval t;
+private:
+	void adjust(void);
 public:
 	static Timeval now();
 	Timeval();

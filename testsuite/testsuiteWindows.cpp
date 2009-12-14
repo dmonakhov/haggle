@@ -123,6 +123,7 @@ int main(void)
 	ADD_TEST(haggle_test_metadata);
 	
 	ADD_SEPA("------ Libcpphaggle -----------------------\n");
+	ADD_TEST(haggle_test_timeval);
 	//ADD_TEST(haggle_test_refcount);
 	ADD_TEST(haggle_test_map);
 	ADD_TEST(haggle_test_list);

@@ -76,6 +76,7 @@ testsuite/test_libcpphaggle/newlist
 testsuite/test_libcpphaggle/newmap
 testsuite/test_libcpphaggle/refcount
 testsuite/test_libcpphaggle/stringimpl
+testsuite/test_libcpphaggle/timeval
 testsuite/test_metadata/metadata
 testsuite/test_mutex/binary
 testsuite/test_mutex/cancelonmutex
@@ -84,6 +85,7 @@ testsuite/test_mutex/isunlocked
 testsuite/test_mutex/lock
 testsuite/test_mutex/recursive
 testsuite/test_mutex/trylock
+testsuite/test_security/certificate
 testsuite/test_thread/cancelthread
 testsuite/test_thread/cancelthreadsocket
 testsuite/test_thread/createthread

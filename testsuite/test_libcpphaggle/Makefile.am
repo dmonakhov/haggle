@@ -1,4 +1,4 @@
-.PHONY: test testrefcount testnewmap testnewlist teststringimpl
+.PHONY: test testtimeval testrefcount testnewmap testnewlist teststringimpl
 
 HAGGLE_KERNEL_DIR=$(top_srcdir)/src/hagglekernel/
 UTILS_DIR=$(top_srcdir)/src/utils/
@@ -9,11 +9,15 @@ if OS_LINUX
 LDFLAGS += -lpthread
 endif
 
-bin_PROGRAMS=refcount newmap newlist stringimpl
+bin_PROGRAMS=timeval refcount newmap newlist stringimpl
 
 STDDEPS=$(HAGGLE_KERNEL_DIR)libhagglekernel.a
 STDDEPS+=$(UTILS_DIR)libhaggleutils.a
+STDDEPS+=$(LIBCPPHAGGLE_DIR)libcpphaggle.a
 STDDEPS+=../libtesthlp.a
+
+timeval_SOURCES=timeval.cpp
+timeval_DEPENDENCIES=$(STDDEPS)
 
 refcount_SOURCES=refcount.cpp
 refcount_DEPENDENCIES=$(STDDEPS)
@@ -37,7 +41,10 @@ if OS_MACOSX
 LDFLAGS += -framework IOKit -framework CoreFoundation -framework CoreServices
 endif
 
-test: testrefcount testnewmap testnewlist teststringimpl
+test: testtimeval testrefcount testnewmap testnewlist teststringimpl
+
+testtimeval: timeval
+	@./timeval && echo "Passed!" || echo "Failed!"
 
 testrefcount: refcount
 	@./refcount && echo "Passed!" || echo "Failed!"
