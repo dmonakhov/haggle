@@ -354,6 +354,8 @@ private:
 #ifdef DEBUG
 	DebugCmdRef dbgCmdRef;
 #endif
+	DataObjectRefList dObjs;
+	
 	/*
 		This list of nodes is used in only the events EVENT_TYPE_TARGET_NODES 
 		and EVENT_TYPE_DELEGATE_NODES. In these events, it contains nodes where
@@ -394,6 +396,7 @@ public:
         Event(EventType _type, const NodeRef& _nodeRef, const NodeRefList& _nodes, double _delay = 0.0);
         Event(EventType _type, const DataObjectRef& _dObjRef, const NodeRefList& _nodes, double _delay = 0.0);
 		Event(EventType _type, const DataObjectRef& _dObjRef, const NodeRef& _nodeRef, const NodeRefList& _nodes, double _delay = 0.0);
+        Event(EventType _type, const DataObjectRefList&  _dObjs, double _delay = 0.0);
         Event(EventType _type, void *_data = NULL, double _delay = 0.0);
         Event(const EventCallback<EventHandler> *_callback, void *_data, double _delay = 0.0);
 	Event(const EventCallback<EventHandler> *_callback, const DataObjectRef&  _dObjRef, double _delay = 0.0);
@@ -420,6 +423,9 @@ public:
 
 	DataObjectRef& getDataObject() {
 		return dObjRef;
+	}
+	DataObjectRefList& getDataObjectList() {
+		return dObjs;
 	}
 	InterfaceRef& getInterface() {
 		return ifaceRef;

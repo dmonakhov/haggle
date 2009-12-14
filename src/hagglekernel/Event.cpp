@@ -80,8 +80,16 @@ Event::Event(EventType _type, const DataObjectRef& _dObjRef, double _delay) :
 		    type == EVENT_TYPE_DATAOBJECT_RECEIVED || 
 		    type == EVENT_TYPE_DATAOBJECT_VERIFIED || 
 		    type == EVENT_TYPE_DATAOBJECT_NEW || 
-		    type == EVENT_TYPE_DATAOBJECT_DELETED || 
 		    type == EVENT_TYPE_DATAOBJECT_INCOMING) {
+		} else if (type == EVENT_TYPE_DATAOBJECT_DELETED) {
+			// For simplicity's sake, we allow a deleted with just one data 
+			// object, but to do that, we need to add it to the data object 
+			// list (because the recipient of the event can't know how the 
+			// event was created).
+			dObjs.push_back(dObjRef);
+			// Clear the dObjRef, so this event looks just like if it was 
+			// created with the (..., DataObjectRefList, ...) constructor
+			dObjRef = NULL;
 		} else {
 			HAGGLE_DBG("ERROR: Event type %s does not accept a data object as data!\n",
 				eventNames[type]);
@@ -369,6 +377,37 @@ Event::Event(EventType _type, const DataObjectRef& _dObjRef, const NodeRef& _nod
 				eventNames[type]);
 #if HAVE_EXCEPTION
 			throw EventException(type, "Event type %s does not accept a data object, a node and a node list as data!");
+#endif
+		}
+	}
+}
+
+Event::Event(EventType _type, const DataObjectRefList& _dObjs, double _delay) : 
+#ifdef DEBUG_LEAKS
+	LeakMonitor(LEAK_TYPE_EVENT),
+#endif
+	HeapItem(absolute_time_double(_delay)), 
+	type(_type),
+	dObjs(_dObjs),
+	data(NULL),
+	doesHaveData(_dObjs.size() > 0)
+{
+	if (!EVENT_TYPE(type)) {
+		HAGGLE_DBG("ERROR: trying to allocate an invalid event type!\n");
+#if HAVE_EXCEPTION
+		throw EventException(type, "Unknown event type");
+#else
+                return;
+#endif
+	}
+	if (dObjRef) {
+		if (EVENT_TYPE_PRIVATE(type) || 
+		    type == EVENT_TYPE_DATAOBJECT_DELETED) {
+		} else {
+			HAGGLE_DBG("ERROR: Event type %s does not accept a list of data objects as data!\n",
+				eventNames[type]);
+#if HAVE_EXCEPTION
+			throw EventException(type, "Event type %s does not accept a list of data objects as data!");
 #endif
 		}
 	}

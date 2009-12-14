@@ -2218,6 +2218,7 @@ int SQLDataStore::_ageDataObjects(Timeval minimumAge)
 	char *sql_cmd;
 	sqlite3_stmt *stmt;
 	const char *tail;
+	DataObjectRefList dObjs;
 	
 	// -- drop dataobject view
 	sql_cmd = (char *) SQL_DROP_VIEW_LIMITED_DATAOBJECT_ATTRIBUTES_CMD;
@@ -2252,20 +2253,24 @@ int SQLDataStore::_ageDataObjects(Timeval minimumAge)
 		return -1;
 	}
 	
-	DataObjectRef dObj;
-	while ((ret = sqlite3_step(stmt)) != SQLITE_DONE) {
+	// FIXME: THE CONSTANT SHOULD NOT BE HARD-CODED!
+	while (dObjs.size() < 5 && (ret = sqlite3_step(stmt)) != SQLITE_DONE) {
 		if (ret == SQLITE_ROW) {
-			dObj = createDataObject(stmt);
-			_deleteDataObject(dObj, true);	// delete and report as event
+			dObjs.push_back(createDataObject(stmt));
 		} else if (ret == SQLITE_ERROR) {
-			HAGGLE_DBG("Could not insert DO Error: %s\n", sqlite3_errmsg(db));
+			HAGGLE_DBG("Could not age DO Error: %s\n", sqlite3_errmsg(db));
 			sqlite3_finalize(stmt);
 			return -1;
 		}
 	}
 	
 	sqlite3_finalize(stmt);
-
+	
+	for (DataObjectRefList::iterator it = dObjs.begin(); it != dObjs.end(); it++) {
+		_deleteDataObject(*it, false);	// delete and report as event
+	}
+	kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_DELETED, dObjs));
+	
 	if (ret == SQLITE_ERROR) {
 		HAGGLE_DBG("Could not age dataobjects : %s\n", sqlite3_errmsg(db));
 		return -1;
