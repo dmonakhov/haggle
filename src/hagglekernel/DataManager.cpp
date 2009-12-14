@@ -392,7 +392,7 @@ void DataManager::onAging(Event *e)
 		}
 		
 		// Should we post another aging event?
-		if(e == NULL || e->getType() == agingEvent) {
+		if (e == NULL || e->getType() == agingEvent) {
 			kernel->addEvent(new Event(agingEvent, NULL, agingPeriod));
 		}
 	}
@@ -401,19 +401,26 @@ void DataManager::onAging(Event *e)
 void DataManager::onConfig(Event * e)
 {
 	DataObjectRef dObj = e->getDataObject();
-	if (!dObj) return;
+	
+	if (!dObj) 
+		return;
 	
 	// extract metadata
 	Metadata *m = dObj->getMetadata();
-	if (!m) return;
+	
+	if (!m) 
+		return;
 	
 	// extract metadata relevant for ForwardingManager
 	m = m->getMetadata(this->getName());
-	if (!m) return;
+	
+	if (!m) 
+		return;
 	
 	bool agingHasChanged = false;
 	
 	Metadata *tmp = NULL;
+
 	if ((tmp = m->getMetadata("AgingPeriod"))) {
 		agingPeriod = atoi(tmp->getContent().c_str());
 		HAGGLE_DBG("config agingPeriod=%d\n", agingPeriod);

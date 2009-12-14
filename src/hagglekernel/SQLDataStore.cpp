@@ -3054,19 +3054,30 @@ int SQLDataStore::_deleteRepository(DataStoreRepositoryQuery *q)
 
 static int dumpColumn(xmlNodePtr tableNode, sqlite3_stmt *stmt)
 {
+	if (!tableNode)
+		return -1;
+
 	const unsigned char* rowid = sqlite3_column_text(stmt, 0);
 
 	xmlNodePtr rowNode = xmlNewNode(NULL, BAD_CAST "entry"); 
-	xmlNewProp(rowNode, BAD_CAST "rowid", (const xmlChar*) rowid);
+
+	if (!rowNode)
+		goto xml_alloc_fail;
+
+	if (!xmlNewProp(rowNode, BAD_CAST "rowid", (const xmlChar*) rowid)) {
+		xmlFreeNode(rowNode);
+		goto xml_alloc_fail;
+	}
 
 	for (int c = 1; c < sqlite3_column_count(stmt); c++) {
 		if (sqlite3_column_type(stmt, c) != SQLITE_BLOB) {
 			// Does the column name begin with XML?
 			if (strncmp(sqlite3_column_name(stmt, c), "xml", 3) != 0) {
 				// No. Standard case, do things normally:
-				xmlNewTextChild(rowNode, NULL, 
+				if (xmlNewTextChild(rowNode, NULL, 
 					BAD_CAST sqlite3_column_name(stmt, c),
-					BAD_CAST sqlite3_column_text(stmt, c));
+					BAD_CAST sqlite3_column_text(stmt, c)) == NULL)
+					goto xml_alloc_fail;
 			} else {
 				/*
 					Yes. 
@@ -3081,25 +3092,44 @@ static int dumpColumn(xmlNodePtr tableNode, sqlite3_stmt *stmt)
 				*/
 				const char *text = (const char *) sqlite3_column_text(stmt, c);
 				xmlDocPtr doc = xmlParseMemory(text, strlen(text));
+
+				if (!doc) {
+					HAGGLE_ERR("Could not parse xml document\n");
+					goto xml_alloc_fail;
+				}
 				xmlNodePtr node = xmlNewChild(rowNode, NULL, 
 						BAD_CAST sqlite3_column_name(stmt, c), NULL);
-				xmlAddChild(node, xmlCopyNode(xmlDocGetRootElement(doc), 1));
+
+				if (!node) {
+					xmlFreeDoc(doc);
+					goto xml_alloc_fail;
+				}
+				if (!xmlAddChild(node, xmlCopyNode(xmlDocGetRootElement(doc), 1))) {
+					xmlFreeDoc(doc);
+					goto xml_alloc_fail;
+				}
 				xmlFreeDoc(doc);
 			}
 		} else if (!strcmp(sqlite3_column_name(stmt,c), "id")) {
 			char* str = (char*)malloc(2 * sqlite3_column_bytes(stmt, c) + 1);
 			buf2str((const char *)sqlite3_column_blob(stmt, c), str, sqlite3_column_bytes(stmt, c));
 			
-			xmlNewTextChild(rowNode, NULL, 
-							BAD_CAST sqlite3_column_name(stmt, c),
-							BAD_CAST str);
+			if (!xmlNewTextChild(rowNode, NULL, BAD_CAST sqlite3_column_name(stmt, c), BAD_CAST str)) {
+				free(str);
+				goto xml_alloc_fail;
+			}
 			free(str);
 		}
 	}
 
-	xmlAddChild(tableNode, rowNode);
+	if (!xmlAddChild(tableNode, rowNode))
+		goto xml_alloc_fail;
 
         return 0;
+
+xml_alloc_fail:
+	HAGGLE_ERR("XML allocation failure\n");
+	return -1;
 }
 
 static int dumpTable(xmlNodePtr root_node, sqlite3 *db, const char* name) 
@@ -3108,6 +3138,9 @@ static int dumpTable(xmlNodePtr root_node, sqlite3 *db, const char* name)
 	const char* tail;
 	int ret = 0;
 	char* sql_cmd = &sqlcmd[0];
+
+	if (!root_node || !db || !name)
+		return -1;
 
 	sprintf(sql_cmd, "SELECT * FROM %s;", name);
 	ret = sqlite3_prepare_v2(db, sql_cmd, (int)strlen(sql_cmd), &stmt, &tail);
@@ -3120,6 +3153,10 @@ static int dumpTable(xmlNodePtr root_node, sqlite3 *db, const char* name)
 	
 	xmlNodePtr node = xmlNewNode(NULL, BAD_CAST name);
 	
+	if (!node) {
+		goto xml_alloc_fail;
+	}
+
 	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
 		dumpColumn(node, stmt);
 	}
@@ -3130,9 +3167,16 @@ static int dumpTable(xmlNodePtr root_node, sqlite3 *db, const char* name)
                 return -1;
 	}
 	
-	xmlAddChild(root_node, node);
+	if (!xmlAddChild(root_node, node)) {
+		xmlFreeNode(node);
+		goto xml_alloc_fail;
+	}
 
         return 0;
+	
+xml_alloc_fail:
+	HAGGLE_ERR("XML allocation failure when dumping table %s\n", name);
+	return -1;
 }
 
 xmlDocPtr SQLDataStore::dumpToXML()
@@ -3141,22 +3185,42 @@ xmlDocPtr SQLDataStore::dumpToXML()
 	xmlNodePtr root_node = NULL;
 
 	HAGGLE_DBG("Dumping data base to XML\n");
+
 	doc = xmlNewDoc(BAD_CAST "1.0");
 
-	if (!doc)
+	if (!doc) {
+		HAGGLE_ERR("Could not allocate new XML document\n");
 		return NULL;
-
+	}
 	root_node = xmlNewNode(NULL, BAD_CAST "HaggleDump");
-	xmlDocSetRootElement(doc, root_node);
 
-	dumpTable(root_node, db, TABLE_ATTRIBUTES);
-	dumpTable(root_node, db, TABLE_DATAOBJECTS);
-	dumpTable(root_node, db, TABLE_NODES);
-	dumpTable(root_node, db, TABLE_FILTERS);
+	if (!root_node) {
+		goto xml_alloc_fail;
+	}
 	
-	dumpTable(root_node, db, TABLE_MAP_DATAOBJECTS_TO_ATTRIBUTES_VIA_ROWID);	
-	dumpTable(root_node, db, TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID);
-	dumpTable(root_node, db, TABLE_MAP_FILTERS_TO_ATTRIBUTES_VIA_ROWID);
+	if (!xmlDocSetRootElement(doc, root_node))
+		goto xml_alloc_fail;
+
+	if (!dumpTable(root_node, db, TABLE_ATTRIBUTES))
+		goto xml_alloc_fail;
+
+	if (!dumpTable(root_node, db, TABLE_DATAOBJECTS))
+		goto xml_alloc_fail;
+
+	if (!dumpTable(root_node, db, TABLE_NODES))
+		goto xml_alloc_fail;
+
+	if (!dumpTable(root_node, db, TABLE_FILTERS))
+		goto xml_alloc_fail;
+
+	if (!dumpTable(root_node, db, TABLE_MAP_DATAOBJECTS_TO_ATTRIBUTES_VIA_ROWID))
+		goto xml_alloc_fail;	
+
+	if (!dumpTable(root_node, db, TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID))
+		goto xml_alloc_fail;
+
+	if (!dumpTable(root_node, db, TABLE_MAP_FILTERS_TO_ATTRIBUTES_VIA_ROWID))
+		goto xml_alloc_fail;
 
 //	setViewLimitedDataobjectAttributes();
 //	dumpTable(root_node, db, VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO);
@@ -3165,6 +3229,11 @@ xmlDocPtr SQLDataStore::dumpToXML()
 	HAGGLE_DBG("Dump done\n");
 
         return doc;
+
+xml_alloc_fail:
+	HAGGLE_ERR("XML allocation failure when dumping data store\n");
+	xmlFreeDoc(doc);
+	return NULL;
 }
 
 int SQLDataStore::_dump(const EventCallback<EventHandler> *callback)
