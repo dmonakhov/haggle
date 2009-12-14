@@ -74,8 +74,8 @@ Timeval::Timeval(const string str)
 	
 Timeval::Timeval(const double _t)
 {
-	t.tv_sec = _t;
-	t.tv_usec = (_t - t.tv_sec) * 1000000.0;
+	t.tv_sec = (long)_t;
+	t.tv_usec = (long)((_t - t.tv_sec) * 1000000.0);
 }
 
 Timeval& Timeval::setNow()
