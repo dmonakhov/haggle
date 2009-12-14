@@ -37,12 +37,7 @@ Manager::Manager(const char *_name, HaggleKernel * _kernel) :
 	setEventHandler(EVENT_TYPE_SHUTDOWN, _onShutdown);
 	
 	// Register filter for node descriptions
-	registerEventTypeForFilter(
-							   configEType,
-							   "Manager Configuration Filter Event",
-							   _onConfig,
-							   FILTER_CONFIG);
-	
+	registerEventTypeForFilter(configEType, "Manager Configuration Filter Event", _onConfig, FILTER_CONFIG);
 	
 	if (!kernel->registerManager(this)) {
 		HAGGLE_ERR("Could not register %s with kernel\n", name.c_str());

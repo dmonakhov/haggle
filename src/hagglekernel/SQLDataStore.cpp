@@ -2255,7 +2255,6 @@ int SQLDataStore::_ageDataObjects(const Timeval& minimumAge)
 		return -1;
 	}
 	
-	// FIXME: THE CONSTANT SHOULD NOT BE HARD-CODED!
 	while (dObjs.size() < DATASTORE_MAX_DATAOBJECTS_AGED_AT_ONCE && (ret = sqlite3_step(stmt)) != SQLITE_DONE) {
 		if (ret == SQLITE_ROW) {
 			dObjs.push_back(createDataObject(stmt));

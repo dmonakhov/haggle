@@ -16,6 +16,7 @@
 #define _DATASTORE_H
 
 #include <libcpphaggle/Platform.h>
+#include <libcpphaggle/Heap.h>
 /*
 	Forward declarations of all data types declared in this file. This is to
 	avoid circular dependencies. If/when a data type is added to this file,
@@ -263,11 +264,17 @@ typedef enum {
 } TaskType;
 
 /** */
-class DataStoreTask
+class DataStoreTask : public HeapItem
 {
+	typedef enum {
+		TASK_PRIORITY_LOW = 1,
+		TASK_PRIORITY_MEDIUM,
+		TASK_PRIORITY_HIGH
+	} Priority_t;
 	static const char *taskName[_TASK_MAX];
 	friend class DataStore;
 	TaskType type;
+	Priority_t priority;
 	union {
 		void *data;
 		Filter *f;
@@ -286,166 +293,25 @@ class DataStoreTask
 	// Some tasks also take a boolean parameter. This is it:
 	bool boolParameter;
 public:
-	DataStoreTask(DataObjectRef& _dObj, TaskType _type = TASK_INSERT_DATAOBJECT, const EventCallback<EventHandler> *_callback = NULL) : 
-		type(_type), dObj(_dObj.copy()), callback(_callback), boolParameter(false) 
-	{
-		if (type == TASK_INSERT_DATAOBJECT ||
-			type == TASK_DELETE_DATAOBJECT) {
-		} else {
-			HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-			throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
-		}
-	}
-	DataStoreTask(const DataObjectId_t _id, TaskType _type = TASK_DELETE_DATAOBJECT, const EventCallback<EventHandler> *_callback = NULL) :
-		type(_type), callback(_callback), boolParameter(true) 
-	{
-		if (type == TASK_DELETE_DATAOBJECT) {
-			memcpy(id, _id, sizeof(DataObjectId_t));
-		} else {
-			HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-			throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
-		}
-	}
-	DataStoreTask(NodeRef& _node, TaskType _type = TASK_INSERT_NODE, const EventCallback<EventHandler> *_callback = NULL, bool _boolParameter = false) :
-		type(_type), node(_node.copy()), callback(_callback), boolParameter(_boolParameter) 
-	{
-		if (type == TASK_INSERT_NODE ||
-			type == TASK_DELETE_NODE ||
-			type == TASK_RETRIEVE_NODE) {
-		} else {
-			HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-			throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
-		}
-	}
-        DataStoreTask(NodeType_t _nodeType, TaskType _type = TASK_RETRIEVE_NODE_BY_TYPE, const EventCallback<EventHandler> *_callback = NULL) :
-		type(_type), nodeType(_nodeType), callback(_callback), boolParameter(false) 
-	{
-		if (type == TASK_RETRIEVE_NODE_BY_TYPE) {
-		} else {
-			HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-			throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
-		}
-	}
-        DataStoreTask(DataStoreFilterQuery *q, TaskType _type = TASK_FILTER_QUERY) :
-		type(_type), query(q), callback(NULL), boolParameter(false) 
-	{
-		if (type == TASK_FILTER_QUERY) {
-		} else {
-			HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-			throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
-		}
-	}
-	DataStoreTask(DataStoreDataObjectQuery *q, TaskType _type = TASK_DATAOBJECT_QUERY) :
-		type(_type), DOQuery(q), callback(NULL), boolParameter(false) 
-	{
-		if (type == TASK_DATAOBJECT_QUERY) {
-		} else {
-			HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-			throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
-		}
-	}
-        DataStoreTask(DataStoreDataObjectForNodesQuery *q, TaskType _type = TASK_DATAOBJECT_FOR_NODES_QUERY) :
-		type(_type), DOForNodesQuery(q), callback(NULL), boolParameter(false) 
-	{
-		if (type == TASK_DATAOBJECT_FOR_NODES_QUERY) {
-		} else {
-			HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-			throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
-		}
-	}
-	DataStoreTask(DataStoreNodeQuery *q, TaskType _type = TASK_NODE_QUERY) :
-		type(_type), NodeQuery(q), callback(NULL), boolParameter(false) 
-	{
-		if (type == TASK_NODE_QUERY) {
-		} else {
-			HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-			throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
-		}
-	}
-	DataStoreTask(DataStoreRepositoryQuery *q, TaskType _type) :
-		type(_type), RepositoryQuery(q), callback(NULL) 
-	{
-		if (type == TASK_INSERT_REPOSITORY ||
-			type == TASK_READ_REPOSITORY ||
-			type == TASK_DELETE_REPOSITORY) {
-		} else {
-			HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-			throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
-		}
-	}
-
-	DataStoreTask(const Filter& _f, TaskType _type, const EventCallback<EventHandler> *_callback = NULL, bool _boolParameter = false) :
-		type(_type), f(_f.copy()), callback(_callback), boolParameter(_boolParameter) 
-	{
-		if (type == TASK_ADD_FILTER) {
-		} else {
-			HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-			throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
-		}
-	}
-
-	DataStoreTask(TaskType _type, void *_data = NULL, const EventCallback<EventHandler> *_callback = NULL) : 
-		type(_type), data(_data), callback(_callback), boolParameter(false) 
-	{
-		if (type == TASK_EXIT ||
-#ifdef DEBUG_DATASTORE
-			type == TASK_DEBUG_PRINT ||
-#endif
-			type == TASK_DUMP_DATASTORE) {
-				if (data != NULL) {
-					HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-					throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
-				}
-		} else if (type == TASK_DUMP_DATASTORE_TO_FILE ||
-			type == TASK_DELETE_FILTER) {
-		} else {
-			HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-			throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
-		}
-	}
-	DataStoreTask(const Timeval &_age, TaskType _type = TASK_AGE_DATAOBJECTS) :
-		type(_type), age(new Timeval(_age)), callback(NULL), boolParameter(false) 
-	{
-		if (type == TASK_AGE_DATAOBJECTS) {
-		} else {
-			HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-			throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
-		}
-	}
-
+	DataStoreTask(DataObjectRef& _dObj, TaskType _type = TASK_INSERT_DATAOBJECT, const EventCallback<EventHandler> *_callback = NULL);
+	DataStoreTask(const DataObjectId_t _id, TaskType _type = TASK_DELETE_DATAOBJECT, const EventCallback<EventHandler> *_callback = NULL);
+	DataStoreTask(NodeRef& _node, TaskType _type = TASK_INSERT_NODE, const EventCallback<EventHandler> *_callback = NULL, bool _boolParameter = false);
+        DataStoreTask(NodeType_t _nodeType, TaskType _type = TASK_RETRIEVE_NODE_BY_TYPE, const EventCallback<EventHandler> *_callback = NULL);
+        DataStoreTask(DataStoreFilterQuery *q, TaskType _type = TASK_FILTER_QUERY);
+	DataStoreTask(DataStoreDataObjectQuery *q, TaskType _type = TASK_DATAOBJECT_QUERY);
+        DataStoreTask(DataStoreDataObjectForNodesQuery *q, TaskType _type = TASK_DATAOBJECT_FOR_NODES_QUERY);
+	DataStoreTask(DataStoreNodeQuery *q, TaskType _type = TASK_NODE_QUERY);
+	DataStoreTask(DataStoreRepositoryQuery *q, TaskType _type);
+	DataStoreTask(const Filter& _f, TaskType _type, const EventCallback<EventHandler> *_callback = NULL, bool _boolParameter = false);
+	DataStoreTask(TaskType _type, void *_data = NULL, const EventCallback<EventHandler> *_callback = NULL);
+	DataStoreTask(const Timeval &_age, TaskType _type = TASK_AGE_DATAOBJECTS);
         DataStoreTask(const DataStoreTask &ii); // Not defined
 
 	~DataStoreTask();
 
-	const TaskType getType() const {
-		return type;
-	}
+	const TaskType& getType() const { return type; }
+	const Priority_t& getPriority() const { return priority; }
+	double getKey() const { return (double)priority; }
 	class DataStoreTaskException : public Exception
 	{
 	public:
@@ -465,6 +331,7 @@ class DataStore :
 {
         // The runnable class's mutex protects the task Queue
         List<DataStoreTask *> taskQ;
+	//Heap taskQ;
         // run() is the function executed by the thread
         bool run();
         // cleanup() is called when the thread is stopped or cancelled

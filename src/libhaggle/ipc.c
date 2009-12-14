@@ -351,9 +351,9 @@ typedef DWORD pid_t;
 #endif
 
 /**
-   Check if the Haggle daemon is running and returns its pid.
-   Return 0 if Haggle is not running, -1 on error, or a valid pid
-   of a running Haggle instance.
+   Check if the Haggle daemon is running and return its pid.
+   Return 0 if Haggle is not running, -1 on error, or 1 if
+   there is a valid pid of a running Haggle instance.
  */
 int haggle_daemon_pid(unsigned long *pid)
 {
@@ -470,9 +470,8 @@ static int spawn_daemon_internal(const char *daemonpath)
 	haggle_addr.sin_family = AF_INET;
 	haggle_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	haggle_addr.sin_port = htons(8788);
-	if(bind(sock, (struct sockaddr *) &haggle_addr, sizeof(haggle_addr)) == 
-		SOCKET_ERROR)
-	{
+
+	if (bind(sock, (struct sockaddr *) &haggle_addr, sizeof(haggle_addr)) == SOCKET_ERROR) {
 		ret = HAGGLE_SOCKET_ERROR;
 		haggle_set_socket_error();
 		goto fail_start;
@@ -526,7 +525,7 @@ static int spawn_daemon_internal(const char *daemonpath)
 	time_left = 60;
 	tv.tv_sec = 1;
 	tv.tv_usec = 0;
-	do{
+	do {
 		FD_ZERO(&readfds);
 		FD_SET(sock, &readfds);
 		
@@ -544,14 +543,14 @@ static int spawn_daemon_internal(const char *daemonpath)
 			time_left--;
 			tv.tv_sec = 1;
 			tv.tv_usec = 0;
-			if(time_left == 0)
+			if (time_left == 0)
 				ret = HAGGLE_DAEMON_ERROR;
 		} else if (FD_ISSET(sock, &readfds)) {
 			// FIXME: should probably check that the message is a correct data 
 			// object first...
 			ret = HAGGLE_NO_ERROR;
 		}
-	}while(ret == HAGGLE_ERROR);
+	} while(ret == HAGGLE_ERROR);
 	
 fail_start:
 	CLOSE_SOCKET(sock);
