@@ -297,7 +297,7 @@ int DataStore::deleteDataObject(DataObjectRef& dObj)
 	return 0;
 }
 
-int DataStore::ageDataObjects(Timeval minimumAge)
+int DataStore::ageDataObjects(const Timeval& minimumAge)
 {
 	Mutex::AutoLocker l(mutex);
 	

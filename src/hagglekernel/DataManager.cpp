@@ -18,6 +18,7 @@
 #include <haggleutils.h>
 
 #include "EventQueue.h"
+#include "DataStore.h"
 #include "DataManager.h"
 #include "DataObject.h"
 #include "Node.h"
@@ -337,12 +338,11 @@ void DataManager::onDeletedDataObject(Event * e)
 	for (DataObjectRefList::iterator it = dObjs.begin(); it != dObjs.end(); it++)
 		localBF.remove(*it);
 	
-	if(dObjs.size() > 0)
+	if (dObjs.size() > 0)
 		kernel->getThisNode()->setBloomfilter(localBF, setCreateTimeOnBloomfilterUpdate);
-	// FIXME: THIS SHOULD NOT BE HARD-CODED!
-	if(dObjs.size() > 4)
-	{
-		// Call onAging() do do another aging step, in case there are more data
+
+	if (dObjs.size() >= DATASTORE_MAX_DATAOBJECTS_AGED_AT_ONCE) {
+		// Call onAging() do another aging step, in case there are more data
 		// objects to delete. Use this event, so that onAging() doesn't post 
 		// another aging event into the event queue.
 		onAging(e);
@@ -388,12 +388,11 @@ void DataManager::onAging(Event *e)
 			// Delete from the data store any data objects we're not interested
 			// in and are too old.
 			// FIXME: find a better way to deal with the age parameter. 
-			kernel->getDataStore()->ageDataObjects(Timeval(agingMaxAge,0));
+			kernel->getDataStore()->ageDataObjects(Timeval(agingMaxAge, 0));
 		}
 		
 		// Should we post another aging event?
-		if(e == NULL || e->getType() == agingEvent)
-		{
+		if(e == NULL || e->getType() == agingEvent) {
 			kernel->addEvent(new Event(agingEvent, NULL, agingPeriod));
 		}
 	}

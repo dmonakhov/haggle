@@ -180,25 +180,25 @@ int WIDCOMMBluetooth::_doInquiry(widcomm_inquiry_callback_t callback, void *data
 		return -1;
 	}
 
-	// Once we successfully started the inquiry, the isInInquiry boolean
+	// I we run the inquiry in asynchronous mode, the isInInquiry boolean
 	// will be reset to 'false' by the OnInquiryComplete callback
 	if (!async) {
 		HAGGLE_DBG("Waiting for inquiry to complete\n");
 		if (WaitForSingleObject(hInquiryEvent, INQUIRY_TIMEOUT) == WAIT_FAILED) {
 			HAGGLE_ERR("Inquiry TIMEOUT after %u s\n", INQUIRY_TIMEOUT/1000);
-			// We need to unset the isInInquiry flag, otherwise we will
-			// not be able to enter this function again and try another scan.
-			isInInquiry = false;
-
+			
 			// Try to see if we can force the stack to come out of the inquiry
 			// in case it hung
 			StopInquiry();
-			return -1;
+			inquiryResult = -1;
+		} else {
+			HAGGLE_DBG("Inquiry completed\n");
 		}
-		HAGGLE_DBG("Inquiry completed\n");
-		return inquiryResult;
+		// We need to unset the isInInquiry flag, otherwise we will
+		// not be able to enter this function again and try another scan.
+		isInInquiry = false;
 	}
-	return 0;
+	return inquiryResult;
 }
 
 int WIDCOMMBluetooth::doInquiry(widcomm_inquiry_callback_t callback, void *data)
@@ -292,20 +292,20 @@ int WIDCOMMBluetooth::_doDiscovery(const RemoteDevice *rd, GUID *guid, widcomm_d
 		return -1;
 	}
 
-	// Once we successfully started the inquiry, the isInDiscovery boolean
+	// One we run discovery in asynchronous mode, the isInDiscovery boolean
 	// will be reset to 'false' by the OnDiscoveryComplete callback
 	if (!async) {
 		HAGGLE_DBG("Waiting for discovery to complete\n");
 		if (WaitForSingleObject(hDiscoveryEvent, DISCOVERY_TIMEOUT) == WAIT_FAILED) {
 			HAGGLE_ERR("Discovery TIMEOUT after %u s\n", DISCOVERY_TIMEOUT/1000);
-			isInDiscovery = false;
-			return -1;
+			discoveryResult = -1;
+		} else {
+			HAGGLE_DBG("Discovery completed\n");
 		}
-		HAGGLE_DBG("Discovery completed\n");
-		return discoveryResult;
+		isInDiscovery = false;
 	}
 
-	return 0;
+	return discoveryResult;
 }
 
 int WIDCOMMBluetooth::doDiscoveryAsync(const RemoteDevice *rd, GUID *guid, widcomm_discovery_callback_t callback, void *data)

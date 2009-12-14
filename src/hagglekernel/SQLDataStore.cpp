@@ -588,7 +588,7 @@ static inline char *SQL_DELETE_DATAOBJECT_CMD()
 	return sqlcmd;
 }
 
-static inline char *SQL_AGE_DATAOBJECT_CMD(Timeval minimumAge)
+static inline char *SQL_AGE_DATAOBJECT_CMD(const Timeval& minimumAge)
 {
 	snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT * FROM " TABLE_DATAOBJECTS " WHERE rowid NOT IN (SELECT dataobject_rowid FROM " VIEW_MATCH_FILTERS_AND_DATAOBJECTS_AS_RATIO " ) AND timestamp < strftime('%s', 'now','-%ld seconds');", "%s", minimumAge.getSeconds());
 	
@@ -2212,7 +2212,7 @@ int SQLDataStore::_deleteDataObject(DataObjectRef& dObj, bool shouldReportRemova
 	return 0;
 }
 
-int SQLDataStore::_ageDataObjects(Timeval minimumAge)
+int SQLDataStore::_ageDataObjects(const Timeval& minimumAge)
 {
 	int ret;
 	char *sql_cmd;
@@ -2223,6 +2223,7 @@ int SQLDataStore::_ageDataObjects(Timeval minimumAge)
 	// -- drop dataobject view
 	sql_cmd = (char *) SQL_DROP_VIEW_LIMITED_DATAOBJECT_ATTRIBUTES_CMD;
 	ret = sqlite3_prepare(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
+
 	if (ret != SQLITE_OK) {
 		HAGGLE_DBG("SQLite command compilation failed! %s\n", sql_cmd);
 		HAGGLE_DBG("%s\n", sqlite3_errmsg(db));
@@ -2248,17 +2249,18 @@ int SQLDataStore::_ageDataObjects(Timeval minimumAge)
 	sql_cmd = SQL_AGE_DATAOBJECT_CMD(minimumAge);
 	
 	ret = sqlite3_prepare_v2(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
+
 	if (ret != SQLITE_OK) {
-		HAGGLE_DBG("Dataobject ageing command compilation failed : %s\n", sqlite3_errmsg(db));
+		HAGGLE_DBG("Dataobject aging command compilation failed : %s\n", sqlite3_errmsg(db));
 		return -1;
 	}
 	
 	// FIXME: THE CONSTANT SHOULD NOT BE HARD-CODED!
-	while (dObjs.size() < 5 && (ret = sqlite3_step(stmt)) != SQLITE_DONE) {
+	while (dObjs.size() < DATASTORE_MAX_DATAOBJECTS_AGED_AT_ONCE && (ret = sqlite3_step(stmt)) != SQLITE_DONE) {
 		if (ret == SQLITE_ROW) {
 			dObjs.push_back(createDataObject(stmt));
 		} else if (ret == SQLITE_ERROR) {
-			HAGGLE_DBG("Could not age DO Error: %s\n", sqlite3_errmsg(db));
+			HAGGLE_DBG("Could not age data object - Error: %s\n", sqlite3_errmsg(db));
 			sqlite3_finalize(stmt);
 			return -1;
 		}
@@ -2272,7 +2274,7 @@ int SQLDataStore::_ageDataObjects(Timeval minimumAge)
 	kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_DELETED, dObjs));
 	
 	if (ret == SQLITE_ERROR) {
-		HAGGLE_DBG("Could not age dataobjects : %s\n", sqlite3_errmsg(db));
+		HAGGLE_DBG("Could not age data objects : %s\n", sqlite3_errmsg(db));
 		return -1;
 	}
 		
@@ -2600,7 +2602,7 @@ filterQuery_cleanup:
 
 // ----- Node > Dataobjects
 
-int SQLDataStore::_doDOQuery(NodeRef &node, NodeRef alsoThisBF, DataStoreQueryResult *qr, int max_matches, unsigned int threshold, unsigned int attrMatch)
+int SQLDataStore::_doDataObjectQueryStep2(NodeRef &node, NodeRef alsoThisBF, DataStoreQueryResult *qr, int max_matches, unsigned int threshold, unsigned int attrMatch)
 {
 	int ret;
 	sqlite3_stmt *stmt;
@@ -2638,7 +2640,7 @@ int SQLDataStore::_doDOQuery(NodeRef &node, NodeRef alsoThisBF, DataStoreQueryRe
 
 			if (dObj) {
 				if (!(node->getBloomfilter()->has(dObj) || (alsoThisBF && alsoThisBF->getBloomfilter()->has(dObj)))) {
-					HAGGLE_DBG("Data object rowid=" INT64_FORMAT "\n", dObjRowId);
+					//HAGGLE_DBG("Data object rowid=" INT64_FORMAT "\n", dObjRowId);
 					qr->addDataObject(dObj);
 					num_match++;
 					if (max_matches != 0 && (num_match >= max_matches)) {
@@ -2679,7 +2681,7 @@ int SQLDataStore::_doDataObjectQuery(DataStoreDataObjectQuery *q)
 	qr->setQuerySqlStartTime();
 	qr->setQueryInitTime(q->getQueryInitTime());
 
-	num_match = _doDOQuery(node, NULL, qr, node->getMaxDataObjectsInMatch(), node->getMatchingThreshold(), q->getAttrMatch());
+	num_match = _doDataObjectQueryStep2(node, NULL, qr, node->getMaxDataObjectsInMatch(), node->getMatchingThreshold(), q->getAttrMatch());
 
 	if (num_match == 0) {
 		qr->setQuerySqlEndTime();
@@ -2733,23 +2735,16 @@ int SQLDataStore::_doDataObjectForNodesQuery(DataStoreDataObjectForNodesQuery *q
 	qr->setQueryInitTime(q->getQueryInitTime());
 	
 	num_left = node->getMaxDataObjectsInMatch();
+
 	if(num_left > 0)
 		has_maximum = true;
+
 	threshold = node->getMatchingThreshold();
 	node = q->getNextNode();
 	
-	while (
-		node != (Node *)NULL && 
-		!(has_maximum && (num_left <= 0))) {
+	while (node != (Node *)NULL && !(has_maximum && (num_left <= 0))) {
 
-		num_match = 
-			_doDOQuery(
-				node, 
-				delegateNode, 
-				qr, 
-				num_left, 
-				threshold, 
-				q->getAttrMatch());
+		num_match = _doDataObjectQueryStep2(node, delegateNode, qr, num_left, threshold, q->getAttrMatch());
                 
 		if (has_maximum) {
 			num_left -= num_match;
@@ -2803,7 +2798,6 @@ int SQLDataStore::_doNodeQuery(DataStoreNodeQuery *q)
 	qr->setQuerySqlStartTime();
 	qr->setQueryInitTime(q->getQueryInitTime());
 	
-	
 	sqlite_int64 dataobject_rowid = getDataObjectRowId(dObj);
 	
 	/* limit the dataobject attribute links */
@@ -2832,7 +2826,7 @@ int SQLDataStore::_doNodeQuery(DataStoreNodeQuery *q)
 		if (ret == SQLITE_ROW) {
 			sqlite_int64 nodeRowId = sqlite3_column_int64(stmt, view_match_dataobjects_and_nodes_as_ratio_node_rowid);
 			
-			HAGGLE_DBG("node rowid=%ld\n", nodeRowId);
+			//HAGGLE_DBG("node rowid=%ld\n", nodeRowId);
 			
 			NodeRef node = NodeRef(getNodeFromRowId(nodeRowId), "NodeInQueryResult");
 			

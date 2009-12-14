@@ -46,6 +46,8 @@ class DataStore;
 
 //#define DEBUG_DATASTORE
 
+#define DATASTORE_MAX_DATAOBJECTS_AGED_AT_ONCE 5
+
 class HaggleKernel;
 
 // Result returned from a query
@@ -425,7 +427,7 @@ public:
 #endif
 		}
 	}
-	DataStoreTask(Timeval &_age, TaskType _type = TASK_AGE_DATAOBJECTS) :
+	DataStoreTask(const Timeval &_age, TaskType _type = TASK_AGE_DATAOBJECTS) :
 		type(_type), age(new Timeval(_age)), callback(NULL), boolParameter(false) 
 	{
 		if (type == TASK_AGE_DATAOBJECTS) {
@@ -480,7 +482,7 @@ protected:
 	virtual int _insertDataObject(DataObjectRef& dObj, const EventCallback<EventHandler> *callback = NULL) = 0;
 	virtual int _deleteDataObject(const DataObjectId_t &id, bool shouldReportRemoval = true) = 0;
 	virtual int _deleteDataObject(DataObjectRef& dObj, bool shouldReportRemoval = true) = 0;
-	virtual int _ageDataObjects(Timeval minimumAge) = 0;
+	virtual int _ageDataObjects(const Timeval& minimumAge) = 0;
 	virtual int _insertFilter(Filter *f, bool matchFilter = false, const EventCallback<EventHandler> *callback = NULL) = 0;
 	virtual int _deleteFilter(long eventtype) = 0;
 	virtual int _doFilterQuery(DataStoreFilterQuery *q) = 0;
@@ -537,7 +539,7 @@ public:
 	int insertDataObject(DataObjectRef& dObj, const EventCallback<EventHandler> *callback = NULL);
 	int deleteDataObject(const DataObjectId_t id);
 	int deleteDataObject(DataObjectRef& dObj);
-	int ageDataObjects(Timeval minimumAge);
+	int ageDataObjects(const Timeval& minimumAge);
 	int insertFilter(const Filter& f, bool matchFilter = false, const EventCallback<EventHandler> *callback = NULL);
 	int deleteFilter(long eventtype);
 	int doFilterQuery(const Filter *f, EventCallback<EventHandler> *callback);
