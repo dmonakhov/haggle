@@ -405,6 +405,7 @@ public:
 	Event(const EventCallback<EventHandler> *_callback, const InterfaceRef& _ifaceRef, double _delay = 0.0);
 	Event(const EventCallback<EventHandler> *_callback, const NodeRef& _nodeRef, double _delay = 0.0);
 	Event(const EventCallback<EventHandler> *_callback, const PolicyRef& _policyRef, double _delay = 0.0);
+	Event(const EventCallback<EventHandler> *_callback, const DataObjectRefList& _dObjs, double _delay = 0.0);
 #ifdef DEBUG
 	Event(const EventCallback<EventHandler> *_callback, const DebugCmdRef& _dbgCmdRef, double _delay = 0.0);
 #endif

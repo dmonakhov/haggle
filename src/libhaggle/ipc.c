@@ -699,7 +699,7 @@ int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ig
 	haggle_dataobject_add_attribute(dobj, HAGGLE_ATTR_CONTROL_NAME, HAGGLE_ATTR_REGISTRATION_REQUEST_VALUE);
 	haggle_dataobject_add_attribute(dobj, HAGGLE_ATTR_APPLICATION_NAME_NAME, name);
 
-	ret = haggle_ipc_send_control_dataobject(hh, dobj, &dobj_reply, 6000);
+	ret = haggle_ipc_send_control_dataobject(hh, dobj, &dobj_reply, 10000);
 
 	haggle_dataobject_free(dobj);
 

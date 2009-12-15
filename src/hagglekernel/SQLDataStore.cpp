@@ -2212,7 +2212,7 @@ int SQLDataStore::_deleteDataObject(DataObjectRef& dObj, bool shouldReportRemova
 	return 0;
 }
 
-int SQLDataStore::_ageDataObjects(const Timeval& minimumAge)
+int SQLDataStore::_ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback)
 {
 	int ret;
 	char *sql_cmd;
@@ -2252,7 +2252,8 @@ int SQLDataStore::_ageDataObjects(const Timeval& minimumAge)
 
 	if (ret != SQLITE_OK) {
 		HAGGLE_DBG("Dataobject aging command compilation failed : %s\n", sqlite3_errmsg(db));
-		return -1;
+		ret = -1;
+		goto out;
 	}
 	
 	while (dObjs.size() < DATASTORE_MAX_DATAOBJECTS_AGED_AT_ONCE && (ret = sqlite3_step(stmt)) != SQLITE_DONE) {
@@ -2261,7 +2262,8 @@ int SQLDataStore::_ageDataObjects(const Timeval& minimumAge)
 		} else if (ret == SQLITE_ERROR) {
 			HAGGLE_DBG("Could not age data object - Error: %s\n", sqlite3_errmsg(db));
 			sqlite3_finalize(stmt);
-			return -1;
+			ret = -1;
+			goto out;
 		}
 	}
 	
@@ -2274,10 +2276,14 @@ int SQLDataStore::_ageDataObjects(const Timeval& minimumAge)
 	
 	if (ret == SQLITE_ERROR) {
 		HAGGLE_DBG("Could not age data objects : %s\n", sqlite3_errmsg(db));
-		return -1;
+		ret = -1;
 	}
 		
-	return 0;
+out:
+	if (callback)
+		kernel->addEvent(new Event(callback, dObjs));
+
+	return ret;
 }
 
 int SQLDataStore::_insertDataObject(DataObjectRef& dObj, const EventCallback<EventHandler> *callback)

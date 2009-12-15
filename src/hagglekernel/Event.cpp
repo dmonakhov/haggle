@@ -687,6 +687,24 @@ Event::Event(const EventCallback<EventHandler> *_callback, const PolicyRef& _pol
 }
 
 
+Event::Event(const EventCallback<EventHandler> *_callback, const DataObjectRefList& _dObjs, double _delay) :
+#ifdef DEBUG_LEAKS
+	LeakMonitor(LEAK_TYPE_EVENT),
+#endif 
+	HeapItem(),
+	type(EVENT_TYPE_CALLBACK), 
+	timeout(absolute_time_double(_delay)), 
+	callback(_callback), 
+	dObjs(_dObjs),
+	data(NULL),
+	doesHaveData(_dObjs.empty() ? false : true)
+{
+#if HAVE_EXCEPTION
+	if (!callback)
+		throw EventException(type, "No callback function in argument");
+#endif
+}
+
 #ifdef DEBUG
 Event::Event(const EventCallback<EventHandler> *_callback, const DebugCmdRef& _dbgCmdRef, double _delay) :
 #ifdef DEBUG_LEAKS

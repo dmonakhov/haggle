@@ -139,6 +139,7 @@ DataManager::DataManager(HaggleKernel * _kernel, const bool _setCreateTimeOnBloo
 		throw DMException(ret, "Could not register event");
 #endif
 	onInsertedDataObjectCallback = newEventCallback(onInsertedDataObject);
+	onAgedDataObjectsCallback = newEventCallback(onAgedDataObjects);
 
 	// Insert time stamp for when haggle starts up into the data store:
 	RepositoryEntryRef timestamp = RepositoryEntryRef(new RepositoryEntry("DataManager", "Startup timestamp", Timeval::now().getAsString().c_str()));
@@ -148,6 +149,7 @@ DataManager::DataManager(HaggleKernel * _kernel, const bool _setCreateTimeOnBloo
 	agingPeriod = DEFAULT_AGING_PERIOD;
 
 	agingEvent = registerEventType("Aging Event", onAging);
+
 	// Start aging:
 	onAging(NULL);
 	
@@ -179,6 +181,10 @@ DataManager::~DataManager()
 	
 	if (onInsertedDataObjectCallback)
 		delete onInsertedDataObjectCallback;
+
+	if (onAgedDataObjectsCallback)
+		delete onAgedDataObjectsCallback;
+
 	if (onGetLocalBFCallback)
 		delete onGetLocalBFCallback;
 }
@@ -340,13 +346,6 @@ void DataManager::onDeletedDataObject(Event * e)
 	
 	if (dObjs.size() > 0)
 		kernel->getThisNode()->setBloomfilter(localBF, setCreateTimeOnBloomfilterUpdate);
-
-	if (dObjs.size() >= DATASTORE_MAX_DATAOBJECTS_AGED_AT_ONCE) {
-		// Call onAging() do another aging step, in case there are more data
-		// objects to delete. Use this event, so that onAging() doesn't post 
-		// another aging event into the event queue.
-		onAging(e);
-	}
 }
 
 /*
@@ -380,22 +379,40 @@ void DataManager::onInsertedDataObject(Event * e)
 	}
 }
 
-void DataManager::onAging(Event *e)
+void DataManager::onAgedDataObjects(Event *e)
 {
-	if (!kernel->isShuttingDown()) {
-		// Don't do this when called from the constructor:
-		if (e != NULL) {
-			// Delete from the data store any data objects we're not interested
-			// in and are too old.
-			// FIXME: find a better way to deal with the age parameter. 
-			kernel->getDataStore()->ageDataObjects(Timeval(agingMaxAge, 0));
-		}
-		
-		// Should we post another aging event?
-		if (e == NULL || e->getType() == agingEvent) {
+	if (!e)
+		return;
+
+	if (e->hasData()) {
+		DataObjectRefList dObjs = e->getDataObjectList();
+
+		HAGGLE_DBG("Aged %lu data objects\n", dObjs.size());
+
+		if (dObjs.size() >= DATASTORE_MAX_DATAOBJECTS_AGED_AT_ONCE) {
+			// Call onAging() immediately in case there are more data
+			// objects to age.
+			onAging(NULL);
+		} else {
+			// Delay the aging for one period
 			kernel->addEvent(new Event(agingEvent, NULL, agingPeriod));
 		}
+	} else {
+		// No data in event -> means this is the first time the function
+		// is called and we should start the aging timer.
+		kernel->addEvent(new Event(agingEvent, NULL, agingPeriod));
 	}
+}
+
+void DataManager::onAging(Event *e)
+{
+	if (kernel->isShuttingDown())
+		return;
+
+	// Delete from the data store any data objects we're not interested
+	// in and are too old.
+	// FIXME: find a better way to deal with the age parameter. 
+	kernel->getDataStore()->ageDataObjects(Timeval(agingMaxAge, 0), onAgedDataObjectsCallback);
 }
 
 void DataManager::onConfig(Event * e)

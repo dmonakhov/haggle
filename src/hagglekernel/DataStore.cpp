@@ -282,8 +282,8 @@ DataStoreTask::DataStoreTask(TaskType _type, void *_data, const EventCallback<Ev
 	}
 }
 
-DataStoreTask::DataStoreTask(const Timeval &_age, TaskType _type) :
-	HeapItem(), type(_type), priority(TASK_PRIORITY_LOW), age(new Timeval(_age)), callback(NULL), boolParameter(false) 
+DataStoreTask::DataStoreTask(const Timeval &_age, TaskType _type, const EventCallback<EventHandler> *callback) :
+	HeapItem(), type(_type), priority(TASK_PRIORITY_LOW), age(new Timeval(_age)), callback(callback), boolParameter(false) 
 {
 	if (type == TASK_AGE_DATAOBJECTS) {
 	} else {
@@ -461,11 +461,11 @@ int DataStore::deleteDataObject(DataObjectRef& dObj)
 	return 0;
 }
 
-int DataStore::ageDataObjects(const Timeval& minimumAge)
+int DataStore::ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback)
 {
 	Mutex::AutoLocker l(mutex);
 	
-	taskQ.insert(new DataStoreTask(minimumAge, TASK_AGE_DATAOBJECTS));
+	taskQ.insert(new DataStoreTask(minimumAge, TASK_AGE_DATAOBJECTS, callback));
 	
 	cond.signal();
 	
@@ -697,7 +697,7 @@ bool DataStore::run()
 				_deleteDataObject(*task->dObj);
 			break;
 		case TASK_AGE_DATAOBJECTS:
-			_ageDataObjects(*task->age);
+			_ageDataObjects(*task->age, task->callback);
 			break;
 		case TASK_INSERT_NODE:
 			_insertNode(*task->node, task->callback);
