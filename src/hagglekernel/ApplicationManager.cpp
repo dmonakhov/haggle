@@ -98,6 +98,10 @@ ApplicationManager::ApplicationManager(HaggleKernel * _kernel) :
 
 	ret = setEventHandler(EVENT_TYPE_NEIGHBOR_INTERFACE_DOWN, onNeighborStatusChange);
 
+#if HAVE_EXCEPTION
+	if (ret < 0)
+		throw ApplicationException(ret, "Could not register event");
+#endif
 	ret = setEventHandler(EVENT_TYPE_NEIGHBOR_INTERFACE_UP, onNeighborStatusChange);
 
 #if HAVE_EXCEPTION

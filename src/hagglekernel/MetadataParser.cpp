@@ -1,3 +1,5 @@
+#if defined(ENABLE_METADATAPARSER)
+
 #include "MetadataParser.h"
 #include "Trace.h"
 #include <libcpphaggle/Pair.h>
@@ -20,12 +22,12 @@ MetadataParser::MetadataParser(const string _parsekey) : parsekey(_parsekey)
 #endif
 	}
 
-        //HAGGLE_DBG("Registered metadata parser with key \'%s\'\n", parsekey.c_str()); 
+        HAGGLE_DBG("Registered metadata parser with key \'%s\'\n", parsekey.c_str()); 
 }
 
 MetadataParser::~MetadataParser() 
 {
-        //HAGGLE_DBG("Unregistered metadata parser with key \'%s\'\n", parsekey.c_str()); 
+        HAGGLE_DBG("Unregistered metadata parser with key \'%s\'\n", parsekey.c_str()); 
 	registry.erase(parsekey); 
 }
 
@@ -34,3 +36,5 @@ MetadataParser *MetadataParser::getParser(string& key)
 	registry_t::iterator it = registry.find(key);
 	return (it == registry.end() ? NULL : (*it).second);
 }
+
+#endif /* ENABLE_METADATAPARSER */

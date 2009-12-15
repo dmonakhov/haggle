@@ -1,6 +1,8 @@
 #ifndef _METADATAPARSER_H
 #define _METADATAPARSER_H
 
+#if defined(ENABLE_METADATAPARSER)
+
 #include <libcpphaggle/Map.h>
 #include <libcpphaggle/String.h>
 #include <libcpphaggle/Platform.h>
@@ -52,5 +54,6 @@ protected:
 	virtual bool onParseMetadata(Metadata *md) { return false; }
 };
 
-#endif  /* _METADATAPARSER_H */
+#endif /* ENABLE_METADATAPARSER */
 
+#endif  /* _METADATAPARSER_H */

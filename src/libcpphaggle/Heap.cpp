@@ -19,7 +19,6 @@
 
 namespace haggle {
 
-	
 HeapItem::HeapItem() : index(npos), active(false) 
 {	
 }
@@ -28,7 +27,7 @@ HeapItem::~HeapItem()
 {
 }
 	
-void HeapItem::activate() 
+void HeapItem::enable() 
 {
 	active = true;
 }
@@ -39,7 +38,7 @@ void HeapItem::disable()
 }
 
 	
-Heap::Heap(unsigned long max_size) : _max_size(max_size), _size(0), heap(new HeapItem*[_size]) 
+Heap::Heap(unsigned long max_size) : _max_size(max_size), _size(0), heap(new HeapItem*[max_size]) 
 {
 }
 	
@@ -57,12 +56,7 @@ bool Heap::full() const
 { 
 	return (_size >= _max_size); 
 }
-	
-void Heap::push_back(HeapItem *item) 
-{ 
-	insert(item); 
-}
-	
+
 HeapItem *Heap::front()
 { 
 	return heap[0]; 
@@ -127,8 +121,8 @@ bool Heap::insert(HeapItem *item)
 	unsigned long i, parent;
 
 	if (full()) {
-		if (!increaseSize()) {
-			fprintf(stderr, "Heap is full and could not increase heap _size, _size=%lu\n", _size);
+		if (increaseSize() == false) {
+			fprintf(stderr, "Heap is full and could not increase heap size, _size=%lu\n", _size);
 			return false;
 		}
 	}

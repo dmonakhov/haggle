@@ -46,7 +46,7 @@ ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 	
 #if HAVE_EXCEPTION
 	if (moduleEventType < 0)
-		throw ConnectivityException(moduleEventType, "Could not register module event type...");
+		throw ForwardingException(moduleEventType, "Could not register module event type...");
 #endif
 	// Register filter for node descriptions
 	registerEventTypeForFilter(routingInfoEventType, "Forwarding", onRoutingInformation, "Forwarding=*");

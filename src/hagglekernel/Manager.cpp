@@ -23,7 +23,7 @@
 
 Manager::Manager(const char *_name, HaggleKernel * _kernel) :
 		EventHandler(),
-#if defined(ENABLE_METADAPARSER)
+#if defined(ENABLE_METADATAPARSER)
                 MetadataParser(string(_name).substr(0, string(_name).find("Manager"))), 
 #endif
 		name(_name), state(MANAGER_STATE_STOPPED), registered(false), 

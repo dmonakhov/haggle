@@ -34,7 +34,7 @@ class HeapItem
 public:
         HeapItem();
 	virtual ~HeapItem();
-        void activate();
+        void enable();
         void disable();
 	/**
 		getKey() returns the key which decides where to place the item
@@ -57,7 +57,6 @@ public:
         bool empty() const;
         bool full() const;
         bool insert(HeapItem *item);
-	void push_back(HeapItem *item);
         HeapItem *extractFirst();
 	void pop_front();
         HeapItem *front();

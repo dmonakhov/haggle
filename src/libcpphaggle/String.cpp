@@ -19,7 +19,7 @@
 
 namespace haggle {
 
-char String::nullchar ='\0';
+char String::nullchar = '\0';
 
 char *String::alloc(size_t len)
 {
