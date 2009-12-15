@@ -20,25 +20,22 @@ namespace haggle {
 class HeapItem;
 class Heap;
 
-#define HEAP_DEFAULT_SIZE 500
+#define HEAP_DEFAULT_SIZE 200
 #define HEAP_DEFAULT_INCREASE_SIZE 100
-/** */
+
+/** 
+ The HeapItem class should be inherited by any data item that should
+ be placed in a heap.
+ */
 class HeapItem
 {
         friend class Heap;
 	static const unsigned long npos = -1;
 public:
-        HeapItem() : index(npos), active(0) {}
-	virtual ~HeapItem() {}
-        void setIndex(unsigned long _index) {
-                index = _index;
-        }
-        void activate() {
-                active = true;
-        }
-        void disable() {
-                active = false;
-        }
+        HeapItem();
+	virtual ~HeapItem();
+        void activate();
+        void disable();
 	/**
 		getKey() returns the key which decides where to place the item
 		in the heap. Must be overridden by derived class.
@@ -49,23 +46,24 @@ private:
         bool active;
 };
 
-/** */
+/** 
+ The Heap class implements a min-heap data structure.
+ */
 class Heap
 {
 public:
-        Heap(unsigned long max_size = HEAP_DEFAULT_SIZE) : _max_size(max_size), _size(0), heap(new HeapItem*[_size]) {}
-        ~Heap() { delete [] heap; }
-        //add(
-        void heapify(unsigned long i);
-        bool empty() { return (_size == 0); }
-        bool full() { return (_size >= _max_size); }
+        Heap(unsigned long max_size = HEAP_DEFAULT_SIZE);
+        ~Heap();
+        bool empty() const;
+        bool full() const;
         bool insert(HeapItem *item);
-	void push_back(HeapItem *item) { insert(item); }
+	void push_back(HeapItem *item);
         HeapItem *extractFirst();
 	void pop_front();
-        HeapItem *front() { return heap[0]; }
-	unsigned long size() const { return _size; }
+        HeapItem *front();
+	unsigned long size() const;
 private:
+        void heapify(unsigned long i);
         bool increaseSize(unsigned long increase_size = HEAP_DEFAULT_INCREASE_SIZE);
         unsigned long _max_size;
         unsigned long _size;

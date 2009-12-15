@@ -30,7 +30,16 @@ Watchable::Watchable(Signal& sig) : type(WATCHABLE_TYPE_SIGNAL), s(-1), h(sig.si
 Watchable::Watchable(SOCKET _s) : type(WATCHABLE_TYPE_SOCKET), s(_s) {}
 Watchable::Watchable(Signal& sig) : type(WATCHABLE_TYPE_SIGNAL), s(sig.signal[0]) {}
 #endif
-
+	
+Watchable::~Watchable()
+{
+}
+	
+WatchableType_t Watchable::getType() const 
+{ 
+	return type; 
+}
+	
 bool operator==(const Watchable& w1, const Watchable& w2)
 {
 #if defined(OS_WINDOWS)

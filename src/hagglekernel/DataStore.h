@@ -266,10 +266,15 @@ typedef enum {
 /** */
 class DataStoreTask : public HeapItem
 {
+	/*
+	 The priority decides how a task is sorted in the data store's task queue.
+	 Higher priorities should be lower to be sorted first as our heap implementation
+	 is a min-heap.
+	 */
 	typedef enum {
-		TASK_PRIORITY_LOW = 1,
+		TASK_PRIORITY_HIGH = 1,
 		TASK_PRIORITY_MEDIUM,
-		TASK_PRIORITY_HIGH
+		TASK_PRIORITY_LOW
 	} Priority_t;
 	static const char *taskName[_TASK_MAX];
 	friend class DataStore;
@@ -311,6 +316,8 @@ public:
 
 	const TaskType& getType() const { return type; }
 	const Priority_t& getPriority() const { return priority; }
+	// getKey() is overridden from the HeapItem class and decides how the task
+	// is sorted in the task queue.
 	double getKey() const { return (double)priority; }
 	class DataStoreTaskException : public Exception
 	{
@@ -330,8 +337,7 @@ class DataStore :
 	public Runnable
 {
         // The runnable class's mutex protects the task Queue
-        List<DataStoreTask *> taskQ;
-	//Heap taskQ;
+	Heap taskQ;
         // run() is the function executed by the thread
         bool run();
         // cleanup() is called when the thread is stopped or cancelled

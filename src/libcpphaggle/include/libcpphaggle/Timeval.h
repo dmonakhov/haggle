@@ -45,35 +45,35 @@ public:
 	/*
 	  Set Timeval to zero.
 	 */
-	Timeval& zero() { t.tv_sec = 0; t.tv_usec = 0; return *this; }
+	Timeval& zero();
 	/*
 	  Set Timeval given a C-struct timeval.
 	 */
-	Timeval& set(const struct timeval &_t) { t = _t; return *this; }
+	Timeval& set(const struct timeval &_t);
 	/*
 	  Set Timeval given a seconds and microseconds.
 	 */
-	Timeval& set(const long seconds, const long microseconds) { t.tv_sec = seconds; t.tv_usec = microseconds; return *this; }
+	Timeval& set(const long seconds, const long microseconds);
 	/*
 	  Set Timeval given a seconds and microseconds double.
 	 */
-	Timeval& set(const double seconds) { t.tv_sec = (long) seconds; t.tv_usec = (long)((seconds - (double)t.tv_sec) * 1000000); return *this; }
+	Timeval& set(const double seconds);
 	/*
 	  Returns true if t.tv_sec is positive or zero, and tv_usec within its valid limits (0-99999).
 	 */
-	bool isValid() const { return (t.tv_sec >= 0 && t.tv_usec >= 0 && t.tv_usec < 1000000); }
+	bool isValid() const;
 	/*
 	  Returns a pointer to the C-struct representation of the Timeval.
 	 */
-	const struct timeval *getTimevalStruct() const { return &t; }
+	const struct timeval *getTimevalStruct() const;
 	/* 
 	   Returns the "seconds" part of the Timeval.
 	 */
-	const long getSeconds() const { return t.tv_sec; }	
+	const long getSeconds() const;	
 	/* 
 	   Returns the "micro seconds" part of the Timeval. (Note that this it not the time in micro seconds).
 	 */
-	const long getMicroSeconds() const { return t.tv_usec; }	
+	const long getMicroSeconds() const;	
 	/* 
 	   Returns the total time in milli seconds as a 64-bit integer.
 	 */

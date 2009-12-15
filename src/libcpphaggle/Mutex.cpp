@@ -139,4 +139,21 @@ Mutex::~Mutex()
 #endif
 }
 
+	/*
+inline Mutex::AutoLocker::AutoLocker(Mutex& _m) : m(&_m) 
+{ 
+	m->lock(); 
+}
+
+inline Mutex::AutoLocker::AutoLocker(Mutex *_m) : m(_m) 
+{ 
+	m->lock(); 
+}
+	
+inline Mutex::AutoLocker::~AutoLocker() 
+{ 
+	m->unlock(); 
+}
+	 */
+	
 }; // namespace haggle

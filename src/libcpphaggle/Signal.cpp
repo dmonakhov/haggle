@@ -45,6 +45,19 @@ Signal::~Signal()
 #endif
 }
 
+	
+#if defined(OS_WINDOWS)
+HANDLE Signal::getHandle() 
+{ 
+	return signal; 
+}
+#endif
+
+bool Signal::isRaised() const 
+{ 
+	return raised; 
+}
+
 bool Signal::raise()
 {
 	Mutex::AutoLocker l(mutex);
