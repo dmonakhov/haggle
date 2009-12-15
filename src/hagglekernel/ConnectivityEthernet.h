@@ -27,6 +27,7 @@
 
 struct haggle_beacon {
         u_int32_t seqno;
+	u_int8_t interval; // The beacon interval used by the other node (in seconds)
         char mac[6];
         char pad[2];
 };
@@ -52,7 +53,7 @@ private:
 	List<ConnEthIfaceListElement *>	ifaceList;
 	Mutex ifaceListMutex;
 	u_int32_t seqno;
-	long beaconInterval;
+	u_int8_t beaconInterval;
 
         bool run();
         void hookCleanup();

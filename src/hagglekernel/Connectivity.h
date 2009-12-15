@@ -24,6 +24,7 @@ class Connectivity;
 class ConnectivityEventData;
 
 #include <libcpphaggle/Exception.h>
+#include <libcpphaggle/Timeval.h>
 
 #include "ManagerModule.h"
 #include "ConnectivityManager.h"
@@ -45,19 +46,19 @@ protected:
 	/**
 		Utility function to age all interfaces cound by this connectivity.
 	*/
-	void age_interfaces(const InterfaceRef &whose);
+	void age_interfaces(const InterfaceRef &whose, Timeval *lifetime = NULL);
 	/**
 		Utility function to call the same-named function in the Connectivity
 		Manager.
 	*/
 	InterfaceStatus_t report_interface(InterfaceRef& found, const InterfaceRef& found_by, 
-			      ConnectivityInterfacePolicy *add_callback(void));
+			      ConnectivityInterfacePolicy *policy);
 	/**
 		Utility function to call the same-named function in the Connectivity
 		Manager.
 	*/
 	InterfaceStatus_t report_interface(Interface *found, const InterfaceRef& found_by, 
-			  ConnectivityInterfacePolicy *add_callback(void));
+			  ConnectivityInterfacePolicy *policy);
 	
 	/**
 		Utility function to check if an interface already exists.

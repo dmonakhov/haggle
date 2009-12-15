@@ -58,7 +58,7 @@ void serviceDiscoveryCallback(struct RemoteDevice *rd, CSdpDiscoveryRec *records
 
 	Interface foundInterface(IFTYPE_BLUETOOTH, rd->bda, &addr, rd->name, IFFLAG_UP);
 
-	conn->report_interface(&foundInterface, conn->rootInterface, newConnectivityInterfacePolicyTTL2);
+	conn->report_interface(&foundInterface, conn->rootInterface, new ConnectivityInterfacePolicyTTL(2));
 }
 
 static void inquiryCallback(struct RemoteDevice *rd, void *data)
@@ -161,7 +161,7 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 
 			Interface foundInterface(IFTYPE_BLUETOOTH, rd->bda, &addr, rd->name, IFFLAG_UP);
 
-			conn->report_interface(&foundInterface, conn->rootInterface, newConnectivityInterfacePolicyTTL2);
+			conn->report_interface(&foundInterface, conn->rootInterface, new ConnectivityInterfacePolicyTTL(2));
 
 			count++;
 		} else {	

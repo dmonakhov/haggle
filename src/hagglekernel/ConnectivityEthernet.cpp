@@ -388,13 +388,14 @@ bool ConnectivityEthernet::run()
 	struct haggle_beacon *beacon = (struct haggle_beacon *) buffer;
 	Timeval next_beacon_time, next_beacon_time_unjittered;
 	u_int32_t prev_seqno = seqno+1;
+	Timeval lifetime = -1; // The lifetime of the neighbor interface closest to death
 	
 	/*
 		HOTFIX: report the root interface as being local and existing.
 		This is necessary because the interface store needs a parent interface
 		to be in the store if ageing is to work.
 	*/
-	report_interface(rootInterfacePtr, NULL, newConnectivityInterfacePolicyAgeless);
+	report_interface(rootInterfacePtr, NULL, new ConnectivityInterfacePolicyAgeless());
 	
 	socketIndex = w.add(listenSock); 
 	
@@ -411,9 +412,7 @@ bool ConnectivityEthernet::run()
 			timeout = Timeval::now();
 			
 			// Has the timeout expired, and a new beacon been sent?
-			if (timeout > next_beacon_time && 
-				prev_seqno != seqno)
-			{
+			if (timeout > next_beacon_time && prev_seqno != seqno) {
 				// Reset the "beacon sent" test:
 				prev_seqno = seqno;
 				// Move the next beacon time into the future:
@@ -424,43 +423,62 @@ bool ConnectivityEthernet::run()
 					next_beacon_time_unjittered + Timeval(0, BEACON_JITTER);
 			}
 			
-			timeout = next_beacon_time - timeout;
+			if (!lifetime.isValid() || next_beacon_time < lifetime) {
+				CM_DBG("Computing timeout based on next beacon time\n");
+				timeout = next_beacon_time - timeout;
+			} else {
+				CM_DBG("Computing timeout based on lifetime\n");
+				timeout = lifetime - timeout;
+			}
 		}
 		
 		w.reset();
 
+		
+		CM_DBG("Next timeout is in %lf seconds\n", timeout.getTimeAsSecondsDouble());
+		
 		waitRet = w.wait(&timeout); 
 
-		if (waitRet == Watch::TIMEOUT) {
-			InterfaceRefList downedIfaces;
-			int ret;
-
-			// Timeout --> send next beacon
-			seqno++;
-			
-			synchronized(ifaceListMutex) {
-                                List<ConnEthIfaceListElement *>::iterator it = ifaceList.begin();
-                                
-                                for (;it != ifaceList.end(); it++) {
-                                        (*it)->broadcast_packet.seqno = htonl(seqno);
-                                        ret = sendto((*it)->broadcastSocket, 
-                                                     (const char *) &((*it)->broadcast_packet), 
-                                                     HAGGLE_BEACON_LEN, 
-                                                     MSG_DONTROUTE, 
-                                                     &((*it)->broadcast_addr), 
-                                                     (*it)->broadcast_addr_len);
-                                        
-                                        if (ret < 0) {
-                                                downedIfaces.push_front((*it)->iface);
-                                                CM_DBG("Sendto error: could not send beacon: %s\n", STRERROR(ERRNO));
-                                        }
-                                }
-                        }
-			age_interfaces(rootInterface);
-			
-			while (!downedIfaces.empty()) {
-				handleInterfaceDown(downedIfaces.pop());
+		if (waitRet == Watch::TIMEOUT) {					
+			if (Timeval::now() >= next_beacon_time) {
+				InterfaceRefList downedIfaces;		
+				int ret;
+				
+				// Timeout --> send next beacon
+				seqno++;	
+				
+				CM_DBG("Sending beacon\n");
+				
+				synchronized(ifaceListMutex) {
+					List<ConnEthIfaceListElement *>::iterator it = ifaceList.begin();
+					
+					for (;it != ifaceList.end(); it++) {
+						(*it)->broadcast_packet.seqno = htonl(seqno);
+						(*it)->broadcast_packet.interval = beaconInterval;
+						
+						ret = sendto((*it)->broadcastSocket, 
+							     (const char *) &((*it)->broadcast_packet), 
+							     HAGGLE_BEACON_LEN, 
+							     MSG_DONTROUTE, 
+							     &((*it)->broadcast_addr), 
+							     (*it)->broadcast_addr_len);
+						
+						if (ret < 0) {
+							downedIfaces.push_front((*it)->iface);
+							CM_DBG("Sendto error: could not send beacon: %s\n", STRERROR(ERRNO));
+						}
+					}
+				}
+				
+				while (!downedIfaces.empty()) {
+					handleInterfaceDown(downedIfaces.pop());
+				}
+			} else {
+				CM_DBG("Aging interfaces\n");
+				// Age the neighbor interfaces
+				age_interfaces(rootInterface, &lifetime);
 			}
+			
 			
 		} else if (waitRet == Watch::FAILED) {
 			CM_DBG("wait/select error: %s\n", STRERROR(ERRNO));
@@ -468,6 +486,7 @@ bool ConnectivityEthernet::run()
 			// FIXME: determine if above assumption holds.
 			return false;
 		} else if (waitRet == Watch::ABANDONED) {
+			CM_DBG("Watch was abandoned\n");
 			return false;
 		}
 
@@ -477,6 +496,8 @@ bool ConnectivityEthernet::run()
 			socklen_t addr_len = SOCKADDR_SIZE;;
 			char buf[SOCKADDR_SIZE];
 			struct sockaddr *in_addr = (struct sockaddr *)buf;
+			
+			CM_DBG("Something on the socket\n");
 			
 			len = recvfrom(listenSock, buffer, BUFLEN,
 #if defined(OS_WINDOWS)
@@ -493,6 +514,10 @@ bool ConnectivityEthernet::run()
 				CM_DBG("Bad size of beacon: len=%d\n", len);
 			} else {
 				Addresses addrs;
+				Timeval received_lifetime = Timeval::now() + (beacon->interval * 3);
+				
+				if (received_lifetime < lifetime)
+					lifetime = received_lifetime;
 				
 				// We'll assume that this protocol is available:
 				addrs.add(new Address(AddressType_EthMAC, (unsigned char *)beacon->mac));
@@ -502,12 +527,12 @@ bool ConnectivityEthernet::run()
 					
 					Interface iface(IFTYPE_ETHERNET, beacon->mac, &addrs, "Remote Ethernet", IFFLAG_UP);
 					
-					report_interface(&iface, rootInterface, newConnectivityInterfacePolicyTTL3);
+					report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyTime(received_lifetime));
 				} else if (in_addr->sa_family == AF_INET) {					
 					addrs.add(new Address(in_addr, NULL, ProtocolSpecType_TCP, TCP_DEFAULT_PORT));
 					
 					Interface iface(IFTYPE_ETHERNET, beacon->mac, &addrs, "Remote Ethernet", IFFLAG_UP);
-					report_interface(&iface, rootInterface, newConnectivityInterfacePolicyTTL3);
+					report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyTime(received_lifetime));
 				}
 			}
 		}

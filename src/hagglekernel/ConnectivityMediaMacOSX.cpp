@@ -138,7 +138,7 @@ void ConnectivityMedia::findRemoteInterfaces(char *path)
 //			-1,
 //			interfacePath.c_str(),
 //			IFACE_FLAG_LOCAL);
-//	add_interface(&localIface, iface, newConnectivityInterfacePolicyAgeless);
+//	add_interface(&localIface, iface, new ConnectivityInterfacePolicyAgeless());
 	
 	// Search for "remote interfaces", i.e., specific directories on the mounted media.
 	numFiles = scandir(path, &files, &selectNotThisNode, NULL);
@@ -159,7 +159,7 @@ void ConnectivityMedia::findRemoteInterfaces(char *path)
 //				interfacePath.c_str());
 //		iface->up();
 //		
-//		add_interface(&remoteIface, &localIface, newConnectivityInterfacePolicyAgeless);
+//		add_interface(&remoteIface, &localIface, new ConnectivityInterfacePolicyAgeless());
 //		
 		free(files[i]);
 	}

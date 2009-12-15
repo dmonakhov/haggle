@@ -56,7 +56,7 @@ void bluetoothDiscoverySDPCompleteCallback(void *userRefCon, IOBluetoothDeviceRe
 	if (IOBluetoothDeviceGetServiceRecordForUUID(foundDevRef, uuid) != NULL) {
 		CM_DBG("%s: Found Haggle device %s\n", conn->getName(), addr.getAddrStr());
 		
-		conn->report_interface(&iface, conn->rootInterface, newConnectivityInterfacePolicyTTL2);
+		conn->report_interface(&iface, conn->rootInterface, new ConnectivityInterfacePolicyTTL(2));
 	} else {
 		CM_DBG("%s: Found non-Haggle device [%s]\n", conn->getName(), addr.getAddrStr());
 	}

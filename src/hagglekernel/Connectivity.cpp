@@ -20,20 +20,20 @@
 	This function makes sure an interface is in the table.
 */
 InterfaceStatus_t Connectivity::report_interface(InterfaceRef& found, const InterfaceRef& found_by,
-								      ConnectivityInterfacePolicy *add_callback(void))
+								      ConnectivityInterfacePolicy *policy)
 {
-	return getManager()->report_interface(found, found_by, add_callback);
+	return getManager()->report_interface(found, found_by, policy);
 }
 
 InterfaceStatus_t Connectivity::report_interface(Interface *found, const InterfaceRef &found_by, 
-				 ConnectivityInterfacePolicy *add_callback(void))
+				 ConnectivityInterfacePolicy *policy)
 {
-	return getManager()->report_interface(found, found_by, add_callback);
+	return getManager()->report_interface(found, found_by, policy);
 }
 
-void Connectivity::age_interfaces(const InterfaceRef &whose)
+void Connectivity::age_interfaces(const InterfaceRef &whose, Timeval *lifetime)
 {
-	getManager()->age_interfaces(whose);
+	getManager()->age_interfaces(whose, lifetime);
 }
 
 InterfaceStatus_t Connectivity::have_interface(const InterfaceType_t type, const char *identifier)

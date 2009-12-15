@@ -160,8 +160,11 @@ public:
 		with a null-interface as parent will be aged.
 	
 		@param whose the parent interface that wants to age its children.
+		@param lifetime an optional pointer to a Timeval that when the function returns
+		will hold the lifetime of the child interface which is closest to death.
+		If there are no child interfaces, the lifetime Timeval will be invalid.
 	*/
-	void age_interfaces(const InterfaceRef &whose);
+	void age_interfaces(const InterfaceRef &whose, Timeval *lifetime = NULL);
 	/**
 		Report and register an interface in the known_interface_registry, and
 		increase stats if it is a "new contact".
@@ -182,16 +185,15 @@ public:
 
 		@param found the interface to report.
 		@param found_by the parent interface that wants to age its children.
-		@param add_callback is a function that, if called, will return a new policy
-		object for this interface. The returned policy will be associated with the 
-		interface, and will be deleted with the interface.
+		@param policy a policy object for this interface. The policy will be 
+		associated with the interface, and will be deleted with the interface.
 		@returns INTERFACE_STATUS_NONE if the interface was not previously known,
 		or INTERFACE_STATUS_HAGGLE if it was.
 	*/
 	InterfaceStatus_t report_interface(Interface *found, const InterfaceRef &found_by, 
-			      ConnectivityInterfacePolicy *add_callback(void));
+			      ConnectivityInterfacePolicy *policy);
 	InterfaceStatus_t report_interface(InterfaceRef &found, const InterfaceRef &found_by, 
-			      ConnectivityInterfacePolicy *add_callback(void));
+			      ConnectivityInterfacePolicy *policy);
         /**
         	Utility function to check whether an interface already exists in the
 		interface store or not.

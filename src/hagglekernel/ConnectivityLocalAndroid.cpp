@@ -147,7 +147,7 @@ void ConnectivityLocal::findLocalEthernetInterfaces()
                 
                 if (tih.iface) {
                         if (tih.iface->isUp())
-                                report_interface(tih.iface, NULL, newConnectivityInterfacePolicyAgeless);
+                                report_interface(tih.iface, NULL, new ConnectivityInterfacePolicyAgeless());
                         else  {
                                 delete tih.iface;
                                 tih.iface = NULL;
@@ -324,7 +324,7 @@ int ConnectivityLocal::read_hci()
                                 if (bluetooth_set_scan(hcih.sock, sd->dev_id, "piscan") == -1) {
                                         fprintf(stderr, "Could not force discoverable mode for Bluetooth device %s\n", di.name);
                                 }
-                                report_interface(iface, NULL, newConnectivityInterfacePolicyAgeless);
+                                report_interface(iface, NULL, new ConnectivityInterfacePolicyAgeless());
                                 delete iface;
                         }
 			break;
@@ -426,7 +426,7 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
                                         
                 set_piscan_mode = true;
                 dev_id = hdev;
-		report_interface(&iface, NULL, newConnectivityInterfacePolicyAgeless);
+		report_interface(&iface, NULL, new ConnectivityInterfacePolicyAgeless());
 
 	}
 	return;
@@ -552,7 +552,7 @@ void ConnectivityLocal::ti_wifi_event_handle(IPC_EV_DATA *pData)
                                         }
                                         if (tih.iface) {
                                                 if (tih.iface->isUp())
-                                                        report_interface(tih.iface, NULL, newConnectivityInterfacePolicyAgeless);
+                                                        report_interface(tih.iface, NULL, new ConnectivityInterfacePolicyAgeless());
                                                 else {
                                                         CM_DBG("TI interface not up after association\n");
                                                         delete tih.iface;

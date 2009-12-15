@@ -293,7 +293,7 @@ void bluetoothDiscovery(InterfaceRef& iface, ConnectivityBluetooth *conn)
 
 			Interface iface(IFTYPE_BLUETOOTH, macaddr, &addr, "Bluetooth");
 
-			conn->report_interface(&iface, conn->rootInterface, newConnectivityInterfacePolicyTTL2);
+			conn->report_interface(&iface, conn->rootInterface, new ConnectivityInterfacePolicyTTL(2));
 
 			count++;
 		} else {

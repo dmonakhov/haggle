@@ -333,7 +333,7 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 
                         CM_DBG("Found Haggle device [%s - %s]\n", addy.getAddrStr(), remote_name);
 
-			conn->report_interface(&iface, conn->rootInterface, newConnectivityInterfacePolicyTTL2);
+			conn->report_interface(&iface, conn->rootInterface, new ConnectivityInterfacePolicyTTL(2));
 			num_found++;
 		} else {
 			CM_DBG("Device [%s] is not a Haggle device\n", addy.getAddrStr());

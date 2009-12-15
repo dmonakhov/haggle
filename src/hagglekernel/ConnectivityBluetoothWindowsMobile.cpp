@@ -521,7 +521,7 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 			Interface foundInterface(IFTYPE_BLUETOOTH, macaddr, &addr, name.c_str(), IFFLAG_UP);
 
 			conn->report_interface(&foundInterface, 
-				conn->rootInterface, newConnectivityInterfacePolicyTTL2);
+                                               conn->rootInterface, new ConnectivityInterfacePolicyTTL(2));
 			count++;
 		} else {
 			CM_DBG("Bluetooth device [%s] is not a Haggle device\n", 

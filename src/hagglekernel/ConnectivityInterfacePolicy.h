@@ -57,11 +57,16 @@ public:
 		interface is marked as down and removed from the connectivity manager's 
 		list of active interfaces.
 	*/
-	virtual bool isDead() = 0;
+	virtual bool isDead() const = 0;
+	
+	/**
+		Get the lifetime left for this interface in absolute time.
+	 */
+	virtual Timeval lifetime() const = 0;
 	/**
 		Give a string description of the current age.
 	 */
-	virtual const char *ageStr() = 0;
+	virtual const char *ageStr() const = 0;
 };
 
 /**
@@ -76,26 +81,10 @@ public:
 	~ConnectivityInterfacePolicyTTL();
 	void update();
 	void age();
-	bool isDead();
-	const char *ageStr();
-};
-/**
-	Returns a new ConnectivityInterfacePolicyTTL with base ttl set to 1.
-*/
-ConnectivityInterfacePolicy *newConnectivityInterfacePolicyTTL1(void);
-
-
-/**
-	Returns a new ConnectivityInterfacePolicyTTL with base ttl set to 3.
-*/
-ConnectivityInterfacePolicy *newConnectivityInterfacePolicyTTL2(void);
-
-/**
-	Returns a new ConnectivityInterfacePolicyTTL with base ttl set to 3.
-*/
-ConnectivityInterfacePolicy *newConnectivityInterfacePolicyTTL3(void);
-
-/**
+	bool isDead() const;
+	Timeval lifetime() const;
+	const char *ageStr() const;
+};/**
 	This policy does not make use of aging. It will always say the interface
 	is alive.
 */
@@ -105,15 +94,10 @@ public:
 	~ConnectivityInterfacePolicyAgeless();
 	void update();
 	void age();
-	bool isDead();
-	const char *ageStr();
+	bool isDead() const;
+	Timeval lifetime() const;
+	const char *ageStr() const;
 };
-
-/**
-	Returns a new newConnectivityInterfacePolicyAgeless.
-*/
-ConnectivityInterfacePolicy *newConnectivityInterfacePolicyAgeless(void);
-
 /**
 	This policy does not make use of aging. It will always say the interface
 	is alive.
@@ -129,8 +113,9 @@ public:
 	~ConnectivityInterfacePolicyTime();
 	void update();
 	void age();
-	bool isDead();
-	const char *ageStr();
+	bool isDead() const;
+	Timeval lifetime() const;
+	const char *ageStr() const;
 };
 
 #endif

@@ -116,7 +116,7 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 	
 	HAGGLE_DBG("Adding new LOCAL Bluetooth Interface: %s\n", btName);
 
-	report_interface(btIface, rootInterface, newConnectivityInterfacePolicyAgeless);
+	report_interface(btIface, rootInterface, new ConnectivityInterfacePolicyAgeless());
 }
 
 #else
@@ -202,7 +202,7 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 	
 	HAGGLE_DBG("Adding new LOCAL Bluetooth Interface: %s\n", btName);
 
-	report_interface(btIface, rootInterface, newConnectivityInterfacePolicyAgeless);
+	report_interface(btIface, rootInterface, new ConnectivityInterfacePolicyAgeless());
 
 	closesocket(s);
 
@@ -225,7 +225,7 @@ void ConnectivityLocal::findLocalEthernetInterfaces()
 		 ethIface = iflist.pop();
                 
 		if (ethIface->isUp())
-			 report_interface(ethIface, rootInterface, newConnectivityInterfacePolicyTTL1);
+                        report_interface(ethIface, rootInterface, new ConnectivityInterfacePolicyTTL(1));
 	}
 }
 #endif

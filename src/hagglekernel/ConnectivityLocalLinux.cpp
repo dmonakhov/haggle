@@ -341,7 +341,7 @@ int ConnectivityLocal::read_netlink()
 				
  				ethernet_interfaces_found++;
 
- 				report_interface(&iface, rootInterface, newConnectivityInterfacePolicyAgeless);
+ 				report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
 			}
 			if (!ifinfo.isUp) {
 				delete_interface(ifinfo.isWireless ? IFTYPE_WIFI : IFTYPE_ETHERNET, ifinfo.mac);
@@ -464,7 +464,7 @@ void ConnectivityLocal::findLocalEthernetInterfaces()
 		// Create the interface
 		Interface iface(IFTYPE_ETHERNET, macaddr, &addrs, ifr->ifr_name, IFFLAG_LOCAL | IFFLAG_UP);
  
-		report_interface(&iface, rootInterface, newConnectivityInterfacePolicyAgeless);
+		report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
 
 		req.ifc.ifc_len -= len;
 		ifr = (struct ifreq *) ((char *) ifr + len);
@@ -630,7 +630,7 @@ DBusHandlerResult dbus_handler(DBusConnection * conn, DBusMessage * msg, void *d
                                 Interface *iface = hci_get_interface_from_name(ifname.c_str());
                                         
                                 if (iface) {
-                                        cl->report_interface(iface, NULL, newConnectivityInterfacePolicyAgeless);
+                                        cl->report_interface(iface, NULL, new ConnectivityInterfacePolicyAgeless());
                                         delete iface;
                                 }
                                         
@@ -670,7 +670,7 @@ DBusHandlerResult dbus_handler(DBusConnection * conn, DBusMessage * msg, void *d
                                 Interface *iface = hci_get_interface_from_name(ifname.c_str());
 
                                 if (iface) {
-                                        cl->report_interface(iface, NULL, newConnectivityInterfacePolicyAgeless);
+                                        cl->report_interface(iface, NULL, new ConnectivityInterfacePolicyAgeless());
                                         delete iface;
                                 }
 
@@ -890,7 +890,7 @@ int ConnectivityLocal::read_hci()
                         iface = hci_get_interface_from_name(di.name);
                                         
                         if (iface) {
-                                report_interface(iface, NULL, newConnectivityInterfacePolicyAgeless);
+                                report_interface(iface, NULL, new ConnectivityInterfacePolicyAgeless());
                                 delete iface;
                         }
 			break;
@@ -982,7 +982,7 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 		
 		Interface iface(IFTYPE_BLUETOOTH, macaddr, &addy, devname, IFFLAG_LOCAL | IFFLAG_UP);
 
-		report_interface(&iface, rootInterface, newConnectivityInterfacePolicyAgeless);
+		report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
 
 	}
 	return;

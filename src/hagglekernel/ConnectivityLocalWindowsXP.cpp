@@ -72,7 +72,7 @@ void ConnectivityLocal::findLocalEthernetInterfaces()
                 InterfaceRef iface = iflist.pop();
                 
                 if (iface->isUp()) {
-                        report_interface(iface, rootInterface, newConnectivityInterfacePolicyTTL1);
+                        report_interface(iface, rootInterface, new ConnectivityInterfacePolicyTTL(1));
                         ethernet_interfaces_found++;
                 }
         }
@@ -187,7 +187,7 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 
 	Interface iface(IFTYPE_BLUETOOTH, macaddr, &addy, btName, IFFLAG_LOCAL | IFFLAG_UP);
 	
-	report_interface(&iface, rootInterface, newConnectivityInterfacePolicyTTL1);
+	report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyTTL(1));
 
 	closesocket(s);
 }

@@ -422,14 +422,14 @@ InterfaceStatus_t ConnectivityManager::report_known_interface(const InterfaceRef
 /*
   This function makes sure an interface is in the table.
 */
-InterfaceStatus_t ConnectivityManager::report_interface(Interface *found, const InterfaceRef& found_by, ConnectivityInterfacePolicy *add_callback(void))
+InterfaceStatus_t ConnectivityManager::report_interface(Interface *found, const InterfaceRef& found_by, ConnectivityInterfacePolicy *policy)
 {
 	bool was_added;
 	
         if (!found || isBlacklisted(found->getType(), found->getRawIdentifier()))
                 return INTERFACE_STATUS_NONE;
 
-	InterfaceRef iface = kernel->getInterfaceStore()->addupdate(found, found_by, add_callback, &was_added);
+	InterfaceRef iface = kernel->getInterfaceStore()->addupdate(found, found_by, policy, &was_added);
 
 	if (!iface || !was_added )
 		return INTERFACE_STATUS_NONE;
@@ -451,14 +451,14 @@ InterfaceStatus_t ConnectivityManager::report_interface(Interface *found, const 
 	return INTERFACE_STATUS_HAGGLE;
 }
 
-InterfaceStatus_t ConnectivityManager::report_interface(InterfaceRef& found, const InterfaceRef& found_by, ConnectivityInterfacePolicy *add_callback(void))
+InterfaceStatus_t ConnectivityManager::report_interface(InterfaceRef& found, const InterfaceRef& found_by, ConnectivityInterfacePolicy *policy)
 {
 	bool was_added;
 	
         if (!found || isBlacklisted(found->getType(), found->getRawIdentifier()))
                 return INTERFACE_STATUS_NONE;
 
-	InterfaceRef iface = kernel->getInterfaceStore()->addupdate(found, found_by, add_callback, &was_added);
+	InterfaceRef iface = kernel->getInterfaceStore()->addupdate(found, found_by, policy, &was_added);
 
 	if (!iface || !was_added)
 		return INTERFACE_STATUS_NONE;
@@ -520,15 +520,15 @@ void ConnectivityManager::onReceivedDataObject(Event *e)
 		if (!have_interface(remoteIface->getType(), remoteIface->getRawIdentifier())) {
 			remoteIface->setFlag(IFFLAG_SNOOPED);
 			if (remoteIface->getType() == IFTYPE_BLUETOOTH)
-				report_interface(remoteIface, localIface, newConnectivityInterfacePolicyTTL2);
+				report_interface(remoteIface, localIface, new ConnectivityInterfacePolicyTTL(2));
 			else if (remoteIface->getType() == IFTYPE_ETHERNET ||
 				remoteIface->getType() == IFTYPE_WIFI)
-				report_interface(remoteIface, localIface, newConnectivityInterfacePolicyTTL3);
+				report_interface(remoteIface, localIface, new ConnectivityInterfacePolicyTTL(3));
 			else {
 				// hmm... this shouldn't happen. If it does we've added an 
 				// interface type and forgotten to add it above.
 				HAGGLE_DBG("Snooped unknown interface type.");
-				report_interface(remoteIface, localIface, newConnectivityInterfacePolicyTTL3);
+				report_interface(remoteIface, localIface, new ConnectivityInterfacePolicyTTL(3));
 			}
 			report_known_interface(remoteIface, true);
 		}
@@ -691,11 +691,11 @@ InterfaceStatus_t ConnectivityManager::is_known_interface(const InterfaceType_t 
 	return is_known_interface(&iface);
 }
 
-void ConnectivityManager::age_interfaces(const InterfaceRef &whose)
+void ConnectivityManager::age_interfaces(const InterfaceRef &whose, Timeval *lifetime)
 {
 	InterfaceRefList dead;
 	
-	kernel->getInterfaceStore()->age(whose, &dead);
+	kernel->getInterfaceStore()->age(whose, &dead, lifetime);
 
 	while (!dead.empty()) {
 		report_dead(dead.pop());

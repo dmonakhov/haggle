@@ -17,24 +17,6 @@
 
 #include <libcpphaggle/Platform.h>
 
-ConnectivityInterfacePolicy *newConnectivityInterfacePolicyTTL1(void)
-{
-	return (ConnectivityInterfacePolicy *) 
-		new ConnectivityInterfacePolicyTTL(1);
-}
-
-ConnectivityInterfacePolicy *newConnectivityInterfacePolicyTTL2(void)
-{
-	return (ConnectivityInterfacePolicy *) 
-		new ConnectivityInterfacePolicyTTL(2);
-}
-
-ConnectivityInterfacePolicy *newConnectivityInterfacePolicyTTL3(void)
-{
-	return (ConnectivityInterfacePolicy *) 
-		new ConnectivityInterfacePolicyTTL(3);
-}
-
 ConnectivityInterfacePolicyTTL::ConnectivityInterfacePolicyTTL(long TimeToLive)
 {
 	base_ttl = TimeToLive;
@@ -56,23 +38,21 @@ void ConnectivityInterfacePolicyTTL::age()
 		current_ttl--;
 }
 
-const char *ConnectivityInterfacePolicyTTL::ageStr()
-{
-	sprintf(agestr, "ttl=%lu", current_ttl);
-	
-	return agestr;
-}
-
-
-bool ConnectivityInterfacePolicyTTL::isDead()
+bool ConnectivityInterfacePolicyTTL::isDead() const
 {
 	return current_ttl == 0;
 }
 
-ConnectivityInterfacePolicy *newConnectivityInterfacePolicyAgeless(void)
+Timeval ConnectivityInterfacePolicyTTL::lifetime() const
 {
-	return (ConnectivityInterfacePolicy *) 
-		new ConnectivityInterfacePolicyAgeless();
+	return Timeval(-1);
+}
+
+const char *ConnectivityInterfacePolicyTTL::ageStr() const
+{
+	sprintf(const_cast<ConnectivityInterfacePolicyTTL *>(this)->agestr, "ttl=%lu", current_ttl);
+	
+	return agestr;
 }
 
 ConnectivityInterfacePolicyAgeless::ConnectivityInterfacePolicyAgeless()
@@ -91,12 +71,17 @@ void ConnectivityInterfacePolicyAgeless::age()
 {
 }
 
-bool ConnectivityInterfacePolicyAgeless::isDead()
+bool ConnectivityInterfacePolicyAgeless::isDead() const
 {
 	return false;
 }
 
-const char *ConnectivityInterfacePolicyAgeless::ageStr()
+Timeval ConnectivityInterfacePolicyAgeless::lifetime() const
+{
+	return Timeval(-1);
+}
+
+const char *ConnectivityInterfacePolicyAgeless::ageStr() const
 {
 	return "infinite";
 }
@@ -119,13 +104,18 @@ void ConnectivityInterfacePolicyTime::age()
 {
 }
 
-bool ConnectivityInterfacePolicyTime::isDead()
+bool ConnectivityInterfacePolicyTime::isDead() const
 {
 	return (expiry < Timeval::now());
 }
 
+Timeval ConnectivityInterfacePolicyTime::lifetime() const
+{
+	return expiry;
+}
 
-const char *ConnectivityInterfacePolicyTime::ageStr()
+const char *ConnectivityInterfacePolicyTime::ageStr() const
 {
 	return (Timeval::now() - expiry).getAsString().c_str();
 }
+
