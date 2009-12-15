@@ -155,10 +155,11 @@ void WIDCOMMBluetooth::OnInquiryComplete(BOOL success, short num_responses)
 	if (success == FALSE)
 		inquiryResult = -1;
 
+	HAGGLE_DBG("Setting inquiry complete event\n");
 	SetEvent(hInquiryEvent);
 }
 
-#define INQUIRY_TIMEOUT (20000)
+#define INQUIRY_TIMEOUT (30000)
 
 int WIDCOMMBluetooth::_doInquiry(widcomm_inquiry_callback_t callback, void *data, bool async)
 {
@@ -180,25 +181,36 @@ int WIDCOMMBluetooth::_doInquiry(widcomm_inquiry_callback_t callback, void *data
 		return -1;
 	}
 
-	// Once we successfully started the inquiry, the isInInquiry boolean
+	// I we run the inquiry in asynchronous mode, the isInInquiry boolean
 	// will be reset to 'false' by the OnInquiryComplete callback
 	if (!async) {
 		HAGGLE_DBG("Waiting for inquiry to complete\n");
-		if (WaitForSingleObject(hInquiryEvent, INQUIRY_TIMEOUT) == WAIT_FAILED) {
-			HAGGLE_ERR("Inquiry TIMEOUT after %u s\n", INQUIRY_TIMEOUT/1000);
-			// We need to unset the isInInquiry flag, otherwise we will
-			// not be able to enter this function again and try another scan.
-			isInInquiry = false;
+		
+		DWORD ret = WaitForSingleObject(hInquiryEvent, INQUIRY_TIMEOUT);
 
-			// Try to see if we can force the stack to come out of the inquiry
-			// in case it hung
-			StopInquiry();
-			return -1;
+		switch (ret) {
+			case WAIT_FAILED:
+				inquiryResult = -1;
+				// Stop the inquiry
+				StopInquiry();
+				break;
+			case WAIT_TIMEOUT:
+				HAGGLE_ERR("Inquiry TIMEOUT after %u s\n", INQUIRY_TIMEOUT/1000);
+				// Try to see if we can force the stack to come out of the inquiry
+				// in case it hung
+				StopInquiry();
+				inquiryResult = -1;
+				break;
+			case WAIT_OBJECT_0:
+				HAGGLE_DBG("Inquiry completed\n");
+				inquiryResult = 0;
+				break;
 		}
-		HAGGLE_DBG("Inquiry completed\n");
-		return inquiryResult;
+		// We need to unset the isInInquiry flag, otherwise we will
+		// not be able to enter this function again and try another scan.
+		isInInquiry = false;
 	}
-	return 0;
+	return inquiryResult;
 }
 
 int WIDCOMMBluetooth::doInquiry(widcomm_inquiry_callback_t callback, void *data)
@@ -267,7 +279,7 @@ out:
 	SetEvent(hDiscoveryEvent);
 }
 
-#define DISCOVERY_TIMEOUT (30000)
+#define DISCOVERY_TIMEOUT (40000)
 
 int WIDCOMMBluetooth::_doDiscovery(const RemoteDevice *rd, GUID *guid, widcomm_discovery_callback_t callback, void *data, bool async)
 {
@@ -292,20 +304,30 @@ int WIDCOMMBluetooth::_doDiscovery(const RemoteDevice *rd, GUID *guid, widcomm_d
 		return -1;
 	}
 
-	// Once we successfully started the inquiry, the isInDiscovery boolean
+	// One we run discovery in asynchronous mode, the isInDiscovery boolean
 	// will be reset to 'false' by the OnDiscoveryComplete callback
 	if (!async) {
 		HAGGLE_DBG("Waiting for discovery to complete\n");
-		if (WaitForSingleObject(hDiscoveryEvent, DISCOVERY_TIMEOUT) == WAIT_FAILED) {
-			HAGGLE_ERR("Discovery TIMEOUT after %u s\n", DISCOVERY_TIMEOUT/1000);
-			isInDiscovery = false;
-			return -1;
+
+		DWORD ret = WaitForSingleObject(hDiscoveryEvent, DISCOVERY_TIMEOUT);
+
+		switch (ret) {
+			case WAIT_FAILED:
+				discoveryResult = -1;
+				break;
+			case WAIT_TIMEOUT:
+				HAGGLE_ERR("Discovery TIMEOUT after %u s\n", DISCOVERY_TIMEOUT/1000);
+				discoveryResult = -1;
+				break;
+			case WAIT_OBJECT_0:
+				HAGGLE_DBG("Discovery completed\n");
+				discoveryResult = 0;
+				break;
 		}
-		HAGGLE_DBG("Discovery completed\n");
-		return discoveryResult;
+		isInDiscovery = false;
 	}
 
-	return 0;
+	return discoveryResult;
 }
 
 int WIDCOMMBluetooth::doDiscoveryAsync(const RemoteDevice *rd, GUID *guid, widcomm_discovery_callback_t callback, void *data)

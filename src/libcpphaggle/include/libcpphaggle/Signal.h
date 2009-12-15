@@ -50,14 +50,14 @@ public:
 	Signal();
 	~Signal();
 #if defined(OS_WINDOWS)
-	HANDLE getHandle() { return signal; }
+	HANDLE getHandle();
 #endif
         /**
            Check if the signal is raised (i.e., signalled).
            
            @returns true if the signal is raised and false if it is not.
          */
-	bool isRaised() const { return raised; }
+	bool isRaised() const;
         /**
            Raise the signal.  
 

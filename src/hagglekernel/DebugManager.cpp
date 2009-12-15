@@ -383,7 +383,7 @@ void DebugManager::onDebugReport(Event *e)
 {
 	//kernel->getInterfaceStore()->print();
 	
-	LOG_ADD("%s: kernel event queue size=%u\n", Timeval::now().getAsString().c_str(), kernel->getSize()); 
+	LOG_ADD("%s: kernel event queue size=%lu\n", Timeval::now().getAsString().c_str(), kernel->size()); 
 	kernel->getNodeStore()->print();
 #ifdef DEBUG_DATASTORE
 	kernel->getDataStore()->print();

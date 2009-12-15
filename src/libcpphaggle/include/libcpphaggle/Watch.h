@@ -54,8 +54,8 @@ public:
 #endif
 	Watchable(SOCKET _s);
 	Watchable(Signal& sig);
-	virtual ~Watchable() {}
-	WatchableType_t getType() const { return type; }
+	virtual ~Watchable();
+	WatchableType_t getType() const;
 	const char *getStr() const;
 	bool isValid() const;
 	SOCKET getSocket() const;

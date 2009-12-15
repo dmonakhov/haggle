@@ -107,6 +107,7 @@ HaggleKernel::~HaggleKernel()
 
 	HAGGLE_DBG("Done\n");
 }
+
 int HaggleKernel::registerManager(Manager *m)
 {
 	wregistry_t wr;

@@ -207,6 +207,12 @@ void Thread::cleanup()
 	TRACE_DBG("Thread %s cleanup done, stopped running...\n", getName());
 }
 
+	
+Thread *Thread::_selfGet()
+{ 
+	return _selfGetFromId(selfGetId());
+}
+
 /*
    "_selfGetFromId" is an internal function which is not protected by
    a mutex, which means that protection has to be provided by the
@@ -366,15 +372,25 @@ bool Thread::isSelf() const
 {
 	return (selfGetId() == id);
 }
+	
+const thread_handle_t Thread::getHandle() const 
+{
+	return thrHandle;
+}
 
+const unsigned long Thread::getNum() const 
+{
+	return num;
+}
+	
 bool Thread::equal(const Thread &thr1, const Thread &thr2)
 {
 	return (thr1.id == thr2.id);
 }
 
-bool Thread::isRunning()
+bool Thread::isRunning() const
 {
-	Mutex::AutoLocker l(mutex);
+	Mutex::AutoLocker l(const_cast<Thread *>(this)->mutex);
 
 	return (state != THREAD_STATE_STOPPED);
 }
@@ -384,6 +400,11 @@ bool Thread::isCancelled() const
 	return exitSignal.isRaised();
 }
 
+Runnable *Thread::getRunnable() 
+{
+	return runObj;
+}
+	
 int Thread::start()
 {
 	Mutex::AutoLocker l(mutex);
@@ -536,20 +557,61 @@ void Thread::cancelableSleep(unsigned long msecs)
 	w.waitTimeout(msecs);
 }
 
+void Runnable::hookCancel() 
+{
+}
+	
 const char *Runnable::getName() const
 { 
 	return name.c_str(); 
 }
 
-bool Runnable::start(void)
+void Runnable::cancelableSleep(unsigned long msecs) 
 {
-        if (!thr) {
-                new Thread(this);
-                return thr->start() == 0;
-        }
-	return false;
+	if (thr) 
+		thr->cancelableSleep(msecs);
 }
 
+bool Runnable::shouldExit() const 
+{ 
+	return (thr ? thr->isCancelled() : true); 
+}	
+
+bool Runnable::start(void)
+{
+	if (!thr) {
+		new Thread(this);
+		return thr->start() == 0;
+	}
+	return false;
+}
+	
+void Runnable::stop(void) 
+{ 
+	if (thr) { 
+		thr->stop(); 
+	} 
+}
+void Runnable::cancel(void) 
+{ 
+	if (thr) { 
+		thr->cancel(); 
+	} 
+}
+	
+void Runnable::join(void) 
+{ 
+	if (thr) thr->join(); 
+}
+	
+bool Runnable::isRunning() const
+{ 
+	if (thr) 
+		return thr->isRunning(); 
+	else 
+		return false; 
+}
+	
 Runnable::Runnable(const string _name) : 
 	thr(NULL), name(_name), mutex(_name) 
 {

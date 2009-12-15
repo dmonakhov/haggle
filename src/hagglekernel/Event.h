@@ -29,6 +29,7 @@ typedef int EventType;
 #include <haggleutils.h>
 
 #include <libcpphaggle/Heap.h>
+#include <libcpphaggle/Timeval.h>
 #include <libcpphaggle/Exception.h>
 
 #include "DataObject.h"
@@ -325,6 +326,7 @@ private:
         static EventCallback<EventHandler> *privCallbacks[MAX_NUM_PRIVATE_EVENT_TYPES];
         static int num_event_types;
         const EventType type;
+	const Timeval timeout;
         const EventCallback<EventHandler> *callback;
         /*
         	Data type contained in events:
@@ -413,6 +415,7 @@ public:
 	Event(const EventCallback<EventHandler> *_callback, const InterfaceRef& _ifaceRef, double _delay = 0.0);
 	Event(const EventCallback<EventHandler> *_callback, const NodeRef& _nodeRef, double _delay = 0.0);
 	Event(const EventCallback<EventHandler> *_callback, const PolicyRef& _policyRef, double _delay = 0.0);
+	Event(const EventCallback<EventHandler> *_callback, const DataObjectRefList& _dObjs, double _delay = 0.0);
 #ifdef DEBUG
 	Event(const EventCallback<EventHandler> *_callback, const DebugCmdRef& _dbgCmdRef, double _delay = 0.0);
 #endif
@@ -424,6 +427,7 @@ public:
         const EventType getType() const {
                 return type;
         }
+	double getKey() const { return timeout.getTimeAsSecondsDouble(); }
 	bool hasData() {
 		return doesHaveData;
 	}

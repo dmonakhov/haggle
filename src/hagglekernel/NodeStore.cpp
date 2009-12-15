@@ -333,6 +333,22 @@ NodeStore::size_type NodeStore::retrieveNeighbors(NodeRefList& nl)
 	return n;
 }
 
+NodeStore::size_type NodeStore::numNeighbors()
+{
+        Mutex::AutoLocker l(mutex);
+	size_type n = 0;
+
+	for (NodeStore::iterator it = begin(); it != end(); it++) {
+		const NodeRecord *nr = *it;
+
+		if (nr->node->isNeighbor()) {
+                        n++;
+		}
+	}
+
+	return n;
+}
+
 bool NodeStore::update(NodeRef &node, NodeRefList *nl)
 {
         Mutex::AutoLocker l(mutex);

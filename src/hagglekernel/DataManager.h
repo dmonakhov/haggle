@@ -64,6 +64,7 @@ class DataManager : public Manager
 {
 	EventCallback <EventHandler> *onInsertedDataObjectCallback;
 	EventCallback <EventHandler> *onGetLocalBFCallback;
+	EventCallback <EventHandler> *onAgedDataObjectsCallback;
 	EventType dataTaskEvent;
 	EventType agingEvent;
 	DataHelper *helper;
@@ -89,6 +90,7 @@ private:
         void onDeletedDataObject(Event *e);
         void onNewRelation(Event *e);
 	void onDataTaskComplete(Event *e);
+	void onAgedDataObjects(Event *e);
 	void onAging(Event *e);
 	void onShutdown();
 	void onConfig(Event *e);

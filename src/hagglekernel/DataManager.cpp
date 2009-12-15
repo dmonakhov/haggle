@@ -18,6 +18,7 @@
 #include <haggleutils.h>
 
 #include "EventQueue.h"
+#include "DataStore.h"
 #include "DataManager.h"
 #include "DataObject.h"
 #include "Node.h"
@@ -138,6 +139,7 @@ DataManager::DataManager(HaggleKernel * _kernel, const bool _setCreateTimeOnBloo
 		throw DMException(ret, "Could not register event");
 #endif
 	onInsertedDataObjectCallback = newEventCallback(onInsertedDataObject);
+	onAgedDataObjectsCallback = newEventCallback(onAgedDataObjects);
 
 	// Insert time stamp for when haggle starts up into the data store:
 	RepositoryEntryRef timestamp = RepositoryEntryRef(new RepositoryEntry("DataManager", "Startup timestamp", Timeval::now().getAsString().c_str()));
@@ -147,8 +149,9 @@ DataManager::DataManager(HaggleKernel * _kernel, const bool _setCreateTimeOnBloo
 	agingPeriod = DEFAULT_AGING_PERIOD;
 
 	agingEvent = registerEventType("Aging Event", onAging);
+
 	// Start aging:
-	onAging(NULL);
+	onAgedDataObjects(NULL);
 	
 	dataTaskEvent = registerEventType("DataTaskEvent", onDataTaskComplete);
 
@@ -178,6 +181,10 @@ DataManager::~DataManager()
 	
 	if (onInsertedDataObjectCallback)
 		delete onInsertedDataObjectCallback;
+
+	if (onAgedDataObjectsCallback)
+		delete onAgedDataObjectsCallback;
+
 	if (onGetLocalBFCallback)
 		delete onGetLocalBFCallback;
 }
@@ -337,16 +344,8 @@ void DataManager::onDeletedDataObject(Event * e)
 	for (DataObjectRefList::iterator it = dObjs.begin(); it != dObjs.end(); it++)
 		localBF.remove(*it);
 	
-	if(dObjs.size() > 0)
+	if (dObjs.size() > 0)
 		kernel->getThisNode()->setBloomfilter(localBF, setCreateTimeOnBloomfilterUpdate);
-	// FIXME: THIS SHOULD NOT BE HARD-CODED!
-	if(dObjs.size() > 4)
-	{
-		// Call onAging() do do another aging step, in case there are more data
-		// objects to delete. Use this event, so that onAging() doesn't post 
-		// another aging event into the event queue.
-		onAging(e);
-	}
 }
 
 /*
@@ -380,41 +379,65 @@ void DataManager::onInsertedDataObject(Event * e)
 	}
 }
 
-void DataManager::onAging(Event *e)
+void DataManager::onAgedDataObjects(Event *e)
 {
-	if (!kernel->isShuttingDown()) {
-		// Don't do this when called from the constructor:
-		if (e != NULL) {
-			// Delete from the data store any data objects we're not interested
-			// in and are too old.
-			// FIXME: find a better way to deal with the age parameter. 
-			kernel->getDataStore()->ageDataObjects(Timeval(agingMaxAge,0));
-		}
-		
-		// Should we post another aging event?
-		if(e == NULL || e->getType() == agingEvent)
-		{
+	if (!e || kernel->isShuttingDown())
+		return;
+
+	if (e->hasData()) {
+		DataObjectRefList dObjs = e->getDataObjectList();
+
+		HAGGLE_DBG("Aged %lu data objects\n", dObjs.size());
+
+		if (dObjs.size() >= DATASTORE_MAX_DATAOBJECTS_AGED_AT_ONCE) {
+			// Call onAging() immediately in case there are more data
+			// objects to age.
+			onAging(NULL);
+		} else {
+			// Delay the aging for one period
 			kernel->addEvent(new Event(agingEvent, NULL, agingPeriod));
 		}
+	} else {
+		// No data in event -> means this is the first time the function
+		// is called and we should start the aging timer.
+		kernel->addEvent(new Event(agingEvent, NULL, agingPeriod));
 	}
+}
+
+void DataManager::onAging(Event *e)
+{
+	if (kernel->isShuttingDown())
+		return;
+
+	// Delete from the data store any data objects we're not interested
+	// in and are too old.
+	// FIXME: find a better way to deal with the age parameter. 
+	kernel->getDataStore()->ageDataObjects(Timeval(agingMaxAge, 0), onAgedDataObjectsCallback);
 }
 
 void DataManager::onConfig(Event * e)
 {
 	DataObjectRef dObj = e->getDataObject();
-	if (!dObj) return;
+	
+	if (!dObj) 
+		return;
 	
 	// extract metadata
 	Metadata *m = dObj->getMetadata();
-	if (!m) return;
+	
+	if (!m) 
+		return;
 	
 	// extract metadata relevant for ForwardingManager
 	m = m->getMetadata(this->getName());
-	if (!m) return;
+	
+	if (!m) 
+		return;
 	
 	bool agingHasChanged = false;
 	
 	Metadata *tmp = NULL;
+
 	if ((tmp = m->getMetadata("AgingPeriod"))) {
 		agingPeriod = atoi(tmp->getContent().c_str());
 		HAGGLE_DBG("config agingPeriod=%d\n", agingPeriod);

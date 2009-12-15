@@ -200,6 +200,10 @@ public:
 	size_type retrieveNeighbors(NodeRefList& nl);
 
 	/**
+		Returns the number of current neighbors in the store.
+	*/
+	size_type numNeighbors();
+	/**
 		Remove a node from the node store.
 
 		Returns true if the node was removed, and false if the node

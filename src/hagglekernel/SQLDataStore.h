@@ -94,7 +94,7 @@ protected:
 	int _insertDataObject(DataObjectRef& dObj, const EventCallback<EventHandler> *callback = NULL);
 	int _deleteDataObject(const DataObjectId_t &id, bool shouldReportRemoval = true);
 	int _deleteDataObject(DataObjectRef& dObj, bool shouldReportRemoval = true);
-	int _ageDataObjects(Timeval minimumAge);
+	int _ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback = NULL);
 	int _insertFilter(Filter *f, bool matchFilter = false, const EventCallback<EventHandler> *callback = NULL);
 	int _deleteFilter(long eventtype);
 	// matching Filters
@@ -103,7 +103,7 @@ protected:
 	/**
 		Returns: The number of data objects filled in.
 	*/
-	int _doDOQuery(NodeRef &node, NodeRef alsoThisBF, DataStoreQueryResult *qr, int max_matches, unsigned int ratio, unsigned int attrMatch);
+	int _doDataObjectQueryStep2(NodeRef &node, NodeRef alsoThisBF, DataStoreQueryResult *qr, int max_matches, unsigned int ratio, unsigned int attrMatch);
 	int _doDataObjectQuery(DataStoreDataObjectQuery *q);
 	int _doDataObjectForNodesQuery(DataStoreDataObjectForNodesQuery *q);
 	// matching Node > Dataobjects

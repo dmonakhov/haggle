@@ -245,7 +245,7 @@ private:
 		The following functions operate on the registry without
 		locking it.
 	 */
-	static Thread *_selfGet() { return _selfGetFromId(selfGetId()); }
+	static Thread *_selfGet();
         static Thread *_selfGetFromId(const ThreadId& id);
 public:
 	/*
@@ -262,19 +262,15 @@ public:
 	static void registryPrint();
 #endif
         bool isSelf() const;
-        const thread_handle_t getHandle() const {
-                return thrHandle;
-        }
-        const unsigned long getNum() const {
-                return num;
-        }
+        const thread_handle_t getHandle() const;
+        const unsigned long getNum() const;
 	const char *getName() const;
 	/**
 	   This function checks whether the thread is running or not.
 
 	   @returns a bool indicating running state.
 	 */
-        bool isRunning();
+        bool isRunning() const;
 
 	/**
 	   This function checks whether the thread is cancelled, which
@@ -283,9 +279,8 @@ public:
 	   @returns a bool indicating cancelled state.
 	 */
 	bool isCancelled() const;
-        Runnable *getRunnable() {
-                return runObj;
-        }
+        Runnable *getRunnable();
+	
 	/**
 		Start a thread. This will create a new thread that calls the associated
 		runnable's run() function. The thread will run until the run() function
@@ -384,21 +379,19 @@ protected:
 
 		@param msces the number of milli seconds to sleep
 	 */
-        void cancelableSleep(unsigned long msecs) {
-                if (thr) thr->cancelableSleep(msecs);
-        }
+        void cancelableSleep(unsigned long msecs);
 	/*
 	  A Derived class can override hookCancel if they want to
 	  do something just before the thread is cancelled.
 	 */
-	virtual void hookCancel() { }
+	virtual void hookCancel();
 public:
-	bool shouldExit() const { return (thr ? thr->isCancelled() : true); }
+	bool shouldExit() const;
 	bool start(void);
-	void stop(void) { if (thr) { thr->stop(); } }
-	void cancel(void) { if (thr) { thr->cancel(); } }
-	void join(void) { if (thr) thr->join(); }
-	bool isRunning() { if (thr) return thr->isRunning(); else return false; }
+	void stop(void);
+	void cancel(void);
+	void join(void);
+	bool isRunning() const;
 	/**
 		Get the name of the Runnable. May be overridden by derived classes.
 	 */

@@ -67,7 +67,7 @@ public:
         }
 	EQEvent_t hasNextEvent() { 
                 Mutex::AutoLocker l(mutex);		
-                return shutdownEvent ? EQ_EVENT_SHUTDOWN : (isEmpty() ? EQ_EMPTY : EQ_EVENT); 
+                return shutdownEvent ? EQ_EVENT_SHUTDOWN : (empty() ? EQ_EMPTY : EQ_EVENT); 
 	}
         EQEvent_t getNextEventTime(Timeval *tv) {
                 Mutex::AutoLocker l(mutex);
@@ -77,8 +77,8 @@ public:
                 if (shutdownEvent) {
 			tv->zero();
 			return EQ_EVENT_SHUTDOWN;
-		} else if (!isEmpty()) {
-                        tv->set(getFirst()->getMetric());
+		} else if (!empty()) {
+                        tv->set(front()->getKey());
                         return EQ_EVENT;
                 }
                 return EQ_EMPTY;
@@ -108,8 +108,8 @@ public:
         }
         void addEvent(Event *e) {
                 Mutex::AutoLocker l(mutex);
-                insert(e);
-		signal.raise();
+                if (insert(e))
+			signal.raise();
         }
 };
 

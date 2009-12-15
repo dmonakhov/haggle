@@ -45,7 +45,7 @@ extern HaggleKernel *haggleKernel;
   derive from the 'Manager' class..
  */
 class Manager : public EventHandler
-#if defined(ENABLE_METADAPARSER)
+#if defined(ENABLE_METADATAPARSER)
 	, public MetadataParser
 #endif
 {

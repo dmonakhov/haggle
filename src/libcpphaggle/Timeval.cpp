@@ -80,7 +80,7 @@ Timeval::Timeval(const string str)
 Timeval::Timeval(const double _t)
 {
 	t.tv_sec = (long)_t;
-	t.tv_usec = (long)((_t - t.tv_sec) * 1000000.0);
+	t.tv_usec = (long)((_t - (double)t.tv_sec) * 1000000.0);
 	adjust();
 }
 
@@ -91,6 +91,52 @@ Timeval& Timeval::setNow()
 	return *this;
 }
 
+Timeval& Timeval::zero() 
+{ 
+	t.tv_sec = 0; t.tv_usec = 0; 
+	return *this; 
+}
+	
+Timeval& Timeval::set(const struct timeval &_t) 
+{ 
+	t = _t; 
+	return *this; 
+}
+	
+Timeval& Timeval::set(const long seconds, const long microseconds) 
+{ 
+	t.tv_sec = seconds; 
+	t.tv_usec = microseconds; 
+	return *this; 
+}
+	
+Timeval& Timeval::set(const double seconds) 
+{ 
+	t.tv_sec = (long) seconds; 
+	t.tv_usec = (long)((seconds - (double)t.tv_sec) * 1000000); 
+	return *this; 
+}
+	
+bool Timeval::isValid() const 
+{ 
+	return (t.tv_sec >= 0 && t.tv_usec >= 0 && t.tv_usec < 1000000); 
+}
+	
+const struct timeval *Timeval::getTimevalStruct() const 
+{ 
+	return &t; 
+}
+	
+const long Timeval::getSeconds() const 
+{ 
+	return t.tv_sec;
+}	
+	
+const long Timeval::getMicroSeconds() const 
+{ 
+	return t.tv_usec; 
+}	
+	
 int64_t Timeval::getTimeAsMilliSeconds() const 
 { 
 	return (((int64_t)t.tv_sec * 1000) + (int64_t)t.tv_usec / 1000); 

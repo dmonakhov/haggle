@@ -98,6 +98,10 @@ ApplicationManager::ApplicationManager(HaggleKernel * _kernel) :
 
 	ret = setEventHandler(EVENT_TYPE_NEIGHBOR_INTERFACE_DOWN, onNeighborStatusChange);
 
+#if HAVE_EXCEPTION
+	if (ret < 0)
+		throw ApplicationException(ret, "Could not register event");
+#endif
 	ret = setEventHandler(EVENT_TYPE_NEIGHBOR_INTERFACE_UP, onNeighborStatusChange);
 
 #if HAVE_EXCEPTION
@@ -252,7 +256,8 @@ void ApplicationManager::onRetrieveAppNodes(Event *e)
 		delete nodes;
 		
 	// Push the updated node description to all neighbors
-	kernel->addEvent(new Event(EVENT_TYPE_NODE_DESCRIPTION_SEND));
+	if (kernel->getNodeStore()->numNeighbors())
+		kernel->addEvent(new Event(EVENT_TYPE_NODE_DESCRIPTION_SEND));
 }
 
 void ApplicationManager::onDataStoreFinishedProcessing(Event *e)

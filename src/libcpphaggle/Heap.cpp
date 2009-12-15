@@ -19,20 +19,68 @@
 
 namespace haggle {
 
-void Heap::heapify(unsigned int i)
+HeapItem::HeapItem() : index(npos), active(false) 
+{	
+}
+	
+HeapItem::~HeapItem() 
 {
-	unsigned int l, r, smallest;
+}
+	
+void HeapItem::enable() 
+{
+	active = true;
+}
+
+void HeapItem::disable() 
+{
+	active = false;
+}
+
+	
+Heap::Heap(unsigned long max_size) : _max_size(max_size), _size(0), heap(new HeapItem*[max_size]) 
+{
+}
+	
+Heap::~Heap() 
+{ 
+	delete [] heap; 
+}
+
+bool Heap::empty() const
+{ 
+	return (_size == 0); 
+}
+
+bool Heap::full() const
+{ 
+	return (_size >= _max_size); 
+}
+
+HeapItem *Heap::front()
+{ 
+	return heap[0]; 
+}
+
+unsigned long Heap::size() const 
+{ 
+	return _size; 
+}
+	
+void Heap::heapify(unsigned long i)
+{
+	unsigned long l, r, smallest;
 	HeapItem *tmp;
 
-	l = (2 * i) + 1;	/*left child */
-	r = l + 1;		/*right child */
+	l = (2 * i) + 1;	/* left child */
+	r = l + 1;		/* right child */
 
-	if ((l < size) && (heap[l]->metric < heap[i]->metric))
+	if ((l < _size) && (heap[l]->getKey() < heap[i]->getKey()))
 		smallest = l;
 	else
 		smallest = i;
 
-	if ((r < size) && (heap[r]->metric < heap[smallest]->metric))
+	if ((r < _size) && (heap[r]->getKey() < heap[smallest]->getKey()))
 		smallest = r;
 
 	if (smallest == i)
@@ -47,43 +95,43 @@ void Heap::heapify(unsigned int i)
 	heapify(smallest);
 }
 
-int Heap::increaseSize(unsigned int increase_size)
+bool Heap::increaseSize(unsigned long increase_size)
 {
 	HeapItem **new_heap;
 
-	new_heap = new HeapItem *[max_size + increase_size];
+	new_heap = new HeapItem *[_max_size + increase_size];
 
 	if (!new_heap) {
-		return -1;
+		return false;
 	}
 
-	memcpy(new_heap, heap, size * sizeof(HeapItem *));
+	memcpy(new_heap, heap, _size * sizeof(HeapItem *));
 
 	delete[] heap;
 
 	heap = new_heap;
 
-	max_size += increase_size;
+	_max_size += increase_size;
 
-	return max_size;
+	return true;
 }
 
-int Heap::insert(HeapItem * item)
+bool Heap::insert(HeapItem *item)
 {
-	unsigned int i, parent;
+	unsigned long i, parent;
 
-	if (isFull()) {
-		if (increaseSize() < 0) {
-			fprintf(stderr, "Heap is full and could not increase heap size, size=%d\n", size);
-			return -1;
+	if (full()) {
+		if (increaseSize() == false) {
+			fprintf(stderr, "Heap is full and could not increase heap size, _size=%lu\n", _size);
+			return false;
 		}
 	}
 
-	i = size;
+	i = _size;
 	parent = (i - 1) / 2;
 
-	/*find the correct place to insert */
-	while ((i > 0) && (heap[parent]->metric > item->metric)) {
+	/* find the correct place to insert */
+	while ((i > 0) && (heap[parent]->getKey() > item->getKey())) {
 		heap[i] = heap[parent];
 		heap[i]->index = i;
 		i = parent;
@@ -91,25 +139,30 @@ int Heap::insert(HeapItem * item)
 	}
 	heap[i] = item;
 	item->index = i;
-	size++;
+	_size++;
 
-	return 0;
+	return true;
 }
 
 HeapItem *Heap::extractFirst(void)
 {
 	HeapItem *max;
 
-	if (isEmpty())
+	if (empty())
 		return NULL;
 
 	max = heap[0];
-	size--;
-	heap[0] = heap[size];
+	_size--;
+	heap[0] = heap[_size];
 	heap[0]->index = 0;
 	heapify(0);
 
 	return max;
+}
+
+void Heap::pop_front()
+{
+	extractFirst();
 }
 
 }; // namespace haggle

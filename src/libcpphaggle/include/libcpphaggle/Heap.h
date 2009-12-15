@@ -20,63 +20,52 @@ namespace haggle {
 class HeapItem;
 class Heap;
 
-#define HEAP_DEFAULT_SIZE 500
+#define HEAP_DEFAULT_SIZE 200
 #define HEAP_DEFAULT_INCREASE_SIZE 100
 
-/** */
+/** 
+ The HeapItem class should be inherited by any data item that should
+ be placed in a heap.
+ */
 class HeapItem
 {
         friend class Heap;
+	static const unsigned long npos = -1;
 public:
-        HeapItem(double _metric) : metric(_metric), index(-1), active(0) {}
-        void setIndex(int _index) {
-                index = _index;
-        }
-        void activate() {
-                active = 1;
-        }
-        void disable() {
-                active = 0;
-        }
-        void setMetric(double _metric) {
-                metric = _metric;
-        }
-        double getMetric() {
-                return metric;
-        }
-
+        HeapItem();
+	virtual ~HeapItem();
+        void enable();
+        void disable();
+	/**
+		getKey() returns the key which decides where to place the item
+		in the heap. Must be overridden by derived class.
+	*/
+        virtual double getKey() const = 0;
 private:
-        double metric;
-        int index;
-        short active;
+        unsigned long index;
+        bool active;
 };
 
-/** */
+/** 
+ The Heap class implements a min-heap data structure.
+ */
 class Heap
 {
 public:
-        Heap(unsigned int _size = HEAP_DEFAULT_SIZE) : max_size(_size), size(0), heap(new HeapItem*[_size]) {}
-        ~Heap() {
-                delete [] heap;
-        }
-        //add(
-        void heapify(unsigned int i);
-        bool isEmpty() {
-                return (size == 0 ? true : false);
-        }
-        bool isFull() {
-                return (size >= max_size ? true : false);
-        }
-        int insert(HeapItem *item);
+        Heap(unsigned long max_size = HEAP_DEFAULT_SIZE);
+        ~Heap();
+        bool empty() const;
+        bool full() const;
+        bool insert(HeapItem *item);
         HeapItem *extractFirst();
-        HeapItem *getFirst() {
-                return heap[0];
-        }
-	unsigned int getSize() const { return size; }
+	void pop_front();
+        HeapItem *front();
+	unsigned long size() const;
 private:
-        int increaseSize(unsigned int increase_size = HEAP_DEFAULT_INCREASE_SIZE);
-        unsigned int max_size;
-        unsigned int size;
+        void heapify(unsigned long i);
+        bool increaseSize(unsigned long increase_size = HEAP_DEFAULT_INCREASE_SIZE);
+        unsigned long _max_size;
+        unsigned long _size;
         HeapItem **heap;
 };
 
