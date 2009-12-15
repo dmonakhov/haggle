@@ -57,6 +57,7 @@ private:
 
         bool run();
         void hookCleanup();
+	bool isBeaconMine(struct haggle_beacon *b);
 public:
 	virtual bool handleInterfaceUp(const InterfaceRef &iface);
 	virtual void handleInterfaceDown(const InterfaceRef &iface);

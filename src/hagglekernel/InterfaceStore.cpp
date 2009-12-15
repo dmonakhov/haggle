@@ -138,11 +138,13 @@ InterfaceRef InterfaceStore::addupdate(InterfaceRef &iface, const InterfaceRef& 
 		InterfaceRef& ifaceStore = ir->iface;
 
 		if (ir->iface == iface) {
+			if (ir->cip) 
+				delete ir->cip;
+			
+			ir->cip = policy;
+			
 			if (ir->iface->isSnooped()) {
 				ir->iface->resetFlag(IFFLAG_SNOOPED);
-				if (ir->cip) 
-					delete ir->cip;
-				ir->cip = policy;
 				ir->parent = parentStore;
 			}
 
@@ -185,11 +187,13 @@ InterfaceRef InterfaceStore::addupdate(Interface *iface, const InterfaceRef &par
 		InterfaceRef& ifaceInStore = ir->iface;
 
 		if (ir->iface == *iface) {
+			if (ir->cip) 
+				delete ir->cip;
+			
+			ir->cip = policy;
+			
 			if (ir->iface->isSnooped()) {
 				ir->iface->resetFlag(IFFLAG_SNOOPED);
-				if (ir->cip) 
-					delete ir->cip;
-				ir->cip = policy;
 				ir->parent = parentRef;
 			}
 
@@ -238,11 +242,13 @@ InterfaceRef InterfaceStore::addupdate(Interface *iface, const Interface *parent
 		InterfaceRef& ifaceStore = ir->iface;
 
 		if (ir->iface == *iface) {
+			if (ir->cip) 
+				delete ir->cip;
+			
+			ir->cip = policy;
+			
 			if (ir->iface->isSnooped()) {
 				ir->iface->resetFlag(IFFLAG_SNOOPED);
-				if (ir->cip) 
-					delete ir->cip;
-				ir->cip = policy;
 				ir->parent = parentStore;
 			}
 

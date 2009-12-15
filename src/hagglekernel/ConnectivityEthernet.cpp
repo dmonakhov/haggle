@@ -375,6 +375,22 @@ void ConnectivityEthernet::setPolicy(PolicyRef newPolicy)
 }
 
 
+bool ConnectivityEthernet::isBeaconMine(struct haggle_beacon *b)
+{
+	synchronized(ifaceListMutex) {
+		List<ConnEthIfaceListElement *>::iterator it = ifaceList.begin();
+		
+		for (;it != ifaceList.end(); it++) {
+			
+			Address *addr = (*it)->iface->getAddressByType(AddressType_EthMAC);
+			
+			if (addr && memcmp(addr->getRaw(), b->mac, addr->getLength()) == 0) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
 // This is jitter in the range [ -1000000 : 1000000 ] microseconds.
 
 #define BEACON_JITTER ((prng_uint32() % 2000000) - 1000000)
@@ -382,10 +398,9 @@ void ConnectivityEthernet::setPolicy(PolicyRef newPolicy)
 bool ConnectivityEthernet::run()
 {
 	Watch w;
-	int socketIndex, waitRet = 0; 
-#define BUFLEN 200
-	char buffer[BUFLEN];
-	struct haggle_beacon *beacon = (struct haggle_beacon *) buffer;
+	int socketIndex, waitRet = 0;
+	char buffer[HAGGLE_BEACON_LEN];
+	struct haggle_beacon *beacon = (struct haggle_beacon *)buffer;
 	Timeval next_beacon_time, next_beacon_time_unjittered;
 	u_int32_t prev_seqno = seqno+1;
 	Timeval lifetime = -1; // The lifetime of the neighbor interface closest to death
@@ -408,34 +423,33 @@ bool ConnectivityEthernet::run()
 		// Be explicit
 		timeout.zero();
 
-		if (!w.getRemainingTime(&timeout)) {
-			timeout = Timeval::now();
-			
-			// Has the timeout expired, and a new beacon been sent?
-			if (timeout > next_beacon_time && prev_seqno != seqno) {
-				// Reset the "beacon sent" test:
-				prev_seqno = seqno;
-				// Move the next beacon time into the future:
-				while (timeout > next_beacon_time_unjittered)
-					next_beacon_time_unjittered += beaconInterval;
-				// Add jitter to the timeout:
-				next_beacon_time = 
-					next_beacon_time_unjittered + Timeval(0, BEACON_JITTER);
-			}
+                if (!w.getRemainingTime(&timeout)) {
+                        timeout = Timeval::now();
+                        
+                        while (timeout > next_beacon_time)
+                                next_beacon_time += beaconInterval;
 			
 			if (!lifetime.isValid() || next_beacon_time < lifetime) {
-				CM_DBG("Computing timeout based on next beacon time\n");
+				//CM_DBG("Computing timeout based on next beacon time\n");
 				timeout = next_beacon_time - timeout;
 			} else {
-				CM_DBG("Computing timeout based on lifetime\n");
+				//CM_DBG("Computing timeout based on lifetime\n");
 				timeout = lifetime - timeout;
 			}
-		}
+                }
+                
+                // Add jitter to the timeout, but only when we actually sent 
+                // a beacon (i.e., wait() returned due to a timeout).
+                if (seqno > prev_seqno) {
+                        Timeval jitter(0, BEACON_JITTER);
+                        prev_seqno = seqno;
+                        timeout += jitter;
+                        next_beacon_time += jitter;
+                }
 		
 		w.reset();
-
 		
-		CM_DBG("Next timeout is in %lf seconds\n", timeout.getTimeAsSecondsDouble());
+		//CM_DBG("Next timeout is in %lf seconds\n", timeout.getTimeAsSecondsDouble());
 		
 		waitRet = w.wait(&timeout); 
 
@@ -447,7 +461,7 @@ bool ConnectivityEthernet::run()
 				// Timeout --> send next beacon
 				seqno++;	
 				
-				CM_DBG("Sending beacon\n");
+				//CM_DBG("Sending beacon seqno=%lu\n", seqno);
 				
 				synchronized(ifaceListMutex) {
 					List<ConnEthIfaceListElement *>::iterator it = ifaceList.begin();
@@ -455,7 +469,7 @@ bool ConnectivityEthernet::run()
 					for (;it != ifaceList.end(); it++) {
 						(*it)->broadcast_packet.seqno = htonl(seqno);
 						(*it)->broadcast_packet.interval = beaconInterval;
-						
+						 
 						ret = sendto((*it)->broadcastSocket, 
 							     (const char *) &((*it)->broadcast_packet), 
 							     HAGGLE_BEACON_LEN, 
@@ -473,13 +487,17 @@ bool ConnectivityEthernet::run()
 				while (!downedIfaces.empty()) {
 					handleInterfaceDown(downedIfaces.pop());
 				}
-			} else {
-				CM_DBG("Aging interfaces\n");
-				// Age the neighbor interfaces
-				age_interfaces(rootInterface, &lifetime);
+			} 
+			
+			// Age the neighbor interfaces
+			age_interfaces(rootInterface, &lifetime);
+			
+			/*
+			if (lifetime.isValid()) {
+				Timeval now = Timeval::now();
+				HAGGLE_DBG("Closest to death interface will expire in %lf seconds\n", (lifetime - now).getTimeAsSecondsDouble());
 			}
-			
-			
+			*/
 		} else if (waitRet == Watch::FAILED) {
 			CM_DBG("wait/select error: %s\n", STRERROR(ERRNO));
 			// Assume unrecoverable error:
@@ -497,9 +515,7 @@ bool ConnectivityEthernet::run()
 			char buf[SOCKADDR_SIZE];
 			struct sockaddr *in_addr = (struct sockaddr *)buf;
 			
-			CM_DBG("Something on the socket\n");
-			
-			len = recvfrom(listenSock, buffer, BUFLEN,
+			len = recvfrom(listenSock, buffer, HAGGLE_BEACON_LEN,
 #if defined(OS_WINDOWS)
 				       0,
 #else
@@ -512,12 +528,15 @@ bool ConnectivityEthernet::run()
 				// Handle error in other way?
 			} else if (len != sizeof(struct haggle_beacon)) {
 				CM_DBG("Bad size of beacon: len=%d\n", len);
-			} else {
+			} else if (!isBeaconMine(beacon)) {
 				Addresses addrs;
-				Timeval received_lifetime = Timeval::now() + (beacon->interval * 3);
+				Timeval now = Timeval::now();
+				Timeval received_lifetime = now + (beacon->interval * 3);
 				
 				if (received_lifetime < lifetime)
 					lifetime = received_lifetime;
+				
+				//HAGGLE_DBG("Neighbor interface will expire in %lf seconds\n", (received_lifetime - now).getTimeAsSecondsDouble());
 				
 				// We'll assume that this protocol is available:
 				addrs.add(new Address(AddressType_EthMAC, (unsigned char *)beacon->mac));
@@ -528,12 +547,18 @@ bool ConnectivityEthernet::run()
 					Interface iface(IFTYPE_ETHERNET, beacon->mac, &addrs, "Remote Ethernet", IFFLAG_UP);
 					
 					report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyTime(received_lifetime));
-				} else if (in_addr->sa_family == AF_INET) {					
-					addrs.add(new Address(in_addr, NULL, ProtocolSpecType_TCP, TCP_DEFAULT_PORT));
+				} else if (in_addr->sa_family == AF_INET) {	
+					Address *ipv4 = new Address(in_addr, NULL, ProtocolSpecType_TCP, TCP_DEFAULT_PORT);
+					
+					addrs.add(ipv4);
+					
+					//CM_DBG("Neighbor's (%s) beacon interval is %u seconds\n", ipv4->getURI(), beacon->interval);
 					
 					Interface iface(IFTYPE_ETHERNET, beacon->mac, &addrs, "Remote Ethernet", IFFLAG_UP);
 					report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyTime(received_lifetime));
 				}
+			} else {
+				//CM_DBG("Beacon is my own\n");
 			}
 		}
 	}
