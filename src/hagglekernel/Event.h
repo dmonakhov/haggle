@@ -140,6 +140,10 @@ typedef int EventType;
 	This event is sent by the protocol manager in response to an
 	EVENT_TYPE_DATAOBJECT_SEND event, if the data object was successfully sent.
 	
+	Flag bit: Meaning:
+	1         If this bit is set, then this event was the result of a reject, 
+	          rather than a fully sent data object.
+	
 	EVENT_TYPE_DATAOBJECT_SEND_FAILURE:
 	This event is sent by the protocol manager in response to an
 	EVENT_TYPE_DATAOBJECT_SEND event, if the data object was not successfully 
@@ -376,6 +380,12 @@ private:
 	*/
 	void *data;
 	bool doesHaveData;
+	
+	/**
+		Flags. The meaning of these event flags are specific to each type of
+		event that uses them. See the list of haggle events above. 
+	*/
+	unsigned long flags;
 
 	/* Static class functions that are private */
         static int privTypeToCallbackIndex(EventType type) {
@@ -389,7 +399,7 @@ public:
         Event(EventType _type, const InterfaceRef& _ifaceRef, double _delay = 0.0);
         Event(EventType _type, const NodeRef& _nodeRef, double _delay = 0.0);
         Event(EventType _type, const PolicyRef& _policyRef, double _delay = 0.0);
-        Event(EventType _type, const DataObjectRef&  _dObjRef, const NodeRef& _nodeRef, double _delay = 0.0);
+        Event(EventType _type, const DataObjectRef&  _dObjRef, const NodeRef& _nodeRef, unsigned long flags = 0, double _delay = 0.0);
 #ifdef DEBUG
         Event(const DebugCmdRef& _dbgCmdRef, double _delay = 0.0);
 #endif
@@ -443,6 +453,9 @@ public:
 #endif
 	NodeRefList& getNodeList() {
 		return nodes;
+	}
+	unsigned long getFlags() {
+		return flags;
 	}
         /* Static class functions that are private */
         static int registerType(const char *name, EventCallback<EventHandler> *_callback);

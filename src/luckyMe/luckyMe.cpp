@@ -198,6 +198,7 @@ void createDataobjectRandom()
 		printf("   %s=%s\n", APP_NAME, luckAttrValue);
 	}
 	
+	haggle_dataobject_set_createtime(dObj, NULL);
 	haggle_ipc_publish_dataobject(haggleHandle, dObj);
 	haggle_dataobject_free(dObj);
 
@@ -235,6 +236,7 @@ void createDataobjectGrid()
 		}
 	}
 	
+	haggle_dataobject_set_createtime(dObj, NULL);
 	haggle_ipc_publish_dataobject(haggleHandle, dObj);
 	haggle_dataobject_free(dObj);
 

@@ -1028,7 +1028,7 @@ bool Protocol::run()
 				if (pEvent == PROT_EVENT_SUCCESS || pEvent == PROT_EVENT_REJECT) {
 					// Treat reject as SUCCESS, since it probably means the peer already has the
 					// data object and we should therefore not try to send it again.
-					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, dObj, getManager()->getKernel()->getNodeStore()->retrieve(peerIface)));
+					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, dObj, getManager()->getKernel()->getNodeStore()->retrieve(peerIface), (pEvent == PROT_EVENT_REJECT)?1:0));
 				} else {
 					// Send success/fail event with this data object
 					switch (pEvent) {
