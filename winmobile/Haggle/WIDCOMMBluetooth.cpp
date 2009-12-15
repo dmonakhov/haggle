@@ -155,6 +155,7 @@ void WIDCOMMBluetooth::OnInquiryComplete(BOOL success, short num_responses)
 	if (success == FALSE)
 		inquiryResult = -1;
 
+	HAGGLE_DBG("Setting inquiry complete event\n");
 	SetEvent(hInquiryEvent);
 }
 
@@ -184,15 +185,26 @@ int WIDCOMMBluetooth::_doInquiry(widcomm_inquiry_callback_t callback, void *data
 	// will be reset to 'false' by the OnInquiryComplete callback
 	if (!async) {
 		HAGGLE_DBG("Waiting for inquiry to complete\n");
-		if (WaitForSingleObject(hInquiryEvent, INQUIRY_TIMEOUT) == WAIT_FAILED) {
-			HAGGLE_ERR("Inquiry TIMEOUT after %u s\n", INQUIRY_TIMEOUT/1000);
-			
-			// Try to see if we can force the stack to come out of the inquiry
-			// in case it hung
-			StopInquiry();
-			inquiryResult = -1;
-		} else {
-			HAGGLE_DBG("Inquiry completed\n");
+		
+		DWORD ret = WaitForSingleObject(hInquiryEvent, INQUIRY_TIMEOUT);
+
+		switch (ret) {
+			case WAIT_FAILED:
+				inquiryResult = -1;
+				// Stop the inquiry
+				StopInquiry();
+				break;
+			case WAIT_TIMEOUT:
+				HAGGLE_ERR("Inquiry TIMEOUT after %u s\n", INQUIRY_TIMEOUT/1000);
+				// Try to see if we can force the stack to come out of the inquiry
+				// in case it hung
+				StopInquiry();
+				inquiryResult = -1;
+				break;
+			case WAIT_OBJECT_0:
+				HAGGLE_DBG("Inquiry completed\n");
+				inquiryResult = 0;
+				break;
 		}
 		// We need to unset the isInInquiry flag, otherwise we will
 		// not be able to enter this function again and try another scan.
@@ -267,7 +279,7 @@ out:
 	SetEvent(hDiscoveryEvent);
 }
 
-#define DISCOVERY_TIMEOUT (30000)
+#define DISCOVERY_TIMEOUT (40000)
 
 int WIDCOMMBluetooth::_doDiscovery(const RemoteDevice *rd, GUID *guid, widcomm_discovery_callback_t callback, void *data, bool async)
 {
@@ -296,11 +308,21 @@ int WIDCOMMBluetooth::_doDiscovery(const RemoteDevice *rd, GUID *guid, widcomm_d
 	// will be reset to 'false' by the OnDiscoveryComplete callback
 	if (!async) {
 		HAGGLE_DBG("Waiting for discovery to complete\n");
-		if (WaitForSingleObject(hDiscoveryEvent, DISCOVERY_TIMEOUT) == WAIT_FAILED) {
-			HAGGLE_ERR("Discovery TIMEOUT after %u s\n", DISCOVERY_TIMEOUT/1000);
-			discoveryResult = -1;
-		} else {
-			HAGGLE_DBG("Discovery completed\n");
+
+		DWORD ret = WaitForSingleObject(hDiscoveryEvent, DISCOVERY_TIMEOUT);
+
+		switch (ret) {
+			case WAIT_FAILED:
+				discoveryResult = -1;
+				break;
+			case WAIT_TIMEOUT:
+				HAGGLE_ERR("Discovery TIMEOUT after %u s\n", DISCOVERY_TIMEOUT/1000);
+				discoveryResult = -1;
+				break;
+			case WAIT_OBJECT_0:
+				HAGGLE_DBG("Discovery completed\n");
+				discoveryResult = 0;
+				break;
 		}
 		isInDiscovery = false;
 	}

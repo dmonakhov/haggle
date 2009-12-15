@@ -256,7 +256,8 @@ void ApplicationManager::onRetrieveAppNodes(Event *e)
 		delete nodes;
 		
 	// Push the updated node description to all neighbors
-	kernel->addEvent(new Event(EVENT_TYPE_NODE_DESCRIPTION_SEND));
+	if (kernel->getNodeStore()->numNeighbors())
+		kernel->addEvent(new Event(EVENT_TYPE_NODE_DESCRIPTION_SEND));
 }
 
 void ApplicationManager::onDataStoreFinishedProcessing(Event *e)
