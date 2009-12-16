@@ -17,6 +17,7 @@
 #define _TIMEVAL_H
 
 #include <haggleutils.h>
+#include "Platform.h"
 #include "String.h"
 
 namespace haggle {
