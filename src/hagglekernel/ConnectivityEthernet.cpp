@@ -394,6 +394,9 @@ bool ConnectivityEthernet::isBeaconMine(struct haggle_beacon *b)
 // This is jitter in the range [ -1000000 : 1000000 ] microseconds.
 
 #define BEACON_JITTER ((prng_uint32() % 2000000) - 1000000)
+#define BEACON_EPSILON (1) // Add at least BEACON_EPSILON seconds to any timeouts set on an interface
+#define BEACON_LOSS_MAX (3)
+#define BEACON_TIMEOUT(interval) (Timeval::now() + (interval * BEACON_LOSS_MAX + BEACON_EPSILON))
 
 bool ConnectivityEthernet::run()
 {
@@ -495,7 +498,7 @@ bool ConnectivityEthernet::run()
 			/*
 			if (lifetime.isValid()) {
 				Timeval now = Timeval::now();
-				HAGGLE_DBG("Closest to death interface will expire in %lf seconds\n", (lifetime - now).getTimeAsSecondsDouble());
+				CM_DBG("Closest to death interface will expire in %lf seconds\n", (lifetime - now).getTimeAsSecondsDouble());
 			}
 			*/
 		} else if (waitRet == Watch::FAILED) {
@@ -530,13 +533,10 @@ bool ConnectivityEthernet::run()
 				CM_DBG("Bad size of beacon: len=%d\n", len);
 			} else if (!isBeaconMine(beacon)) {
 				Addresses addrs;
-				Timeval now = Timeval::now();
-				Timeval received_lifetime = now + (beacon->interval * 3);
+				Timeval received_lifetime = BEACON_TIMEOUT(beacon->interval);
 				
 				if (received_lifetime < lifetime)
 					lifetime = received_lifetime;
-				
-				//HAGGLE_DBG("Neighbor interface will expire in %lf seconds\n", (received_lifetime - now).getTimeAsSecondsDouble());
 				
 				// We'll assume that this protocol is available:
 				addrs.add(new Address(AddressType_EthMAC, (unsigned char *)beacon->mac));
@@ -552,8 +552,10 @@ bool ConnectivityEthernet::run()
 					
 					addrs.add(ipv4);
 					
-					//CM_DBG("Neighbor's (%s) beacon interval is %u seconds\n", ipv4->getURI(), beacon->interval);
-					
+					/*
+					 CM_DBG("Neighbor interface (%s) will expire in %lf seconds\n", 
+					       ipv4->getURI(), (received_lifetime - Timeval::now()).getTimeAsSecondsDouble());
+					*/
 					Interface iface(IFTYPE_ETHERNET, beacon->mac, &addrs, "Remote Ethernet", IFFLAG_UP);
 					report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyTime(received_lifetime));
 				}
