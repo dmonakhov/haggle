@@ -19,14 +19,6 @@
 extern "C" {
 #endif
 
-#include "platform.h"
-#include "exports.h"
-#include "interface.h"
-#include "attribute.h"
-#include "dataobject.h"
-#include "node.h"
-#include "ipc.h"
-
 /*
 	These are the error codes libhaggle returns. Please note that they are all 
 	negative because some functions either return a positive result, or an error
@@ -57,8 +49,6 @@ enum {
 	HAGGLE_DATAOBJECT_ERROR,
 	// WSAStartup (windows only) failed.
 	HAGGLE_WSA_ERROR,
-        // No Haggle daemon running
-	HAGGLE_DAEMON_ERROR,
         // The handle was bad
         HAGGLE_HANDLE_ERROR,
         // The metadata was bad
@@ -66,6 +56,14 @@ enum {
 	// No error
 	HAGGLE_NO_ERROR = 0,
 };
+
+#include "platform.h"
+#include "exports.h"
+#include "interface.h"
+#include "attribute.h"
+#include "dataobject.h"
+#include "node.h"
+#include "ipc.h"
 
 /**
 	Similar to errno, this variable is sometimes set to reflect what error 

@@ -374,7 +374,7 @@ int haggle_daemon_pid(unsigned long *pid)
 
         if (!fp) {
                 /* The Pid file does not exist --> Haggle not running. */
-                return HAGGLE_NO_ERROR;
+                return HAGGLE_DAEMON_NOT_RUNNING;
         }
 
         memset(buf, 0, PIDBUFLEN);
@@ -385,7 +385,7 @@ int haggle_daemon_pid(unsigned long *pid)
         fclose(fp);
 
         if (ret == 0)
-                return HAGGLE_ERROR;
+                return HAGGLE_DAEMON_ERROR;
 
         _pid = strtoul(buf, NULL, 10);
         
@@ -426,13 +426,13 @@ int haggle_daemon_pid(unsigned long *pid)
 #endif
         /* If there was a process, return its pid */
         if (old_instance_is_running)
-                return 1;
+                return HAGGLE_DAEMON_RUNNING;
         
         /* No process matching the pid --> Haggle is not running and
          * previously quit without cleaning up (e.g., Haggle crashed,
          * or the phone ran out of battery, etc.)
          */
-        return HAGGLE_NO_ERROR;
+        return HAGGLE_DAEMON_CRASHED;
 }
 
 static int spawn_daemon_internal(const char *daemonpath)

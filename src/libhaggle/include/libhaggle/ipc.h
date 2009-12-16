@@ -16,6 +16,7 @@
 #define _LIBHAGGLE_IPC_H_
 
 #include "exports.h"
+#include "haggle.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,6 +36,14 @@ enum event_types {
 	LIBHAGGLE_EVENT_INTEREST_LIST,
 	// The number of possible events
 	_LIBHAGGLE_NUM_EVENTS,
+};
+
+
+enum daemon_status {
+	HAGGLE_DAEMON_ERROR = HAGGLE_ERROR,
+	HAGGLE_DAEMON_NOT_RUNNING = HAGGLE_NO_ERROR,
+	HAGGLE_DAEMON_RUNNING = 1,
+	HAGGLE_DAEMON_CRASHED = 2,
 };
 
 typedef struct haggle_handle *haggle_handle_t;
@@ -136,14 +145,15 @@ HAGGLE_API int haggle_handle_get(const char *name, haggle_handle_t *handle);
 */
 HAGGLE_API void haggle_handle_free(haggle_handle_t hh);
 
-
 /**
 	This function returns the Process ID (PID) of a running
         Haggle daemon.
 	
 	@param the pid to return, or NULL if caller does not care.
-	@returns 0 (HAGGLE_NO_ERROR) if Haggle is not running, 
-	1 if Haggle is running, or HAGGLE_ERROR on error.
+	@returns HAGGLE_DAEMON_NOT_RUNNING (HAGGLE_NO_ERROR) if Haggle is 
+	not running and previously exited cleanly, HAGGLE_DAEMON_CRASHED if 
+	Haggle exited uncleanly (crashed)), HAGGLE_DAEMON_RUNNING if 
+	Haggle is running, or HAGGLE_DAEMON_ERROR if the function call failed.
 */
 HAGGLE_API int haggle_daemon_pid(unsigned long *pid);
 
