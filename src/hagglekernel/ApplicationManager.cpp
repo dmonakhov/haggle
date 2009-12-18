@@ -330,11 +330,12 @@ void ApplicationManager::onPrepareShutdown()
 	
 	dObj->addAttribute(HAGGLE_ATTR_CONTROL_NAME, "HaggleShutdownEvent");
 	dObj->addAttribute(HAGGLE_ATTR_EVENT_TYPE_NAME, intToStr(LIBHAGGLE_EVENT_HAGGLE_SHUTDOWN));
-	
+
 	sendToAllApplications(dObj, LIBHAGGLE_EVENT_HAGGLE_SHUTDOWN);
 	
 	// Signal we are ready for shutdown here, or defer until
-	// all pending data objects have been sent
+	// all pending data objects have been sent....
+
 	if (pendingDOs.empty())
 		signalIsReadyForShutdown();
 }
@@ -503,10 +504,10 @@ int ApplicationManager::updateApplicationInterests(NodeRef& app)
 
 void ApplicationManager::onApplicationFilterMatchEvent(Event *e)
 {
-	DataObjectRef dObj = e->getDataObject();
+	DataObjectRefList& dObjs = e->getDataObjectList();
 
-	if (!dObj) {
-		HAGGLE_ERR("NULL Data object!\n");
+	if (dObjs.size() == 0) {
+		HAGGLE_ERR("No Data objects in filter match event!\n");
 		return;
 	}
 	EventCriteria ec(e->getType());
@@ -523,43 +524,48 @@ void ApplicationManager::onApplicationFilterMatchEvent(Event *e)
 	for (NodeRefList::iterator it = apps.begin(); it != apps.end(); it++) {
 		NodeRef& app = *it;
 
-		HAGGLE_DBG("Application %s's filter matched\n", app->getName().c_str());
-		
-		// Have we already sent this data object to this app?
-		if (app->getBloomfilter()->has(dObj)) {
-			// Yep. Don't resend.
-			HAGGLE_DBG("Application %s already has data object. Not sending.\n", 
-                                   app->getName().c_str());
-		} else {
-			// Nope. Add it to the bloomfilter, then send.
-			app->getBloomfilter()->add(dObj);
-			string dObjName = "DataObject[App:" + app->getName() + "]";
+		HAGGLE_DBG("Application %s's filter matched %lu data objects\n", 
+			app->getName().c_str(), dObjs.size());
 
-			DataObjectRef dObjSend(dObj->copy(), dObjName);
-			dObjSend->addAttribute(HAGGLE_ATTR_CONTROL_NAME, "MatchingDataObjectEvent");
-			dObjSend->addAttribute(HAGGLE_ATTR_EVENT_TYPE_NAME, intToStr(LIBHAGGLE_EVENT_NEW_DATAOBJECT));       
-			dObjSend->setPersistent(false);
-			
-						/*
-                          Indicate that this data object is for a
-                          local application, which means the file path
-                          to the local file will be added to the
-                          metadata once the data object is transformed
-                          to wire format.
-                         */
-                        dObjSend->setIsForLocalApp();
+		for (DataObjectRefList::iterator it = dObjs.begin(); it != dObjs.end(); it++) {
+			DataObjectRef& dObj = *it;
+
+			// Have we already sent this data object to this app?
+			if (app->getBloomfilter()->has(dObj)) {
+				// Yep. Don't resend.
+				HAGGLE_DBG("Application %s already has data object. Not sending.\n", 
+					app->getName().c_str());
+			} else {
+				// Nope. Add it to the bloomfilter, then send.
+				app->getBloomfilter()->add(dObj);
+				string dObjName = "DataObject[App:" + app->getName() + "]";
+
+				DataObjectRef dObjSend(dObj->copy(), dObjName);
+				dObjSend->addAttribute(HAGGLE_ATTR_CONTROL_NAME, "MatchingDataObjectEvent");
+				dObjSend->addAttribute(HAGGLE_ATTR_EVENT_TYPE_NAME, intToStr(LIBHAGGLE_EVENT_NEW_DATAOBJECT));       
+				dObjSend->setPersistent(false);
+
+				/*
+				Indicate that this data object is for a
+				local application, which means the file path
+				to the local file will be added to the
+				metadata once the data object is transformed
+				to wire format.
+				*/
+				dObjSend->setIsForLocalApp();
 #ifdef DEBUG
-                        char *raw;
-                        size_t len;
-                        
-                        dObjSend->getRawMetadataAlloc(&raw, &len);
-                        
-                        if (raw) {
-                                printf("App - DataObject METADATA:\n%s\n", raw);
-                                free(raw);
-                        }
+				char *raw;
+				size_t len;
+
+				dObjSend->getRawMetadataAlloc(&raw, &len);
+
+				if (raw) {
+					printf("App - DataObject METADATA:\n%s\n", raw);
+					free(raw);
+				}
 #endif
-			sendToApplication(dObjSend, app);
+				sendToApplication(dObjSend, app);
+			}
 		}
 	}
 }

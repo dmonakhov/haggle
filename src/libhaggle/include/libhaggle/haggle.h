@@ -19,44 +19,7 @@
 extern "C" {
 #endif
 
-/*
-	These are the error codes libhaggle returns. Please note that they are all 
-	negative because some functions either return a positive result, or an error
-	code.
-*/
-enum {
-	// A generic haggle error
-	HAGGLE_ERROR = -100,
-	// Unable to allocate memory
-	HAGGLE_ALLOC_ERROR,
-	// A socket function failed.
-	HAGGLE_SOCKET_ERROR,
-	// Unable to register with haggle.
-	HAGGLE_REGISTRATION_ERROR,
-	// Haggle already had an application registered by that name.
-	HAGGLE_BUSY_ERROR,
-	// Parameter error.
-	HAGGLE_PARAM_ERROR,
-	// Internal error.
-	HAGGLE_INTERNAL_ERROR,
-	// Something wrong with the event loop.
-	HAGGLE_EVENT_LOOP_ERROR,	
-	// No event handlers have been registered yet.
-	HAGGLE_EVENT_HANDLER_ERROR,
-	// Something wrong with reading or writing a file
-	HAGGLE_FILE_ERROR,
-	// A bad data object
-	HAGGLE_DATAOBJECT_ERROR,
-	// WSAStartup (windows only) failed.
-	HAGGLE_WSA_ERROR,
-        // The handle was bad
-        HAGGLE_HANDLE_ERROR,
-        // The metadata was bad
-        HAGGLE_METADATA_ERROR,
-	// No error
-	HAGGLE_NO_ERROR = 0,
-};
-
+#include "error.h"
 #include "platform.h"
 #include "exports.h"
 #include "interface.h"

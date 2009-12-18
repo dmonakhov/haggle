@@ -1767,11 +1767,12 @@ int SQLDataStore::evaluateFilters(const DataObjectRef& dObj, sqlite_int64 dataob
 
 int SQLDataStore::evaluateDataObjects(long eventType)
 {
-	int ret, n = 0;
+	int ret;
 	sqlite3_stmt *stmt;
 	const char *tail;
 	sqlite_int64 do_rowid = -1;
 	char *sql_cmd = sqlcmd;
+	DataObjectRefList dObjs;
 
 	HAGGLE_DBG("Evaluating filter\n");
 
@@ -1793,9 +1794,17 @@ int SQLDataStore::evaluateDataObjects(long eventType)
 			do_rowid = sqlite3_column_int64(stmt, view_match_filters_and_dataobjects_as_ratio_dataobject_rowid);
 
 			HAGGLE_DBG("Data object with rowid " INT64_FORMAT " matches!\n", do_rowid);
-			n++;
 			
-                        kernel->addEvent(new Event(eventType, DataObjectRef(getDataObjectFromRowId(do_rowid))));
+			dObjs.push_back(DataObjectRef(getDataObjectFromRowId(do_rowid)));
+                        
+			// FIXME: Set a limit on how many data objects to match when registering
+			// a filter. If there are many data objects, the matching will fill up the 
+			// event queue and Haggle will become unresponsive.
+			// Therefore, we set a limit to 10 data objects here. In the future we should
+			// make sure the limit is a user configurable variable and that the data
+			// objects returned are the highest ranking ones in decending order.
+			if (dObjs.size() == 10)
+				break;
 		} else if (ret == SQLITE_ERROR) {
 			HAGGLE_DBG("Could not insert DO Error: %s\n", sqlite3_errmsg(db));
 			sqlite3_finalize(stmt);
@@ -1804,8 +1813,11 @@ int SQLDataStore::evaluateDataObjects(long eventType)
 	}
 
 	sqlite3_finalize(stmt);
+	
+	if (dObjs.size())
+		kernel->addEvent(new Event(eventType, dObjs));
 
-	return n;
+	return dObjs.size();
 }
 
 
@@ -1918,7 +1930,7 @@ int SQLDataStore::_insertFilter(Filter *f, bool matchFilter, const EventCallback
 		kernel->addEvent(new Event(callback, f));
 	
 	// Find all data objects that match this filter, and report them back:
-	if(matchFilter)
+	if (matchFilter)
 		evaluateDataObjects(f->getEventType());
 	
 	return (int) filter_rowid;

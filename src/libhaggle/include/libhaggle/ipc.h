@@ -16,7 +16,7 @@
 #define _LIBHAGGLE_IPC_H_
 
 #include "exports.h"
-#include "haggle.h"
+#include "error.h"
 
 #ifdef __cplusplus
 extern "C" {

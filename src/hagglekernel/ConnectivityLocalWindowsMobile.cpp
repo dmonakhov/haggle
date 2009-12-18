@@ -217,15 +217,16 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 
 void ConnectivityLocal::findLocalEthernetInterfaces()
 {  
-        InterfaceRefList iflist;
-	
-        int num = getLocalInterfaceList(iflist);
-        
+	InterfaceRefList iflist;
+
+	int num = getLocalInterfaceList(iflist);
+
 	if (num > 0) {
-		 ethIface = iflist.pop();
-                
-		if (ethIface->isUp())
-                        report_interface(ethIface, rootInterface, new ConnectivityInterfacePolicyTTL(1));
+		ethIface = iflist.pop();
+
+		if (ethIface->isUp()) {
+			report_interface(ethIface, rootInterface, new ConnectivityInterfacePolicyAgeless());
+		}
 	}
 }
 #endif
