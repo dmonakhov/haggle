@@ -569,7 +569,7 @@ int haggle_daemon_spawn(const char *daemonpath)
 {
         int i = 0;
 
-        if (haggle_daemon_pid(NULL) != 0)
+	if (haggle_daemon_pid(NULL) == HAGGLE_DAEMON_RUNNING)
                 return HAGGLE_NO_ERROR;
 
         if (daemonpath) {
@@ -623,7 +623,7 @@ int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ig
 #endif
 
 #if !defined(OS_MACOSX_IPHONE)
-        if (haggle_daemon_pid(NULL) == 0)
+        if (haggle_daemon_pid(NULL) != HAGGLE_DAEMON_RUNNING)
                 return HAGGLE_DAEMON_ERROR;
 #endif
 
