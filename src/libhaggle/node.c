@@ -34,7 +34,6 @@
 */
 #define LIBHAGGLE_INTERNAL
 #include <libhaggle/haggle.h>
-#include "debug.h"
 #include "base64.h"
 #include "metadata.h"
 

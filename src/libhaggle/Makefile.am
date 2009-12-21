@@ -6,7 +6,7 @@ if JAVA_BINDINGS
 SUBDIRS = . jni # build the current directory first
 endif
 
-EXTRA_DIST = include debug.h base64.h sha1.h sha1_private.h metadata.h metadata_xml.h Android.mk Doxyfile.in
+EXTRA_DIST = include base64.h sha1.h sha1_private.h metadata.h metadata_xml.h Android.mk Doxyfile.in
 
 CFLAGS +=-std=gnu99
 LDFLAGS +=-lpthread -lxml2 

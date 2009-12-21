@@ -11,11 +11,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
  * See the License for the specific language governing permissions and 
  * limitations under the License.
- */ 
+ */
+#include <libhaggle/debug.h>
 #include "metadata.h"
 #include <stdio.h>
 #include <string.h>
-#include "debug.h"
 
 static inline void metadata_iterator_init(struct metadata_iterator *it, list_t *head, const char *name)
 {

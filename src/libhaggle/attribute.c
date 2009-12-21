@@ -21,7 +21,7 @@
 #include <libhaggle/exports.h>
 #include <libhaggle/list.h>
 #include <libhaggle/attribute.h>
-#include "debug.h"
+#include <libhaggle/debug.h>
 
 #include <libhaggle/haggle.h>
 

@@ -59,7 +59,6 @@ typedef pthread_attr_t thread_handle_attr_t;
 #define HAGGLE_SERVICE_DEFAULT_PORT 8787
 #endif /* USE_UNIX_APPLICATION_SOCKET */
 
-#include "debug.h"
 #include "sha1.h"
 #include "base64.h"
 
@@ -160,16 +159,18 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 {
 	switch (ul_reason_for_call) {
 	case DLL_PROCESS_ATTACH:
+#if defined(DEBUG)
 		libhaggle_debug_init();
+#endif
 		break;
 	case DLL_THREAD_ATTACH:
-		libhaggle_debug_init();
 		break;
 	case DLL_THREAD_DETACH:
-		libhaggle_debug_fini();
 		break;
 	case DLL_PROCESS_DETACH:
+#if defined(DEBUG)
 		libhaggle_debug_fini();
+#endif
 		break;
 	}
 	return TRUE;

@@ -19,7 +19,7 @@
 
 #define LIBHAGGLE_INTERNAL
 #include <libhaggle/haggle.h>
-#include "debug.h"
+#include <libhaggle/debug.h>
 
 static const char *interface_typestr[] = {
 	"undefined",

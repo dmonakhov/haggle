@@ -24,7 +24,7 @@
 #define LIBHAGGLE_INTERNAL
 #include <libhaggle/haggle.h>
 #include <libhaggle/platform.h>
-#include "debug.h"
+#include <libhaggle/debug.h>
 #include "base64.h"
 #include "sha1.h"
 #include "metadata.h"

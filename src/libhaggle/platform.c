@@ -15,12 +15,12 @@
 
 #define LIBHAGGLE_INTERNAL
 #include <libhaggle/platform.h>
+#include <libhaggle/debug.h>
 
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "debug.h"
 
 #ifdef OS_WINDOWS
 /*

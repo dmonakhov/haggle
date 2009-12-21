@@ -905,7 +905,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\libhaggle\debug.h"
+				RelativePath="..\..\src\libhaggle\include\libhaggle\debug.h"
 				>
 			</File>
 			<File

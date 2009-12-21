@@ -27,6 +27,7 @@ extern "C" {
 #include "dataobject.h"
 #include "node.h"
 #include "ipc.h"
+#include "debug.h"
 
 /**
 	Similar to errno, this variable is sometimes set to reflect what error 
