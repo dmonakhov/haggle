@@ -476,7 +476,7 @@ public:
                 return (EVENT_TYPE_PUBLIC(_type) ? eventNames[_type] : NULL);
         }
         const char *getName() const {
-		if(eventNames[type] != NULL)
+		if (eventNames[type] != NULL)
 			return eventNames[type];
 		else
 			return "[Unknown event type]";

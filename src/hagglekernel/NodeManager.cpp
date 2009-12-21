@@ -366,47 +366,52 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 	if (!e || !e->hasData())
 		return;
 
-	DataObjectRef dObj = e->getDataObject();
+	DataObjectRefList& dObjs = e->getDataObjectList();
 
-	NodeRef node = NodeRef(new Node(NODE_TYPE_PEER, dObj), "NodeFromNodeDescription");
-	
-	if (!node) {
-		HAGGLE_DBG("Could not create node from metadata!\n");
-		return;
-	}
-	
-	HAGGLE_DBG("Node description data object %s, refcount=%d\n", dObj.getName(), dObj.refcount());
-	HAGGLE_DBG("Node description from node with id=%s\n", node->getIdStr());
-	
-	if (node == kernel->getThisNode()) {
-		HAGGLE_ERR("Node description is my own. Ignoring and deleting from data store\n");
-		// Remove the data object from the data store:
-		kernel->getDataStore()->deleteDataObject(dObj);
-		return;
-	}
-	
-	// Make sure at least the interface of the remote node is set to up
-	// this 
-	if (dObj->getRemoteInterface()) {
-		// Mark the interface as up in the node.
-		node->setInterfaceUp(dObj->getRemoteInterface());
-		
-		if (node->hasInterface(dObj->getRemoteInterface())) {			
-		} else {
-			// Node description was received from a third party
+	while (dObjs.size()) {
+
+		DataObjectRef& dObj = dObjs.pop();
+
+		NodeRef node = NodeRef(new Node(NODE_TYPE_PEER, dObj), "NodeFromNodeDescription");
+
+		if (!node) {
+			HAGGLE_DBG("Could not create node from metadata!\n");
+			return;
 		}
-	} else {
-		HAGGLE_DBG("Node description data object has no remote interface\n");
-	}
-	
-	// The received node description may be older than one that we already have stored. Therefore, we
-	// need to retrieve any stored node descriptions before we accept this one.
-	char filterString[255];
-	sprintf(filterString, "%s=%s", NODE_DESC_ATTR, node->getIdStr());
-	
-	kernel->getDataStore()->doFilterQuery(new Filter(filterString, 0), onRetrieveNodeDescriptionCallback);
-}
 
+		HAGGLE_DBG("Node description data object %s, refcount=%d\n", dObj.getName(), dObj.refcount());
+		HAGGLE_DBG("Node description from node with id=%s\n", node->getIdStr());
+
+		if (node == kernel->getThisNode()) {
+			HAGGLE_ERR("Node description is my own. Ignoring and deleting from data store\n");
+			// Remove the data object from the data store:
+			kernel->getDataStore()->deleteDataObject(dObj);
+			return;
+		}
+
+		// Make sure at least the interface of the remote node is set to up
+		// this 
+		if (dObj->getRemoteInterface()) {
+			// Mark the interface as up in the node.
+			node->setInterfaceUp(dObj->getRemoteInterface());
+
+			if (node->hasInterface(dObj->getRemoteInterface())) {			
+			} else {
+				// Node description was received from a third party
+			}
+		} else {
+			HAGGLE_DBG("Node description data object has no remote interface\n");
+		}
+
+		// The received node description may be older than one that we already have stored. Therefore, we
+		// need to retrieve any stored node descriptions before we accept this one.
+		char filterString[255];
+		sprintf(filterString, "%s=%s", NODE_DESC_ATTR, node->getIdStr());
+
+		kernel->getDataStore()->doFilterQuery(new Filter(filterString, 0), onRetrieveNodeDescriptionCallback);
+
+	}
+}
 /* 
 	callback to clean-up outdated nodedescriptions in the DataStore
 

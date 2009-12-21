@@ -122,7 +122,7 @@ class ConnectivityManager : public Manager
 	// This will start a new connectivity on the given Interface (must be a local interface).
 	void spawn_connectivity(const InterfaceRef& iface);
 protected:
-    virtual void onConfig(Event *e);
+	void onConfig(DataObjectRef& dObj);
 public:	
 	EventType deleteConnectivityEType;
 

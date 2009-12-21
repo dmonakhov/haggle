@@ -826,33 +826,38 @@ DataObject *SQLDataStore::createDataObject(sqlite3_stmt * stmt)
 	return dObj;
 }
 
-Node *SQLDataStore::createNode(sqlite3_stmt * in_stmt)
+NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 {
 	int ret;
 	char *sql_cmd;
 	sqlite3_stmt *stmt;
 	const char *tail;
 	sqlite_int64 node_rowid;
-	Node *node = NULL;
+	NodeRef node = NULL;
 	int num_match = 0;
 
 	if (!in_stmt)
-		return NULL;
+		return node;
 
+	// First try to retrieve the node from the node store
+	node = kernel->getNodeStore()->retrieve((char *)sqlite3_column_blob(in_stmt, table_nodes_id));
+
+	if (!node) {
 #if HAVE_EXCEPTION
-	try 
+		try 
 #endif
-        {
-		node = new Node((NodeType_t)sqlite3_column_int(in_stmt, table_nodes_type), 
+		{
+			node = new Node((NodeType_t)sqlite3_column_int(in_stmt, table_nodes_type), 
 				(char *)sqlite3_column_blob(in_stmt, table_nodes_id), 
 				(char *)sqlite3_column_text(in_stmt, table_nodes_name));
-	} 
+		} 
 #if HAVE_EXCEPTION
-        catch (Node::NodeException &e) {
-		HAGGLE_ERR("Could not create node from data store information: %s\n", e.getErrorMsg());
-		return NULL;
-	}
+		catch (Node::NodeException &e) {
+			HAGGLE_ERR("Could not create node from data store information: %s\n", e.getErrorMsg());
+			return node;
+		}
 #endif
+	}
 	// Set matching limit and threshold:
 	node->setMaxDataObjectsInMatch((unsigned int)sqlite3_column_int(in_stmt, table_nodes_resolution_max_matching_dataobjects));
 	node->setMatchingThreshold((unsigned int)sqlite3_column_int(in_stmt, table_nodes_resolution_threshold));
@@ -867,8 +872,7 @@ Node *SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 
 	if (ret != SQLITE_OK) {
 		HAGGLE_DBG("SQLite command compilation failed! %s\n", sql_cmd);
-		delete node;
-		return NULL;
+		return node;
 	}
 
 	num_match = 0;
@@ -879,7 +883,6 @@ Node *SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 			Attribute *attr = getAttrFromRowId(attr_rowid, node_rowid);
 
 			if (!attr) {
-				delete node;
 				node = NULL;
 				HAGGLE_DBG("Get attr failed\n");
 				goto out;
@@ -891,7 +894,6 @@ Node *SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 
 		if (ret == SQLITE_ERROR) {
 			HAGGLE_DBG("Could not get Attribute Error:%s\n", sqlite3_errmsg(db));
-			delete node;
 			node = NULL;
 			goto out;
 		}
@@ -904,8 +906,7 @@ Node *SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 
 	if (ret != SQLITE_OK) {
 		HAGGLE_DBG("SQLite command compilation failed! %s\n", SQL_IFACES_FROM_NODE_ROWID_CMD);
-		delete node;
-		return NULL;
+		return node;
 	}
 
 	num_match = 0;
@@ -919,7 +920,6 @@ Node *SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 			InterfaceRef iface2;
 
 			if (!iface) {
-				delete node;
 				node = NULL;
 				HAGGLE_DBG("Get iface failed\n");
 				goto out;
@@ -935,7 +935,6 @@ Node *SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 
 		if (ret == SQLITE_ERROR) {
 			HAGGLE_DBG("Could not get Interface Error:%s\n", sqlite3_errmsg(db));
-			delete node;
 			node = NULL;
 			goto out;
 		}
@@ -1031,13 +1030,13 @@ DataObject *SQLDataStore::getDataObjectFromRowId(const sqlite_int64 dataObjectRo
 	return dObj;
 }
 
-Node *SQLDataStore::getNodeFromRowId(const sqlite_int64 nodeRowId)
+NodeRef SQLDataStore::getNodeFromRowId(const sqlite_int64 nodeRowId)
 {
 	int ret;
 	sqlite3_stmt *stmt;
 	const char *tail;
 	char *sql_cmd;
-	Node *node = NULL;
+	NodeRef node = NULL;
 	int num_match = 0;
 
 	sql_cmd = SQL_NODE_FROM_ROWID_CMD(nodeRowId);
@@ -1057,7 +1056,6 @@ Node *SQLDataStore::getNodeFromRowId(const sqlite_int64 nodeRowId)
 				node = createNode(stmt);
 			} else {
 				HAGGLE_DBG("More than on Node with key=" INT64_FORMAT "\n", nodeRowId);
-				delete node;
 				node = NULL;
 				goto out_err;
 			}
@@ -1717,6 +1715,7 @@ int SQLDataStore::evaluateFilters(const DataObjectRef& dObj, sqlite_int64 dataob
 	const char *tail;
 	sqlite_int64 filter_rowid = -1;
 	int eventType = -1;
+	DataObjectRefList dObjs;
 
 	if (!dObj->getMetadata())
 		return -1;
@@ -1739,7 +1738,10 @@ int SQLDataStore::evaluateFilters(const DataObjectRef& dObj, sqlite_int64 dataob
 		return -1;
 	}
 	
-	/* handle results */
+	// Add the data object to the result list
+	dObjs.add(dObj);
+
+	/* Loop through the results, i.e., all the filters that match */
 	while ((ret = sqlite3_step(stmt)) != SQLITE_DONE) {
 		if (ret == SQLITE_ROW) {
 			
@@ -1749,7 +1751,7 @@ int SQLDataStore::evaluateFilters(const DataObjectRef& dObj, sqlite_int64 dataob
 			HAGGLE_DBG("Filter " INT64_FORMAT " with event type %d matches!\n", filter_rowid, eventType);
 			n++;
 
-                        kernel->addEvent(new Event(eventType, dObj));
+                        kernel->addEvent(new Event(eventType, dObjs));
 		} else if (ret == SQLITE_ERROR) {
 			HAGGLE_DBG("Could not insert DO Error: %s\n", sqlite3_errmsg(db));
 			sqlite3_finalize(stmt);
@@ -2845,13 +2847,16 @@ int SQLDataStore::_doNodeQuery(DataStoreNodeQuery *q)
 			
 			//HAGGLE_DBG("node rowid=%ld\n", nodeRowId);
 			
-			NodeRef node = NodeRef(getNodeFromRowId(nodeRowId), "NodeInQueryResult");
+			NodeRef& node = getNodeFromRowId(nodeRowId);
 			
-			if (node) {
+			/*
+			 Only consider peers and gateways as targets.
+			 Application nodes receive data objects via their
+			 filters....
+			*/
+			if (node && (node->getType() == NODE_TYPE_PEER || node->getType() == NODE_TYPE_GATEWAY)) {
 				qr->addNode(node);
 				num_match++;
-			} else {
-				HAGGLE_DBG("Could not get node from rowid\n");
 			}
 		} else if (ret == SQLITE_ERROR) {
 			HAGGLE_DBG("node query Error:%s\n", sqlite3_errmsg(db));

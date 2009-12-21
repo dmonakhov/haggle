@@ -67,12 +67,12 @@ private:
 	sqlite_int64 getNodeRowId(const NodeRef& node);
 	sqlite_int64 getInterfaceRowId(const InterfaceRef& iface);
 
-	DataObject *createDataObject(sqlite3_stmt * stmt);
-	Node *createNode(sqlite3_stmt * in_stmt);
+	DataObject *createDataObject(sqlite3_stmt *stmt);
+	NodeRef createNode(sqlite3_stmt *in_stmt);
 
 	Attribute *getAttrFromRowId(const sqlite_int64 attr_rowid, const sqlite_int64 node_rowid);
 	DataObject *getDataObjectFromRowId(const sqlite_int64 dataObjectRowId);
-	Node *getNodeFromRowId(const sqlite_int64 nodeRowId);
+	NodeRef getNodeFromRowId(const sqlite_int64 nodeRowId);
 	Interface *getInterfaceFromRowId(const sqlite_int64 ifaceRowId);
 	
 	int findAndAddDataObjectTargets(DataObjectRef& dObj, const sqlite_int64 dataObjectRowId, const long ratio);

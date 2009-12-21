@@ -26,7 +26,9 @@ class DataObjectDataRetriever;
 #include <libcpphaggle/Reference.h>
 #include <libcpphaggle/Exception.h>
 #include <libcpphaggle/String.h>
+#include "Trace.h"
 #include <openssl/sha.h>
+#include <stdio.h>
 
 using namespace haggle;
 
@@ -449,6 +451,7 @@ class DataObject
         InterfaceRef getLocalInterface() const {
                 return localIface;
         }
+	void print(FILE *fp = stdout) const;
         friend bool operator< (const DataObject&a, const DataObject&b);
         friend bool operator==(const DataObject&a, const DataObject&b);
 

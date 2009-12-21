@@ -127,10 +127,8 @@ ConnectivityManager::~ConnectivityManager()
 	Event::unregisterType(deleteConnectivityEType);
 }
 
-void ConnectivityManager::onConfig(Event *e)
+void ConnectivityManager::onConfig(DataObjectRef& dObj)
 {
-	DataObjectRef dObj = e->getDataObject();
-	
 	if (!dObj) {
 		HAGGLE_ERR("no data object!\n");
 		return;
@@ -163,75 +161,80 @@ void ConnectivityManager::onConfig(Event *e)
 
 void ConnectivityManager::onBlacklistDataObject(Event *e)
 {
-        DataObjectRef dObj = e->getDataObject();
-	
-        if (!isValidConfigDataObject(dObj)) {
-		HAGGLE_DBG("Received INVALID config data object\n");
-		return;
+	DataObjectRefList& dObjs = e->getDataObjectList();
+
+	while (dObjs.size()) {
+
+		DataObjectRef& dObj = dObjs.pop();
+
+		if (!isValidConfigDataObject(dObj)) {
+			HAGGLE_DBG("Received INVALID config data object\n");
+			return;
+		}
+		HAGGLE_DBG("Received blacklist data object\n");
+
+		Metadata *mc = dObj->getMetadata()->getMetadata("Connectivity");
+
+		if (!mc) {
+			HAGGLE_ERR("No connectivity metadata in data object\n");
+			return;
+		}
+
+		Metadata *blm = mc->getMetadata("Blacklist");
+
+		while (blm) {
+			const char *type = blm->getParameter("type");
+			const char *action = blm->getParameter("action");
+			string mac = blm->getContent();
+			InterfaceType_t iftype = Interface::strToType(type);
+			int act = 3;
+
+			/*
+			"action=add" means add interface to blacklist if not 
+			present.
+
+			"action=remove" means remove interface from blacklist if 
+			present.
+
+			All other values, including not having an "action" parameter
+			means add interface if it is not in the blacklist, remove 
+			interface if it is in the blacklist (effectively a toggle).
+			*/
+
+			if (action != NULL) {
+				if (strcmp(action, "add") == 0)
+					act = 1;
+				else if (strcmp(action, "remove") == 0)
+					act = 2;
+			}
+
+			if (iftype == IFTYPE_ETHERNET || 
+				iftype == IFTYPE_BLUETOOTH ||
+				iftype == IFTYPE_WIFI) {
+					struct ether_addr etha;
+
+					if (ether_aton_r(mac.c_str(), &etha)) {
+						if (isBlacklisted(iftype, (char *)&etha)) {
+							if (act != 1) {
+								HAGGLE_DBG("Removing interface [%s - %s] from blacklist\n", type, mac.c_str());
+								removeFromBlacklist(iftype, (char *)&etha);
+							} else {
+								HAGGLE_DBG("NOT removing interface [%s - %s] from blacklist (it's not there)\n", type, mac.c_str());
+							}
+						} else {
+							if (act != 2) {
+								HAGGLE_DBG("Blacklisting interface [%s - %s]\n", type, mac.c_str());
+								addToBlacklist(iftype, (char *)&etha);
+							} else {
+								HAGGLE_DBG("NOT blacklisting interface [%s - %s] - already blacklisted\n", type, mac.c_str());
+							}
+						}
+					}
+			}
+
+			blm = mc->getNextMetadata();
+		}
 	}
-        HAGGLE_DBG("Received blacklist data object\n");
-
-        Metadata *mc = dObj->getMetadata()->getMetadata("Connectivity");
-
-        if (!mc) {
-                HAGGLE_ERR("No connectivity metadata in data object\n");
-                return;
-        }
-        
-        Metadata *blm = mc->getMetadata("Blacklist");
-
-        while (blm) {
-                const char *type = blm->getParameter("type");
-                const char *action = blm->getParameter("action");
-                string mac = blm->getContent();
-                InterfaceType_t iftype = Interface::strToType(type);
-                int act = 3;
-                
-                /*
-                  "action=add" means add interface to blacklist if not 
-                  present.
-                  
-                  "action=remove" means remove interface from blacklist if 
-                  present.
-                  
-                  All other values, including not having an "action" parameter
-                  means add interface if it is not in the blacklist, remove 
-                  interface if it is in the blacklist (effectively a toggle).
-                */
-
-                if (action != NULL) {
-                        if (strcmp(action, "add") == 0)
-                                act = 1;
-                        else if (strcmp(action, "remove") == 0)
-                                act = 2;
-                }
-				
-                if (iftype == IFTYPE_ETHERNET || 
-                    iftype == IFTYPE_BLUETOOTH ||
-                    iftype == IFTYPE_WIFI) {
-                        struct ether_addr etha;
-                        
-                        if (ether_aton_r(mac.c_str(), &etha)) {
-                                if (isBlacklisted(iftype, (char *)&etha)) {
-                                        if (act != 1) {
-                                                HAGGLE_DBG("Removing interface [%s - %s] from blacklist\n", type, mac.c_str());
-                                                removeFromBlacklist(iftype, (char *)&etha);
-                                        } else {
-                                                HAGGLE_DBG("NOT removing interface [%s - %s] from blacklist (it's not there)\n", type, mac.c_str());
-                                        }
-                                } else {
-                                        if (act != 2) {
-                                                HAGGLE_DBG("Blacklisting interface [%s - %s]\n", type, mac.c_str());
-                                                addToBlacklist(iftype, (char *)&etha);
-                                        } else {
-                                                HAGGLE_DBG("NOT blacklisting interface [%s - %s] - already blacklisted\n", type, mac.c_str());
-                                        }
-                                }
-                        }
-                }
-                
-                blm = mc->getNextMetadata();
-        }
 }
 
 void ConnectivityManager::addToBlacklist(InterfaceType_t type, const void *identifier)

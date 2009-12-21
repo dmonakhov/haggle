@@ -263,15 +263,7 @@ void DataManager::onVerifiedDataObject(Event *e)
 	HAGGLE_DBG("%s Received DataObject\n", getName());
 
 #ifdef DEBUG
-	char *raw;
-	size_t len;
-
-	dObj->getRawMetadataAlloc(&raw, &len);
-
-	if (raw) {
-		printf("DataObject id=%s METADATA:\n%s\n", dObj->getIdStr(), raw);
-		free(raw);
-	}
+	dObj->print(HAGGLE_TRACE_FILE);
 #endif
 
 	if (dObj->getDataState() == DataObject::DATA_STATE_VERIFIED_BAD) {
@@ -415,10 +407,8 @@ void DataManager::onAging(Event *e)
 	kernel->getDataStore()->ageDataObjects(Timeval(agingMaxAge, 0), onAgedDataObjectsCallback);
 }
 
-void DataManager::onConfig(Event * e)
+void DataManager::onConfig(DataObjectRef& dObj)
 {
-	DataObjectRef dObj = e->getDataObject();
-	
 	if (!dObj) 
 		return;
 	

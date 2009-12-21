@@ -49,6 +49,8 @@ enum {
         HAGGLE_HANDLE_ERROR,
         // The metadata was bad
         HAGGLE_METADATA_ERROR,
+	// There was an unexpected timeout
+	HAGGLE_TIMEOUT_ERROR,
 	// No error
 	HAGGLE_NO_ERROR = 0,
 };

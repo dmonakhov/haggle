@@ -127,5 +127,9 @@ void Manager::_onShutdown(Event *e)
 
 void Manager::_onConfig(Event *e)
 {
-	onConfig(e);
+	DataObjectRefList& dObjs = e->getDataObjectList();
+
+	while (dObjs.size()) {
+		onConfig(dObjs.pop());
+	}
 }

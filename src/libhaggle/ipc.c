@@ -704,10 +704,12 @@ int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ig
 
 	haggle_dataobject_free(dobj);
 
-	if (ret <= 0) {
+	if (ret != HAGGLE_NO_ERROR) {
 		CLOSE_SOCKET(hh->sock);
 		free(hh);
+
 		LIBHAGGLE_ERR("Could not register with haggle daemon\n");
+
 		if (ret < 0)
 			return ret;
 		else
@@ -822,7 +824,7 @@ void haggle_handle_free(haggle_handle_t hh)
 
 	ret = haggle_ipc_send_control_dataobject(hh, dobj, NULL, IO_NO_REPLY);
 
-	if (ret < 0) {
+	if (ret != HAGGLE_NO_ERROR) {
 		LIBHAGGLE_ERR("failed to send deregistration\n");
 	}
 		
@@ -1118,8 +1120,8 @@ int haggle_ipc_send_dataobject(struct haggle_handle *hh, haggle_dobj_t *dobj,
 			LIBHAGGLE_ERR("select error\n");
 			return HAGGLE_SOCKET_ERROR;
 		} else if (ret == 0) {
-			LIBHAGGLE_DBG("Receive timeout!\n");
-			return HAGGLE_NO_ERROR;
+			LIBHAGGLE_ERR("Receive timeout!\n");
+			return HAGGLE_TIMEOUT_ERROR;
 		} 
                              
                 ret = recvfrom(hh->sock, buffer, BUFLEN, 0, (struct sockaddr *)&peer_addr, &addrlen);
@@ -1139,7 +1141,7 @@ int haggle_ipc_send_dataobject(struct haggle_handle *hh, haggle_dobj_t *dobj,
                 }
                 *dobj_reply = dobj_recv;
         }
-        return ret;
+        return HAGGLE_NO_ERROR;
 }
 
 int haggle_ipc_delete_data_object_by_id(haggle_handle_t hh, const dataobject_id_t id)

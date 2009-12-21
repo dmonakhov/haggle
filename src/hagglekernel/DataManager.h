@@ -93,7 +93,7 @@ private:
 	void onAgedDataObjects(Event *e);
 	void onAging(Event *e);
 	void onShutdown();
-	void onConfig(Event *e);
+	void onConfig(DataObjectRef& dObj);
 #if defined(ENABLE_METADAPARSER)
         bool onParseMetadata(Metadata *m);
 #endif

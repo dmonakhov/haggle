@@ -46,6 +46,7 @@ typedef enum {
 	be able to support multiple trace objects.
 */
 	
+#define HAGGLE_TRACE_FILE (Trace::trace.getTraceFile())
 #define HAGGLE_TRACE(type, format, ...) (Trace::trace.write(type, __TRACE_FUNCTION__, format, ## __VA_ARGS__))
 
 #define HAGGLE_ERR(format, ...) HAGGLE_TRACE(TRACE_TYPE_ERROR, format, ## __VA_ARGS__)
@@ -89,6 +90,7 @@ public:
 	bool disableFileTrace();
 	void enable() { enabled = true; }
 	void disable() { enabled = false; }
+	FILE *getTraceFile() const { return traceFile; }
 };
 
 #define LOG_ADD(format, ...) (LogTrace::ltrace.addToLog(format, ## __VA_ARGS__))

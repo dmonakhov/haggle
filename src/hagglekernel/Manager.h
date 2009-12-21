@@ -123,7 +123,7 @@ protected:
 	 If implemented, the Manager might read the metadata to regrieve configuration
 	 information. 
 	 */
-	virtual void onConfig(Event *e) { }
+	virtual void onConfig(DataObjectRef& dObj) { }
 
 	bool unregisterWithKernel();
 	bool registerWithKernel();

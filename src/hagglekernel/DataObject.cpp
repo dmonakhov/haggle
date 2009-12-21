@@ -1240,6 +1240,23 @@ bool DataObject::getRawMetadataAlloc(char **raw, size_t *len) const
         return metadata->getRawAlloc(raw, len);
 } 
 
+void DataObject::print(FILE *fp) const
+{
+	char *raw;
+	size_t len;
+
+	if (!fp) {
+		HAGGLE_ERR("Invalid FILE pointer\n");
+		return;
+	}
+	if (getRawMetadataAlloc(&raw, &len)) {
+		fprintf(fp, "DataObject id=%s:\n%s\n", getIdStr(), raw);
+		free(raw);
+	} else {
+		HAGGLE_ERR("Could not allocate raw metadata\n");
+	}
+}
+
 bool lt_dataobj_p::operator() (const DataObject * _int1, const DataObject * _int2) const
 {
         return 0;

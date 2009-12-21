@@ -271,6 +271,9 @@ void ForwardingManager::onDebugCmd(Event *e)
  */
 bool ForwardingManager::isNeighbor(NodeRef& node)
 {
+	if (node->isNeighbor())
+		return true;
+
 	if (node && node->getType() == NODE_TYPE_PEER) {
 		/*
 		 WARNING! Previously, kernel->getNodeStore()->retrieve(node,...) was
@@ -517,7 +520,7 @@ void ForwardingManager::onNodeQueryResult(Event *e)
                                         HAGGLE_DBG("Sending data object %s directly to target neighbor %s\n", dObj->getIdStr(), node->getName().c_str());
                                         ns.push_front(node);
                                 }
-                        } else { 
+                        } else if (node->getType() == NODE_TYPE_PEER || node->getType() == NODE_TYPE_GATEWAY) { 
                                 HAGGLE_DBG("Trying to find delegates for data object %s bound for target %s\n", dObj->getIdStr(), node->getName().c_str());
                                 forwardByDelegate(dObj, node);
                         }
@@ -658,12 +661,16 @@ void ForwardingManager::onRoutingInformation(Event *e)
 {
 	if (!e || !e->hasData())
 		return;
-	
-	DataObjectRef dObj = e->getDataObject();
-	
-	if (forwardingModule && forwardingModule->hasRoutingInformation(dObj)) {
-		forwardingModule->newRoutingInformation(dObj);
-		return;
+
+	DataObjectRefList& dObjs = e->getDataObjectList();
+
+	while (dObjs.size()) {
+		DataObjectRef& dObj = dObjs.pop();
+
+		if (forwardingModule && forwardingModule->hasRoutingInformation(dObj)) {
+			forwardingModule->newRoutingInformation(dObj);
+			return;
+		}
 	}
 }
 
@@ -672,10 +679,11 @@ void ForwardingManager::onNewDataObject(Event *e)
 	if (!e || !e->hasData())
 		return;
 	
-	DataObjectRef dObj = e->getDataObject();
+	DataObjectRef& dObj = e->getDataObject();
 	
 	if (dObj->isPersistent()) {
-		HAGGLE_DBG("%s - new data object, doing node query\n", getName());
+		HAGGLE_DBG("%s - new data object %s, doing node query\n", getName(), dObj->getIdStr());
+		dObj->print();
 		kernel->getDataStore()->doNodeQuery(dObj, MAX_NODES_TO_FIND_FOR_NEW_DATAOBJECTS, 1, 0, nodeQueryCallback);
 	}
 }
@@ -773,10 +781,8 @@ void ForwardingManager::onSendRoutingInformation(Event * e)
  - <ForwardingModule>Prophet</ForwardingModule>		(Prophet)
  - <ForwardingModule>...</ForwardingModule>			(else: ForwarderEmpty)
  */ 
-void ForwardingManager::onConfig(Event *e)
+void ForwardingManager::onConfig(DataObjectRef& dObj)
 {
-	DataObjectRef dObj = e->getDataObject();
-	
 	if (!dObj) 
 		return;
 	
