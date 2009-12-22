@@ -165,7 +165,7 @@ void ConnectivityManager::onBlacklistDataObject(Event *e)
 
 	while (dObjs.size()) {
 
-		DataObjectRef& dObj = dObjs.pop();
+		DataObjectRef dObj = dObjs.pop();
 
 		if (!isValidConfigDataObject(dObj)) {
 			HAGGLE_DBG("Received INVALID config data object\n");

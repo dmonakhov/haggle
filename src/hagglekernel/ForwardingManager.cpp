@@ -665,7 +665,7 @@ void ForwardingManager::onRoutingInformation(Event *e)
 	DataObjectRefList& dObjs = e->getDataObjectList();
 
 	while (dObjs.size()) {
-		DataObjectRef& dObj = dObjs.pop();
+		DataObjectRef dObj = dObjs.pop();
 
 		if (forwardingModule && forwardingModule->hasRoutingInformation(dObj)) {
 			forwardingModule->newRoutingInformation(dObj);

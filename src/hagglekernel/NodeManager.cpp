@@ -370,7 +370,7 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 
 	while (dObjs.size()) {
 
-		DataObjectRef& dObj = dObjs.pop();
+		DataObjectRef dObj = dObjs.pop();
 
 		NodeRef node = NodeRef(new Node(NODE_TYPE_PEER, dObj), "NodeFromNodeDescription");
 
@@ -379,8 +379,7 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 			return;
 		}
 
-		HAGGLE_DBG("Node description data object %s, refcount=%d\n", dObj.getName(), dObj.refcount());
-		HAGGLE_DBG("Node description from node with id=%s\n", node->getIdStr());
+                HAGGLE_DBG("Node description from node with id=%s\n", node->getIdStr());
 
 		if (node == kernel->getThisNode()) {
 			HAGGLE_ERR("Node description is my own. Ignoring and deleting from data store\n");
