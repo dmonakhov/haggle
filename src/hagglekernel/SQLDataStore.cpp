@@ -2849,7 +2849,7 @@ int SQLDataStore::_doNodeQuery(DataStoreNodeQuery *q)
 			
 			//HAGGLE_DBG("node rowid=%ld\n", nodeRowId);
 			
-			NodeRef& node = getNodeFromRowId(nodeRowId);
+			NodeRef node = getNodeFromRowId(nodeRowId);
 			
 			/*
 			 Only consider peers and gateways as targets.

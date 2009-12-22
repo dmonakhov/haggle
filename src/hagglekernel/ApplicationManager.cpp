@@ -697,7 +697,7 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 	}
 
 	while (dObjs.size()) {
-		DataObjectRef& dObj = dObjs.pop();
+		DataObjectRef dObj = dObjs.pop();
 
 		if (!dObj->getRemoteInterface()) {
 			HAGGLE_DBG("Data object has no source interface, ignoring!\n");

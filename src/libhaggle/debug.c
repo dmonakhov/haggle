@@ -19,7 +19,6 @@
 #define LIBHAGGLE_INTERNAL
 #include <libhaggle/haggle.h>
 
-#if defined(DEBUG)
 #if defined(WINCE)
 FILE *tr_out = NULL;
 FILE *tr_err = NULL;
@@ -50,6 +49,7 @@ int libhaggle_debug_init()
 #endif
 	return 0;
 }
+
 void libhaggle_debug_fini()
 {
 #ifdef WINCE
@@ -80,4 +80,3 @@ int libhaggle_trace(int err, const char *func, const char *fmt, ...)
 	return 0;
 }
 
-#endif /* DEBUG */

@@ -130,6 +130,7 @@ void Manager::_onConfig(Event *e)
 	DataObjectRefList& dObjs = e->getDataObjectList();
 
 	while (dObjs.size()) {
-		onConfig(dObjs.pop());
+                DataObjectRef dObj = dObjs.pop();
+		onConfig(dObj);
 	}
 }
