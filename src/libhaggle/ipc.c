@@ -49,7 +49,10 @@ typedef pthread_attr_t thread_handle_attr_t;
 
 #define LIBHAGGLE_INTERNAL
 #include <libhaggle/platform.h>
-#include <libhaggle/haggle.h>
+#include "metadata.h"
+#include <libhaggle/debug.h>
+#include <libhaggle/ipc.h>
+#include <libhaggle/dataobject.h>
 
 #define PID_FILE platform_get_path(PLATFORM_PATH_PRIVATE, "/haggle.pid")
 
@@ -85,6 +88,7 @@ struct haggle_handle {
 	int num_handlers;
 	int event_loop_running;
 	thread_handle_t th;
+	char *name;
 	char id[ID_LEN];
 	char id_base64[ID_BASE64_LEN];
         haggle_event_loop_start_t start;
@@ -188,7 +192,7 @@ int wait_for_event(haggle_handle_t hh, struct timeval *tv)
 
 	WSAEventSelect(hh->sock, socketEvent, FD_READ);
 
-	LIBHAGGLE_DBG("In wait_for_read\n");
+	LIBHAGGLE_DBG("Waiting for timeout, or socket or signal event\n");
 	waitres = WSAWaitForMultipleEvents(2, eventArr, FALSE, timeout, FALSE);
 
 	if (waitres >= WSA_WAIT_EVENT_0 && waitres < (DWORD)(WSA_WAIT_EVENT_0 + 2)) {
@@ -247,7 +251,6 @@ void event_loop_signal_raise(haggle_handle_t hh)
         
         SetEvent(hh->signal);
 }
-
 
 void event_loop_signal_lower(haggle_handle_t hh)
 {
@@ -604,12 +607,69 @@ int haggle_daemon_spawn(const char *daemonpath)
 	return HAGGLE_ERROR;
 }
 
+typedef enum control_type {
+	CTRL_TYPE_INVALID = -1,
+	CTRL_TYPE_REGISTRATION_REQUEST = 0,
+	CTRL_TYPE_REGISTRATION_REPLY,
+	CTRL_TYPE_MATCHING_DATAOBJECT,
+	CTRL_TYPE_EVENT,
+} control_type_t;
+
+static const char *ctrl_type_names[] = { "registration_request", "registration_reply", "matching_dataobject", "event", NULL };
+
+static const control_type_t ctrl_name_to_type(const char *name)
+{
+	unsigned int i = 0;
+
+	if (!name)
+		return CTRL_TYPE_INVALID;
+
+	while (ctrl_type_names[i]) {
+		if (strcmp(ctrl_type_names[i], name) == 0) {
+			return (control_type_t)i;
+		}
+		i++;
+	}
+
+	return CTRL_TYPE_INVALID;
+}
+static metadata_t *create_control_metadata(haggle_handle_t hh, const control_type_t type)
+{
+	metadata_t *m, *mc;
+
+	if (!hh)
+		return NULL;
+	
+	m = metadata_new(DATAOBJECT_METADATA_APPLICATION, NULL, NULL);
+
+	if (!m)
+		return NULL;
+
+	if (metadata_set_parameter(m, DATAOBJECT_METADATA_APPLICATION_NAME_PARAM, hh->name) < 0)
+		goto out_error;
+
+	if (metadata_set_parameter(m, DATAOBJECT_METADATA_APPLICATION_ID_PARAM, hh->id_base64) < 0)
+		goto out_error;
+
+	mc = metadata_new(DATAOBJECT_METADATA_APPLICATION_CONTROL, NULL, m);
+
+	if (!mc || metadata_set_parameter(mc, DATAOBJECT_METADATA_APPLICATION_CONTROL_TYPE_PARAM, ctrl_type_names[type]) < 0) 
+		goto out_error;
+
+	return m;
+
+out_error:
+	metadata_free(m);
+	return NULL;
+}
+
 int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ignore_busy_signal)
 {
 	int ret;
 	struct haggle_handle *hh = NULL;
 	struct dataobject *dobj, *dobj_reply;
-	struct attribute *attr;
+	metadata_t *m, *mc;
+	control_type_t ctrl_type;
 	SHA1_CTX ctxt;
 
 #ifdef USE_UNIX_APPLICATION_SOCKET
@@ -679,6 +739,16 @@ int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ig
 	// Compute the base64 representation
 	base64_encode(hh->id, ID_LEN, hh->id_base64, ID_BASE64_LEN);
 
+	// Save name
+	hh->name = (char *)malloc(strlen(name) + 1);
+
+	if (!hh->name) {
+		free(hh);
+		return HAGGLE_ALLOC_ERROR;
+	}
+
+	strcpy(hh->name, name);
+
 #ifdef USE_UNIX_APPLICATION_SOCKET
 	haggle_addr.sun_family = AF_UNIX;
 	strcpy(haggle_addr.sun_path, HAGGLE_UNIX_SOCK_PATH);
@@ -691,93 +761,118 @@ int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ig
 	dobj = haggle_dataobject_new();
 
 	if (!dobj) {
-		CLOSE_SOCKET(hh->sock);
-		free(hh);
-                //LIBHAGGLE_ERR("could not allocate data object\n");
-		return HAGGLE_ALLOC_ERROR;
+		ret = HAGGLE_ALLOC_ERROR;
+		goto out_error;
 	}
 
-	haggle_dataobject_add_attribute(dobj, HAGGLE_ATTR_CONTROL_NAME, HAGGLE_ATTR_REGISTRATION_REQUEST_VALUE);
-	haggle_dataobject_add_attribute(dobj, HAGGLE_ATTR_APPLICATION_NAME_NAME, name);
+	LIBHAGGLE_DBG("Constructing control message metadata\n");
+	
+	m = create_control_metadata(hh, CTRL_TYPE_REGISTRATION_REQUEST);
+
+	if (!m || haggle_dataobject_add_metadata(dobj, m) != HAGGLE_NO_ERROR) {
+		haggle_dataobject_free(dobj);
+		ret = HAGGLE_ALLOC_ERROR;
+		goto out_error;
+	}
+	
+	LIBHAGGLE_DBG("Sending control message:\n");
+
+	{
+		char *buf;
+		size_t len;
+
+		if (metadata_get_raw_alloc(m, &buf, &len) > 0) {
+			LIBHAGGLE_DBG("%s\n", buf);
+			free(buf);
+		}
+	}
 
 	ret = haggle_ipc_send_control_dataobject(hh, dobj, &dobj_reply, 10000);
 
 	haggle_dataobject_free(dobj);
 
 	if (ret != HAGGLE_NO_ERROR) {
-		CLOSE_SOCKET(hh->sock);
-		free(hh);
-
 		LIBHAGGLE_ERR("Could not register with haggle daemon\n");
 
-		if (ret < 0)
-			return ret;
-		else
-			return HAGGLE_INTERNAL_ERROR;
+		if (ret >= 0)
+			ret = HAGGLE_INTERNAL_ERROR;
+
+		goto out_error;
 	}
 	
-	attr = haggle_dataobject_get_attribute_by_name_value(dobj_reply, HAGGLE_ATTR_CONTROL_NAME, 
-							     HAGGLE_ATTR_REGISTRATION_REPLY_VALUE);
-	
-	if (!attr) {
-		attr = haggle_dataobject_get_attribute_by_name_value(dobj_reply, HAGGLE_ATTR_CONTROL_NAME, 
-									HAGGLE_ATTR_REGISTRATION_REPLY_REGISTERED_VALUE);
-		if (!attr) {
-			LIBHAGGLE_ERR("Bad registration reply\n");
+	ret =  HAGGLE_REGISTRATION_ERROR;
 
-			CLOSE_SOCKET(hh->sock);
-			free(hh);
+	m = haggle_dataobject_get_metadata(dobj_reply, DATAOBJECT_METADATA_APPLICATION);
+
+	if (!m || !metadata_get_parameter(m, name) || 
+		!(mc = metadata_get(m, DATAOBJECT_METADATA_APPLICATION_CONTROL))) {
 			haggle_dataobject_free(dobj_reply);
-			return HAGGLE_REGISTRATION_ERROR;
-		}
-		
+			goto out_error;
+	}
+
+	ctrl_type = ctrl_name_to_type(metadata_get_parameter(mc, DATAOBJECT_METADATA_APPLICATION_CONTROL_TYPE_PARAM));
+
+	if (ctrl_type != CTRL_TYPE_REGISTRATION_REPLY) {
+		haggle_dataobject_free(dobj_reply);
+		goto out_error;
+	}
+
+	/*
+		Check the reply message.
+	*/
+
+	m = metadata_get(mc, DATAOBJECT_METADATA_APPLICATION_CONTROL_MESSAGE);
+
+	if (!m) {
+		haggle_dataobject_free(dobj_reply);
+		goto out_error;
+	}
+	
+	if (strcmp(metadata_get_content(mc), "OK") == 0) {
+
+	} else if (strcmp(metadata_get_content(mc), "Already registered") == 0) {
 		if (ignore_busy_signal == 0) {
 			LIBHAGGLE_ERR("Unable to get haggle handle - already registered!\n");
-			
-			CLOSE_SOCKET(hh->sock);
-			free(hh);
 			haggle_dataobject_free(dobj_reply);
-			return HAGGLE_BUSY_ERROR;
+			ret = HAGGLE_BUSY_ERROR;
+			goto out_error;
 		}
-	}
-	
-	attr = haggle_dataobject_get_attribute_by_name(dobj_reply, HAGGLE_ATTR_HAGGLE_DIRECTORY_NAME);
-	
-	if (!attr) {
-		LIBHAGGLE_ERR("Bad registration reply\n");
-		
-		CLOSE_SOCKET(hh->sock);
-		free(hh);
+	} else {
+		// Unrecognized message
 		haggle_dataobject_free(dobj_reply);
-		return HAGGLE_REGISTRATION_ERROR;
+		goto out_error;
 	}
 	
-	if (!haggle_directory) {
-		haggle_directory = malloc(strlen(haggle_attribute_get_value(attr)) + 1);
+	m = metadata_get(mc, DATAOBJECT_METADATA_APPLICATION_CONTROL_DIRECTORY);
+
+	if (m) {
 		if (!haggle_directory) {
-			LIBHAGGLE_ERR("Unable to allocate memory\n");
-			
-			CLOSE_SOCKET(hh->sock);
-			free(hh);
-			haggle_dataobject_free(dobj_reply);
-			return HAGGLE_INTERNAL_ERROR;
+			haggle_directory = malloc(strlen(metadata_get_content(m)) + 1);
+			if (!haggle_directory) {
+				LIBHAGGLE_ERR("Unable to allocate memory\n");
+				haggle_dataobject_free(dobj_reply);
+				ret = HAGGLE_ALLOC_ERROR;
+				goto out_error;
+			}
+			strcpy(haggle_directory, metadata_get_content(m));
 		}
-		strcpy(haggle_directory, haggle_attribute_get_value(attr));
+	} else {
+		LIBHAGGLE_ERR("Bad registration reply - no directory\n");
+		haggle_dataobject_free(dobj_reply);
+		goto out_error;
 	}
 	
 	if (ignore_busy_signal == 0) {
-		attr = haggle_dataobject_get_attribute_by_name(dobj_reply, HAGGLE_ATTR_SESSION_ID_NAME);
+		
+		m = metadata_get(mc, DATAOBJECT_METADATA_APPLICATION_CONTROL_SESSION);
 
-		if (!attr) {
-			LIBHAGGLE_ERR("Bad registration reply\n");
-
-			CLOSE_SOCKET(hh->sock);
-			free(hh);
+		if (!m) {
+			LIBHAGGLE_ERR("Bad registration reply, no session metadata\n");
 			haggle_dataobject_free(dobj_reply);
-			return HAGGLE_REGISTRATION_ERROR;
+			goto out_error;
 		}
 
-		hh->session_id = atoi(attr->value);
+		hh->session_id = atoi(metadata_get_content(m));
 	}
 
 	num_handles++;
@@ -791,7 +886,16 @@ int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ig
 	//}
 	
 	*handle = hh;
+
 	return HAGGLE_NO_ERROR;
+
+out_error:
+	CLOSE_SOCKET(hh->sock);
+
+	if (hh->name)
+		free(hh->name);
+	free(hh);
+	return ret;
 }
 
 int haggle_handle_get(const char *name, haggle_handle_t *handle)
@@ -839,6 +943,10 @@ void haggle_handle_free(haggle_handle_t hh)
         close(hh->signal[0]);
         close(hh->signal[1]);
 #endif
+
+	if (hh->name)
+		free(hh->name);
+
 	free(hh);
 	hh = NULL;
 #ifdef DEBUG
@@ -1002,8 +1110,12 @@ int haggle_ipc_send_control_dataobject(haggle_handle_t hh, haggle_dobj_t *dobj,
 	 * be added to the data store */
         haggle_dataobject_unset_flags(dobj, DATAOBJECT_FLAG_PERSISTENT);
 
+	/*
+	   Add control attribute. Haggle needs this to filter the message.
+	*/
+	haggle_dataobject_add_attribute(dobj, HAGGLE_ATTR_CONTROL_NAME, hh->name);
+
 	/* Make sure we always add the application id to control messages */
-	haggle_dataobject_add_attribute(dobj, HAGGLE_ATTR_APPLICATION_ID_NAME, hh->id_base64);
 
 	return haggle_ipc_send_dataobject(hh, dobj, dobj_reply, msecs_timeout);
 }

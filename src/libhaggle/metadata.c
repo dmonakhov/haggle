@@ -110,7 +110,7 @@ metadata_t *metadata_new(const char *name, const char *content, metadata_t *pare
 	INIT_LIST(&m->children);
 
         if (parent)
-                m->parent = parent;
+                metadata_add(parent, m);
         else
                 m->parent = m;
 
@@ -218,25 +218,26 @@ const char *metadata_set_content(metadata_t *m, const char *content)
         return m->content;
 }
 
-#ifdef DEBUG
-void metadata_print(metadata_t *m)
+void metadata_print(FILE *fp, metadata_t *m)
 {
         list_t *pos, *tmp;
 
-        LIBHAGGLE_DBG("parent \'%s:%s\'\n", 
+	if (!fp || !m)
+		return;
+
+        fprintf(fp, "parent \'%s:%s\'\n", 
                metadata_get_name(m), 
                metadata_get_content(m) ? metadata_get_content(m) : "no content");
 
         list_for_each_safe(pos, tmp, &m->parameters->attributes) {
                 haggle_attr_t *a = (haggle_attr_t *)pos;
-                LIBHAGGLE_DBG("param %s=%s ", haggle_attribute_get_name(a), haggle_attribute_get_value(a));
+                fprintf(fp, "param %s=%s ", haggle_attribute_get_name(a), haggle_attribute_get_value(a));
         }
         list_for_each_safe(pos, tmp, &m->children) {
                 metadata_t *mc = (metadata_t *)pos;
-                metadata_print(mc);
+                metadata_print(fp, mc);
         }
 }
-#endif
 
 metadata_t *metadata_get_next(metadata_t *m)
 {
@@ -272,7 +273,7 @@ int metadata_add(metadata_t *parent, metadata_t *child)
 
         list_add(&child->l, &parent->children);
 	
-	return ++parent->num_children;
+	return 0;
 }
 
 int metadata_detach(metadata_t *parent, metadata_t *child)
@@ -282,7 +283,7 @@ int metadata_detach(metadata_t *parent, metadata_t *child)
 
         list_detach(&child->l);
         
-        return --parent->num_children;
+        return 0;
 }
 
 int metadata_set_parameter(metadata_t *m, const char *name, const char *value)

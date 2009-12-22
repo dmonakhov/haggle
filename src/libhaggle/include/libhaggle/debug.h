@@ -22,6 +22,19 @@
 extern "C" {
 #endif
 
+/**
+	This functions makes it possible to disable output from haggle based on the
+	kind of output.
+	
+	The level is initially 2.
+	
+	Level:		What is displayed:
+	2			Debugging output (If compiled with debugging on) and errors
+	1			Only errors
+	0			Nothing
+*/
+HAGGLE_API void set_trace_level(int level);
+
 #ifdef DEBUG
 int libhaggle_debug_init();
 void libhaggle_debug_fini();

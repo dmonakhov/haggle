@@ -62,8 +62,6 @@ typedef struct haggle_handle *haggle_handle_t;
 	receiver. It is the receiving function's task to release the data object.
 */
 typedef void (STDCALL *haggle_event_handler_t) (struct dataobject *, void *);
-
-
 /**
 
 */
@@ -73,6 +71,16 @@ typedef void (STDCALL *haggle_event_loop_stop_t) (void *);
 /* Errors */
 #define	LIBHAGGLE_ERR_BAD_HANDLE    0x01
 #define	LIBHAGGLE_ERR_NOT_CONNECTED 0x02
+
+
+#define DATAOBJECT_METADATA_APPLICATION "Application"
+#define DATAOBJECT_METADATA_APPLICATION_NAME_PARAM "name"
+#define DATAOBJECT_METADATA_APPLICATION_ID_PARAM "id"
+#define DATAOBJECT_METADATA_APPLICATION_CONTROL "Control"
+#define DATAOBJECT_METADATA_APPLICATION_CONTROL_TYPE_PARAM "type"
+#define DATAOBJECT_METADATA_APPLICATION_CONTROL_MESSAGE "Message"
+#define DATAOBJECT_METADATA_APPLICATION_CONTROL_DIRECTORY "Directory"
+#define DATAOBJECT_METADATA_APPLICATION_CONTROL_SESSION "Session"
 
 /* Attribute name definitions */
 #define HAGGLE_ATTR_CONTROL_NAME "HaggleIPC"  // <-- all messages should have at least this one.

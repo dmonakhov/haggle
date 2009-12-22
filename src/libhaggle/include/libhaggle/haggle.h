@@ -19,42 +19,15 @@
 extern "C" {
 #endif
 
-#include "error.h"
-#include "platform.h"
-#include "exports.h"
-#include "interface.h"
-#include "attribute.h"
-#include "dataobject.h"
-#include "node.h"
-#include "ipc.h"
-#include "debug.h"
-
-/**
-	Similar to errno, this variable is sometimes set to reflect what error 
-	occured in a called function.
-*/
-extern HAGGLE_API int libhaggle_errno;
-
-/**
-	TODO: implement error functionality. Current
-	error mechanism is the error codes above?
-	
-	Returns: 
-*/
-HAGGLE_API int haggle_get_error();
-
-/**
-	This functions makes it possible to disable output from haggle based on the
-	kind of output.
-	
-	The level is initially 2.
-	
-	Level:		What is displayed:
-	2			Debugging output (If compiled with debugging on) and errors
-	1			Only errors
-	0			Nothing
-*/
-HAGGLE_API void set_trace_level(int level);
+#include <libhaggle/error.h>
+#include <libhaggle/platform.h>
+#include <libhaggle/exports.h>
+#include <libhaggle/interface.h>
+#include <libhaggle/attribute.h>
+#include <libhaggle/dataobject.h>
+#include <libhaggle/node.h>
+#include <libhaggle/ipc.h>
+#include <libhaggle/debug.h>
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

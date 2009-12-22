@@ -23,6 +23,7 @@ extern "C" {
 #include "list.h"
 #include "exports.h"
 #include "attribute.h"
+
 #ifdef OS_UNIX
 #include <sys/types.h>
 #include <sys/time.h>
@@ -33,34 +34,18 @@ extern "C" {
 
 #include <stdio.h>
 
-#define HASH_LENGTH 20
-
 /**
    \defgroup DataObject Data object
 */
 
 /*@{*/
 
+#define HASH_LENGTH 20
+
 typedef unsigned char dataobject_id_t[HASH_LENGTH];
 
-typedef struct HAGGLE_API dataobject {
-        unsigned short flags;
-	struct timeval createtime;
-        char *filename;
-	char *filepath;
-        size_t datalen;
-	FILE *fp;
-	unsigned char hash[HASH_LENGTH];
-	char *hash_str;
-	char *thumbnail_str;
-	struct attributelist *al;
-	char *raw; // The raw metadata as a string
-	int raw_len; // The raw metadata length
-        struct metadata *m; // The parsed metadata
-#ifdef DEBUG
-        unsigned long num;
-#endif
-} haggle_dobj_t;
+/* Do not make visible the internal structure of the data object. */
+typedef struct dataobject haggle_dobj_t;
 
 /* Flags for data object */
 #define DATAOBJECT_FLAG_NONE       0x0
@@ -68,12 +53,12 @@ typedef struct HAGGLE_API dataobject {
 #define DATAOBJECT_FLAG_ALL        ~0x0
 
 /* Global parameters */
-#define DATAOBJECT_CREATE_TIME_PARAM "createTime"
+#define DATAOBJECT_CREATE_TIME_PARAM "create_time"
 #define DATAOBJECT_PERSISTENT_PARAM "persistent"
 
 /* 'Data' portion of metadata */
 #define DATAOBJECT_METADATA_DATA "Data"
-#define DATAOBJECT_METADATA_DATA_DATALEN_PARAM "dataLen"
+#define DATAOBJECT_METADATA_DATA_DATALEN_PARAM "data_len"
 #define DATAOBJECT_METADATA_DATA_FILEPATH "FilePath"
 #define DATAOBJECT_METADATA_DATA_FILENAME "FileName"
 #define DATAOBJECT_METADATA_DATA_FILEHASH "FileHash"
@@ -432,6 +417,26 @@ HAGGLE_API int haggle_dataobject_remove_attribute(struct dataobject *dobj, struc
 	or negative on error.
 */
 HAGGLE_API int haggle_dataobject_remove_attribute_by_name_value(struct dataobject *dobj, const char *name, const char *value);
+
+/**
+	Get a handle to the metadata of the data object.
+	
+	@param dobj the data object to get the metadata from
+	@param name the name of the metadata to retrieve, or NULL for the top one
+	@returns the metadata handle or NULL on error.
+*/
+
+HAGGLE_API struct metadata *haggle_dataobject_get_metadata(struct dataobject *dobj, const char *name);
+
+/**
+	Add metadata to a data object.
+
+	@param dobj the data object to add metadata to
+	@param m the metadata to add. If the function succeeds, the metadata will be 
+	owned by the data object and should not be freed.
+	@returns HAGGLE_NO_ERROR on success, or HAGGLE_ERROR or HAGGLE_PARAM_ERROR on failure.
+*/
+HAGGLE_API int haggle_dataobject_add_metadata(struct dataobject *dobj, struct metadata *m);
 
 #ifdef DEBUG
 

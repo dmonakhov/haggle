@@ -704,6 +704,8 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 			return;
 		}
 
+		dObj->print();
+
 		ctrlAttr = dObj->getAttribute(HAGGLE_ATTR_CONTROL_NAME);
 
 		if (!ctrlAttr) {

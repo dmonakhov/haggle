@@ -19,9 +19,9 @@
 extern "C" {
 #endif
 
-#include "platform.h"
-#include "list.h"
-#include "exports.h"
+#include <libhaggle/platform.h>
+#include <libhaggle/list.h>
+#include <libhaggle/exports.h>
 
 #if defined(OS_WINDOWS)
 // This is here to avoid a warning with catching the exception in the functions

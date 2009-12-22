@@ -22,6 +22,7 @@ extern "C" {
 #include <libhaggle/platform.h>
 #include <libhaggle/list.h>
 #include <libhaggle/attribute.h>
+#include <stdio.h>
 
 /**
    The metadata is an intermediate representation of the metadata part
@@ -29,7 +30,7 @@ extern "C" {
    internally agnostic towards the exact raw wire format of data
    objects. This makes the API for adding, removing and parsing
    metadata much simpler, while making it possible to easily do
-   changes in the raw wire format, or to change it completelly (e.g.,
+   changes in the raw wire format, or to change it completely (e.g.,
    from XML to binary).  */
 typedef struct metadata_iterator {
         char *name;
@@ -43,7 +44,7 @@ typedef struct metadata {
         char *name;
         char *content;
         struct attributelist *parameters;
-        int num_children;
+        unsigned int num_children;
         list_t children;
 } metadata_t;
 
@@ -60,13 +61,9 @@ metadata_t *metadata_get_next(metadata_t *m);
 metadata_t *metadata_get(metadata_t *m, const char *name);
 int metadata_set_parameter(metadata_t *m, const char *name, const char *value);
 const char *metadata_get_parameter(const metadata_t *m, const char *name);
-#ifdef DEBUG
-void metadata_print(metadata_t *m);
-#endif
+void metadata_print(FILE *fp, metadata_t *m);
 
 #include "metadata_xml.h"
-#define metadata_new_from_raw(raw, len) metadata_xml_new_from_xml((raw), (len))
-#define metadata_get_raw_alloc(m, buf, len) metadata_xml_get_raw_alloc((m), (buf), (len))
 #define HAGGLE_TAG "Haggle"
 
 #ifdef __cplusplus

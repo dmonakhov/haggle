@@ -1800,13 +1800,15 @@ int SQLDataStore::evaluateDataObjects(long eventType)
 			dObjs.push_back(DataObjectRef(getDataObjectFromRowId(do_rowid)));
                         
 			// FIXME: Set a limit on how many data objects to match when registering
-			// a filter. If there are many data objects, the matching will fill up the 
-			// event queue and Haggle will become unresponsive.
+			// a filter. If there are many data objects, the matching will take too long time
+			// and Haggle will become unresponsive.
 			// Therefore, we set a limit to 10 data objects here. In the future we should
 			// make sure the limit is a user configurable variable and that the data
-			// objects returned are the highest ranking ones in decending order.
+			// objects returned are the highest ranking ones in descending order.
+			
 			if (dObjs.size() == 10)
 				break;
+
 		} else if (ret == SQLITE_ERROR) {
 			HAGGLE_DBG("Could not insert DO Error: %s\n", sqlite3_errmsg(db));
 			sqlite3_finalize(stmt);
