@@ -201,10 +201,8 @@ ConnEthIfaceListElement::~ConnEthIfaceListElement()
 }
 
 ConnectivityEthernet::ConnectivityEthernet(ConnectivityManager * m, const InterfaceRef& iface) :
-	Connectivity(m, "Ethernet connectivity"), 
-	ifaceListMutex("ConnEth:IfaceListMutex"), 
-	seqno(0),
-	beaconInterval(15)
+	Connectivity(m, "Ethernet connectivity"), ifaceListMutex("ConnEth:IfaceListMutex"), 
+	seqno(0), beaconInterval(15)
 {
 	int on = 1;
 	struct sockaddr_in my_addr;
@@ -372,6 +370,7 @@ void ConnectivityEthernet::setPolicy(PolicyRef newPolicy)
 			beaconInterval = 15;
 		break;
 	}
+        CM_DBG("Setting beacon interval to %u seconds\n", beaconInterval);
 }
 
 
@@ -396,7 +395,7 @@ bool ConnectivityEthernet::isBeaconMine(struct haggle_beacon *b)
 #define BEACON_JITTER ((prng_uint32() % 2000000) - 1000000)
 #define BEACON_EPSILON (1) // Add at least BEACON_EPSILON seconds to any timeouts set on an interface
 #define BEACON_LOSS_MAX (3)
-#define BEACON_TIMEOUT(interval) (Timeval::now() + (interval * BEACON_LOSS_MAX + BEACON_EPSILON))
+#define BEACON_TIMEOUT(interval) (Timeval::now() + ((interval + BEACON_EPSILON) * BEACON_LOSS_MAX))
 
 bool ConnectivityEthernet::run()
 {
@@ -404,8 +403,7 @@ bool ConnectivityEthernet::run()
 	int socketIndex, waitRet = 0;
 	char buffer[HAGGLE_BEACON_LEN];
 	struct haggle_beacon *beacon = (struct haggle_beacon *)buffer;
-	Timeval next_beacon_time, next_beacon_time_unjittered;
-	u_int32_t prev_seqno = seqno+1;
+	Timeval next_beacon_time = Timeval::now();
 	Timeval lifetime = -1; // The lifetime of the neighbor interface closest to death
 	
 	/*
@@ -417,21 +415,12 @@ bool ConnectivityEthernet::run()
 	
 	socketIndex = w.add(listenSock); 
 	
-	next_beacon_time = Timeval::now();
-	next_beacon_time_unjittered = next_beacon_time;
-		
 	while (!shouldExit()) {
 		Timeval timeout;
-
-		// Be explicit
-		timeout.zero();
 
                 if (!w.getRemainingTime(&timeout)) {
                         timeout = Timeval::now();
                         
-                        while (timeout > next_beacon_time)
-                                next_beacon_time += beaconInterval;
-			
 			if (!lifetime.isValid() || next_beacon_time < lifetime) {
 				//CM_DBG("Computing timeout based on next beacon time\n");
 				timeout = next_beacon_time - timeout;
@@ -441,22 +430,13 @@ bool ConnectivityEthernet::run()
 			}
                 }
                 
-                // Add jitter to the timeout, but only when we actually sent 
-                // a beacon (i.e., wait() returned due to a timeout).
-                if (seqno > prev_seqno) {
-                        Timeval jitter(0, BEACON_JITTER);
-                        prev_seqno = seqno;
-                        timeout += jitter;
-                        next_beacon_time += jitter;
-                }
-		
 		w.reset();
 		
 		//CM_DBG("Next timeout is in %lf seconds\n", timeout.getTimeAsSecondsDouble());
 		
 		waitRet = w.wait(&timeout); 
 
-		if (waitRet == Watch::TIMEOUT) {					
+		if (waitRet == Watch::TIMEOUT) {				
 			if (Timeval::now() >= next_beacon_time) {
 				InterfaceRefList downedIfaces;		
 				int ret;
@@ -490,6 +470,10 @@ bool ConnectivityEthernet::run()
 				while (!downedIfaces.empty()) {
 					handleInterfaceDown(downedIfaces.pop());
 				}
+
+                                /* Compute next beacon time. */
+                                Timeval jitter(0, BEACON_JITTER);
+                                next_beacon_time += (beaconInterval + jitter);
 			} 
 			
 			// Age the neighbor interfaces
