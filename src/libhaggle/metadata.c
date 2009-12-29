@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include <libhaggle/debug.h>
+#include <libhaggle/error.h>
 #include "metadata.h"
 #include <stdio.h>
 #include <string.h>
@@ -26,9 +27,10 @@ static inline void metadata_iterator_init(struct metadata_iterator *it, list_t *
         it->pos = it->head->next;
         it->tmp = it->pos->next;
 	
-        if (it->name)
+        if (it->name) {
                 free(it->name);
-        
+		it->name = NULL;
+        }
         if (name && strlen(name) > 0) {
 		
                 it->name = (char *)malloc(strlen(name) + 1);
@@ -39,10 +41,10 @@ static inline void metadata_iterator_init(struct metadata_iterator *it, list_t *
                 strcpy(it->name, name);
 		
 		/* Iterate to first occurance of 'name' */
-		for (; it->pos != it->head; it->pos = it->tmp, it->tmp = it->pos->next) {
-			metadata_t *mc =  (metadata_t *)it->pos;
+		for (; it->pos != it->head; it->pos = it->pos->next, it->tmp = it->pos->next) {
+			metadata_t *m =  (metadata_t *)it->pos;
 			
-			if (strcmp(metadata_get_name(mc), name) == 0) {
+			if (strcmp(metadata_get_name(m), name) == 0) {
 				return;
 			}
 		}
@@ -52,7 +54,7 @@ static inline void metadata_iterator_init(struct metadata_iterator *it, list_t *
 static inline int metadata_iterator_is_at_end(struct metadata_iterator *it)
 {
         if (!it)
-                return -1;
+                return HAGGLE_ERROR;
 
         if (it->pos == it->head)
                 return 1;
@@ -63,11 +65,12 @@ static inline int metadata_iterator_is_at_end(struct metadata_iterator *it)
 static inline int metadata_iterator_next(struct metadata_iterator *it)
 {
         if (!it)
-                return -1;
+                return HAGGLE_ERROR;
 
-        if (it->pos == it->head)
+        if (it->pos == it->head) {
                 return 0;
-        
+	}
+	        
         it->pos = it->tmp;
         it->tmp = it->pos->next;
 
@@ -79,17 +82,18 @@ static inline int metadata_iterator_next(struct metadata_iterator *it)
                 return 1;
 
         for (; it->pos != it->head; it->pos = it->tmp, it->tmp = it->pos->next) {
-                metadata_t *mc =  (metadata_t *)it->pos;
-                if (strcmp(metadata_get_name(mc), it->name) == 0)
+                metadata_t *m =  (metadata_t *)it->pos;
+                if (strcmp(metadata_get_name(m), it->name) == 0) {
                         return 1;
+		}
         }
-        
-        return 0;
+	
+	return 0;
 }
 
 static inline metadata_t *metadata_iterator_deref(struct metadata_iterator *it)
 {
-        if (!it || (it->pos == it->head))
+        if (!it || metadata_iterator_is_at_end(it))
                 return NULL;
 
         return (metadata_t *)it->pos;
@@ -109,11 +113,6 @@ metadata_t *metadata_new(const char *name, const char *content, metadata_t *pare
 	INIT_LIST(&m->l);
 	INIT_LIST(&m->children);
 
-        if (parent)
-                m->parent = parent;
-        else
-                m->parent = m;
-
         m->parameters = haggle_attributelist_new();
 
         if (!m->parameters) {
@@ -124,6 +123,11 @@ metadata_t *metadata_new(const char *name, const char *content, metadata_t *pare
         metadata_set_name(m, name);
         metadata_set_content(m, content);
 
+        if (parent)
+                metadata_add(parent, m);
+        else
+                m->parent = m;
+	
         return m;
 }
 
@@ -132,7 +136,9 @@ void metadata_free(metadata_t *m)
         if (!m)
                 return;
 
-        list_detach(&m->l);
+	//printf("Freeing metadata %s\n", m->name);
+	
+        metadata_detach(m);
 
         /* Free all children recursively */
         while (!list_empty(&m->children)) {
@@ -218,32 +224,30 @@ const char *metadata_set_content(metadata_t *m, const char *content)
         return m->content;
 }
 
-#ifdef DEBUG
-void metadata_print(metadata_t *m)
+void metadata_print(FILE *fp, metadata_t *m)
 {
-        list_t *pos, *tmp;
+        list_t *pos;
 
-        LIBHAGGLE_DBG("parent \'%s:%s\'\n", 
-               metadata_get_name(m), 
-               metadata_get_content(m) ? metadata_get_content(m) : "no content");
+	if (!fp || !m)
+		return;
 
-        list_for_each_safe(pos, tmp, &m->parameters->attributes) {
+        fprintf(fp, "Node \'%s\' [parent=%s] ", metadata_get_name(m), m->parent ? metadata_get_name(m->parent) : "no parent");
+
+        list_for_each(pos, &m->parameters->attributes) {
                 haggle_attr_t *a = (haggle_attr_t *)pos;
-                LIBHAGGLE_DBG("param %s=%s ", haggle_attribute_get_name(a), haggle_attribute_get_value(a));
+                fprintf(fp, "param %s=%s ", haggle_attribute_get_name(a), haggle_attribute_get_value(a));
         }
-        list_for_each_safe(pos, tmp, &m->children) {
+	printf("\ncontent: %s\n", metadata_get_content(m) ? metadata_get_content(m) : "no content");
+	
+        list_for_each(pos, &m->children) {
                 metadata_t *mc = (metadata_t *)pos;
-                metadata_print(mc);
+                metadata_print(fp, mc);
         }
 }
-#endif
 
 metadata_t *metadata_get_next(metadata_t *m)
 {
-        if (!m || !m->it.head)
-                return NULL;
-
-        if (metadata_iterator_is_at_end(&m->it))
+        if (!m || !m->it.head || metadata_iterator_is_at_end(&m->it))
                 return NULL;
 
         metadata_iterator_next(&m->it);
@@ -266,23 +270,27 @@ metadata_t *metadata_get(metadata_t *m, const char *name)
 int metadata_add(metadata_t *parent, metadata_t *child)
 {
        if (!parent || !child)
-                return -1;
+                return HAGGLE_ERROR;
                 
+	// Detach from any previous parent
+        metadata_detach(child);
+	
         child->parent = parent;
 
-        list_add(&child->l, &parent->children);
+        list_add_tail(&child->l, &parent->children);
 	
-	return ++parent->num_children;
+	return HAGGLE_NO_ERROR;
 }
 
-int metadata_detach(metadata_t *parent, metadata_t *child)
+int metadata_detach(metadata_t *child)
 {
-        if (!parent || !child)
-                return -1;
+        if (!child)
+                return HAGGLE_ERROR;
 
         list_detach(&child->l);
+	child->parent = NULL;
         
-        return --parent->num_children;
+        return HAGGLE_NO_ERROR;
 }
 
 int metadata_set_parameter(metadata_t *m, const char *name, const char *value)
@@ -290,7 +298,7 @@ int metadata_set_parameter(metadata_t *m, const char *name, const char *value)
         struct attribute *a;
 
         if (!m || !name || !value)
-                return -1;
+                return HAGGLE_ERROR;
         
         
         a = haggle_attributelist_get_attribute_by_name(m->parameters, name);
@@ -299,13 +307,13 @@ int metadata_set_parameter(metadata_t *m, const char *name, const char *value)
                 if (haggle_attribute_set_value(a, value))
                         return 0;
                 else 
-                        return -1;
+                        return HAGGLE_ERROR;
         } 
         
         a = haggle_attribute_new(name, value);
         
         if (!a)
-                return -1;
+                return HAGGLE_ERROR;
 
         haggle_attributelist_add_attribute(m->parameters, a);
 

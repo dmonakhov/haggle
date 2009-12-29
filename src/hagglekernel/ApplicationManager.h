@@ -23,6 +23,7 @@
 class ApplicationHandle;
 class ApplicationManager;
 
+#include <libcpphaggle/Pair.h>
 #include <libcpphaggle/Map.h>
 
 #include "Manager.h"
@@ -102,6 +103,8 @@ class ApplicationManager : public Manager
         int sendToAllApplications(DataObjectRef& dObj, long eid);
         int addApplicationEventInterest(NodeRef& app, long eid);
         int updateApplicationInterests(NodeRef& app);
+	Metadata *addControlMetadata(const control_type_t type, const string app_name, Metadata *parent);
+
         /* Event handler functions */
         void onSendResult(Event *e);
         void onReceiveFromApplication(Event *e);

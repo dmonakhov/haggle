@@ -84,6 +84,7 @@ namespace Haggle
                 [DllImport("libhaggle.dll", EntryPoint = "haggle_daemon_spawn")]
                 static extern int UnmanagedDaemonSpawn(IntPtr exepath);
 
+                public const int HAGGLE_ERROR = -100;
                 public const int HAGGLE_NO_ERROR = 0;
                 public const int HAGGLE_BUSY_ERROR = -5;
 
@@ -151,13 +152,20 @@ namespace Haggle
                 {
                         return UnmanagedDeleteDataObject(handle, dObj.cDataObject);
                 }
+                enum DaemonStatus
+                {
+                        HAGGLE_DAEMON_ERROR = HAGGLE_ERROR,
+                        HAGGLE_DAEMON_NOT_RUNNING = HAGGLE_NO_ERROR,
+                        HAGGLE_DAEMON_RUNNING = 1,
+                        HAGGLE_DAEMON_CRASHED = 2,
+                };
                 public static uint DaemonPid()
                 {
                         uint pid = 0;
 
                         int ret = UnmanagedDaemonPid(ref pid);
 
-                        if (ret == 1)
+                        if (ret == (int)DaemonStatus.HAGGLE_DAEMON_RUNNING)
                         {
                                 Debug.WriteLine("Haggle pid is " + pid);
 

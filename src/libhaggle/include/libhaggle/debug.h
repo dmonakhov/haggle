@@ -16,17 +16,28 @@
 #ifndef _LIBHAGGLE_DEBUG_H
 #define _LIBHAGGLE_DEBUG_H
 
-#include <libhaggle/exports.h>
+#include "exports.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/**
+	This functions makes it possible to disable output from haggle based on the
+	kind of output.
+	
+	The level is initially 2.
+	
+	Level:		What is displayed:
+	2			Debugging output (If compiled with debugging on) and errors
+	1			Only errors
+	0			Nothing
+*/
+HAGGLE_API void set_trace_level(int level);
+
 HAGGLE_API int libhaggle_debug_init();
 HAGGLE_API void libhaggle_debug_fini();
-
 HAGGLE_API int libhaggle_trace(int err, const char *func, const char *fmt, ...);
-
 
 #ifdef DEBUG
 #define LIBHAGGLE_DBG(f, ...) libhaggle_trace((1==0), __FUNCTION__, f, ## __VA_ARGS__)

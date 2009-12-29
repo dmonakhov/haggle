@@ -25,10 +25,13 @@ extern "C" {
 */
 #include "metadata.h"
 
-#define HAGGLE_XML_TAG "<Haggle/>"
+#define HAGGLE_XML_TAG "<" HAGGLE_TAG "/>"
 
 metadata_t *metadata_xml_new_from_xml(const char *raw, size_t len);
 int metadata_xml_get_raw_alloc(metadata_t *m, char **buf, size_t *len);
+
+#define metadata_new_from_raw(raw, len) metadata_xml_new_from_xml((raw), (len))
+#define metadata_get_raw_alloc(m, buf, len) metadata_xml_get_raw_alloc((m), (buf), (len))
 
 #ifdef __cplusplus
 }

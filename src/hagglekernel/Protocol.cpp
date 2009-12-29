@@ -892,7 +892,7 @@ ProtocolEvent Protocol::sendDataObjectNow(const DataObjectRef& dObj)
 		if (len == 0 && !hasSentHeader && pEvent == PROT_EVENT_SUCCESS) {
 			// We are sending to a local application: done after sending the 
 			// header:
-			if (dObj->getAttribute(HAGGLE_ATTR_CONTROL_NAME))
+			if (peerIface->getType() == IFTYPE_APPLICATION_PORT)
                                 return pEvent;
 			
 			hasSentHeader = true;

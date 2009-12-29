@@ -147,7 +147,6 @@
 		D3F44EF40E83E221005981E6 /* bloomfilter.h in Headers */ = {isa = PBXBuildFile; fileRef = D3F44E1C0E83E025005981E6 /* bloomfilter.h */; };
 		D3F44EFF0E83E221005981E6 /* utils.h in Headers */ = {isa = PBXBuildFile; fileRef = D3F44E2D0E83E025005981E6 /* utils.h */; };
 		D3F44F0A0E83E267005981E6 /* base64.h in Headers */ = {isa = PBXBuildFile; fileRef = D3F44E490E83E040005981E6 /* base64.h */; };
-		D3F44F0B0E83E267005981E6 /* debug.h in Headers */ = {isa = PBXBuildFile; fileRef = D3F44E4C0E83E040005981E6 /* debug.h */; };
 		D3F44F0C0E83E267005981E6 /* attribute.h in Headers */ = {isa = PBXBuildFile; fileRef = D3F44E4F0E83E040005981E6 /* attribute.h */; };
 		D3F44F0D0E83E267005981E6 /* dataobject.h in Headers */ = {isa = PBXBuildFile; fileRef = D3F44E500E83E040005981E6 /* dataobject.h */; };
 		D3F44F0E0E83E267005981E6 /* exports.h in Headers */ = {isa = PBXBuildFile; fileRef = D3F44E510E83E040005981E6 /* exports.h */; };
@@ -260,6 +259,8 @@
 		D32C3E970F163CF700D028F9 /* Signal.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Signal.cpp; path = ../src/libcpphaggle/Signal.cpp; sourceTree = SOURCE_ROOT; };
 		D32C3E980F163CF700D028F9 /* String.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = String.cpp; path = ../src/libcpphaggle/String.cpp; sourceTree = SOURCE_ROOT; };
 		D33081E40E535C8D00E435ED /* webserver */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = webserver; sourceTree = BUILT_PRODUCTS_DIR; };
+		D34C3A1410E1433F00BA5635 /* debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = debug.h; sourceTree = "<group>"; };
+		D34C3A1510E1433F00BA5635 /* error.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = error.h; sourceTree = "<group>"; };
 		D384C5760F4D6FF500E55BC7 /* Certificate.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Certificate.cpp; path = ../src/hagglekernel/Certificate.cpp; sourceTree = SOURCE_ROOT; };
 		D384C57F0F4D70C400E55BC7 /* Metadata.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Metadata.cpp; path = ../src/hagglekernel/Metadata.cpp; sourceTree = SOURCE_ROOT; };
 		D384C5800F4D70C400E55BC7 /* MetadataParser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MetadataParser.cpp; path = ../src/hagglekernel/MetadataParser.cpp; sourceTree = SOURCE_ROOT; };
@@ -406,7 +407,6 @@
 		D3F44E490E83E040005981E6 /* base64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = base64.h; path = ../src/libhaggle/base64.h; sourceTree = SOURCE_ROOT; };
 		D3F44E4A0E83E040005981E6 /* dataobject.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = dataobject.c; path = ../src/libhaggle/dataobject.c; sourceTree = SOURCE_ROOT; };
 		D3F44E4B0E83E040005981E6 /* debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = debug.c; path = ../src/libhaggle/debug.c; sourceTree = SOURCE_ROOT; };
-		D3F44E4C0E83E040005981E6 /* debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debug.h; path = ../src/libhaggle/debug.h; sourceTree = SOURCE_ROOT; };
 		D3F44E4F0E83E040005981E6 /* attribute.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = attribute.h; sourceTree = "<group>"; };
 		D3F44E500E83E040005981E6 /* dataobject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dataobject.h; sourceTree = "<group>"; };
 		D3F44E510E83E040005981E6 /* exports.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = exports.h; sourceTree = "<group>"; };
@@ -867,6 +867,8 @@
 		D3F44E4E0E83E040005981E6 /* libhaggle */ = {
 			isa = PBXGroup;
 			children = (
+				D34C3A1410E1433F00BA5635 /* debug.h */,
+				D34C3A1510E1433F00BA5635 /* error.h */,
 				D3F44E4F0E83E040005981E6 /* attribute.h */,
 				D3F44E500E83E040005981E6 /* dataobject.h */,
 				D3F44E510E83E040005981E6 /* exports.h */,
@@ -901,10 +903,9 @@
 		D3F44EB60E83E0D5005981E6 /* Headers */ = {
 			isa = PBXGroup;
 			children = (
-				D3F44E490E83E040005981E6 /* base64.h */,
-				D3F44E4C0E83E040005981E6 /* debug.h */,
 				D3F44E4D0E83E040005981E6 /* include */,
 				D384C5890F4D710400E55BC7 /* metadata.h */,
+				D3F44E490E83E040005981E6 /* base64.h */,
 				D384C58B0F4D710400E55BC7 /* metadata_xml.h */,
 				D3F44E5D0E83E040005981E6 /* sha1.h */,
 				D3F44E5E0E83E040005981E6 /* sha1_private.h */,
@@ -970,7 +971,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				D3F44F0A0E83E267005981E6 /* base64.h in Headers */,
-				D3F44F0B0E83E267005981E6 /* debug.h in Headers */,
 				D3F44F0C0E83E267005981E6 /* attribute.h in Headers */,
 				D3F44F0D0E83E267005981E6 /* dataobject.h in Headers */,
 				D3F44F0E0E83E267005981E6 /* exports.h in Headers */,
@@ -1438,6 +1438,7 @@
 				);
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = Haggle;
+				SDKROOT = macosx10.5;
 				USE_HEADERMAP = NO;
 				ZERO_LINK = YES;
 			};
@@ -1447,6 +1448,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_MODEL_TUNING = G5;
 				HEADER_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/../src/utils",
@@ -1587,6 +1589,11 @@
 				);
 				INSTALL_PATH = /usr/local/bin;
 				LIBRARY_SEARCH_PATHS = "../src/libhaggle/**";
+				OTHER_CFLAGS = (
+					"-g",
+					"-DDEBUG",
+					"-DOS_MACOSX",
+				);
 				OTHER_CPLUSPLUSFLAGS = (
 					"-g",
 					"-DDEBUG",
@@ -1738,6 +1745,12 @@
 				COPY_PHASE_STRIP = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
+				HEADER_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/../src/utils",
+					"$(PROJECT_DIR)/../src/libhaggle/include",
+					/usr/include/libxml2,
+				);
+				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/../src/libhaggle/**";
 				OTHER_CFLAGS = (
 					"-DOS_MACOSX",
 					"-DDEBUG",
@@ -1757,6 +1770,12 @@
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/../src/utils",
+					"$(PROJECT_DIR)/../src/libhaggle/include",
+					/usr/include/libxml2,
+				);
+				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/../src/libhaggle/**";
 				OTHER_CFLAGS = (
 					"-O2",
 					"-DOS_MACOSX",

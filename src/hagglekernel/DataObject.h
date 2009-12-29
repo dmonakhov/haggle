@@ -47,10 +47,10 @@ typedef ReferenceList<DataObject> DataObjectRefList;
 #define DATAOBJECT_ATTRIBUTE_WEIGHT_PARAM "weight"
 
 #define DATAOBJECT_METADATA_DATA "Data"
-#define DATAOBJECT_CREATE_TIME_PARAM "createTime"
+#define DATAOBJECT_CREATE_TIME_PARAM "create_time"
 #define DATAOBJECT_PERSISTENT_PARAM "persistent"
 
-#define DATAOBJECT_METADATA_DATA_DATALEN_PARAM "dataLen"
+#define DATAOBJECT_METADATA_DATA_DATALEN_PARAM "data_len"
 
 #define DATAOBJECT_METADATA_DATA_FILEPATH "FilePath"
 #define DATAOBJECT_METADATA_DATA_FILENAME "FileName"
@@ -64,7 +64,7 @@ typedef ReferenceList<DataObject> DataObjectRefList;
  /* DATAOBJECT_METADATA_PENDING is based on the POSIX value
   * _POSIX_SSIZE_MAX. We should probably figure out a better way to
   * set this max value. */
-#define DATAOBJECT_METADATA_PENDING 32767
+#define DATAOBJECT_METADATA_PENDING (32767)
 
 /*
 	The maximum size of a metadata header that we allow.
@@ -75,7 +75,7 @@ typedef ReferenceList<DataObject> DataObjectRefList;
 	The data object class will not in any way enforce this limit, it is up to
 	the managers to enforce it.
 */
-#define DATAOBJECT_MAX_METADATA_SIZE	(65536)
+#define DATAOBJECT_MAX_METADATA_SIZE (65536)
 /*
 	The maximum size of a data object that we allow.
 	
@@ -85,7 +85,7 @@ typedef ReferenceList<DataObject> DataObjectRefList;
 	The data object class will not in any way enforce this limit, it is up to
 	the managers to enforce it.
 */
-#define DATAOBJECT_MAX_DATA_SIZE		(1LL<<32)
+#define DATAOBJECT_MAX_DATA_SIZE (1LL<<32)
 
 /*
 	This macro is meant to be used by managers to determine if a data object

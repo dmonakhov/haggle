@@ -22,12 +22,33 @@
 #define DATAOBJECT_IN_MEMORY_NAME_PREFIX "mem-dObj-"
 
 #define LIBHAGGLE_INTERNAL
-#include <libhaggle/haggle.h>
 #include <libhaggle/platform.h>
+#include <libhaggle/haggle.h>
 #include <libhaggle/debug.h>
 #include "base64.h"
 #include "sha1.h"
 #include "metadata.h"
+
+struct dataobject {
+        unsigned short flags;
+	struct timeval createtime;
+        char *filename;
+	char *filepath;
+        size_t datalen;
+	FILE *fp;
+	unsigned char hash[SHA1_DIGEST_LENGTH];
+	char *hash_str;
+	char *thumbnail_str;
+	struct attributelist *al;
+	char *raw; // The raw metadata as a string
+	int raw_len; // The raw metadata length
+        metadata_t *m; // The parsed metadata
+#ifdef DEBUG
+        unsigned long num;
+#endif
+};
+
+#include <libhaggle/dataobject.h>
 
 #if defined(OS_LINUX) || defined(OS_MACOSX)
 #include <arpa/inet.h>
@@ -164,13 +185,20 @@ struct dataobject *haggle_dataobject_new_from_raw(const char *raw, const size_t 
 		haggle_dataobject_free(dobj);
 		return NULL;
 	}
- 
+	
+	/*
+	  Parse the stuff we know and need and remove, leave the rest untouched
+	 */
 	if (raw) {
-		metadata_t *ma;
-		
 		dobj->m = metadata_new_from_raw(raw, len);
 
 		if (!dobj->m) {
+			haggle_dataobject_free(dobj);
+			return NULL;
+		}
+		
+		if (!metadata_name_is(dobj->m, HAGGLE_TAG)) {
+			LIBHAGGLE_DBG("Not a Haggle data object\n");
 			haggle_dataobject_free(dobj);
 			return NULL;
 		}
@@ -193,61 +221,69 @@ struct dataobject *haggle_dataobject_new_from_raw(const char *raw, const size_t 
 			haggle_dataobject_set_createtime(dobj, &ct);
 		}
 		
-		md = metadata_get(dobj->m, DATAOBJECT_METADATA_DATA);
-
-		if (md) {
-			metadata_t *mc;
-			const char *str = metadata_get_parameter(md, DATAOBJECT_METADATA_DATA_DATALEN_PARAM);
-
-			if (str)
-				dobj->datalen = atoi(str);
-
-			mc = metadata_get(md, NULL);
-			
-			while (mc) {
+		md = metadata_get(dobj->m, NULL);
+		
+		while (md) {			
+			if (metadata_name_is(md, DATAOBJECT_METADATA_DATA)) {
+				metadata_t *mc;
+				const char *str = metadata_get_parameter(md, DATAOBJECT_METADATA_DATA_DATALEN_PARAM);
 				
-				if (metadata_name_is(mc, DATAOBJECT_METADATA_DATA_FILEPATH)) {
-					haggle_dataobject_set_filepath(dobj, metadata_get_content(mc));
-				} else if (metadata_name_is(mc, DATAOBJECT_METADATA_DATA_FILENAME)) {
-					haggle_dataobject_set_filename(dobj, metadata_get_content(mc));
-				} else if (metadata_name_is(mc, DATAOBJECT_METADATA_DATA_FILEHASH)) {
-					struct base64_decode_context ctx;
-					size_t len = HASH_LENGTH;
-					base64_decode_ctx_init(&ctx);
-
-					if (base64_decode(&ctx, metadata_get_content(mc), 
-						strlen(metadata_get_content(mc)), 
-						(char *)dobj->hash, &len)) {
+				if (str)
+					dobj->datalen = atoi(str);
+				
+				mc = metadata_get(md, NULL);
+				
+				while (mc) {
+					
+					if (metadata_name_is(mc, DATAOBJECT_METADATA_DATA_FILEPATH)) {
+						haggle_dataobject_set_filepath(dobj, metadata_get_content(mc));
+					} else if (metadata_name_is(mc, DATAOBJECT_METADATA_DATA_FILENAME)) {
+						haggle_dataobject_set_filename(dobj, metadata_get_content(mc));
+					} else if (metadata_name_is(mc, DATAOBJECT_METADATA_DATA_FILEHASH)) {
+						struct base64_decode_context ctx;
+						size_t len = HASH_LENGTH;
+						base64_decode_ctx_init(&ctx);
+						
+						if (base64_decode(&ctx, metadata_get_content(mc), 
+								  strlen(metadata_get_content(mc)), 
+								  (char *)dobj->hash, &len)) {
 							dataobject_set_hash_str(dobj);
+						}
 					}
+					
+					mc = metadata_get_next(md);
 				}
-
-				mc = metadata_get_next(md);
-			}
+				
+			} else if (metadata_name_is(md, DATAOBJECT_METADATA_ATTRIBUTE)) {
+				const char *name = metadata_get_parameter(md, DATAOBJECT_METADATA_ATTRIBUTE_NAME_PARAM);
+				const char *weightstr = metadata_get_parameter(md, DATAOBJECT_METADATA_ATTRIBUTE_WEIGHT_PARAM);
+				haggle_attr_t *a;
+				
+				if (name) {
+					if (weightstr)
+						a = haggle_attribute_new_weighted(name, metadata_get_content(md), strtoul(weightstr, NULL, 10));
+					else
+						a = haggle_attribute_new(name, metadata_get_content(md));
+					
+					if (a)
+						haggle_attributelist_add_attribute(dobj->al, a);
+				}
+				//LIBHAGGLE_DBG("it: %s:%s\n", metadata_get_name(mc), metadata_get_content(mc));
+			} 
+			
+			md = metadata_get_next(dobj->m);
 		}
 
-		ma = metadata_get(dobj->m, DATAOBJECT_METADATA_ATTRIBUTE);
-
-		while (ma) {
-			const char *name = metadata_get_parameter(ma, DATAOBJECT_METADATA_ATTRIBUTE_NAME_PARAM);
-			const char *weightstr = metadata_get_parameter(ma, DATAOBJECT_METADATA_ATTRIBUTE_WEIGHT_PARAM);
-			haggle_attr_t *a;
-
-			if (name) {
-				if (weightstr)
-					a = haggle_attribute_new_weighted(name, metadata_get_content(ma), strtoul(weightstr, NULL, 10));
-				else
-					a = haggle_attribute_new(name, metadata_get_content(ma));
-
-				if (a)
-					haggle_attributelist_add_attribute(dobj->al, a);
-			}
-			//LIBHAGGLE_DBG("it: %s:%s\n", metadata_get_name(mc), metadata_get_content(mc));
-			ma = metadata_get_next(dobj->m);
+	} else {
+		dobj->m = metadata_new(HAGGLE_TAG, NULL, NULL);	
+		
+		if (!dobj->m) {
+			LIBHAGGLE_ERR("failed to create new metadata\n");
+			haggle_dataobject_free(dobj);
+			return NULL;
 		}
 	}
 
-        
 #ifdef DEBUG
 	num_dobj_alloc++;
         dobj->num = num_dobj_alloc;
@@ -300,7 +336,15 @@ struct dataobject *haggle_dataobject_new_from_file(const char *filepath)
 		return NULL;
 	}
 	strcpy(dobj->filepath, filepath);
-
+	
+        dobj->m = metadata_new(HAGGLE_TAG, NULL, NULL);
+	
+        if (!dobj->m) {
+                LIBHAGGLE_ERR("failed to create new metadata\n");
+		haggle_dataobject_free(dobj);
+                return NULL;
+        }
+	
 #if HAVE_EXTRACTOR
 	do {
 		EXTRACTOR_ExtractorList *plugins;
@@ -520,29 +564,13 @@ int haggle_dataobject_calculate_id(const struct dataobject *dobj, dataobject_id_
 
 metadata_t *haggle_dataobject_to_metadata(struct dataobject *dobj)
 {
-        char *persistent = NULL;
         metadata_t *md;
         list_t *pos;
         
-	if (!dobj)
+	if (!dobj || !dobj->m)
 		return NULL;
         
-        if (dobj->flags & DATAOBJECT_FLAG_PERSISTENT)
-                persistent = "yes";
-        else
-                persistent = "no";
-
-        if (dobj->m)
-                metadata_free(dobj->m);
-
-        dobj->m = metadata_new(HAGGLE_TAG, NULL, NULL);
-
-        if (!dobj->m) {
-                LIBHAGGLE_ERR("failed to create new metadata\n");
-                return NULL;
-        }
-
-        metadata_set_parameter(dobj->m, DATAOBJECT_PERSISTENT_PARAM, persistent);
+        metadata_set_parameter(dobj->m, DATAOBJECT_PERSISTENT_PARAM, dobj->flags & DATAOBJECT_FLAG_PERSISTENT ? "yes" : "no");
 	
 	if (dobj->createtime.tv_sec != 0) {
 		char createtime[32];
@@ -555,17 +583,19 @@ metadata_t *haggle_dataobject_to_metadata(struct dataobject *dobj)
 		metadata_set_parameter(dobj->m, DATAOBJECT_CREATE_TIME_PARAM, createtime);
 	}
 	
-	
         if (dobj->filepath || dobj->datalen > 0) {
                 char datalenstr[20];
-                md = metadata_new(DATAOBJECT_METADATA_DATA, NULL, dobj->m);
-
-                if (!md) {
-                        LIBHAGGLE_ERR("failed to create new child metadata\n");
-                        metadata_free(dobj->m);
-                        return NULL;
-                }
-                metadata_add(dobj->m, md);
+		
+		md = metadata_get(dobj->m, DATAOBJECT_METADATA_DATA);
+		
+		if (!md) {
+			md = metadata_new(DATAOBJECT_METADATA_DATA, NULL, dobj->m);
+			
+			if (!md) {
+				LIBHAGGLE_ERR("failed to create new child metadata\n");
+				return NULL;
+			}
+		}
 #if defined(OS_WINDOWS)
                 snprintf(datalenstr, 20, "%u", dobj->datalen);
 #else
@@ -574,41 +604,75 @@ metadata_t *haggle_dataobject_to_metadata(struct dataobject *dobj)
                 metadata_set_parameter(md, DATAOBJECT_METADATA_DATA_DATALEN_PARAM, datalenstr);
                 
                 if (dobj->filename) {
-                        metadata_add(md, metadata_new(DATAOBJECT_METADATA_DATA_FILENAME, dobj->filename, md));
+			metadata_t *fm = metadata_get(md, DATAOBJECT_METADATA_DATA_FILENAME);
+			
+			if (fm) {
+				metadata_set_content(fm, dobj->filename);
+			} else {
+				metadata_new(DATAOBJECT_METADATA_DATA_FILENAME, dobj->filename, md);
+			}
                 }
 
 		if (dobj->hash_str) {
+			metadata_t *hm;
+			
 			char base64_hash[BASE64_LENGTH(SHA1_DIGEST_LENGTH) + 1];
 			memset(base64_hash, '\0', BASE64_LENGTH(SHA1_DIGEST_LENGTH) + 1);
 
 			base64_encode((char *)dobj->hash, SHA1_DIGEST_LENGTH, base64_hash, BASE64_LENGTH(SHA1_DIGEST_LENGTH) + 1);
-			metadata_add(md, metadata_new(DATAOBJECT_METADATA_DATA_FILEHASH, base64_hash, md));
+			
+			hm = metadata_get(md, DATAOBJECT_METADATA_DATA_FILEHASH);
+			
+			if (hm) {
+				metadata_set_content(hm, base64_hash);
+			} else {
+				metadata_new(DATAOBJECT_METADATA_DATA_FILEHASH, base64_hash, md);
+			}
 			LIBHAGGLE_DBG("Added file hash in base64 %s\n", base64_hash);
 		}
 
 		if (dobj->thumbnail_str) {
-			metadata_add(md, metadata_new(DATAOBJECT_METADATA_DATA_THUMBNAIL, dobj->thumbnail_str, md));
+			metadata_t *tm = metadata_get(md, DATAOBJECT_METADATA_DATA_THUMBNAIL);
+			
+			if (tm) {
+				metadata_set_content(tm, dobj->thumbnail_str);
+			} else {
+				metadata_new(DATAOBJECT_METADATA_DATA_THUMBNAIL, dobj->thumbnail_str, md);
+			}
 		}
-                if (dobj->filepath)
-                        metadata_add(md, metadata_new(DATAOBJECT_METADATA_DATA_FILEPATH, dobj->filepath, md));
+                if (dobj->filepath) {
+			metadata_t *fpm = metadata_get(md, DATAOBJECT_METADATA_DATA_FILEPATH);
+			
+			if (fpm) {
+				metadata_set_content(fpm, dobj->filepath);
+			} else {
+				metadata_new(DATAOBJECT_METADATA_DATA_FILEPATH, dobj->filepath, md);
+			}
+		}
         }
 
-
+	/* Remove all the attributes and replace with the attribute list */
+	md = metadata_get(dobj->m, DATAOBJECT_METADATA_ATTRIBUTE);
+	
+	while (md) {
+		metadata_free(md);
+		md = metadata_get_next(dobj->m);
+	}
+	
         list_for_each(pos, &dobj->al->attributes) {
-                haggle_attr_t *a = (haggle_attr_t *)pos;
-                metadata_t *am = metadata_new(DATAOBJECT_METADATA_ATTRIBUTE, haggle_attribute_get_value(a), dobj->m);
+		haggle_attr_t *a = (haggle_attr_t *)pos;
+		metadata_t *am = metadata_new(DATAOBJECT_METADATA_ATTRIBUTE, haggle_attribute_get_value(a), dobj->m);
 
-                if (am) {
-					metadata_set_parameter(am, DATAOBJECT_METADATA_ATTRIBUTE_NAME_PARAM, haggle_attribute_get_name(a));
-					if (haggle_attribute_get_weight(a)) {
-						char str_weight[8];
-						sprintf(str_weight, "%ld", haggle_attribute_get_weight(a));
-						metadata_set_parameter(am, DATAOBJECT_METADATA_ATTRIBUTE_WEIGHT_PARAM, str_weight);
-					}
-					metadata_add(dobj->m, am);
-                }
-        }
-
+		if (am) {
+			metadata_set_parameter(am, DATAOBJECT_METADATA_ATTRIBUTE_NAME_PARAM, haggle_attribute_get_name(a));
+			if (haggle_attribute_get_weight(a)) {
+				char str_weight[8];
+				sprintf(str_weight, "%lu", haggle_attribute_get_weight(a));
+				metadata_set_parameter(am, DATAOBJECT_METADATA_ATTRIBUTE_WEIGHT_PARAM, str_weight);
+			}
+		}
+	}
+	
         return dobj->m;
 }
 
@@ -638,24 +702,24 @@ char *haggle_dataobject_get_raw(struct dataobject *dobj)
 int haggle_dataobject_get_raw_alloc(struct dataobject *dobj, char **buf, size_t *len)
 {
         metadata_t *m;
-        int raw_len, ret;
+        int ret;
 
         if (!dobj)
-                return -1;
+                return HAGGLE_PARAM_ERROR;
 
         m = haggle_dataobject_to_metadata(dobj);
         
         if (!m)
-                return -1;
+                return HAGGLE_ALLOC_ERROR;
         
-        ret = metadata_get_raw_alloc(m, buf, (size_t *)&raw_len);
+        ret = metadata_get_raw_alloc(m, buf, len);
 
 	if (ret < 0)
-                return -1;
+                return HAGGLE_ALLOC_ERROR;
 
-        *len = raw_len;
+	//LIBHAGGLE_DBG("raw:\n%s\n", *buf);
         
-	return raw_len;
+	return HAGGLE_NO_ERROR;
 }
 
 
@@ -1092,7 +1156,53 @@ int haggle_dataobject_add_attribute_weighted(struct dataobject *dobj, const char
 		LIBHAGGLE_DBG("Could not add attribute %s:%s\n", name, value);
 		return HAGGLE_INTERNAL_ERROR;
 	}
+	
 	return haggle_attributelist_add_attribute(dobj->al, attr);
+}
+
+metadata_t *haggle_dataobject_get_metadata(struct dataobject *dobj, const char *name)
+{
+	if (!dobj)
+		return NULL;
+
+	if (name) {
+		return metadata_get(dobj->m, name);
+	} 
+	return dobj->m;
+}
+
+int haggle_dataobject_add_metadata(struct dataobject *dobj, metadata_t *m)
+{
+	if (!dobj || !m)
+		return HAGGLE_PARAM_ERROR;
+
+	metadata_add(dobj->m, m);
+	
+	return HAGGLE_NO_ERROR;
+}
+
+int haggle_dataobject_print(FILE *fp, struct dataobject *dobj)
+{
+	char *raw;
+	size_t len;
+	int ret;
+	
+	if (!dobj || !fp)
+		return HAGGLE_PARAM_ERROR;
+	
+	ret = haggle_dataobject_get_raw_alloc(dobj, &raw, &len);
+	
+	if (ret != HAGGLE_NO_ERROR)
+		return ret;
+	
+	ret = fprintf(fp, "%s\n", raw);
+	
+	free(raw);
+	
+	if (ret < 0)
+		return HAGGLE_ERROR;
+	
+	return ret;
 }
 
 #ifdef DEBUG

@@ -19,7 +19,6 @@
 #define LIBHAGGLE_INTERNAL
 #include <libhaggle/haggle.h>
 
-
 #if defined(WINCE)
 FILE *tr_out = NULL;
 FILE *tr_err = NULL;
@@ -27,7 +26,6 @@ FILE *tr_err = NULL;
 #define tr_out stdout
 #define tr_err stderr
 #endif
-
 
 static int trace_level = 2;
 
@@ -51,6 +49,7 @@ int libhaggle_debug_init()
 #endif
 	return 0;
 }
+
 void libhaggle_debug_fini()
 {
 #ifdef WINCE

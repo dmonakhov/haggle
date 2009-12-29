@@ -139,6 +139,8 @@ void createInterestBinomial()
 	}
 	
 	haggle_ipc_add_application_interests(haggleHandle, attrList);
+	
+	haggle_attributelist_free(attrList);
 }
 
 
@@ -167,6 +169,8 @@ void createInterestGrid()
 	}
 	
 	haggle_ipc_add_application_interests(haggleHandle, attrList);
+	
+	haggle_attributelist_free(attrList);
 }
 
 
@@ -248,20 +252,22 @@ void createDataobjectGrid()
  we get a matching dataobject.
  maybe we should reward the creator or delegate?
  */
-void onDataobject(struct dataobject *dObj, void* nix)
+int onDataobject(haggle_event_t *e, void* nix)
 {
-	haggle_dataobject_free(dObj);
+	return 0;
 }
 
 
-void onNeighborUpdate(struct dataobject *dObj, void* nix)
+int onNeighborUpdate(haggle_event_t *e, void* nix)
 {
-	haggle_dataobject_free(dObj);
+	return 0;
 }
 
-void onShutdown(struct dataobject *dObj, void* nix)
+int onShutdown(haggle_event_t *e, void* nix)
 {
 	shutdown(0);
+	
+	return 0;
 }
 
 // ----- USAGE (parse arguments)
@@ -271,14 +277,14 @@ void onShutdown(struct dataobject *dObj, void* nix)
 static void PrintUsage()
 {	
 	fprintf(stderr, 
-            "Usage: ./%s [-A num] [-d num] [-i num] [-t interval] [-g gridSize] [-s hostname] [-f path]\n", 
-            APP_NAME);
-    fprintf(stderr, "          -A attribute pool (default %u)\n", attrPoolSize);
-    fprintf(stderr, "          -d number of attributes per data object (default %u)\n", numDataObjectAttributes);
-    fprintf(stderr, "          -i interest variance (default %u)\n", varianceInterestAttributes);
-    fprintf(stderr, "          -g use grid topology (gridSize x gridSize, overwrites -Adi, default off)\n");
-    fprintf(stderr, "          -t interval to create data objects [s] (default %u)\n", createDataInterval);
-    fprintf(stderr, "          -s singe source (create data objects only on node 'name', default off)\n");
+		"Usage: ./%s [-A num] [-d num] [-i num] [-t interval] [-g gridSize] [-s hostname] [-f path]\n", 
+		APP_NAME);
+	fprintf(stderr, "          -A attribute pool (default %u)\n", attrPoolSize);
+	fprintf(stderr, "          -d number of attributes per data object (default %u)\n", numDataObjectAttributes);
+	fprintf(stderr, "          -i interest variance (default %u)\n", varianceInterestAttributes);
+	fprintf(stderr, "          -g use grid topology (gridSize x gridSize, overwrites -Adi, default off)\n");
+	fprintf(stderr, "          -t interval to create data objects [s] (default %u)\n", createDataInterval);
+	fprintf(stderr, "          -s singe source (create data objects only on node 'name', default off)\n");
 	fprintf(stderr, "          -f data file to be sent (default off)\n");
 }
 
@@ -286,7 +292,7 @@ static void ParseArguments(int argc, char **argv)
 // Parses our command line arguments into the global variables 
 // listed above.
 {
-    int ch;
+	int ch;
     
     // Parse command line options using getopt.
     
@@ -372,16 +378,15 @@ void eventLoop() {
 	}
 }
 
-void onInterests(struct dataobject *dObj, void* nix)
+int onInterests(haggle_event_t *e, void* nix)
 {
-	if(haggle_dataobject_get_attribute_by_name(dObj, APP_NAME) != NULL)
-	{
+	if (haggle_attributelist_get_attribute_by_name(e->interests, APP_NAME) != NULL) {
 		// We already have some interests, so we don't create any new ones.
 		
 		// In the future, we might want to delete the old interests, and
 		// create new ones... depending on the circumstances.
 		// If so, that code would fit here. 
-	}else{
+	} else {
 		// No old interests: Create new interests.
 		if (gridSize > 0) {
 			createInterestGrid();
@@ -389,56 +394,57 @@ void onInterests(struct dataobject *dObj, void* nix)
 			createInterestBinomial();
 		}
 	}
-	haggle_dataobject_free(dObj);
+	
+	return 0;
 }
 
 #ifdef OS_WINDOWS_MOBILE
 int wmain()
-{	
 #else
-	int main (int argc, char *argv[]) 
-	{
-		
-		signal(SIGINT,  shutdown);      // SIGINT is what you get for a Ctrl-C
+int main (int argc, char *argv[]) 
 #endif
-		ParseArguments(argc, argv);
-
-		// get hostname (used to set interest)
-		gethostname(hostname, 128);
-		nodeNumber = atoi(&(hostname[5]));
-		
-		// register with haggle
-		if(haggle_handle_get(APP_NAME, &haggleHandle) != HAGGLE_NO_ERROR) {
-			printf("could not obtain Haggle handle\n");
-			goto done;
-		}
-		
-		// register callback for new data objects
-		// haggle_ipc_register_event_interest(haggleHandle, LIBHAGGLE_EVENT_NEW_DATAOBJECT, onDataobject);
-		haggle_ipc_register_event_interest(haggleHandle, LIBHAGGLE_EVENT_HAGGLE_SHUTDOWN, onShutdown);
-		haggle_ipc_register_event_interest(haggleHandle, LIBHAGGLE_EVENT_INTEREST_LIST, onInterests);
-		
-		// reset random number generator
-		struct timeval t;
-		gettimeofday(&t, NULL);
-		srandom(t.tv_usec);
-		
-		// start Haggle eventloop
-		haggle_event_loop_run_async(haggleHandle);
-
-		// retreive interests:
-		haggle_ipc_get_application_interests_async(haggleHandle);
-		
-		// start luckyMe eventloop 
-		// (data objects are created in intervals from within this eventloop)
-		eventLoop();
-		
-	done:
-		shutdown(0);
-		
-		return 1;
+{	
+#ifdef OS_UNIX
+	signal(SIGINT,  shutdown);      // SIGINT is what you get for a Ctrl-C
+#endif
+	ParseArguments(argc, argv);
+	
+	// get hostname (used to set interest)
+	gethostname(hostname, 128);
+	nodeNumber = atoi(&(hostname[5]));
+	
+	// register with haggle
+	if(haggle_handle_get(APP_NAME, &haggleHandle) != HAGGLE_NO_ERROR) {
+		printf("could not obtain Haggle handle\n");
+		goto done;
 	}
 	
+	// register callback for new data objects
+	// haggle_ipc_register_event_interest(haggleHandle, LIBHAGGLE_EVENT_NEW_DATAOBJECT, onDataobject);
+	haggle_ipc_register_event_interest(haggleHandle, LIBHAGGLE_EVENT_SHUTDOWN, onShutdown);
+	haggle_ipc_register_event_interest(haggleHandle, LIBHAGGLE_EVENT_INTEREST_LIST, onInterests);
 	
+	// reset random number generator
+	struct timeval t;
+	gettimeofday(&t, NULL);
+	srandom(t.tv_usec);
 	
+	// start Haggle eventloop
+	haggle_event_loop_run_async(haggleHandle);
 	
+	// retreive interests:
+	haggle_ipc_get_application_interests_async(haggleHandle);
+	
+	// start luckyMe eventloop 
+	// (data objects are created in intervals from within this eventloop)
+	eventLoop();
+	
+done:
+	shutdown(0);
+	
+	return 1;
+}
+
+
+
+

@@ -4,8 +4,6 @@ public class Node {
         private long nativeNode = 0;
         private boolean disposed = false;
         private native void nativeFree();
-        
-        public static native Node[] nodeArrayFromDataObject(DataObject dObj);
         public native String getName();
         public native long getNumInterfaces();
         // Return interface number N, or null. TODO: throw exception

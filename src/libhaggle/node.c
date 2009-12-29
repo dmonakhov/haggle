@@ -246,14 +246,6 @@ struct node *haggle_node_new_from_metadata(metadata_t *m)
 	return n;
 }
 
-haggle_nodelist_t *haggle_nodelist_new_from_dataobject(struct dataobject *dobj)
-{
-        if (!dobj)
-                return NULL;
-
-        return haggle_nodelist_new_from_metadata(dobj->m);        
-}
-
 void haggle_node_free(struct node *n)
 {
 	list_t *pos, *tmp;

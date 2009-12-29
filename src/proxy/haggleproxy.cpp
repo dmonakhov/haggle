@@ -51,11 +51,12 @@ static void signal_handler(int signal)
 /*
 	This is called when haggle tells us it's shutting down
 */
-static void onDataShutdown(struct dataobject *dObj, void *arg)
+static int onDataShutdown(haggle_event_t *e, void *arg)
 {
-	haggle_dataobject_free(dObj);
 	// Tell the main thread it's time to shut down:
 	mutex_unlock(shutdown_mutex);
+
+        return 0;
 }
 
 #if defined(OS_WINDOWS_MOBILE)
@@ -103,7 +104,7 @@ int main(int argc, char *argv[])
 	// Tell haggle we want to know when haggle goes down, so we can shut down:
 	haggle_ipc_register_event_interest(
 		haggle_, 
-		LIBHAGGLE_EVENT_HAGGLE_SHUTDOWN, 
+		LIBHAGGLE_EVENT_SHUTDOWN, 
 		onDataShutdown);
 	
 	// Start the haggle event loop:

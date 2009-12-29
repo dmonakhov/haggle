@@ -30,13 +30,13 @@ static int metadata_xml_parse(metadata_t *m, xmlNodePtr xn)
                 if (xnc->type == XML_ELEMENT_NODE) {
                         metadata_t *mc = metadata_new((char *)xnc->name, NULL, m);
 			
-                        if (!mc || !metadata_add(m, mc))
+                        if (!mc)
                                 return -1;
                         
                         if (metadata_xml_parse(mc, xnc) < 0)
                                 return -1;
                         
-                } else if (xnc->type == XML_TEXT_NODE) {
+                } else if (xmlNodeIsText(xnc)) {
                         if (!xmlIsBlankNode(xnc)) {
                                 xmlChar *content = xmlNodeGetContent(xnc);
                                 if (content) {
@@ -57,6 +57,8 @@ static int metadata_xml_create_xml(metadata_t *m, xmlNodePtr xn)
 
         if (!xn)
                 return -1;
+	
+	//printf("Adding node %s\n", m->name);
         
         // Add parameters
         list_for_each(pos, &m->parameters->attributes) {
@@ -89,10 +91,13 @@ static xmlDocPtr metadata_xml_create_doc(metadata_t *m)
 
         xn = xmlNewNode(NULL, (xmlChar *)metadata_get_name(m));
         
+	if (!xn)
+		goto out_err;
+	
+        xmlDocSetRootElement(doc, xn);
+	
         if (!metadata_xml_create_xml(m, xn))
                 goto out_err;
-
-        xmlDocSetRootElement(doc, xn);
 
         return doc;
 out_err:

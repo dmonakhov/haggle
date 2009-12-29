@@ -267,7 +267,6 @@ JNIEXPORT jint JNICALL Java_org_haggle_DataObject_setThumbnail(JNIEnv *env, jobj
         (*env)->ReleaseByteArrayElements(env, arr, carr, 0);
         
         return 0;
-        
 }
 
 /*

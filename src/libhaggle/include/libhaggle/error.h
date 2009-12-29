@@ -15,6 +15,8 @@
 #ifndef _LIBHAGGLE_ERROR_H
 #define _LIBHAGGLE_ERROR_H
 
+
+#include "exports.h"
 /*
 	These are the error codes libhaggle returns. Please note that they are all 
 	negative because some functions either return a positive result, or an error
@@ -54,5 +56,19 @@ enum {
 	// No error
 	HAGGLE_NO_ERROR = 0,
 };
+
+/**
+	Similar to errno, this variable is sometimes set to reflect what error 
+	occured in a called function.
+*/
+extern HAGGLE_API int libhaggle_errno;
+
+/**
+	TODO: implement error functionality. Current
+	error mechanism is the error codes above?
+	
+	Returns: 
+*/
+HAGGLE_API int haggle_get_error();
 
 #endif /* _LIBHAGGLE_ERROR_H */
