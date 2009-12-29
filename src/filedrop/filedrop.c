@@ -27,7 +27,7 @@
 #define EVENT_BUFLEN 1000
 #define MAX_DIRPATH_LEN 512
 
-#define DEFAULT_DIRNAME "haggledrop"
+#define DEFAULT_DIRNAME "File drop"
 
 static int fd = -1;
 static char *prog_name;
@@ -67,21 +67,14 @@ const char *filename_to_full_path(const char *filename)
 
 	return buf;
 }
-void neighbor_update_event(haggle_dobj_t *dobj, void *arg)
+
+int neighbor_update_event(haggle_event_t *e, void *arg)
 {
 	list_t *pos;
-	haggle_nodelist_t *nl;
 
 	printf("Neighbor update event!\n");
 	
-	nl = haggle_nodelist_new_from_dataobject(dobj);
-
-	if (!nl) {
-		fprintf(stderr, "Could not create nodelist from data object\n");
-		return;
-	}
-	
-	list_for_each(pos, &nl->nodes) {
+	list_for_each(pos, &e->neighbors->nodes) {
 		list_t *ppos;
 		haggle_node_t *node = (haggle_node_t *)pos;
 
@@ -93,23 +86,22 @@ void neighbor_update_event(haggle_dobj_t *dobj, void *arg)
 			       haggle_interface_get_identifier_str(iface));
 		}
 	}
-
-	haggle_nodelist_free(nl);
-	haggle_dataobject_free(dobj);
+        return 0;
 }
 
-void new_dataobject_event(haggle_dobj_t *dobj, void *arg)
+int new_dataobject_event(haggle_event_t *e, void *arg)
 {
 	printf("New data object!\n");
 	
-	haggle_dataobject_free(dobj);
+        return 0;
 }
 
-void haggle_shutdown_event(haggle_dobj_t *dobj, void *arg)
+int haggle_shutdown_event(haggle_event_t *e, void *arg)
 {
 	printf("Haggle was shut down!\n");
-	haggle_dataobject_free(dobj);
 	exit(0);
+
+        return 0;
 }
 
 char *filepath_to_filename(char *filepath)

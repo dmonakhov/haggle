@@ -1406,10 +1406,10 @@ static int handle_event(struct haggle_handle *hh, haggle_event_type_t type, stru
 				}
 					
 				ret = hh->handlers[type].handler(&e, hh->handlers[type].arg);
-				
+                                
 				if (ret != 1 && e.interests)
 					haggle_attributelist_free(e.interests);
-				
+                                
 			} else {
 				ret = -1;
 			}
@@ -1422,6 +1422,7 @@ static int handle_event(struct haggle_handle *hh, haggle_event_type_t type, stru
 			
 			if (ret != 1 && e.dobj)
 				haggle_dataobject_free(dobj);
+                        
 			break;
 		case LIBHAGGLE_EVENT_NEIGHBOR_UPDATE:
 			e.neighbors = haggle_nodelist_new_from_metadata(event_m);
