@@ -59,6 +59,16 @@ Attribute::~Attribute()
 {
 }
 
+string Attribute::getWeightAsString() const
+{
+	char weightstr[11];
+	
+	snprintf(weightstr, 11, "%lu", weight);
+	
+	return weightstr; 
+}
+
+
 string Attribute::getString() const
 { 
 	char weightstr[11];

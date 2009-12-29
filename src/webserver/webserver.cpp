@@ -155,26 +155,26 @@ string decodeURL(string* str) {
 }
 
 
-void onInterestList(struct dataobject *dObj, void *arg)
+int onInterestList(haggle_event_t *e, void *arg)
 {
         list_t *pos;
         
-        list_for_each(pos, &dObj->al->attributes) {
+        list_for_each(pos, &e->interests->attributes) {
                 haggle_attr_t *a = (haggle_attr_t *)pos; 
                 printf("interest: %s=%s\n", haggle_attribute_get_name(a), haggle_attribute_get_value(a));
         }
-        haggle_dataobject_free(dObj);
+
+        return 0;
 }
 
-void onDataObject(struct dataobject *dObj, void *arg)
+int onDataObject(haggle_event_t *e, void *arg)
 {
 	cerr << endl << "Received data object!!!" << endl;
-	const char *filepath = haggle_dataobject_get_filepath(dObj);
+	const char *filepath = haggle_dataobject_get_filepath(e->dobj);
 
 	if (!filepath || strlen(filepath) == 0) {
 		cerr << endl <<  "--- No filepath in dataobject" << endl;
-		haggle_dataobject_free(dObj);
-		return;		
+		return -1;		
 	}
 	cerr << "Filepath is \'" << filepath << "\'" << endl;
 
@@ -190,37 +190,28 @@ void onDataObject(struct dataobject *dObj, void *arg)
 
 //	ResultString << "<a style=\"padding-right:20px; border:0 solid white; outline:0 solid white;\" href=\"http://localhost:8081/" << filepath << "\" target=_new><img width=300 src=\"http://localhost:8081/" << filepath << "\" title=\""; 
 	ResultString << "<a style=\"padding-right:20px; border:0 solid white; outline:0 solid white;\" href=\"" << filepath << "\" target=_new><img width=300 src=\"" << filepath << "\" title=\""; 
-	while ((attr = haggle_dataobject_get_attribute_n(dObj, cnt++))) {
+	while ((attr = haggle_dataobject_get_attribute_n(e->dobj, cnt++))) {
 		ResultString << haggle_attribute_get_name(attr) << "=" << haggle_attribute_get_value(attr) << " \r\n";
 	}
 	ResultString << "\" /></a>";
 
 	mutex_unlock(&mutex);
-
-	haggle_dataobject_free(dObj);
+        
+        return 0;
 }
 
 
-void onNeighborUpdate(struct dataobject *dObj, void *arg)
+int onNeighborUpdate(haggle_event_t *e, void *arg)
 {
 	list_t *pos;
-	haggle_nodelist_t *nl;
-
 
 	printf("Neighbor update event!\n");
-	
-	nl = haggle_nodelist_new_from_dataobject(dObj);
-
-	if (!nl) {
-		fprintf(stderr, "Could not create nodelist from data object\n");
-		return;
-	}
 	
 	mutex_lock(&mutex);
 	
 	NeighborString.str(""); 
 
-	list_for_each(pos, &nl->nodes) {
+	list_for_each(pos, &e->neighbors->nodes) {
 		list_t *ppos;
 		haggle_node_t *node = (haggle_node_t *)pos;
 
@@ -239,9 +230,7 @@ void onNeighborUpdate(struct dataobject *dObj, void *arg)
 	
 	mutex_unlock(&mutex);
 
-	haggle_nodelist_free(nl);
-
-	haggle_dataobject_free(dObj);
+        return 0;
 }
 
 // -----

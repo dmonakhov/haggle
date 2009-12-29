@@ -56,7 +56,7 @@ const char *metadata_get_content(const metadata_t *m);
 const char *metadata_set_name(metadata_t *m, const char *name);
 const char *metadata_set_content(metadata_t *m, const char *content);
 int metadata_add(metadata_t *parent, metadata_t *child);
-int metadata_detach(metadata_t *parent, metadata_t *child);
+int metadata_detach(metadata_t *child);
 metadata_t *metadata_get_next(metadata_t *m);
 metadata_t *metadata_get(metadata_t *m, const char *name);
 int metadata_set_parameter(metadata_t *m, const char *name, const char *value);

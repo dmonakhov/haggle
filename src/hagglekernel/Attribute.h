@@ -96,6 +96,8 @@ public:
         const unsigned long &getWeight() const {
                 return weight;
         }
+	
+	string getWeightAsString() const;
 		
 		/**
 			Sets the name part of the attribute.

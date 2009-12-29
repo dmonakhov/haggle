@@ -16,7 +16,7 @@
 #ifndef _LIBHAGGLE_DEBUG_H
 #define _LIBHAGGLE_DEBUG_H
 
-#include <libhaggle/exports.h>
+#include "exports.h"
 
 #ifdef __cplusplus
 extern "C" {

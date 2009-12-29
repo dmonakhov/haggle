@@ -74,7 +74,7 @@ static std::list<bbs_topic *> topics;
 
 static haggle_handle_t haggle_;
 
-void onDataObject(struct dataobject *dObj, void *arg);
+int onDataObject(haggle_event_t *e, void *arg);
 static void signal_handler(int signal);
 bool insert_chars(char **txt, long txt_len, long where, long how_many);
 void board_text_fix(char **txt, long *txt_len, bool fix_newlines);
@@ -465,24 +465,25 @@ void add_post(char *topic, char *text, char *author)
 	This is called when haggle tells us there's a new data object we might be 
 	interested in.
 */
-void onDataObject(struct dataobject *dObj, void *arg)
+int onDataObject(haggle_event_t *e, void *arg)
 {
 	char				*the_topic;
 	bbs_topic			*topic;
 	
 	the_topic = 
 		get_attr_b64(
-			dObj, 
+			e->dobj, 
 			haggle_bbs_topic_attribute_name);
 	if(the_topic == NULL)
 		goto fail_topic;
 	
 	topic = get_topic(the_topic);
-	topic->add_post(new_post(dObj));
+	topic->add_post(new_post(e->dobj));
 	
 	free(the_topic);
+        return 1;
 fail_topic:
-	haggle_dataobject_free(dObj);
+	return -1;
 }
 
 // Start of all haggle board pages (includes a nice picture):

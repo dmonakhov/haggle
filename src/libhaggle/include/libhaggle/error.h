@@ -16,7 +16,7 @@
 #define _LIBHAGGLE_ERROR_H
 
 
-#include <libhaggle/exports.h>
+#include "exports.h"
 /*
 	These are the error codes libhaggle returns. Please note that they are all 
 	negative because some functions either return a positive result, or an error

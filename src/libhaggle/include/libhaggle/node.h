@@ -19,10 +19,10 @@
 extern "C" {
 #endif
 
-#include <libhaggle/list.h>
-#include <libhaggle/exports.h>
-#include <libhaggle/attribute.h>
-#include <libhaggle/interface.h>
+#include "list.h"
+#include "exports.h"
+#include "attribute.h"
+#include "interface.h"
 
 /**
    \defgroup Node Node
@@ -158,8 +158,6 @@ typedef struct HAGGLE_API nodelist {
 } haggle_nodelist_t;
 
 HAGGLE_API haggle_nodelist_t *haggle_nodelist_new_from_metadata(struct metadata *m);
-HAGGLE_API haggle_nodelist_t *haggle_nodelist_new_from_dataobject(struct dataobject *dobj);
-
 HAGGLE_API struct node *haggle_nodelist_get_node_n(haggle_nodelist_t *nl, const int num);
 
 HAGGLE_API struct node *haggle_nodelist_pop(haggle_nodelist_t *nl);

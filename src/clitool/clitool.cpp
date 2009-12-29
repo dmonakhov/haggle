@@ -26,7 +26,7 @@
 
 mutex_t signalling_mutex;
 
-void on_interest_list(haggle_dobj_t *dobj, void *arg)
+int on_interest_list(haggle_event_t *e, void *arg)
 {
         // Loop through and list interests:
         bool not_done = true;
@@ -36,7 +36,7 @@ void on_interest_list(haggle_dobj_t *dobj, void *arg)
         {
                 attribute *a;
 		
-                a = haggle_attributelist_get_attribute_n(dobj->al, i);
+                a = haggle_attributelist_get_attribute_n(e->interests, i);
 
                 if(a == NULL)
                 {
@@ -52,11 +52,15 @@ void on_interest_list(haggle_dobj_t *dobj, void *arg)
 
 	if(signalling_mutex != NULL)
 		mutex_unlock(signalling_mutex);
+
+        return 0;
 }
 
-void on_dataobject(haggle_dobj_t *dobj, void *arg)
+int on_dataobject(haggle_event_t *e, void *arg)
 {
-	printf("New data object received:\n%s\n", haggle_dataobject_get_raw(dobj));
+	printf("New data object received:\n%s\n", haggle_dataobject_get_raw(e->dobj));
+
+        return 0;
 }
 
 int main(int argc, char *argv[])

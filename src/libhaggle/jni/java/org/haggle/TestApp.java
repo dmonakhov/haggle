@@ -35,11 +35,6 @@ public class TestApp extends Thread implements EventHandler {
                 super();
                 this.name = name;
         }
-        // Will be called by shutdownHook
-        public void run()
-        {
-                h.eventLoopStop();
-        }
         public void start()
         {
                 Attribute attr = new Attribute("foo", "bar", 3);
@@ -69,6 +64,8 @@ public class TestApp extends Thread implements EventHandler {
                 
                         h.eventLoopRunAsync();
                         
+                        h.getApplicationInterestsAsync();
+
                         Thread.sleep(10000);
 
                         h.shutdown();
@@ -81,8 +78,10 @@ public class TestApp extends Thread implements EventHandler {
 
                 } catch (Handle.RegistrationFailedException e) {
                         System.out.println("Could not get handle: " + e.getMessage());
+                        return;
                 } catch (Exception e) {
                         System.out.println("Got run loop exception\n");
+                        return;
                 }
 
                 h.dispose();

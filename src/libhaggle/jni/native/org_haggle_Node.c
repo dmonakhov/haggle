@@ -15,16 +15,6 @@ JNIEXPORT void JNICALL Java_org_haggle_Node_nativeFree(JNIEnv *env, jobject obj)
 
 /*
  * Class:     org_haggle_Node
- * Method:    NodeArrayFromDataObject
- * Signature: (Lorg/haggle/DataObject;)[Lorg/haggle/Node;
- */
-JNIEXPORT jobjectArray JNICALL Java_org_haggle_Node_nodeArrayFromDataObject(JNIEnv *env, jclass cls, jobject jdObj)
-{
-        return libhaggle_jni_dataobject_to_node_jobjectArray(env, (haggle_dobj_t *)get_native_handle(env, JCLASS_DATAOBJECT, jdObj));
-}
-
-/*
- * Class:     org_haggle_Node
  * Method:    getName
  * Signature: ()Ljava/lang/String;
  */

@@ -424,7 +424,7 @@ bool pop3_undelete_messages(char *user)
 	This is called when haggle tells us there's a new data object we might be 
 	interested in.
 */
-static void onDataObject(struct dataobject *dObj, void *arg)
+static int onDataObject(haggle_event_t *e, void *arg)
 {
 	email				m;
 	struct attribute	*attr;
@@ -432,7 +432,7 @@ static void onDataObject(struct dataobject *dObj, void *arg)
 	user_account		user;
 	
 	// Create new message:
-	m = email_create(dObj);
+	m = email_create(e->dobj);
 
 	if(m == NULL)
 	{
@@ -443,7 +443,7 @@ static void onDataObject(struct dataobject *dObj, void *arg)
 	// Find who the message is for:
 	attr = 
 		haggle_dataobject_get_attribute_by_name(
-			dObj, 
+			e->dobj, 
 			haggle_email_attribute_to);
 
 	if(attr == NULL)
@@ -537,7 +537,7 @@ fail_mailto:
 	if(m != NULL)
 		email_destroy(m);
 fail_message:
-	haggle_dataobject_free(dObj);
+        return 0;
 }
 
 bool pop3_server_start(haggle_handle_t _haggle)

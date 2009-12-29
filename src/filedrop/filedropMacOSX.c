@@ -40,8 +40,6 @@ static haggle_handle_t hh;
 
 #define HAGGLE_FOLDER_PATH_DEFAULT "/Users/chrohner/Desktop/HaggleDrop"
 
-
-
 static void cleanup(int signal)
 {
 	switch(signal) {
@@ -56,8 +54,6 @@ static void cleanup(int signal)
 			break;
 	}
 }
-
-
 
 void printAttributes(char* path) 
 {
@@ -170,11 +166,13 @@ static void onFSEvents(ConstFSEventStreamRef streamRef, void *clientCallBackInfo
 }
 
 
-void onShutdown(haggle_dobj_t *dobj, void *arg)
+int onShutdown(haggle_event_t *e, void *arg)
 {
 	printf("Haggle was shutdown, exiting\n");
 	haggle_handle_free(hh);
 	exit(EXIT_SUCCESS);
+	
+	return 0;
 }
 		
 int main(int argc, const char *argv[])
@@ -204,7 +202,7 @@ int main(int argc, const char *argv[])
 		return -1;
 	}
 	
-	haggle_ipc_register_event_interest(hh,  LIBHAGGLE_EVENT_HAGGLE_SHUTDOWN, onShutdown);
+	haggle_ipc_register_event_interest(hh, LIBHAGGLE_EVENT_SHUTDOWN, onShutdown);
 	
 	haggle_event_loop_run_async(hh);
 	

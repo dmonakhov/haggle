@@ -238,6 +238,15 @@ HAGGLE_API void *haggle_dataobject_get_data_all(struct dataobject *dobj);
 */
 HAGGLE_API char *haggle_dataobject_get_raw(struct dataobject *dobj);
 HAGGLE_API size_t haggle_dataobject_get_raw_length(const struct dataobject *dobj);
+	
+/**
+	Allocate raw metadata buffer from data object.
+	@param dobj the data object to get in raw format.
+	@param a pointer to a pointer that will point to the allocated buffer.
+	@param a pointer to an size_t integer which will hold the length of the
+	allocated buffer.
+	@returns HAGGLE_NO_ERROR on success, or a Haggle error code on failure.
+*/
 HAGGLE_API int haggle_dataobject_get_raw_alloc(struct dataobject *dobj, char **buf, size_t *len);
 HAGGLE_API struct metadata *haggle_dataobject_to_metadata(struct dataobject *dobj);
 /**
@@ -418,6 +427,8 @@ HAGGLE_API int haggle_dataobject_remove_attribute(struct dataobject *dobj, struc
 */
 HAGGLE_API int haggle_dataobject_remove_attribute_by_name_value(struct dataobject *dobj, const char *name, const char *value);
 
+	
+struct metadata;
 /**
 	Get a handle to the metadata of the data object.
 	
@@ -444,6 +455,14 @@ HAGGLE_API int haggle_dataobject_add_metadata(struct dataobject *dobj, struct me
 	Prints debugging information about data objects to stdout.
 */
 HAGGLE_API void haggle_dataobject_leak_report_print();
+	
+/**
+	Print the metadata part of the data object to a file stream.
+	@param dobj the data object to print
+	@param fp the file pointer (stream) to print to
+	@returns the number of bytes printed, or HAGGLE_ERROR on error.
+ */
+HAGGLE_API int haggle_dataobject_print(FILE *fp, struct dataobject *dobj);
 
 /**
 	Prints the data object's current attributes and their values to stdout.
