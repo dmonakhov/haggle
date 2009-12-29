@@ -18,6 +18,7 @@
 #include <stdio.h>
 
 #define LIBHAGGLE_INTERNAL
+#include <libhaggle/platform.h>
 #include <libhaggle/exports.h>
 #include <libhaggle/list.h>
 #include <libhaggle/attribute.h>

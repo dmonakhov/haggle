@@ -22,7 +22,6 @@ namespace Haggle
         public class HaggleHandle : IDisposable
         {
                 public IntPtr handle;
-                //HaggleEventHandler shutdownHandler;
 
                 [DllImport("libhaggle.dll", EntryPoint = "haggle_handle_get")]
                 static extern int UnmanagedGetHandle(IntPtr name, ref IntPtr handlePtr);
@@ -142,12 +141,6 @@ namespace Haggle
                 {
                         return UnmanagedDeleteInterests(handle, al.cAttrList);
                 }
-                /*
-                public static int Delete(byte id[20])
-                {
-
-                }
-                 * */
                 public int DeleteDataObject(DataObject dObj)
                 {
                         return UnmanagedDeleteDataObject(handle, dObj.cDataObject);
@@ -234,7 +227,6 @@ namespace Haggle
                         }
 
                 }
-               // public HaggleHandle(HaggleCallback shutdownCallback)
                 public HaggleHandle(string name)
                 {
                         IntPtr nameAnsi = Utility.StringToAnsiIntPtr(name);
@@ -249,8 +241,6 @@ namespace Haggle
                         }
 
                         Debug.WriteLine("Application " + name + " got haggle handle: " + UnmanagedGetSessionID(handle));
-
-                       // shutdownHandler = new HaggleEventHandler(this, HaggleEvent.HAGGLE_EVENT_HAGGLE_SHUTDOWN, shutdownCallback);
                 }
 
                 public void Free()
@@ -268,10 +258,72 @@ namespace Haggle
                 #endregion
         }
 
-        public delegate void HaggleCallback(DataObject dObj);
+        public struct cHaggleEvent
+        {
+                public uint type;
+                public IntPtr data;
+        }
+        public class HaggleEvent
+        {
+                public uint type;
+                public IntPtr data;
+                public const uint SHUTDOWN = 0;
+                public const uint NEIGHBOR_UPDATE = 1;
+                public const uint NEW_DATAOBJECT = 2;
+                public const uint INTEREST_LIST = 3;
+                public const uint NUM_EVENTS = 4;
+                public HaggleEvent(cHaggleEvent e)
+                {
+                        this.type = e.type;
+                        this.data = e.data;
+                }
+        };
+        public class NeighborEvent : HaggleEvent
+        {
+                public Node.NodeList neighbors;
+                public NeighborEvent(cHaggleEvent e)
+                        : base(e)
+                {
+                        if (e.type != HaggleEvent.NEIGHBOR_UPDATE)
+                        {
+                                throw new Exception("Not a neighbor update event");
+                        }
 
-        public delegate void UnmanagedHaggleCallback(IntPtr cDataObject, IntPtr arg);
+                        neighbors = new Node.NodeList(e.data);
+                }
+        };
+        public class InterestsEvent : HaggleEvent
+        {
+                public Attribute.AttributeList interests;
+                public InterestsEvent(cHaggleEvent e)
+                        : base(e)
+                {
+                        if (e.type != HaggleEvent.INTEREST_LIST)
+                        {
+                                throw new Exception("Not an interest list event");
+                        }
 
+                        interests = new Attribute.AttributeList(e.data);
+                }
+        };
+        public class DataObjectEvent : HaggleEvent
+        {
+                public DataObject dObj;
+                public DataObjectEvent(cHaggleEvent e)
+                        : base(e)
+                {
+                        if (e.type != HaggleEvent.NEW_DATAOBJECT)
+                        {
+                                throw new Exception("Not a new data object event");
+                        }
+
+                        dObj = new DataObject(e.data);
+                }
+        };
+
+        public delegate void HaggleCallback(HaggleEvent e);
+        public delegate int UnmanagedHaggleCallback(ref cHaggleEvent e, IntPtr arg);
+      
         public class HaggleEventHandler
         {
                 public event HaggleCallback callback;
@@ -279,25 +331,38 @@ namespace Haggle
                 public int ret;
 
                 [DllImport("libhaggle.dll", EntryPoint = "haggle_ipc_register_event_interest")]
-                public static extern int UnmanagedRegisterEventHandler(IntPtr handle, int type, UnmanagedHaggleCallback handler, IntPtr arg);
-
-                private void UnmanagedHandler(IntPtr cDataObject, IntPtr arg)
+                public static extern int UnmanagedRegisterEventHandler(IntPtr handle, uint type, UnmanagedHaggleCallback handler, IntPtr arg);
+              
+                private int UnmanagedHandler(ref cHaggleEvent e, IntPtr arg)
                 {
-                        if (cDataObject != IntPtr.Zero)
+                        Debug.WriteLine("Got haggle event type " + e.type);
+                        switch (e.type)
                         {
-                                callback(new DataObject(cDataObject));
+                                case HaggleEvent.SHUTDOWN:
+                                        callback(new HaggleEvent(e));
+                                        break;
+                                case HaggleEvent.NEIGHBOR_UPDATE:
+                                        callback(new NeighborEvent(e));
+                                        break;
+                                case HaggleEvent.NEW_DATAOBJECT:
+                                        callback(new DataObjectEvent(e));
+                                        break;
+                                case HaggleEvent.INTEREST_LIST:
+                                        callback(new InterestsEvent(e));
+                                        break;
+                                default:
+                                        // Do not keep data -> return value != 1
+                                        return 0;
                         }
-                        else
-                        {
-                                Debug.WriteLine("Callback contains no data object");
-                        }
+                       
+                        // Keep data -> return 1
+                        return 1;
                 }
 
-                public HaggleEventHandler(HaggleHandle hh, int type, HaggleCallback callback)
+                public HaggleEventHandler(HaggleHandle hh, uint type, HaggleCallback callback)
                 {
-                        if (type < 0 || type > HaggleEvent.HAGGLE_EVENT_MAX) {
+                        if (type < 0 || type >= HaggleEvent.NUM_EVENTS) {
                                 throw new EventHandlerException("Bad event type");
-
                         }
                         this.callback = callback;
                         this.unmanagedCallback = new UnmanagedHaggleCallback(this.UnmanagedHandler);
@@ -334,15 +399,5 @@ namespace Haggle
                         }
 
                 }
-                //public static int RegisterEventHandler(int handle, int type, HaggleEventHandler handler);
-        }
-        public class HaggleEvent
-        {
-                public const int HAGGLE_EVENT_HAGGLE_SHUTDOWN    = 0;
-                public const int HAGGLE_EVENT_NEIGHBOR_UPDATE    = 1;
-                public const int HAGGLE_EVENT_NEW_DATAOBJECT     = 2;
-                public const int HAGGLE_EVENT_INTEREST_LIST      = 3;
-                public const int HAGGLE_EVENT_MAX                = 3;
-
         }
 }

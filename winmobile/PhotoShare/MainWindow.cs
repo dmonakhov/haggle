@@ -55,16 +55,14 @@ namespace PhotoShare
                         FileStream fs = null;
                         try
                         {
-                            fs =
-                                System.IO.File.OpenRead(
-                                    Assembly.
-                                        GetExecutingAssembly().
-                                            GetName().
-                                                CodeBase.
-                                                    Replace("PhotoShare.exe", "") +
-                                    "pssettings.txt");
+                            fs = System.IO.File.OpenRead(Assembly.GetExecutingAssembly().GetName().CodeBase.
+                                Replace("PhotoShare.exe", "") + "pssettings.txt");
                         }
-                        catch { }
+                        catch 
+                        {
+                                Debug.WriteLine("pssettings.txt not found");
+                        }
+
                         if (fs != null)
                         {
                             byte[] data = new byte[fs.Length];
@@ -103,36 +101,7 @@ namespace PhotoShare
                         Debug.WriteLine("thumbnail width is " + (int)width);
                         photoImageList.ImageSize = new System.Drawing.Size((int)width, (int)width);
                 }
-            /* 
-                private void scaleImage(Bitmap dest, Bitmap src)
-                {
-                        using (Graphics g = Graphics.FromImage(dest))
-                        {
-                                Brush b = new SolidBrush(Color.Black);
-                                g.FillRectangle(b, rawRectangle);
-                                Rectangle srcRect = new Rectangle(0, 0, src.Width, src.Height);
-                                Rectangle destRect = new Rectangle(0, 0, 1, 1);
-                                float aspect = (float)src.Width / (float)src.Height;
-                                if (aspect > 0.8)
-                                {
-                                        // Wider than high
-                                        destRect.Width = screenWidth;
-                                        destRect.Height = (int)((float)screenWidth / aspect);
-                                        destRect.X = 0;
-                                        destRect.Y = (screenHeight - destRect.Height) / 2;
-                                }
-                                else
-                                {
-                                        // Higher than wide
-                                        destRect.Height = screenHeight;
-                                        destRect.Width = (int)((float)screenHeight * aspect);
-                                        destRect.X = (screenWidth - destRect.Width) / 2;
-                                        destRect.Y = 0;
-                                }
-                                g.DrawImage(src, destRect, srcRect, System.Drawing.GraphicsUnit.Pixel);
-                        }
-                }
-                */
+        
                 private static Image resizeImage(Image imgToResize, Size size)
                 {
 

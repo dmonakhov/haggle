@@ -1374,13 +1374,15 @@ int haggle_event_loop_stop(haggle_handle_t hh)
 	return HAGGLE_NO_ERROR;
 }
 
-
 static int handle_event(struct haggle_handle *hh, haggle_event_type_t type, struct dataobject *dobj, metadata_t *event_m)
 {
 	haggle_event_t e;
 	int ret = 0;
 	
+	LIBHAGGLE_DBG("Handling event type %u\n", type);
+
 	if (!hh->handlers[type].handler) {
+		LIBHAGGLE_DBG("No registered handler for type %u\n", type);
 		haggle_dataobject_free(dobj);
 		return 0;
 	}
@@ -1430,7 +1432,6 @@ static int handle_event(struct haggle_handle *hh, haggle_event_type_t type, stru
 				
 				if (ret != 1 && e.neighbors)
 					haggle_nodelist_free(e.neighbors);
-				
 			} else {
 				ret = -1;
 			}

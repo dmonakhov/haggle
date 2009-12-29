@@ -187,9 +187,6 @@ namespace Haggle
                         public IntPtr cNodeList;
                         private bool disposed = false;
 
-                        [DllImport("libhaggle.dll", EntryPoint = "haggle_nodelist_new_from_dataobject")]
-                        public static extern IntPtr UnmanagedNewFromDataObject(IntPtr dObj);
-
                         [DllImport("libhaggle.dll", EntryPoint = "haggle_nodelist_free")]
                         public static extern void UnmanagedFree(IntPtr nodeList);
 
@@ -202,9 +199,9 @@ namespace Haggle
                         [DllImport("libhaggle.dll", EntryPoint = "haggle_nodelist_size")]
                         public static extern int UnmanagedSize(IntPtr nodeList);
 
-                        public NodeList(DataObject dObj)
+                        public NodeList(IntPtr nl)
                         {
-                                cNodeList = UnmanagedNewFromDataObject(dObj.cDataObject);
+                                this.cNodeList = nl;
 
                                 if (cNodeList == IntPtr.Zero)
                                         throw new NodeException("Could not create node list\n");

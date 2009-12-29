@@ -117,16 +117,16 @@ namespace PhotoShare
                                         hh = new HaggleHandle("PhotoShare");
 
                                         interestListHandler = new HaggleEventHandler(hh,
-                                              HaggleEvent.HAGGLE_EVENT_INTEREST_LIST, new HaggleCallback(this.onInterestListEvent));
+                                              HaggleEvent.INTEREST_LIST, new HaggleCallback(this.onInterestList));
 
                                         hh.RequestInterests();
 
                                         updatedNeighborHandler = new HaggleEventHandler(hh,
-                                                HaggleEvent.HAGGLE_EVENT_NEIGHBOR_UPDATE, new HaggleCallback(this.onUpdatedNeighborsEvent));
+                                                HaggleEvent.NEIGHBOR_UPDATE, new HaggleCallback(this.onNeighborUpdate));
                                         shutdownHandler = new HaggleEventHandler(hh,
-                                               HaggleEvent.HAGGLE_EVENT_HAGGLE_SHUTDOWN, new HaggleCallback(this.onHaggleShutdownEvent));
+                                               HaggleEvent.SHUTDOWN, new HaggleCallback(this.onHaggleShutdown));
                                         newDataObjectHandler = new HaggleEventHandler(hh,
-                                              HaggleEvent.HAGGLE_EVENT_NEW_DATAOBJECT, new HaggleCallback(this.onNewDataObjectEvent));
+                                              HaggleEvent.NEW_DATAOBJECT, new HaggleCallback(this.onNewDataObject));
 
                                         Utility.Vibration vib = new Utility.Vibration();
                                         
@@ -182,18 +182,19 @@ namespace PhotoShare
                         return false;
                 }
                 // This function will run in the thread called from libhaggle
-                private void onNewDataObjectEvent(Haggle.DataObject dObj)
+                private void onNewDataObject(HaggleEvent he)
                 {
-                        Debug.WriteLine("New Data Object -- metadata:\n" + dObj.GetRaw());
+                        DataObjectEvent e = he as DataObjectEvent;
+                        Debug.WriteLine("New Data Object -- metadata:\n" + e.dObj.GetRaw());
 
                         try
                         {
                                 // Verify that the attributes that PhotoShare expects exist
-                                dObj.GetAttribute("Picture");
+                                e.dObj.GetAttribute("Picture");
 
-                                if (dObj.GetFilePath().Length > 0)
+                                if (e.dObj.GetFilePath().Length > 0)
                                 {
-                                        dataObjects.Add(dObj);
+                                        dataObjects.Add(e.dObj);
                                         numDataObjects++;
 
                                         if ((DateTime.Now - vibrationTime).TotalSeconds > 5)
@@ -201,7 +202,7 @@ namespace PhotoShare
                                                 vib.vibrate(300, 100, 2);
                                                 vibrationTime = DateTime.Now;
                                         }
-                                        mainWindow.photoListView.BeginInvoke(new PhotoListUpdateDelegate(mainWindow.doPhotoListUpdate), dObj);
+                                        mainWindow.photoListView.BeginInvoke(new PhotoListUpdateDelegate(mainWindow.doPhotoListUpdate), e.dObj);
                                 }
                         }
                         catch (Haggle.DataObject.NoSuchAttributeException)
@@ -210,16 +211,14 @@ namespace PhotoShare
                         }
                 }
 
-                public void onUpdatedNeighborsEvent(Haggle.DataObject dObj)
+                public void onNeighborUpdate(HaggleEvent he)
                 {
+                        NeighborEvent e = he as NeighborEvent;
                         //Vibration.SoundFileInfo sfi = new Vibration.SoundFileInfo();
                         //sfi.sstType = Vibration.SoundType.Vibrate;
-
                         Debug.WriteLine("Neighbor update event!");
 
                         //uint ret = Vibration.SndSetSound(Vibration.SoundEvent.All, sfi, true);
-
-                        Node.NodeList neighborList = new Node.NodeList(dObj);
 
                         Debug.WriteLine("neighbors received");
 
@@ -229,16 +228,17 @@ namespace PhotoShare
                                 vibrationTime = DateTime.Now;
                         }
 
-                        neighborListWindow.BeginInvoke(new NeighborListUpdateDelegate(neighborListWindow.doNeighborListUpdate), neighborList);
+                        neighborListWindow.BeginInvoke(new NeighborListUpdateDelegate(neighborListWindow.doNeighborListUpdate), e.neighbors);
                 }
 
-                private void onHaggleShutdownEvent(Haggle.DataObject dObj)
+                private void onHaggleShutdown(HaggleEvent e)
                 {
                         MessageBox.Show("Haggle daemon was shut down");
                 }
-                private void onInterestListEvent(Haggle.DataObject dObj)
+                private void onInterestList(HaggleEvent he)
                 {
-                        addInterestWindow.BeginInvoke(new InterestListUpdateDelegate(addInterestWindow.interestListUpdate), dObj.GetAttributeList());
+                        InterestsEvent e = he as InterestsEvent;
+                        addInterestWindow.BeginInvoke(new InterestListUpdateDelegate(addInterestWindow.interestListUpdate), e.interests);
                 }
                 /// <summary>
                 /// The main entry point for the application.
@@ -250,7 +250,6 @@ namespace PhotoShare
                         try
                         {
                                 new PhotoShare();
-
                         }
                         catch
                         {
