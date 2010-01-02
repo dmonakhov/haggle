@@ -85,6 +85,7 @@ struct haggle_handle {
         int signal[2];
 #elif defined(OS_WINDOWS)
         HANDLE signal;
+	DWORD th_id;
 #endif
 	int session_id;
 	int num_handlers;
@@ -1337,6 +1338,15 @@ int haggle_event_loop_is_running(haggle_handle_t hh)
         return (hh ? hh->event_loop_running : HAGGLE_HANDLE_ERROR);
 }
 
+static int is_event_loop_thread(haggle_handle_t hh)
+{
+#if defined(OS_WINDOWS)
+	return GetCurrentThreadId() == hh->th_id;
+#else
+	return pthread_equal(hh->th, pthread_self()) != 0
+#endif
+}
+
 int haggle_event_loop_stop(haggle_handle_t hh)
 {
 	LIBHAGGLE_DBG("Stopping event loop\n");
@@ -1353,23 +1363,23 @@ int haggle_event_loop_stop(haggle_handle_t hh)
                 
         event_loop_signal_raise(hh);
 
+	if (!is_event_loop_thread(hh)) {
 #if defined(OS_WINDOWS)
-        if (hh->th) {
-                WaitForSingleObject(hh->th, INFINITE);
-                /* Is this really necessary here or will the handle be closed by the event loop? */
-                CloseHandle(hh->th);
-                hh->th = NULL;
-        }
+		if (hh->th) {
+			WaitForSingleObject(hh->th, INFINITE);
+			/* Is this really necessary here or will the handle be closed by the event loop? */
+			CloseHandle(hh->th);
+			hh->th = NULL;
+		}
 #elif defined(OS_UNIX)
-        if (hh->th) {
-                LIBHAGGLE_DBG("Joining with event loop thread...\n");
-                pthread_join(hh->th, NULL);
-                hh->th = 0;
-        }
+		if (hh->th) {
+			LIBHAGGLE_DBG("Joining with event loop thread...\n");
+			pthread_join(hh->th, NULL);
+			hh->th = 0;
+		}
 #endif
+	}
 	LIBHAGGLE_DBG("Event loop successfully stopped\n");
-
-	hh->event_loop_running = 0;
 
 	return HAGGLE_NO_ERROR;
 }
@@ -1458,6 +1468,8 @@ start_ret_t haggle_event_loop(void *arg)
 	static char eventbuf[BUFLEN];
 	int ret;
 
+	hh->event_loop_running = 1;
+
         if (hh->start)
                 hh->start(hh->arg);
 
@@ -1481,6 +1493,7 @@ start_ret_t haggle_event_loop(void *arg)
                 } else if (ret == EVENT_LOOP_SHOULD_EXIT) {
 			LIBHAGGLE_DBG("Event loop should exit!\n");
                         event_loop_signal_lower(hh);
+			hh->event_loop_running = 0;
 			break;
                 } else if (ret == EVENT_LOOP_SOCKET_READABLE)  {
                        
@@ -1553,8 +1566,6 @@ start_ret_t haggle_event_loop(void *arg)
                 }
 	}
 	
-	hh->event_loop_running = 0;
-        
         if (hh->stop)
                 hh->stop(hh->arg);
 
@@ -1605,11 +1616,9 @@ int haggle_event_loop_run_async(haggle_handle_t hh)
 
 	if (hh->event_loop_running)
 		return HAGGLE_EVENT_LOOP_ERROR;
-	
-	hh->event_loop_running = 1;        
 
 #if defined(WIN32) || defined(WINCE)
-	hh->th = CreateThread(NULL,  0, haggle_event_loop, (void *)hh, 0, 0);
+	hh->th = CreateThread(NULL,  0, haggle_event_loop, (void *)hh, 0, &hh->th_id);
 
 	if (hh->th == NULL)
 		return HAGGLE_INTERNAL_ERROR;
