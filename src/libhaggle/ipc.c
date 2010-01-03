@@ -1343,7 +1343,7 @@ static int is_event_loop_thread(haggle_handle_t hh)
 #if defined(OS_WINDOWS)
 	return GetCurrentThreadId() == hh->th_id;
 #else
-	return pthread_equal(hh->th, pthread_self()) != 0
+	return pthread_equal(hh->th, pthread_self()) != 0;
 #endif
 }
 
