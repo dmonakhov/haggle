@@ -773,10 +773,15 @@ string Event::getDescription(void)
 	// If there is a data object:
 	if (dObjRef) {
 		// Report this as the data object's id str + it's number:
-		snprintf(tmp, 64, "%s-%d", dObjRef->getIdStr(), dObjRef->getNum());
+		snprintf(tmp, 64, " %s-%u", dObjRef->getIdStr(), dObjRef->getNum());
 		dObjIdStr = tmp;
 	}
 	
+	for (DataObjectRefList::iterator it = dObjs.begin(); it != dObjs.end(); it++) {
+		snprintf(tmp, 64, " %s-%u", (*it)->getIdStr(), (*it)->getNum());
+		dObjIdStr += tmp;
+	}
+
 	// If there is a node:
 	if (nodeRef) {
 		// Report the node's id str:
@@ -812,9 +817,8 @@ string Event::getDescription(void)
 	// Set up the flags field:
 	// Note: for now, only the lowest bit is ever set, so this "loop" only goes
 	// around once. If more flag bits are ever used, please adjust this loop.
-	for(int i = 0; i < 1; i++)
-	{
-		if((flags >> i) & 1)
+	for (int i = 0; i < 1; i++) {
+		if ((flags >> i) & 1)
 			flagsStr = "1" + flagsStr;
 		else
 			flagsStr = "0" + flagsStr;
