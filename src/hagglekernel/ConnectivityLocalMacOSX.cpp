@@ -334,7 +334,7 @@ bool ConnectivityLocal::run()
 		interfaces_found_last_time = ethernet_interfaces_found;
 		ethernet_interfaces_found = 0;
 		
-                int num = getLocalInterfaceList(iflist);
+                int num = getLocalInterfaceList(iflist, true);
                 
                 if (num) {
                         while (!iflist.empty()) {

@@ -445,7 +445,7 @@ InterfaceStatus_t ConnectivityManager::report_interface(Interface *found, const 
 		iface->getIdentifierStr(), iface->getName());
 
 	// Tell everyone about this new interface
-	if(iface->isLocal()) {
+	if (iface->isLocal()) {
 		spawn_connectivity(iface);
 		kernel->addEvent(new Event(EVENT_TYPE_LOCAL_INTERFACE_UP, iface));
 	} else {

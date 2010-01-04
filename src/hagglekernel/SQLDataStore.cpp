@@ -916,21 +916,21 @@ NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 			const char *identifier = (const char *)sqlite3_column_blob(stmt, table_interfaces_mac);
 			InterfaceType_t type = (InterfaceType_t) sqlite3_column_int(stmt, table_interfaces_type);
 
-			InterfaceRef iface = new Interface(type, identifier);
-			InterfaceRef iface2;
-
-			if (!iface) {
-				node = NULL;
-				HAGGLE_DBG("Get iface failed\n");
-				goto out;
-			}
 			
 			// Try to find the interface from the interface store:
-			iface2 = kernel->getInterfaceStore()->retrieve(iface);
-			if (!iface2)
-				iface2 = iface;
+			InterfaceRef iface = kernel->getInterfaceStore()->retrieve(type, identifier);
 			
-			node->addInterface(iface2);
+			if (!iface) {
+				iface = new Interface(type, identifier);
+
+				if (!iface) {
+					node = NULL;
+					HAGGLE_DBG("Get iface failed\n");
+					goto out;
+				}
+			}
+						
+			node->addInterface(iface);
 		}
 
 		if (ret == SQLITE_ERROR) {

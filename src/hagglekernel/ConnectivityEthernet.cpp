@@ -539,7 +539,8 @@ bool ConnectivityEthernet::run()
 					/*
 					 CM_DBG("Neighbor interface (%s) will expire in %lf seconds\n", 
 					       ipv4->getURI(), (received_lifetime - Timeval::now()).getTimeAsSecondsDouble());
-					*/
+					 */
+					
 					Interface iface(IFTYPE_ETHERNET, beacon->mac, &addrs, "Remote Ethernet", IFFLAG_UP);
 					report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyTime(received_lifetime));
 				}

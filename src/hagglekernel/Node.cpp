@@ -619,7 +619,7 @@ void Node::printInterfaces() const
 		iface.lock();
 		const Addresses *addrs = iface->getAddresses();
 
-		printf("%d : %s %s\n", n, iface->getIdentifierStr(), iface->isUp()? "up" : "down");
+		printf("%d : %s %s\n", n++, iface->getIdentifierStr(), iface->isUp() ? "up" : "down");
 		
 		for (Addresses::const_iterator itt = addrs->begin(); itt != addrs->end(); itt++) {
 			const Address *addr = *itt;
@@ -630,28 +630,29 @@ void Node::printInterfaces() const
 }
 #endif
 
-bool Node::addInterface(InterfaceRef inIfaceRef)
+bool Node::addInterface(InterfaceRef inIface)
 {
 	for (InterfaceRefList::iterator it = interfaces.begin(); it != interfaces.end(); it++) {
-		InterfaceRef& ifaceRef = *it;
-		if (inIfaceRef == ifaceRef) {
-			// Node already has interface - ignore.
+		InterfaceRef& iface = *it;
+		if (inIface == iface) {
+			// Node already has interface -> replace with updated reference.
+			iface = inIface;
 			return false;
 		}
 	}
 
-	interfaces.add(inIfaceRef);
+	interfaces.add(inIface);
 	setCreateTime();
 	return true;
 }
 
 // Mark an interface as up
-bool Node::setInterfaceUp(const InterfaceRef inIfaceRef)
+bool Node::setInterfaceUp(const InterfaceRef inIface)
 {
 	for (InterfaceRefList::iterator it = interfaces.begin(); it != interfaces.end(); it++) {
-		InterfaceRef& ifaceRef = *it;
-		if (inIfaceRef == ifaceRef && !ifaceRef->isUp()) {
-			ifaceRef->up();
+		InterfaceRef& iface = *it;
+		if (inIface == iface && !iface->isUp()) {
+			iface->up();
 			setCreateTime();
 			return true;
 		}
@@ -660,12 +661,12 @@ bool Node::setInterfaceUp(const InterfaceRef inIfaceRef)
 }
 
 // Mark an interface as down.
-bool Node::setInterfaceDown(const InterfaceRef inIfaceRef)
+bool Node::setInterfaceDown(const InterfaceRef inIface)
 {
 	for (InterfaceRefList::iterator it = interfaces.begin(); it != interfaces.end(); it++) {
-		InterfaceRef& ifaceRef = *it;
-		if (inIfaceRef == ifaceRef && ifaceRef->isUp()) {
-			ifaceRef->down();
+		InterfaceRef& iface = *it;
+		if (inIface == iface && iface->isUp()) {
+			iface->down();
 			setCreateTime();
 			return true;
 		}
@@ -673,15 +674,12 @@ bool Node::setInterfaceDown(const InterfaceRef inIfaceRef)
 	return false;
 }
 
-bool Node::removeInterface(const InterfaceRef& inIfaceRef)
+bool Node::removeInterface(const InterfaceRef& inIface)
 {
 	for (InterfaceRefList::iterator it = interfaces.begin(); it != interfaces.end(); it++) {
-		InterfaceRef& ifaceRef = *it;
-		if (inIfaceRef == ifaceRef) {
-			if (ifaceRef->isUp()) {
-				ifaceRef->down();
-			}
-
+		InterfaceRef& iface = *it;
+		if (inIface == iface) {
+			iface->down();
 			interfaces.erase(it);
 			setCreateTime();
 			return true;

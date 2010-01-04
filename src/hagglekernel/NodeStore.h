@@ -159,7 +159,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
 		reference or an interface reference while calling this function.
 	*/
-		NodeRef retrieve(const string &id, bool mustBeNeighbor = false);
+	NodeRef retrieve(const string &id, bool mustBeNeighbor = false);
 	/**
 		Retrieve a node from the node store. The caller may optionally 
 		specify to only retrieve current neighbors.

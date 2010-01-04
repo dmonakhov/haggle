@@ -240,7 +240,7 @@ void NodeManager::onLocalInterfaceUp(Event * e)
 
 void NodeManager::onLocalInterfaceDown(Event *e)
 {
-	kernel->getThisNode()->removeInterface(e->getInterface());
+	kernel->getThisNode()->setInterfaceDown(e->getInterface());
 }
 
 void NodeManager::onNeighborInterfaceUp(Event *e)

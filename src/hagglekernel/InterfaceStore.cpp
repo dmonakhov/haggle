@@ -646,10 +646,11 @@ void InterfaceStore::print()
 		ir->iface.lock();
 		InterfaceRef iface = ir->iface;
 		
-                printf("%s %s %s %s %lu %s\n", 
+                printf("%s %s %s %s %s %lu %s\n", 
                        iface->getTypeStr(),
                        iface->getIdentifierStr(),
                        iface->getName(),
+		       iface->getFlagsStr(),
                        ir->cip ? ir->cip->ageStr() : "undefined",
                        ir->iface.refcount(),
                        ir->parent ? ir->parent->getIdentifierStr() : "\'no parent\'");
