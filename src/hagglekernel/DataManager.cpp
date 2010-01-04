@@ -256,14 +256,14 @@ void DataManager::onVerifiedDataObject(Event *e)
 
 	DataObjectRef dObj = e->getDataObject();
 	
-	if(dObj == (DataObject *) NULL) {
+	if (!dObj) {
 		HAGGLE_DBG("Verified data object event without data object!\n");
 		return;
 	}
 	HAGGLE_DBG("%s Received DataObject\n", getName());
 
 #ifdef DEBUG
-	dObj->print(HAGGLE_TRACE_FILE);
+	dObj->print();
 #endif
 
 	if (dObj->getDataState() == DataObject::DATA_STATE_VERIFIED_BAD) {

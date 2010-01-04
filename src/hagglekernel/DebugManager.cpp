@@ -529,23 +529,7 @@ void DebugManager::publicEvent(Event *e)
 	if (!e)
 		return;
 
-	switch (e->getType()) {
-                case EVENT_TYPE_NEIGHBOR_INTERFACE_UP:
-                case EVENT_TYPE_NEIGHBOR_INTERFACE_DOWN:
-                case EVENT_TYPE_LOCAL_INTERFACE_UP:
-                case EVENT_TYPE_LOCAL_INTERFACE_DOWN:
-                        {
-                                InterfaceRef iface = e->getInterface();
-                                HAGGLE_DBG("%s data=%s\n", 
-                                           e->getName(),
-                                           (iface ? "yes" : "no"));
-                        }
-                        break;
-                        
-                default:
-                        HAGGLE_DBG("%s data=%s\n", e->getName(), e->hasData()? "Yes" : "No");
-                        break;
-	}
+	HAGGLE_DBG("%s data=%s\n", e->getName(), e->hasData() ? "Yes" : "No");
 }
 
 SOCKET openSocket(int port)
