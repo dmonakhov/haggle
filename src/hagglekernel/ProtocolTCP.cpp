@@ -236,8 +236,7 @@ ProtocolEvent ProtocolTCPClient::connectToPeer()
 		return ret;
 	}
 
-	HAGGLE_DBG("%s Connected to [%s] tcp port=%u\n", 
-		getName(), addr->getAddrStr(), peerPort);
+	HAGGLE_DBG("%s Connected to [%s] tcp port=%u\n", getName(), addr->getAddrStr(), peerPort);
 
 	return ret;
 }

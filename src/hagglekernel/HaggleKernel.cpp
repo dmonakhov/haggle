@@ -97,7 +97,7 @@ HaggleKernel::~HaggleKernel()
 	// Cleanup winsock
 	WSACleanup();
 #endif
-	// stop the dataStore thread and try to join again
+	// stop the dataStore thread and try to join with its thread
 	HAGGLE_DBG("Joining with DataStore thread\n");
 	dataStore->stop();
 	HAGGLE_DBG("Joined\n");
@@ -226,6 +226,8 @@ void HaggleKernel::signalIsReadyForShutdown(Manager *m)
 	HAGGLE_DBG("All managers are ready for shutdown, generating shutdown event!\n");
 	running = false;
 	enableShutdownEvent();
+	// Tell the data store to cancel itself
+	dataStore->cancel();
 }
 
 #ifdef DEBUG

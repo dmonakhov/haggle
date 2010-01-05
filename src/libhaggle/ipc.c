@@ -415,18 +415,21 @@ int haggle_daemon_pid(unsigned long *pid)
 	}
        
 #elif defined(OS_UNIX)
-        old_instance_is_running = (kill(_pid, 0) != -1);
+	old_instance_is_running = (kill(_pid, 0) != -1);
 #elif defined(OS_WINDOWS)
-	
-        p = OpenProcess(0, FALSE, _pid);
-        old_instance_is_running = (p != NULL);
+	p = OpenProcess(0, FALSE, _pid);
 
-        if (p != NULL)
-                CloseHandle(p);
+	if (p != NULL) {
+		DWORD exitcode = 0;
+		if (GetExitCodeProcess(p, &exitcode) != 0) {
+			old_instance_is_running = (exitcode == STILL_ACTIVE);
+		}
+		CloseHandle(p);
+	} 
 #endif
-        /* If there was a process, return its pid */
-        if (old_instance_is_running)
-                return HAGGLE_DAEMON_RUNNING;
+	/* If there was a process, return its pid */
+	if (old_instance_is_running)
+		return HAGGLE_DAEMON_RUNNING;
         
         /* No process matching the pid --> Haggle is not running and
          * previously quit without cleaning up (e.g., Haggle crashed,

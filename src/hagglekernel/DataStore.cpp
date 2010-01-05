@@ -658,11 +658,9 @@ bool DataStore::run()
 	static unsigned short count = 0;
 #endif
 	while (true) {
-		
 		mutex.lock();
 
-		// Check if we should quit. Don't quit until all tasks have been 
-		// completed.
+		// Check if we should quit. 
                 if (taskQ.empty()) {
 			if (shouldExit()) {
 				// yep.
@@ -752,7 +750,9 @@ bool DataStore::run()
 			break;
 #endif
 		case TASK_EXIT:
-			break;
+			// Do not execute anymore tasks after this one.
+			delete task;
+			return false;
 		default:
 			HAGGLE_DBG("Undefined data store task\n");
 			break;

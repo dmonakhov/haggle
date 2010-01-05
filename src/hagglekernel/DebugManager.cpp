@@ -116,7 +116,7 @@ DebugManager::DebugManager(HaggleKernel * _kernel, bool interactive) :
 #endif
 	}
 #if defined(OS_WINDOWS_MOBILE) || defined(OS_ANDROID) 
-	kernel->addEvent(new Event(debugEType, NULL, 40));
+	kernel->addEvent(new Event(debugEType, NULL, 60));
 #endif
 #endif
 	
@@ -381,10 +381,9 @@ void DebugManager::onShutdown()
 #if defined(DEBUG_LEAKS) && defined(DEBUG)
 void DebugManager::onDebugReport(Event *e)
 {
-	//kernel->getInterfaceStore()->print();
-	
 	LOG_ADD("%s: kernel event queue size=%lu\n", Timeval::now().getAsString().c_str(), kernel->size()); 
 	kernel->getNodeStore()->print();
+
 #ifdef DEBUG_DATASTORE
 	kernel->getDataStore()->print();
 #endif

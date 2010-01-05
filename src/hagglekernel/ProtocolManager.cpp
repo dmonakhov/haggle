@@ -556,7 +556,7 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 		const InterfaceRefList *interfaces = targ->getInterfaces();
 		
 		// Are there any interfaces here?
-		if (!interfaces && interfaces->size() == 0) {
+		if (interfaces == NULL || interfaces->size() == 0) {
 			// No interfaces for target, so we generate a
 			// send failure event and skip the target
 		
@@ -586,7 +586,6 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 			
 			// If this interface is up:
 			if (iface->isUp()) {
-				
 				
 				if (iface->getAddresses()->empty()) {
 					HAGGLE_DBG("Interface %s:%s has no addresses - IGNORING.\n",
