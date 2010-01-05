@@ -527,7 +527,7 @@ void DebugManager::publicEvent(Event *e)
 {
 	if (!e)
 		return;
-
+	
 	HAGGLE_DBG("%s data=%s\n", e->getName(), e->hasData() ? "Yes" : "No");
 }
 
