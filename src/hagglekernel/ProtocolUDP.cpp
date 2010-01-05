@@ -263,7 +263,7 @@ ProtocolEvent ProtocolUDP::receiveDataObject()
         // data might be from another peer
         peerIface = NULL;
 
-        if (!dObj || !dObj->getMetadata()) {
+        if (!dObj) {
                 HAGGLE_DBG("%s:%lu Could not create data object\n", getName(), getId());
 		return PROT_EVENT_ERROR;
 	}

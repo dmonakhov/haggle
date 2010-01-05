@@ -1457,7 +1457,7 @@ sqlite_int64 SQLDataStore::getDataObjectRowId(const DataObjectRef& dObj)
 	const char *tail;
 	sqlite_int64 rowid = -1;
 
-	if (!dObj || !dObj->getMetadata())
+	if (!dObj)
 		return -1;
 
 	ret = sqlite3_prepare_v2(db, SQL_FIND_DATAOBJECT_CMD, (int) strlen(SQL_FIND_DATAOBJECT_CMD), &stmt, &tail);
@@ -1717,7 +1717,7 @@ int SQLDataStore::evaluateFilters(const DataObjectRef& dObj, sqlite_int64 dataob
 	int eventType = -1;
 	DataObjectRefList dObjs;
 
-	if (!dObj->getMetadata())
+	if (!dObj)
 		return -1;
 
 	HAGGLE_DBG("Evaluating filters\n");
@@ -2318,7 +2318,7 @@ int SQLDataStore::_insertDataObject(DataObjectRef& dObj, const EventCallback<Eve
 
 	dObj.lock();
 
-	if (!dObj || !dObj->getMetadata()) {
+	if (!dObj) {
 		dObj.unlock();
 		return -1;
 	}

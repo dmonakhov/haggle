@@ -43,9 +43,6 @@ bool Forwarder::hasRoutingInformation(const DataObjectRef& dObj) const
 	if (!dObj)
 		return false;
 	
-	if (dObj->getMetadata() == NULL)
-		return false;
-	
 	const Metadata *m = dObj->getMetadata()->getMetadata(getManager()->getName());
 	
 	if (m == NULL)
@@ -59,7 +56,7 @@ bool Forwarder::hasRoutingInformation(const DataObjectRef& dObj) const
 
 const string Forwarder::getNodeIdFromRoutingInformation(const DataObjectRef& dObj) const
 {
-	if (!dObj || !dObj->getMetadata())
+	if (!dObj)
 		return (char *)NULL;
 	
 	const Metadata *m = dObj->getMetadata()->getMetadata(getManager()->getName());

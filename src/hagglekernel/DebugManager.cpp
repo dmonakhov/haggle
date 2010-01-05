@@ -262,7 +262,7 @@ void DebugManager::dumpTo(SOCKET client_sock, DataStoreDump *dump)
         DataObjectRef dObj = kernel->getThisNode()->getDataObject(false);
         char *buf;
         size_t len;
-        if (dObj->getMetadata()->getRawAlloc(&buf, &len)) {
+        if (dObj->getRawMetadataAlloc(&buf, &len)) {
                 i = skipXMLTag(buf, len);
                 len -= i;
                 if (!sendString(client_sock, "<ThisNode>\n")) {
@@ -293,7 +293,7 @@ void DebugManager::dumpTo(SOCKET client_sock, DataStoreDump *dump)
                 if (dObj) {
                         char *buf;
                         size_t len;
-                        if (dObj->getMetadata()->getRawAlloc(&buf, &len)) {
+                        if (dObj->getRawMetadataAlloc(&buf, &len)) {
                                 i = skipXMLTag(buf, len);
                                 len -= i;
                                 if (!sendString(client_sock, "<RoutingData>\n")) {
@@ -487,7 +487,7 @@ void DebugManager::onWatchableEvent(const Watchable& wbl)
 				break;
 #endif
 			case 'b':
-				kernel->getThisNode()->getDataObject()->getMetadata()->getRawAlloc(&raw, &rawLen);
+				kernel->getThisNode()->getDataObject()->getRawMetadataAlloc(&raw, &rawLen);
 				if (raw) {
 					printf("======= Node description =======\n");
 						printf("%s\n", raw);
