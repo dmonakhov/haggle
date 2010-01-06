@@ -72,7 +72,7 @@ void Queue::print()
 
 		switch(qe->getType()) {
 		case QE_DataObject:
-			qe->getDataObject()->getRawMetadataAlloc(&raw, &len);
+			qe->getDataObject()->getRawMetadataAlloc((unsigned char **)&raw, &len);
 			if (raw && len > 0) {
 				printf("DataObject metadata: %lu\n", n);
 				printf("--------------------\n%s\n", raw);

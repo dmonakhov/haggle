@@ -534,7 +534,7 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 		return;
 	}
 
-	int numTargets = targets->size();
+	unsigned int numTargets = targets->size();
 
 	// Go through all targets:
 	while (!targets->empty()) {
@@ -543,12 +543,12 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 		NodeRef targ = targets->pop();
 		
 		if (!targ) {
-			HAGGLE_ERR("Target num %d is NULL!\n", numTargets);
+			HAGGLE_ERR("Target num %u is NULL!\n", numTargets);
 			numTargets--;
 			continue;
 		}
 
-		HAGGLE_DBG("Sending to target num %d\n", numTargets);
+		HAGGLE_DBG("Sending to target %u - %s \n", numTargets, targ->getName().c_str());
 		
 		// If we are going to loop through the node's interfaces, we need to lock the node.
 		targ.lock();	
@@ -560,7 +560,7 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 			// No interfaces for target, so we generate a
 			// send failure event and skip the target
 		
-			HAGGLE_DBG("Target node %s has no interfaces\n", targ->getIdStr());
+			HAGGLE_DBG("Target %s has no interfaces\n", targ->getName().c_str());
 
 			targ.unlock();
 
@@ -572,15 +572,15 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 		/*	
 			Find the target interface that suits us best
 			(we assume that for any remote target
-			interfacpeerIfacee we have a corresponding local
-			interface).
-			
+			interface we have a corresponding local interface).
 		*/
 		InterfaceRef peerIface = NULL;
 		bool done = false;
 		
 		InterfaceRefList::const_iterator it = interfaces->begin();
 		
+		//HAGGLE_DBG("Target node %s has %lu interfaces\n", targ->getName().c_str(), interfaces->size());
+
 		for (; it != interfaces->end() && done == false; it++) {
 			InterfaceRef iface = *it;
 			
@@ -666,6 +666,9 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 					if (targ->getType() == NODE_TYPE_APPLICATION) {
 						peerIface = iface;
 						done = true;
+					} else {
+						HAGGLE_DBG("ERROR: Node %s is not application, but its interface is\n",
+							targ->getName().c_str());
 					}
                                         
 					break;
@@ -678,6 +681,8 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 				default:
 					break;
 				}
+			} else {
+				HAGGLE_DBG("Send interface %s was down, ignoring...\n", iface->getIdentifierStr());
 			}
 		}
 		
@@ -687,7 +692,8 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 		targ.unlock();
 		
 		if (!peerIface) {
-			HAGGLE_DBG("No send interface found. Aborting send of data object!!!\n");
+			HAGGLE_DBG("No send interface found for target %s. Aborting send of data object!!!\n", 
+				targ->getName().c_str());
 			// Failed to send to this target, send failure event:
 			kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_FAILURE, dObj, targ));
 			numTargets--;
@@ -761,7 +767,7 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 
 		numTargets--;
 	}
-	HAGGLE_DBG("Scheduled the sending of %d data objects\n", numTx);
+	HAGGLE_DBG("Scheduled %d data objects for sending\n", numTx);
 
 	delete targets;
 }

@@ -679,7 +679,6 @@ bool Node::removeInterface(const InterfaceRef& inIface)
 	for (InterfaceRefList::iterator it = interfaces.begin(); it != interfaces.end(); it++) {
 		InterfaceRef& iface = *it;
 		if (inIface == iface) {
-			iface->down();
 			interfaces.erase(it);
 			setCreateTime();
 			return true;

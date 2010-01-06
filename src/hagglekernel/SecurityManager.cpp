@@ -211,10 +211,14 @@ bool SecurityHelper::verifyDataObject(DataObjectRef& dObj, CertificateRef& cert)
 	
 	if (RSA_verify(NID_sha1, dObj->getId(), sizeof(DataObjectId_t), 
 		       const_cast<unsigned char *>(dObj->getSignature()), dObj->getSignatureLength(), key) != 1) {
-		char buf[10000];
+		char *raw;
+		size_t len;
 		writeErrors("");
-		dObj->getRawMetadata(buf, sizeof(buf));
-		HAGGLE_DBG("Signature is invalid:\n%s\n", buf);
+		dObj->getRawMetadataAlloc((unsigned char **)&raw, &len);
+		if (raw) {
+			HAGGLE_DBG("Signature is invalid:\n%s\n", raw);
+			free(raw);
+		}
 		dObj->setSignatureStatus(DATAOBJECT_SIGNATURE_INVALID);
 		return false;
 	}
@@ -458,7 +462,6 @@ void SecurityManager::onPrepareShutdown()
 
 void SecurityManager::onShutdown()
 {
-	// TODO: store our certificates in a data store repository and then retrieve them on startup again. 
 	if (helper) {
 		HAGGLE_DBG("Stopping security helper...\n");
 		helper->stop();

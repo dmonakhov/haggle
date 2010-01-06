@@ -613,7 +613,7 @@ bool Runnable::isRunning() const
 }
 	
 Runnable::Runnable(const string _name) : 
-	thr(NULL), name(_name), mutex(_name) 
+	thr(NULL), name(_name), mutex() 
 {
 	//TRACE_DBG("Creating runnable \'%s\'\n", name.c_str());	
 }

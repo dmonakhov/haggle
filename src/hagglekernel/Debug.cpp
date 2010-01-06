@@ -152,7 +152,7 @@ void LeakMonitor::listRegistry()
 	printf("====== Leak Registry ======\n");
 
 	for (registry_t::iterator it = registry.begin(); it != registry.end(); it++) {
-		char *raw = NULL;
+		unsigned char *raw = NULL;
 		size_t len = 0;
 		u.raw = (*it).second;
 

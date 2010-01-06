@@ -119,7 +119,7 @@ ProtocolUDP::ProtocolUDP(const char *ipaddr, unsigned short _port, ProtocolManag
 	Address address(AddressType_IPv4, (unsigned char *) &addr, NULL, 
 		ProtocolSpecType_UDP, port);
 	
-	localIface = InterfaceRef(new Interface(IFTYPE_APPLICATION_PORT, NULL, &address, "Loopback", IFFLAG_UP), "InterfaceLocalUDP");
+	localIface = new Interface(IFTYPE_APPLICATION_PORT, NULL, &address, "Loopback", IFFLAG_UP);
 
 	len = address.fillInSockaddr(sa);
 	
@@ -210,12 +210,10 @@ ProtocolEvent ProtocolUDP::receiveDataObject()
         unsigned short port;
         Address *addr = NULL;
 
-	memset(buffer, 0, BUFSIZE);
-        
 #ifdef OS_WINDOWS
-	pEvent = receiveData(buffer, BUFSIZE, peer_addr, 0, &len);
+	pEvent = receiveData(buffer, PROTOCOL_BUFSIZE, peer_addr, 0, &len);
 #else
-	pEvent = receiveData(buffer, BUFSIZE, peer_addr, MSG_DONTWAIT, &len);
+	pEvent = receiveData(buffer, PROTOCOL_BUFSIZE, peer_addr, MSG_DONTWAIT, &len);
 #endif
 
 	if (pEvent != PROT_EVENT_SUCCESS)
@@ -251,11 +249,11 @@ ProtocolEvent ProtocolUDP::receiveDataObject()
 		return PROT_EVENT_ERROR;
 	}
 
-        peerIface = InterfaceRef(new Interface(IFTYPE_APPLICATION_PORT, &port, addr, "Application", IFFLAG_UP), "InterfacePeerUDP");
+        peerIface = new Interface(IFTYPE_APPLICATION_PORT, &port, addr, "Application", IFFLAG_UP);
         
         delete addr;
 
-        dObj = DataObjectRef(new DataObject(buffer, len, localIface, peerIface), "DataObjectUDP");
+        dObj = new DataObject(buffer, len, localIface, peerIface);
         // Haggle doesn't own files that applications have put in:
         dObj->setOwnsFile(false);
         // We must release the peer interface reference after

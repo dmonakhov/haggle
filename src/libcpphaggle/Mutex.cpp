@@ -20,74 +20,25 @@ namespace haggle {
 bool Mutex::lock()
 {
 	bool ret;
-#ifdef DEBUG_MUTEX
-	thread_id_t thisid = Thread::selfGetId();
-
-	printf("***Thread %lu tries to grab mutex \"%s\". Lock count=%d\n", 
-	       (unsigned long)thisid, name.c_str(), lockCount);
-
-	lastid = thisid;
-#endif
 #if defined(OS_WINDOWS)
 	ret = WaitForSingleObject(mutex, INFINITE) == WAIT_OBJECT_0;
 #else
 	ret = pthread_mutex_lock(&mutex) == 0;
 #endif
-
-#ifdef DEBUG_MUTEX
-	lockCount++;
-
-	if (ret)
-		printf("***Thread %lu successfully grabbed mutex \"%s\". Lock count=%d\n", 
-			   (unsigned long)thisid, name.c_str(), lockCount);
-	else
-		printf("***Thread %lu failed to grab mutex \"%s\". Lock count=%d\n", 
-		       (unsigned long)thisid, name.c_str(), lockCount);
-#endif	
 	return ret;
 }
 
 bool Mutex::trylock()
 {
-#ifdef DEBUG_MUTEX
-	thread_id_t thisid = Thread::selfGetId();
-
-	printf("***Thread %lu tries to grab mutex \"%s\". Lock count=%d\n", 
-	       (unsigned long)thisid, name.c_str(), lockCount);
-	
-	lastid = thisid;
-#endif
 #if defined(OS_WINDOWS)
-	bool ret = WaitForSingleObject(mutex, 0) == WAIT_OBJECT_0;
+	return WaitForSingleObject(mutex, 0) == WAIT_OBJECT_0;
 #else
-	bool ret = pthread_mutex_trylock(&mutex) == 0;
+	return pthread_mutex_trylock(&mutex) == 0;
 #endif
-	
-	if (ret) {
-#ifdef DEBUG_MUTEX
-		lockCount++;
-		printf("***Thread %lu successfully grabbed mutex \"%s\". Lock count=%d\n", 
-		       (unsigned long)thisid, name.c_str(), lockCount);
-#endif
-	}
-		
-#ifdef DEBUG_MUTEX
-	else {
-		printf("***Thread %lu failed to grab mutex \"%s\". Lock count=%d\n", 
-			   (unsigned long)thisid, name.c_str(), lockCount);	
-	}
-#endif	
-	return ret;
 }
 
 bool Mutex::unlock()
 {
-#ifdef DEBUG_MUTEX
-	lockCount--;
-
-	printf("***Thread %lu unlocks mutex \"%s\". Lock count=%d\n",
-	       (unsigned long)Thread::selfGetId(), name.c_str(), lockCount);
-#endif
 #if defined(OS_WINDOWS)
 	if (_recursive)
 		ReleaseMutex(mutex);
@@ -99,13 +50,9 @@ bool Mutex::unlock()
 	return true;
 }
 
-Mutex::Mutex(const string _name, bool recursive) :
-	name(_name)
+Mutex::Mutex(bool recursive) :
 #if defined(OS_WINDOWS)
-	, _recursive(recursive)
-#endif
-#ifdef DEBUG_MUTEX
-	, lockCount(0),
+	_recursive(recursive)
 #endif
 {
 #if defined(OS_WINDOWS)
@@ -138,22 +85,5 @@ Mutex::~Mutex()
 	pthread_mutex_destroy(&mutex);
 #endif
 }
-
-	/*
-inline Mutex::AutoLocker::AutoLocker(Mutex& _m) : m(&_m) 
-{ 
-	m->lock(); 
-}
-
-inline Mutex::AutoLocker::AutoLocker(Mutex *_m) : m(_m) 
-{ 
-	m->lock(); 
-}
-	
-inline Mutex::AutoLocker::~AutoLocker() 
-{ 
-	m->unlock(); 
-}
-	 */
 	
 }; // namespace haggle

@@ -48,6 +48,23 @@ char *String::alloc(size_t len)
         return tmp;
 }
 
+
+String::String(const char *_s, size_t n) : s(&nullchar), alloc_len(0), slen(0)
+{
+	if (!_s)
+		return;
+
+	size_t len = strlen(_s);
+
+	if (n > len)
+		n = len;
+
+	if (alloc(n + 1)) {
+                strncpy(s, _s, n);
+                slen = n;
+        }
+}
+
 String::String(const char *_s) : s(&nullchar), alloc_len(0), slen(0)
 {
 	if (_s && strlen(_s) && alloc(strlen(_s) + 1)) {
@@ -131,18 +148,16 @@ char& String::at(size_t pos)
 
 String String::substr(size_t pos, size_t n) const
 {
-        String ret;
-
-        if (pos >= slen)
-                return ret;
+	if (pos >= slen)
+                return (char *)NULL;
 
         if (n == npos || n > (slen - pos))
                 n = (slen - pos);
 
         if (pos + n <= slen)
-                ret.append(s + pos, n);
+                return String(s + pos, n);
 
-        return ret;
+        return (char *)NULL;
 }
 
 String& String::append(const String& str)
@@ -206,56 +221,52 @@ String& String::append(size_t n, char c)
         return *this;
 }
 
-int String::compare(const String& str) const
-{            
-        return compare(0, slen, str, 0, str.slen);
+static int _compare(const char *str1, size_t str1_len, size_t pos1, size_t n1, const char *str2, size_t str2_len, size_t pos2, size_t n2)
+{
+	if (!str1)
+		return -1;
+	else if (!str2)
+		return 1;
+	else if (str1_len == 0 && str2_len == 0)
+                return 0;
+        else if (str1_len == 0) 
+                return -1;
+        else if (str1_len == 0)
+                return 1;
+        else if (n1 == 0 || pos1 > (str1_len - 1) || pos2 > (str2_len - 1))
+                return -1;
+        
+	return strncmp(str1 + pos1, str2 + pos2, n1 > n2 ? n1 : n2);
 }
 
-int String::compare (const char* _s) const
+int String::compare(const String& str) const
+{            
+        return _compare(s, slen, 0, slen, str.s, str.slen, 0, str.slen);
+}
+
+int String::compare(const char* _s) const
 {
-        if (!_s)
-                return 1;
-
-        String _str(_s);
-
-        return compare(0, slen, _str, 0, _str.slen);
+	return _compare(s, slen, 0, slen, _s, strlen(_s), 0, strlen(_s));
 }
 
 int String::compare(size_t pos1, size_t n1, const String& str) const
 {
-        return compare(pos1, n1, str, 0, str.slen);
+        return _compare(s, slen, pos1, n1, str.s, str.slen, 0, str.slen);
 }
 
 int String::compare(size_t pos1, size_t n1, const char* _s) const
 {  
-        if (!_s)
-                return 1;
-
-        String _str(_s);
-
-        return compare(pos1, n1, _str, 0, _str.slen);
+	return _compare(s, slen, pos1, n1, _s, strlen(_s), 0, strlen(_s));
 }
 
 int String::compare(size_t pos1, size_t n1, const String& str, size_t pos2, size_t n2) const
 {
-        if (slen == 0 && str.slen == 0)
-                return 0;
-        else if (slen == 0) 
-                return -1;
-        else if (str.slen == 0)
-                return 1;
-        else if (n1 == 0 || pos1 > (slen - 1) || pos2 > (str.slen - 1))
-                return -1;
-        
-        return strncmp(s + pos1, str.substr(pos2, n2).c_str(), n1);
+        return _compare(s, slen, pos1, n1, str.s, str.slen, pos2, n2);
 }
 
 int String::compare(size_t pos1, size_t n1, const char* _s, size_t n2) const
 { 
-        if (_s)
-                return 1;
-        
-        return compare(pos1, n1, String(_s), 0, n2);
+	return _compare(s, slen, pos1, n1, _s, strlen(_s), 0, n2);
 }
 
 size_t String::find(const String& str, size_t pos) const

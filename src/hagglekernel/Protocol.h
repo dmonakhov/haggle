@@ -136,8 +136,9 @@ typedef enum {
 #define PROT_BLOCK_SLEEP_TIME_MSECS 400
 
 // TODO: What is a good buffer size here?
-#define BUFSIZE 50000 /* A socket does not seem to be able to handle 
-						larger buffers than 50000 bytes by default. */
+// If we have a large buffer, we will waste a lot of memory when there are
+// many protocols running. A small buffer may be inefficient.
+#define PROTOCOL_BUFSIZE 5000 /* A socket does not seem to be able to handle larger buffers than 50000 bytes by default. */
 
 /**
 	Protocol class
@@ -227,7 +228,7 @@ protected:
         InterfaceRef peerIface; // Interface of the remote peer that we communicate with
 
         // Buffer for reading incoming data
-        char buffer[BUFSIZE];
+        unsigned char buffer[PROTOCOL_BUFSIZE];
 
         // The amount of data read into the buffer
         size_t bufferDataLen;

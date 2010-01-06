@@ -19,8 +19,11 @@ DataObjectRef Forwarder::createRoutingInformationDataObject()
 {
 	// No need to have a reference in this function because it won't be 
 	// visible outside until this function is done with it.
-	DataObjectRef dObj = new DataObject((const char *) NULL, 0);
+	DataObjectRef dObj = new DataObject();
 	
+	if (!dObj)
+		return NULL;
+
 	dObj->setPersistent(false);
 	dObj->addAttribute("Forwarding", getName());
 	

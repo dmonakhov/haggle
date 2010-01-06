@@ -181,7 +181,7 @@ void ProtocolTCP::setPeerInterface(const Address *addr)
 			HAGGLE_ERR("No corresponding mac address for peer %s\n", addr->getAddrStr());
 		} else {
 			Address addr2(AddressType_EthMAC, mac);
-			pIface = InterfaceRef(new Interface(localIface->getType(), mac, addr, "TCP peer", IFFLAG_UP), "InterfacePeerTCP");
+			pIface = new Interface(localIface->getType(), mac, addr, "TCP peer", IFFLAG_UP);
 			pIface->addAddress(&addr2);
 			HAGGLE_DBG("Peer interface is [%s]\n", pIface->getIdentifierStr());
 		}

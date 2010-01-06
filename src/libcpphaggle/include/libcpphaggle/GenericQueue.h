@@ -252,7 +252,7 @@ public:
 		Constructor
 	*/
 	GenericQueue(const string _name = "Unnamed Queue") : 
-		name(_name), mutex(_name), isClosed(false)
+		name(_name), mutex(), isClosed(false)
 	{}
 	
 	/**

@@ -261,7 +261,14 @@ void ApplicationManager::onRetrieveAppNodes(Event *e)
 
 void ApplicationManager::onDataStoreFinishedProcessing(Event *e)
 {
-	unregisterWithKernel();
+	dataStoreFinishedProcessing = true;
+
+	HAGGLE_DBG("Data store finished processing\n");
+
+	if (pendingDOs.empty()) {
+		HAGGLE_DBG("No more pending data objects -> ready for shutdown\n");
+		signalIsReadyForShutdown();
+	}
 }
 
 void ApplicationManager::onSendResult(Event *e)
@@ -285,6 +292,10 @@ void ApplicationManager::onSendResult(Event *e)
 	if (!dObj)
 		return;
 	
+	HAGGLE_DBG("Send result %s for application %s - data object id=%s\n", 
+		e->getType() == EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL ? "SUCCESS" : "FAILURE",
+		app->getName().c_str(), dObj->getIdStr());
+
 	// Go through the list and find which (if any) sends this was in reference 
 	// to
         SentToApplicationList::iterator it = pendingDOs.begin();
@@ -306,10 +317,11 @@ void ApplicationManager::onSendResult(Event *e)
 	// is done with processing deregistered application nodes,
 	// then signal we are ready for shutdown
 	if (getState() == MANAGER_STATE_PREPARE_SHUTDOWN) {
-		if (pendingDOs.empty())
+		if (pendingDOs.empty() && dataStoreFinishedProcessing) {
+			HAGGLE_DBG("Ready for shutdown!\n");
 			signalIsReadyForShutdown();
-		else {
-			HAGGLE_DBG("preparing shutdown, but %d data objects are still pending\n", pendingDOs.size());
+		} else {
+			HAGGLE_DBG("Rreparing shutdown, but %d data objects are still pending\n", pendingDOs.size());
 		}
 	}
 }
@@ -322,9 +334,9 @@ void ApplicationManager::sendToApplication(DataObjectRef& dObj, NodeRef& app)
 
 void ApplicationManager::onPrepareShutdown()
 {	
-	HAGGLE_DBG("Shutdown! Notifying applications\n");
+	HAGGLE_DBG("Prepare shutdown! Notifying applications\n");
 
-	DataObjectRef dObj = DataObjectRef(new DataObject(NULL, 0), "DataObjectShutdown");
+	DataObjectRef dObj = new DataObject();
 	
 	if (!dObj)
 		return;
@@ -343,16 +355,7 @@ void ApplicationManager::onPrepareShutdown()
 	event_m->setParameter(DATAOBJECT_METADATA_APPLICATION_CONTROL_EVENT_TYPE_PARAM, intToStr(LIBHAGGLE_EVENT_SHUTDOWN));
 	
 	sendToAllApplications(dObj, LIBHAGGLE_EVENT_SHUTDOWN);
-	
-	// Signal we are ready for shutdown here, or defer until
-	// all pending data objects have been sent....
 
-	if (pendingDOs.empty())
-		signalIsReadyForShutdown();
-}
-
-void ApplicationManager::onShutdown()
-{
 	// Retrieve all application nodes from the Node store.
 	NodeRefList lst;
 	unsigned long num;
@@ -361,8 +364,8 @@ void ApplicationManager::onShutdown()
 	
 	if (num) {
 		for (NodeRefList::iterator it = lst.begin(); it != lst.end(); it++) {
-			NodeRef i = (NodeRef)*it;
-			deRegisterApplication(i);
+			NodeRef& app = *it;
+			deRegisterApplication(app);
 		}
 		
 		/*
@@ -373,10 +376,25 @@ void ApplicationManager::onShutdown()
 		kernel->getDataStore()->retrieveNode(*(lst.begin()), onDataStoreFinishedProcessingCallback, true);
 		
 	} else {
-		unregisterWithKernel();
+		// There where no registered applications, and therefore there
+		// is no more processing to be done in the data store
+		dataStoreFinishedProcessing = true;
+
+		/*
+		 No more data objects pending --> We are ready for shutdown.
+		 Otherwise, wait until all data objects have been sent in onSendResult().
+		*/
+		if (pendingDOs.empty()) {
+			HAGGLE_DBG("No pending data objects -- ready for shutdown!\n");
+			signalIsReadyForShutdown();
+		}
 	}
-	
+}
+
+void ApplicationManager::onShutdown()
+{
 	unregisterEventTypeForFilter(ipcFilterEvent);	
+	unregisterWithKernel();
 }
 
 int ApplicationManager::deRegisterApplication(NodeRef& app)
@@ -388,33 +406,21 @@ int ApplicationManager::deRegisterApplication(NodeRef& app)
 	// Remove the application node
 	kernel->getNodeStore()->remove(app);
 
-	// Remove the application's filter
-	kernel->getDataStore()->deleteFilter(app->getFilterEvent());
-	
-	// Remove the node's interface (we don't want to save an old port no. in the data store):
-	app.lock();
+	// We need to modify the node that we insert, so we make a copy first in case
+	// someone else is relying on the node that was in the node store
+	NodeRef app_copy = app->copy();
 
-        const InterfaceRefList *lst = app->getInterfaces();
+	// Remove the application's filter
+	kernel->getDataStore()->deleteFilter(app_copy->getFilterEvent());
+	
+        const InterfaceRefList *lst = app_copy->getInterfaces();
         
         while (!lst->empty()) {
-                app->removeInterface(*(lst->begin()));
+                app_copy->removeInterface(*(lst->begin()));
         }
 
-	app.unlock();
-	
-	// Go through the send list and find which (if any) sends were in reference 
-	// to this application
-        SentToApplicationList::iterator it = pendingDOs.begin();
-	
-	while (it != pendingDOs.end()) {
-                if ((*it).first == app) {
-                        it = pendingDOs.erase(it);
-                } else {
-                        it++;
-                }
-	}
 	// Save the application node state
-	kernel->getDataStore()->insertNode(app);
+	kernel->getDataStore()->insertNode(app_copy);
 
 	return 1;
 }
@@ -466,14 +472,15 @@ int ApplicationManager::sendToAllApplications(DataObjectRef& dObj, long eid)
 	for (NodeRefList::iterator it = apps.begin(); it != apps.end(); it++) {
 		NodeRef& app = *it;
 
-		DataObjectRef sendDO = DataObjectRef(dObj->copy(), "DataObject[App=" + app->getName() + "]");
+		DataObjectRef sendDO = dObj->copy();
 
 #ifdef DEBUG_APPLICATION_API
                        sendDO->print();
 #endif
 		sendToApplication(sendDO, app);
 		numSent++;
-		HAGGLE_DBG("Sent event id=%ld to application %s\n", eid, app->getName().c_str());
+		HAGGLE_DBG("Sent event id=%ld to application %s [data object id=%s]\n", 
+			eid, app->getName().c_str(), sendDO->getIdStr());
 	}
 
 	return numSent;
@@ -543,7 +550,7 @@ void ApplicationManager::onApplicationFilterMatchEvent(Event *e)
 				app->getBloomfilter()->add(dObj);
 				string dObjName = "DataObject[App:" + app->getName() + "]";
 
-				DataObjectRef dObjSend(dObj->copy(), dObjName);
+				DataObjectRef dObjSend = dObj->copy();
 				
 				Metadata *ctrl_m = addControlMetadata(CTRL_TYPE_EVENT, app->getName(), dObjSend->getMetadata());
 				
@@ -568,7 +575,7 @@ void ApplicationManager::onApplicationFilterMatchEvent(Event *e)
 				*/
 				dObjSend->setIsForLocalApp();
 #ifdef DEBUG
-				char *raw;
+				unsigned char *raw;
 				size_t len;
 
 				dObjSend->getRawMetadataAlloc(&raw, &len);
@@ -591,7 +598,7 @@ void ApplicationManager::onNeighborStatusChange(Event *e)
 	
 	HAGGLE_DBG("Contact update (new or end)! Notifying applications\n");
 	
-	DataObjectRef dObj = DataObjectRef(new DataObject(NULL, 0), "DataObjectOnNodeContactNewOrEnd");
+	DataObjectRef dObj = new DataObject();
 	
 	if (!dObj)
 		return;
@@ -705,7 +712,7 @@ void ApplicationManager::onRetrieveNode(Event *e)
 	updateApplicationInterests(appNode);
 	numClients++;
 	
-	DataObjectRef dObjReply = DataObjectRef(new DataObject(NULL, 0), "DataObjectReply");
+	DataObjectRef dObjReply = new DataObject();
 	
 	if (!dObjReply) {
 		HAGGLE_ERR("Could not allocate data object\n");
@@ -800,6 +807,13 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 	size_t decodelen = NODE_ID_LEN;
 	struct base64_decode_context ctx;
 	const Attribute *ctrlAttr;
+	/*
+		If we are in shutdown, silently ignore the application.
+	*/
+	if (getState() >= MANAGER_STATE_PREPARE_SHUTDOWN) {
+		HAGGLE_DBG("Ignoring data object from application since we are in shutdown\n");
+		return;
+	}
 
 	if (!e || !e->hasData())
 		return;
@@ -810,7 +824,7 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 		HAGGLE_ERR("No data objects in event\n");
 		return;
 	}
-
+	
 	while (dObjs.size()) {
 		DataObjectRef dObj = dObjs.pop();
 
@@ -896,7 +910,7 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 					} else {
 						HAGGLE_DBG("app name=%s\n", name_str);
 						
-						appNode = NodeRef(new Node(NODE_TYPE_APPLICATION, id, name_str));
+						appNode = new Node(NODE_TYPE_APPLICATION, id, name_str);
 						
 						appNode->addInterface(dObj->getRemoteInterface());
 						
@@ -914,7 +928,7 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 				case CTRL_TYPE_SHUTDOWN:
 					if (!appNode)
 						break;
-					
+
 					HAGGLE_DBG("Application %s wants to shutdown\n", appNode->getName().c_str());
 					kernel->shutdown();
 					break;

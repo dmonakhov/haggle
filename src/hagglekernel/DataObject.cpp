@@ -118,7 +118,7 @@ DataObject::DataObject(InterfaceRef _localIface, InterfaceRef _remoteIface, cons
 #endif
 }
 
-DataObject::DataObject(const char *raw, const unsigned long len, InterfaceRef _localIface, InterfaceRef _remoteIface, const string _storagepath) : 
+DataObject::DataObject(const unsigned char *raw, const unsigned long len, InterfaceRef _localIface, InterfaceRef _remoteIface, const string _storagepath) : 
 #ifdef DEBUG_LEAKS
                 LeakMonitor(LEAK_TYPE_DATAOBJECT),
 #endif 
@@ -139,7 +139,7 @@ DataObject::DataObject(const char *raw, const unsigned long len, InterfaceRef _l
                 }
 	} else {
 	
-                metadata = new XMLMetadata(raw, len);
+                metadata = new XMLMetadata((char *)raw, len);
                 
                 if (!metadata || metadata->getName() != "Haggle") {
                         if (metadata) {
@@ -480,7 +480,7 @@ ssize_t DataObject::putData(void *_data, size_t len, size_t *remaining)
                 info->fp = fopen(getFilePath().c_str(), "wb");
 		
                 if (info->fp == NULL) {
-						free_pDd();
+			free_pDd();
                         HAGGLE_ERR("Could not open %s for writing data object data\n", 
                                    getFilePath().c_str());
                         return -1;
@@ -502,7 +502,7 @@ ssize_t DataObject::putData(void *_data, size_t len, size_t *remaining)
                         // TODO: check error values with, e.g., ferror()?
                         HAGGLE_ERR("Error-1 on writing %lu bytes to file %s, nitems=%lu\n", 
                                    len, getFilePath().c_str(), nitems);
-						free_pDd();
+			free_pDd();
                         return -1;
                 }
 
@@ -522,7 +522,7 @@ ssize_t DataObject::putData(void *_data, size_t len, size_t *remaining)
                         // TODO: check error values with, e.g., ferror()?
                         HAGGLE_ERR("Error-2 on writing %lu bytes to file %s, nitems=%lu\n", 
                                    info->bytes_left, getFilePath().c_str(), nitems);
-						free_pDd();
+			free_pDd();
                         return -1;
                 }
                 fclose(info->fp);
@@ -597,7 +597,7 @@ DataObjectDataRetrieverImplementation::DataObjectDataRetrieverImplementation(con
         }
 
         // Find header size:
-        if (!dObj->getRawMetadataAlloc((char **) &(header), (size_t *)&(header_len))) {
+        if (!dObj->getRawMetadataAlloc(&(header), (size_t *)&(header_len))) {
                 HAGGLE_ERR("ERROR: Unable to retrieve header.\n");
                 goto fail_header;
         }
@@ -1224,7 +1224,7 @@ Metadata *DataObject::toMetadata()
         return metadata;
 }
 
-ssize_t DataObject::getRawMetadata(char *raw, size_t len) const
+ssize_t DataObject::getRawMetadata(unsigned char *raw, size_t len) const
 {
         if (!toMetadata())
                 return -1;
@@ -1232,7 +1232,7 @@ ssize_t DataObject::getRawMetadata(char *raw, size_t len) const
         return metadata->getRaw(raw, len);
 } 
 
-bool DataObject::getRawMetadataAlloc(char **raw, size_t *len) const
+bool DataObject::getRawMetadataAlloc(unsigned char **raw, size_t *len) const
 {
         if (!toMetadata())
                 return false;
@@ -1242,7 +1242,7 @@ bool DataObject::getRawMetadataAlloc(char **raw, size_t *len) const
 
 void DataObject::print(FILE *fp) const
 {
-	char *raw;
+	unsigned char *raw;
 	size_t len;
 
 	if (!fp) {

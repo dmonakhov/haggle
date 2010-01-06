@@ -457,7 +457,7 @@ ProtocolEvent Protocol::getData(size_t *bytesRead)
                 
                 if (pEvent == PROT_EVENT_INCOMING_DATA) {
                         
-                        readLen = BUFSIZE - bufferDataLen;
+                        readLen = PROTOCOL_BUFSIZE - bufferDataLen;
                         
                         pEvent = receiveData(buffer, readLen, 0, bytesRead);
                         
@@ -696,7 +696,7 @@ ProtocolEvent Protocol::receiveDataObject()
 
 	HAGGLE_DBG("%s receiving data object\n", getName());
 
-        dObj = DataObjectRef(new DataObject(localIface, peerIface, getKernel()->getStoragePath()), "PendingDataObject");
+        dObj = new DataObject(localIface, peerIface, getKernel()->getStoragePath());
 
         if (!dObj) {
 		HAGGLE_ERR("Could not create pending data object\n");
@@ -826,7 +826,7 @@ ProtocolEvent Protocol::sendDataObjectNow(const DataObjectRef& dObj)
 	// Repeat until the data object is completely sent:
 	do {
 		// Get the data:
-		len = retriever->retrieve((unsigned char *) buffer, BUFSIZE, !hasSentHeader);
+		len = retriever->retrieve(buffer, PROTOCOL_BUFSIZE, !hasSentHeader);
 		
 		if (len < 0) {
 			HAGGLE_ERR("Could not retrieve data from data object\n");
@@ -1010,7 +1010,6 @@ bool Protocol::run()
 				// Timeout expired:
 				setMode(PROT_MODE_DONE);
 			break;
-			
 			case PROT_EVENT_TXQ_NEW_DATAOBJECT:
 				// Data object to send:
 				if (!dObj) {

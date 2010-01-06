@@ -38,11 +38,6 @@ class Mutex
         friend class Thread;
         friend class Condition;
 private:
-	const string name;
-#ifdef DEBUG_MUTEX
-	ThreadId lastid;
-	int lockCount;
-#endif
 #ifdef OS_WINDOWS
         bool _recursive;
         HANDLE mutex;
@@ -69,7 +64,7 @@ public:
         /**
 	   Constructor
         */
-        Mutex(const string name = "mutex", bool recursive = false);
+        Mutex(bool recursive = false);
         /**
 	   Destructor
         */
@@ -99,8 +94,7 @@ public:
 	/**
 		Constructor
 	*/
-	RecursiveMutex(const string name = "Unnamed recursive mutex") :
-		Mutex(name, true) {}
+	RecursiveMutex() : Mutex(true) {}
 	/**
 		Destructor
 	*/

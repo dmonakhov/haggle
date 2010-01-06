@@ -555,7 +555,7 @@ static const char *tbl_cmds[] = {
 
 static char sqlcmd[SQL_MAX_CMD_SIZE];
 
-static inline string SQL_INSERT_DATAOBJECT_CMD(const char *xml, const sqlite_int64 ifaceRowId, const DataObjectRef dObj)
+static inline string SQL_INSERT_DATAOBJECT_CMD(const char *metadata, const sqlite_int64 ifaceRowId, const DataObjectRef dObj)
 {
 	string cmd;
 	
@@ -567,7 +567,7 @@ static inline string SQL_INSERT_DATAOBJECT_CMD(const char *xml, const sqlite_int
 		ticket #139.
 	*/
 	int ret = stringprintf(cmd, "INSERT INTO %s (id,xmlhdr,filepath,filename,datalen,signaturestatus,signee,createtime,receivetime,rxtime,source_iface_rowid) VALUES(?,\'%s\',\'%s\',\'%s\',%lu,%lu,\'%s\'," INT64_FORMAT "," INT64_FORMAT ",%lu," INT64_FORMAT ");", 
-                           TABLE_DATAOBJECTS, xml, dObj->getFilePath().c_str(), dObj->getFileName().c_str(), 
+                           TABLE_DATAOBJECTS, metadata, dObj->getFilePath().c_str(), dObj->getFileName().c_str(), 
                            (dObj->getDynamicDataLen() ? -1 : (unsigned long) dObj->getDataLen()), 
 			       dObj->getSignatureStatus(), dObj->getSignee().c_str(),
                            dObj->getCreateTime().getTimeAsMilliSeconds(), dObj->getReceiveTime().getTimeAsMilliSeconds(), 
@@ -789,7 +789,7 @@ DataObject *SQLDataStore::createDataObject(sqlite3_stmt * stmt)
 	try 
 #endif
         {
-		dObj = new DataObject((char *) sqlite3_column_text(stmt, table_dataobjects_xmlhdr), 
+		dObj = new DataObject(sqlite3_column_text(stmt, table_dataobjects_xmlhdr), 
 					sqlite3_column_bytes(stmt, table_dataobjects_xmlhdr), NULL);
 
 	} 
@@ -1995,11 +1995,12 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 
 	// Do not insert nodes with undefined state/type
 	if (node->getType() == NODE_TYPE_UNDEF) {
-		HAGGLE_DBG("DataStore: Node type undefined. Ignoring INSERT\n");
+		HAGGLE_DBG("Node type undefined. Ignoring INSERT of node %s\n", node->getName().c_str());
 		node.unlock();
 		return -1;
 	}
-	HAGGLE_DBG("DataStore insert Node (%d)\n", node->getAttributes()->size());
+	HAGGLE_DBG("Inserting node %s, num attributes=%lu num interfaces=%lu\n", 
+		node->getName().c_str(), node->getAttributes()->size(), node->getInterfaces()->size());
 
 //	sqlQuery(SQL_BEGIN_TRANSACTION_CMD);
 
@@ -2035,12 +2036,12 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 	sqlite3_finalize(stmt);
 
 	if (ret == SQLITE_CONSTRAINT) {
-		HAGGLE_DBG("Node already in datastore\n");
+		HAGGLE_DBG("Node %s already in datastore -> replacing...\n", node->getName().c_str());
 		
 		ret = _deleteNode(node);
 		
 		if (ret < 0) {
-			HAGGLE_ERR("Could not delete node\n");
+			HAGGLE_ERR("Could not delete node %s\n", node->getName().c_str());
 			goto out_insertNode_err;
 		}
 
@@ -2050,7 +2051,7 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 		node.unlock();
 		return ret;
 	} else if (ret == SQLITE_ERROR) {
-		HAGGLE_DBG("Could not insert Node Error: %s\n", sqlite3_errmsg(db));
+		HAGGLE_DBG("Could not insert Node %s - Error: %s\n", node->getName().c_str(), sqlite3_errmsg(db));
 		goto out_insertNode_err;
 	} else {
 		node_rowid = sqlite3_last_insert_rowid(db);
@@ -2095,30 +2096,28 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 	// Insert node interfaces
 	ifaces = node->getInterfaces();
 
-	HAGGLE_DBG("Node has %d interfaces\n", ifaces->size());
-
 	for (InterfaceRefList::const_iterator it = ifaces->begin(); it != ifaces->end(); it++) {
-		InterfaceRef ifaceRef = (*it);
+		InterfaceRef iface = (*it);
 
-		ifaceRef.lock();
+		iface.lock();
 		
-		sql_cmd = SQL_INSERT_IFACE_CMD((sqlite_int64) ifaceRef->getType(), ifaceRef->getIdentifierStr(), node_rowid);
+		sql_cmd = SQL_INSERT_IFACE_CMD((sqlite_int64) iface->getType(), iface->getIdentifierStr(), node_rowid);
 		HAGGLE_DBG("Insert interface SQLcmd: %s\n", sql_cmd);
 
 		ret = sqlite3_prepare_v2(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
 
 		if (ret != SQLITE_OK) {
 			HAGGLE_DBG("SQLite command compilation failed! %s\n", sql_cmd);
-			ifaceRef.unlock();
+			iface.unlock();
 			goto out_insertNode_err;
 		}
 
-		ret = sqlite3_bind_blob(stmt, 1, ifaceRef->getRawIdentifier(), ifaceRef->getIdentifierLen(), SQLITE_TRANSIENT);
+		ret = sqlite3_bind_blob(stmt, 1, iface->getRawIdentifier(), iface->getIdentifierLen(), SQLITE_TRANSIENT);
 
 		if (ret != SQLITE_OK) {
 			HAGGLE_DBG("SQLite could not bind interface identifier blob!\n");
 			sqlite3_finalize(stmt);
-			ifaceRef.unlock();
+			iface.unlock();
 			goto out_insertNode_err;
 		}
 
@@ -2126,13 +2125,13 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 		sqlite3_finalize(stmt);
 
 		if (ret == SQLITE_CONSTRAINT) {
-			HAGGLE_DBG("Interface already in datastore\n");
+			HAGGLE_DBG("Interface %s already in datastore\n", iface->getIdentifierStr());
 		} else if (ret == SQLITE_ERROR) {
-			HAGGLE_DBG("Could not insert Interface Error:%s\n", sqlite3_errmsg(db));
-			ifaceRef.unlock();
+			HAGGLE_DBG("Could not insert Interface %s - Error:%s\n", iface->getIdentifierStr(), sqlite3_errmsg(db));
+			iface.unlock();
 			goto out_insertNode_err;
 		}
-		ifaceRef.unlock();
+		iface.unlock();
 	}
 
 //	sqlQuery(SQL_END_TRANSACTION_CMD);	
@@ -2325,7 +2324,7 @@ int SQLDataStore::_insertDataObject(DataObjectRef& dObj, const EventCallback<Eve
 
 	HAGGLE_DBG("DataStore insert DataObject with num_attributes=%d\n", dObj->getAttributes()->size());
 
-	if (!dObj->getRawMetadataAlloc(&metadata, &metadatalen)) {
+	if (!dObj->getRawMetadataAlloc((unsigned char **)&metadata, &metadatalen)) {
 		HAGGLE_ERR("Could not get raw metadata from DO\n");
 		dObj.unlock();
 		return -1;
@@ -2451,7 +2450,7 @@ int SQLDataStore::_retrieveNode(NodeRef& refNode, const EventCallback<EventHandl
 {
 	NodeRef node;
 	
-	HAGGLE_DBG("DataStore retrieve Node \n");
+	HAGGLE_DBG("Retrieve Node %s\n", refNode->getName().c_str());
 	
 	sqlite_int64 node_rowid = getNodeRowId(refNode);
 	
@@ -2545,7 +2544,7 @@ int SQLDataStore::_doFilterQuery(DataStoreFilterQuery *q)
 	sqlite_int64 filter_rowid = 0;
 	sqlite_int64 dataobject_rowid = 0;
 	
-	HAGGLE_DBG("DataStore Filter Query\n");
+	HAGGLE_DBG("Filter Query\n");
 	
 	if (!q) {
 		return -1;
@@ -2587,7 +2586,7 @@ int SQLDataStore::_doFilterQuery(DataStoreFilterQuery *q)
 			
 			HAGGLE_DBG("Dataobject with rowid %d matches!\n", dataobject_rowid);
 			
-			DataObjectRef dObj = DataObjectRef(getDataObjectFromRowId(dataobject_rowid), "DataObjectInQueryResult");
+			DataObjectRef dObj = getDataObjectFromRowId(dataobject_rowid);
 			
 			if (dObj) {
 				qr->addDataObject(dObj);
@@ -2657,7 +2656,7 @@ int SQLDataStore::_doDataObjectQueryStep2(NodeRef &node, NodeRef alsoThisBF, Dat
 		if (ret == SQLITE_ROW) {
 			sqlite_int64 dObjRowId = sqlite3_column_int64(stmt, view_match_nodes_and_dataobjects_rated_dataobject_rowid);
 
-			DataObjectRef dObj = DataObjectRef(getDataObjectFromRowId(dObjRowId), "DataObjectInQueryResult");
+			DataObjectRef dObj = getDataObjectFromRowId(dObjRowId);
 
 			if (dObj) {
 				if (!(node->getBloomfilter()->has(dObj) || (alsoThisBF && alsoThisBF->getBloomfilter()->has(dObj)))) {

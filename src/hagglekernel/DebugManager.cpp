@@ -163,7 +163,7 @@ void DebugManager::onFindRepositoryKey(Event *e)
 		// Create data object:
 		
 		// Empty at first:
-		dObj = new DataObject((const char *)NULL, 0);
+		dObj = new DataObject();
 		
 		// Add log file attribute:
 		Attribute a("Log file","Trace");
@@ -197,12 +197,12 @@ void DebugManager::onFindRepositoryKey(Event *e)
 	delete qr;
 }
 
-static bool sendBuffer(SOCKET sock, const char *data, size_t toSend)
+static bool sendBuffer(SOCKET sock, const void *data, size_t toSend)
 {
 	size_t i = 0;
 	
 	do {
-		ssize_t ret = send(sock, &(data[i]), toSend, 0);
+		ssize_t ret = send(sock, (char *)data + i, toSend, 0);
         
 		if (ret == -1) {
 #if defined(OS_WINDOWS)
@@ -260,10 +260,10 @@ void DebugManager::dumpTo(SOCKET client_sock, DataStoreDump *dump)
 		return;
 	
         DataObjectRef dObj = kernel->getThisNode()->getDataObject(false);
-        char *buf;
+        unsigned char *buf;
         size_t len;
         if (dObj->getRawMetadataAlloc(&buf, &len)) {
-                i = skipXMLTag(buf, len);
+                i = skipXMLTag((char *)buf, len);
                 len -= i;
                 if (!sendString(client_sock, "<ThisNode>\n")) {
 			free(buf);

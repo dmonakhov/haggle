@@ -204,7 +204,7 @@ InterfaceRef InterfaceStore::addupdate(Interface *iface, const InterfaceRef &par
 		}
 	}
 
-	InterfaceRef ifaceRef(iface->copy(), iface->getName());
+	InterfaceRef ifaceRef = iface->copy();
 	ifaceRef->setFlag(IFFLAG_STORED);
 	InterfaceRecord *ir = new InterfaceRecord(ifaceRef, parentRef, policy);
 	push_back(ir);
@@ -259,7 +259,7 @@ InterfaceRef InterfaceStore::addupdate(Interface *iface, const Interface *parent
 		}
 	}
 
-	InterfaceRef ifaceRef(iface->copy(), iface->getName());
+	InterfaceRef ifaceRef = iface->copy();
 	InterfaceRecord *ir = new InterfaceRecord(ifaceRef, parentStore, policy);
 	push_back(ir);
 	

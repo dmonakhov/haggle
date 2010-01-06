@@ -47,7 +47,7 @@ ConnectivityLocal::~ConnectivityLocal()
 
 ConnectivityLocalBase::ConnectivityLocalBase(ConnectivityManager * m, const string& name) :  
                 Connectivity(m, name),
-                rootInterface(NULL, "ConnectivtyLocal root interface")
+                rootInterface(NULL)
 {
 }
 

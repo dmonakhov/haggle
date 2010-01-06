@@ -113,7 +113,7 @@ Metadata *XMLMetadata::addMetadata(const string name, const string content)
         return m;
 }
 
-ssize_t XMLMetadata::getRaw(char *buf, size_t len)
+ssize_t XMLMetadata::getRaw(unsigned char *buf, size_t len)
 {
 	int xmlLen;
 	xmlChar *xml;
@@ -145,7 +145,7 @@ ssize_t XMLMetadata::getRaw(char *buf, size_t len)
 	return xmlLen;
 }
 
-bool XMLMetadata::getRawAlloc(char **buf, size_t *len)
+bool XMLMetadata::getRawAlloc(unsigned char **buf, size_t *len)
 {
         int count;
 

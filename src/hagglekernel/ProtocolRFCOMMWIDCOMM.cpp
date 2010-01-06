@@ -144,7 +144,7 @@ ProtocolRFCOMM::ProtocolRFCOMM(RFCOMMConnection *_rfCommConn, const char *mac, c
 {
 	Address addr(AddressType_BTMAC, (unsigned char *) mac);
 
-	peerIface = InterfaceRef(new Interface(IFTYPE_BLUETOOTH, mac, &addr, "Peer Bluetooth", IFFLAG_UP), "InterfacePeerRFCOMM");
+	peerIface = new Interface(IFTYPE_BLUETOOTH, mac, &addr, "Peer Bluetooth", IFFLAG_UP);
 
 	rfCommConn->setProtocol(this);
 

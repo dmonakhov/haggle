@@ -103,22 +103,14 @@ class Reference {
 		unsigned long identifier;
 		
 		/**
-                   A name for the reference to the given object.
-			
-                   Used for debugging purposes.
-		*/
-		string name;
-		
-		/**
                    Constructor.
 		*/
-		RefCounter(T *_obj, unsigned long _identifier, string _name) : 
-			countMutex(string("Reference:countMutex") + "[" + _name + "]"),
+		RefCounter(T *_obj, unsigned long _identifier) : 
+			countMutex(),
 			refcount(1),
-			objectMutex(string("Reference:objectMutex") + "[" + _name + "]"),
+			objectMutex(),
 			obj(_obj), 
-			identifier(_identifier), 
-			name(_name)
+			identifier(_identifier)
 		{
                         Mutex::AutoLocker l(Reference<T>::objectsMutex);
 			Reference<T>::objects.insert(ReferencePair(obj, this));
@@ -223,7 +215,7 @@ class Reference {
 	RefCounter *refCount;
 	
 	// Called by constructor(s)
-	void inline init(T *_obj, const string _name)
+	void inline init(T *_obj)
 	{
 		// NULL is ok, but we don't need a RefCounter to it.
 		if (!_obj)
@@ -241,7 +233,7 @@ class Reference {
 		
 		objectsMutex.unlock();
 		
-		refCount = new RefCounter(_obj, totNum, _name);
+		refCount = new RefCounter(_obj, totNum);
 		
 		totNum++;
 	}
@@ -288,11 +280,6 @@ class Reference {
 	long refcount() const { return refCount ? refCount->count() : 0; }
 	
 	/**
-           Returns the name given when creating the reference to this object.
-	*/
-	const char *getName() const { return refCount->name.c_str(); }
-	
-	/**
            Returns the identifying integer associated with this object.
 	*/
 	const unsigned long getId() const { return refCount->identifier; }
@@ -302,26 +289,21 @@ class Reference {
 		
            Will throw an exception if the given object is already refcounted.
 	*/
-	Reference(const T *_obj = NULL, const string _name = "Unknown Reference") : 
-		refCount(NULL)
+	Reference(const T *_obj = NULL) : refCount(NULL)
 	{
-		init(const_cast<T *>(_obj), _name);
+		init(const_cast<T *>(_obj));
 	}
 	
 	/**
            Copy constructor. 
 	*/
-	Reference(const Reference<T> &eo) : 
-                        refCount(NULL)
+	Reference(const Reference<T> &eo) : refCount(NULL)
 	{
 		if (!eo.refCount)
 			return;
 
 		eo.refCount->inc_count();
 		refCount = eo.refCount;
-
-		// REFERENCE_DBG("object %s identifier=%lu increasing refcount to %ld\n", 
-                // 				refCount->name.c_str(), refCount->identifier, refCount->count());
 	};
 	
 	

@@ -264,7 +264,7 @@ class DataObject
 	/**
            The given source interface is the property of the caller.
 	*/
-	DataObject(const char *raw = NULL, const unsigned long len = 0, InterfaceRef _sourceIface = NULL, InterfaceRef _remoteIface = NULL, const string storagepath = HAGGLE_DEFAULT_STORAGE_PATH);
+	DataObject(const unsigned char *raw = NULL, const unsigned long len = 0, InterfaceRef _sourceIface = NULL, InterfaceRef _remoteIface = NULL, const string storagepath = HAGGLE_DEFAULT_STORAGE_PATH);
 	DataObject(const DataObject& dObj);
 	~DataObject();
 	DataObject *copy() const;
@@ -324,8 +324,8 @@ class DataObject
 	Metadata *toMetadata();
         Metadata *getMetadata();
         const Metadata *getMetadata() const;
-        ssize_t getRawMetadata(char *raw, size_t len) const;
-	bool getRawMetadataAlloc(char **raw, size_t *len) const;
+        ssize_t getRawMetadata(unsigned char *raw, size_t len) const;
+	bool getRawMetadataAlloc(unsigned char **raw, size_t *len) const;
         
 		// Thumbnail functions
         /**

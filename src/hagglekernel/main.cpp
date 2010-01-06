@@ -626,7 +626,33 @@ int WINAPI WinMain(
 #endif
 	atexit(cleanup);
 	set_path();
-	
+	/*
+	 Test memory limits and what happens when with Haggle when it runs out of memory
+	 on Windows mobile.
+
+	unsigned long bytes = 0;
+	unsigned long n = 1024*1024;
+	int i = 0;
+
+	while (true) {
+		i++;
+		char *f = (char *)malloc(n);
+
+		if (!f) {
+			fprintf(stderr, "could not allocate %lu bytes\n", n);
+			break;
+		} else {
+			bytes += n;
+		}
+		if (i == 9) {
+			double kb = bytes / 1024;
+			double mb = kb / 1024;
+			printf("Allocated a total of %lu bytes (%lf Kb) (%lf Mb)\n", bytes, kb, mb);
+			i = 0;
+		}
+	}
+	*/
+
 	return run_haggle();
 }
 #else

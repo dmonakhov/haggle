@@ -21,8 +21,8 @@ class XMLMetadata : public Metadata {
         XMLMetadata(const char *raw, const size_t len);
         ~XMLMetadata();
         XMLMetadata *copy() const;
-        ssize_t getRaw(char *buf, size_t len);
-        bool getRawAlloc(char **buf, size_t *len);
+        ssize_t getRaw(unsigned char *buf, size_t len);
+        bool getRawAlloc(unsigned char **buf, size_t *len);
         bool addMetadata(Metadata *m);
         Metadata *addMetadata(const string name, const string content = "");
 };

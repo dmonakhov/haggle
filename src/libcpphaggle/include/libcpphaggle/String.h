@@ -37,6 +37,7 @@ private:
 	size_t slen;  // the length of the string (i.e., strlen(s))
         static char nullchar;
         char *alloc(size_t len);
+	String(const char *_s, size_t n);
 public:
 	static const size_t npos = -1; // the largest possible position
 	String(const char *_s = NULL);
@@ -61,21 +62,21 @@ public:
         String& append(size_t n, char c);
 
         int compare(const String& str) const;
-        int compare (const char* s) const;
+        int compare(const char* s) const;
         int compare(size_t pos1, size_t n1, const String& str) const;
         int compare(size_t pos1, size_t n1, const char* s) const;
         int compare(size_t pos1, size_t n1, const String& str, size_t pos2, size_t n2) const;
-        int compare (size_t pos1, size_t n1, const char* s, size_t n2) const;
+        int compare(size_t pos1, size_t n1, const char* s, size_t n2) const;
 
         size_t find(const String& str, size_t pos = 0) const;
         size_t find(const char* s, size_t pos, size_t n) const;
         size_t find(const char* s, size_t pos = 0) const;
         size_t find(char c, size_t pos = 0) const;
 
-        size_t find_first_of (const String& str, size_t pos = 0) const;
-        size_t find_first_of (const char* s, size_t pos, size_t n) const;
-        size_t find_first_of (const char* s, size_t pos = 0) const;
-        size_t find_first_of (char c, size_t pos = 0) const;
+        size_t find_first_of(const String& str, size_t pos = 0) const;
+        size_t find_first_of(const char* s, size_t pos, size_t n) const;
+        size_t find_first_of(const char* s, size_t pos = 0) const;
+        size_t find_first_of(char c, size_t pos = 0) const;
 
         size_t find_last_of(const String& str, size_t pos = npos) const;
         size_t find_last_of(const char* s, size_t pos, size_t n) const;
@@ -89,7 +90,7 @@ public:
         String& operator=(const char* s);
         String& operator=(char c);
 
-        const char& operator[] (size_t pos) const;
+        const char& operator[](size_t pos) const;
         char& operator[](size_t pos);
 
         String& operator+=(const String& str);
