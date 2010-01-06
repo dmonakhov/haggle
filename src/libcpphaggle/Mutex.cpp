@@ -50,9 +50,9 @@ bool Mutex::unlock()
 	return true;
 }
 
-Mutex::Mutex(bool recursive) :
+Mutex::Mutex(bool recursive)
 #if defined(OS_WINDOWS)
-	_recursive(recursive)
+	: _recursive(recursive)
 #endif
 {
 #if defined(OS_WINDOWS)

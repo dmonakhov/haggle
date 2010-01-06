@@ -57,7 +57,7 @@ ProtocolSocket(PROT_TYPE_LOCAL, "ProtocolLOCAL", NULL, NULL,
 
 	Address addr(un_addr.sun_path);
 
-	localIface = InterfaceRef(new Interface(IFTYPE_APPLICATION_LOCAL, un_addr.sun_path, &addr, "Application", IFFLAG_UP), "InterfaceApplicationLocal");
+	localIface = new Interface(IFTYPE_APPLICATION_LOCAL, un_addr.sun_path, &addr, "Application", IFFLAG_UP);
 
 #if HAVE_EXCEPTION
 	if (!localIface)
@@ -77,9 +77,7 @@ ProtocolEvent ProtocolLOCAL::receiveDataObject()
 	struct sockaddr_un peer_addr;
 	ProtocolEvent pEvent;
 
-	memset(buffer, 0, BUFSIZE);
-
-	pEvent = receiveData(buffer, BUFSIZE, &peer_addr, MSG_DONTWAIT, &len);
+	pEvent = receiveData(buffer, PROTOCOL_BUFSIZE, &peer_addr, MSG_DONTWAIT, &len);
 
 	if (pEvent != PROT_EVENT_SUCCESS)
 		return pEvent;

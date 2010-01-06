@@ -443,7 +443,7 @@ void DebugManager::onWatchableEvent(const Watchable& wbl)
 
 		switch (c) {
 			case 'c':
-				dbgCmdRef = DebugCmdRef(new DebugCmd(DBG_CMD_PRINT_CERTIFICATES), "PrintCertificatesDebugCmd");
+				dbgCmdRef = new DebugCmd(DBG_CMD_PRINT_CERTIFICATES);
 				kernel->addEvent(new Event(dbgCmdRef));
 				break;
 #ifdef DEBUG_DATASTORE
@@ -469,11 +469,11 @@ void DebugManager::onWatchableEvent(const Watchable& wbl)
 				kernel->getNodeStore()->print();
 				break;
 			case 'p':
-				dbgCmdRef = DebugCmdRef(new DebugCmd(DBG_CMD_PRINT_PROTOCOLS), "PrintPotocolsDebugCmd");
+				dbgCmdRef = new DebugCmd(DBG_CMD_PRINT_PROTOCOLS);
 				kernel->addEvent(new Event(dbgCmdRef));
 				break;
 			case 'r':
-				dbgCmdRef = DebugCmdRef(new DebugCmd(DBG_CMD_PRINT_ROUTING_TABLE), "PrintRoutingTableDebugCmd");
+				dbgCmdRef = new DebugCmd(DBG_CMD_PRINT_ROUTING_TABLE);
 				kernel->addEvent(new Event(dbgCmdRef));
 				break;
 			case 's':
@@ -487,7 +487,7 @@ void DebugManager::onWatchableEvent(const Watchable& wbl)
 				break;
 #endif
 			case 'b':
-				kernel->getThisNode()->getDataObject()->getRawMetadataAlloc(&raw, &rawLen);
+				kernel->getThisNode()->getDataObject()->getRawMetadataAlloc((unsigned char **)&raw, &rawLen);
 				if (raw) {
 					printf("======= Node description =======\n");
 						printf("%s\n", raw);
