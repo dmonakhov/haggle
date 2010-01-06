@@ -247,16 +247,17 @@ public:
 /** */
 class EventHandler
 {
-        int num_events;
+        unsigned int num_events;
         EventCallback<EventHandler> *callbacks[MAX_NUM_PUBLIC_EVENT_TYPES];
 protected:
         EventHandler() : num_events(0) {
-                for (int i = 0; i < MAX_NUM_PUBLIC_EVENT_TYPES; i++) callbacks[i] = NULL;
+                for (unsigned int i = 0; i < MAX_NUM_PUBLIC_EVENT_TYPES; i++) callbacks[i] = NULL;
         }
         virtual ~EventHandler() { 
-		for (int i = 0; i < MAX_NUM_PUBLIC_EVENT_TYPES; i++) 
-			if (callbacks[i])
+		for (unsigned int i = 0; i < MAX_NUM_PUBLIC_EVENT_TYPES; i++) 
+			if (callbacks[i]) {
 				delete callbacks[i];
+			}
 	}
         EventCallback<EventHandler> *getEventInterest(EventType type) {
                 if (EVENT_TYPE_PUBLIC(type)) 
@@ -267,7 +268,8 @@ protected:
 	int addEventInterest(EventType type, EventCallback<EventHandler> *callback) {
 		if (EVENT_TYPE_PUBLIC(type)) {
 			if (callbacks[type]) {
-				HAGGLE_ERR("EventHandler has already registered event type %d\n", type);
+				HAGGLE_ERR("EventHandler has already registered event type %u\n", type);
+				delete callback;
 			} else {
 				callbacks[type] = callback;
 				return 0;
@@ -407,7 +409,7 @@ public:
 #endif
         Event(EventType _type, const NodeRef& _nodeRef, const NodeRefList& _nodes, double _delay = 0.0);
         Event(EventType _type, const DataObjectRef& _dObjRef, const NodeRefList& _nodes, double _delay = 0.0);
-		Event(EventType _type, const DataObjectRef& _dObjRef, const NodeRef& _nodeRef, const NodeRefList& _nodes, double _delay = 0.0);
+	Event(EventType _type, const DataObjectRef& _dObjRef, const NodeRef& _nodeRef, const NodeRefList& _nodes, double _delay = 0.0);
         Event(EventType _type, const DataObjectRefList&  _dObjs, double _delay = 0.0);
         Event(EventType _type, void *_data = NULL, double _delay = 0.0);
         Event(const EventCallback<EventHandler> *_callback, void *_data, double _delay = 0.0);
@@ -495,9 +497,9 @@ public:
                         return;
                 (*callback)(this);
         }
-class EventException : public Exception
+	class EventException : public Exception
         {
-        public:
+	public:
                 EventException(const int err = 0, const char* data = "Event Error") : Exception(err, data) {}
         };
 };

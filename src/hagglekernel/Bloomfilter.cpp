@@ -177,12 +177,12 @@ unsigned long Bloomfilter::countDataObjects(void) const
 	return 0;
 }
 
-const char *Bloomfilter::getRaw(void) const
+const unsigned char *Bloomfilter::getRaw(void) const
 {
 	if (non_counting != NULL) {
-		return (char *)non_counting;
+		return (unsigned char *)non_counting;
 	} else if (counting != NULL) {
-		return (char *)counting;
+		return (unsigned char *)counting;
 	} 
 		
 	HAGGLE_ERR("Tried to get raw bloomfilter which is neither counting or non-counting!\n");
@@ -203,7 +203,7 @@ unsigned long Bloomfilter::getRawLen(void) const
 	return 0;
 }
 
-void Bloomfilter::setRaw(const char *bf)
+void Bloomfilter::setRaw(const unsigned char *bf)
 {
 	if (non_counting != NULL) {
 		if (BLOOMFILTER_TOT_LEN(non_counting) != BLOOMFILTER_TOT_LEN((struct bloomfilter *)bf)) {
@@ -222,14 +222,16 @@ void Bloomfilter::setRaw(const char *bf)
 	}
 }
 
-void Bloomfilter::reset(void)
+void Bloomfilter::reset()
 {
 	if (non_counting != NULL) {
+		bloomfilter_free(non_counting);
 		non_counting = bloomfilter_new(error_rate, capacity);
 		counting = NULL;
 	} else if (counting != NULL) {
-		non_counting = NULL;
+		counting_bloomfilter_free(counting);
 		counting = counting_bloomfilter_new(error_rate, capacity);
+		non_counting = NULL;
 	} else {
 		HAGGLE_ERR("Tried to reset bloomfilter which is neither counting or non-counting!\n");
 	}

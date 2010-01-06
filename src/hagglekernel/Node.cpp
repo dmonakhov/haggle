@@ -293,7 +293,7 @@ Node::~Node()
 
 		eventInterests.erase(p.first);
 	}
-	if (doBF != NULL)
+	if (doBF)
 		delete doBF;
 }
 

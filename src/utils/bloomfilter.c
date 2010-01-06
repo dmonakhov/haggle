@@ -345,10 +345,8 @@ out:
 
 void bloomfilter_free(struct bloomfilter *bf)
 {
-	if (!bf)
-		return;
-
-	free(bf);	
+	if (bf)
+		free(bf);	
 }
 
 /* Adapted from the perl code found at this URL:

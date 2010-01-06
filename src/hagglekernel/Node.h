@@ -154,7 +154,7 @@ class Node
 		Why a pointer? Otherwise we'd get a circular dependency during 
 		compilation.
 	*/
-		Bloomfilter *doBF;
+	Bloomfilter *doBF;
 
 	/**
 		This is a set of private events that correspond to filters that

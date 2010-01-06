@@ -392,7 +392,7 @@ InterfaceStore::size_type InterfaceStore::remove(const Interface *iface, Interfa
 	if (!iface) {
 		// This must be a request to remove children discovered by 
 		// a local connectivity, i.e., local interfaces.
-		return remove_children(NULL, new InterfaceRefList());
+		return remove_children(NULL, ifl);
 	}
 
 	InterfaceStore::iterator it = begin();
@@ -426,7 +426,7 @@ InterfaceStore::size_type InterfaceStore::remove(const InterfaceRef &iface, Inte
 	if (!iface) {
 		// This must be a request to remove children discovered by 
 		// a local connectivity, i.e., local interfaces.
-		return remove_children(iface, new InterfaceRefList());
+		return remove_children(iface, ifl);
 	}
 
 	InterfaceStore::iterator it = begin();

@@ -73,7 +73,7 @@ public:
 		Returns a platform-independent representation of the bloomfilter in a
 		Base64 encoded string.
 	*/
-	string toBase64(void) const;
+	string toBase64() const;
 	/**
 		Sets the bloomfilter to be the bloomfilter represented by the given
 		Base64 encoded string.
@@ -93,28 +93,28 @@ public:
 		function would return for a non-counting bloomfilter with the same 
 		inserted data objects as this bloomfilter. This means
 	*/
-	string toBase64NonCounting(void) const;
+	string toBase64NonCounting() const;
 	
 	/**
 		Returns the number of data objects in the bloomfilter.
 	*/
-	unsigned long countDataObjects(void) const;
+	unsigned long countDataObjects() const;
 	
 	/**
 	*/
-	const char *getRaw(void) const;
+	const unsigned char *getRaw() const;
 	/**
 	*/
 	unsigned long getRawLen(void) const;
 	
 	/**
 	*/
-	void setRaw(const char *bf);
+	void setRaw(const unsigned char *bf);
 	
 	/**
 		Clears the bloomfilter.
 	*/
-	void reset(void);
+	void reset();
 };
 
 #endif /* _HAGGLE_BLOOMFILTER_H */

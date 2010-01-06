@@ -47,7 +47,7 @@ SOCKET openSocket(int port);
 // #undef DEBUG_LEAKS
 // #endif
 
-#define ADD_LOG_FILE_TO_DATASTORE	0
+#define ADD_LOG_FILE_TO_DATASTORE 0
 
 DebugManager::DebugManager(HaggleKernel * _kernel, bool interactive) : 
                 Manager("DebugManager", _kernel), onFindRepositoryKeyCallback(NULL), 
@@ -57,7 +57,7 @@ DebugManager::DebugManager(HaggleKernel * _kernel, bool interactive) :
 #if defined(DEBUG)
 	int i;
 
-	for (i = EVENT_TYPE_PUBLIC_MIN; i < EVENT_TYPE_PUBLIC_MAX + 1; i++) {
+	for (i = EVENT_TYPE_PUBLIC_MIN; i < MAX_NUM_PUBLIC_EVENT_TYPES; i++) {
 		setEventHandler(i, publicEvent);
 		HAGGLE_DBG("Listening on %d:%s\n", i, Event::getPublicName(i));
 	}
@@ -68,11 +68,11 @@ DebugManager::DebugManager(HaggleKernel * _kernel, bool interactive) :
 	HAGGLE_DBG("Server sock is %d\n", server_sock);
 
 	if (server_sock == INVALID_SOCKET || !kernel->registerWatchable(server_sock, this)) {
-			CLOSE_SOCKET(server_sock);
+		CLOSE_SOCKET(server_sock);
 #if HAVE_EXCEPTION
-			throw DebugException(-1, "Could not register socket");
+		throw DebugException(-1, "Could not register socket");
 #else
-                        return;
+		return;
 #endif
 	}
 

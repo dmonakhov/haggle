@@ -862,7 +862,7 @@ NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 	node->setMaxDataObjectsInMatch((unsigned int)sqlite3_column_int(in_stmt, table_nodes_resolution_max_matching_dataobjects));
 	node->setMatchingThreshold((unsigned int)sqlite3_column_int(in_stmt, table_nodes_resolution_threshold));
 	// set bloomfilter
-	node->getBloomfilter()->setRaw((char *)sqlite3_column_blob(in_stmt, table_nodes_bloomfilter));
+	node->getBloomfilter()->setRaw((unsigned char *)sqlite3_column_blob(in_stmt, table_nodes_bloomfilter));
 
 	node_rowid = sqlite3_column_int64(in_stmt, table_nodes_rowid);
 
