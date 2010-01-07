@@ -79,7 +79,7 @@ LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../../extlibs/libxml2-2.6.31/include \
         $(LOCAL_PATH)/../libcpphaggle/include \
         $(LOCAL_PATH)/../utils \
-        $(LOCAL_PATH)/../libhaggle\include \
+        $(LOCAL_PATH)/../libhaggle/include \
 	system/core/include \
 	hardware/libhardware_legacy/include \
 	external/sqlite/dist \

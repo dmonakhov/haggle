@@ -12,6 +12,7 @@ subdirs := $(addprefix $(LOCAL_PATH)/,$(addsuffix /Android.mk, \
                 src/libcpphaggle \
                 src/hagglekernel \
                 src/libhaggle \
+		src/luckyMe \
         ))
 
 include $(subdirs)

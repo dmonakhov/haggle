@@ -46,7 +46,7 @@ ProtocolRFCOMM::ProtocolRFCOMM(SOCKET _sock, const char *_mac, const unsigned sh
 	
 	Address addr(AddressType_BTMAC, (unsigned char *) mac);
 
-	peerIface = InterfaceRef(new Interface(IFTYPE_BLUETOOTH, mac, &addr, "Peer Bluetooth", IFFLAG_UP), "InterfacePeerRFCOMM");
+	peerIface = new Interface(IFTYPE_BLUETOOTH, mac, &addr, "Peer Bluetooth", IFFLAG_UP);
 }
 
 ProtocolRFCOMM::ProtocolRFCOMM(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, const unsigned short _channel, const short flags, ProtocolManager * m) : 

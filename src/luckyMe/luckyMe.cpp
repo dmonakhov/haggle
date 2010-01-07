@@ -34,7 +34,7 @@
 
 #include <signal.h>
 #include <unistd.h>
-#include <cerrno>
+#include <errno.h>
 
 #define ERRNO errno
 
@@ -56,13 +56,8 @@
 #include <string.h>
 #include <math.h>
 
-#include <cstdlib>
-#include <cstdio>
-#include <string>
-#include <sstream>
-#include <iostream>
-#include <fstream>
-#include <algorithm>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "../utils/utils.h"
 

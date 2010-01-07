@@ -1395,7 +1395,6 @@ static int handle_event(struct haggle_handle *hh, haggle_event_type_t type, stru
 	LIBHAGGLE_DBG("Handling event type %u\n", type);
 
 	if (!hh->handlers[type].handler) {
-		LIBHAGGLE_DBG("No registered handler for type %u\n", type);
 		haggle_dataobject_free(dobj);
 		return 0;
 	}
@@ -1562,9 +1561,7 @@ start_ret_t haggle_event_loop(void *arg)
 			}
                                                
                         event_type = atoi(event_type_str);
-                        
-			LIBHAGGLE_DBG("Calling event handler for type %u\n", event_type);
-			
+                        			
 			handle_event(hh, event_type, dobj, event_m);
                 }
 	}
