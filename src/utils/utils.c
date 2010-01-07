@@ -67,189 +67,86 @@
 #define ERRNO WSAGetLastError()
 #define EWOULDBLOCK WSAEWOULDBLOCK
 
-/*
-* Number of micro-seconds between the beginning of the Windows epoch
-* (Jan. 1, 1601) and the Unix epoch (Jan. 1, 1970).
-*
-* This assumes all Win32 compilers have 64-bit support.
-*/
-// gettimeofday and strsep is from tcpdump
-#if defined(_MSC_VER) || defined(_MSC_EXTENSIONS) || defined(__WATCOMC__)
-#define DELTA_EPOCH_IN_USEC  11644473600000000Ui64
-#else
-#define DELTA_EPOCH_IN_USEC  11644473600000000ULL
-#endif
-typedef DWORD64 u_int64_t;
-/***********************************************************************
- *
- * Borrowed from WINE sources!! (http://www.winehq.com)
- * Converts a Win32 FILETIME structure to a UNIX time_t value
- */
-#include <time.h>
-/***********************************************************************
- *           DOSFS_FileTimeToUnixTime
- *
- * Convert a FILETIME format to Unix time.
- * If not NULL, 'remainder' contains the fractional part of the filetime,
- * in the range of [0..9999999] (even if time_t is negative).
- */
-time_t FileTimeToUnixTime(const FILETIME *filetime, DWORD *remainder)
-{
-    /* Read the comment in the function DOSFS_UnixTimeToFileTime. */
-#if USE_LONG_LONG
-    long long int t = filetime->dwHighDateTime;
-    t <<= 32;
-    t += (UINT32)filetime->dwLowDateTime;
-    t -= 116444736000000000LL;
-    if (t < 0)
-    {
-	if (remainder) *remainder = 9999999 - (-t - 1) % 10000000;
-	return -1 - ((-t - 1) / 10000000);
-    }
-    else
-    {
-	if (remainder) *remainder = t % 10000000;
-	return t / 10000000;
-    }
-
-#else  /* ISO version */
-
-    UINT32 a0;			/* 16 bit, low    bits */
-    UINT32 a1;			/* 16 bit, medium bits */
-    UINT32 a2;			/* 32 bit, high   bits */
-    UINT32 r;			/* remainder of division */
-    unsigned int carry;		/* carry bit for subtraction */
-    int negative;		/* whether a represents a negative value */
-
-    /* Copy the time values to a2/a1/a0 */
-    a2 =  (UINT32)filetime->dwHighDateTime;
-    a1 = ((UINT32)filetime->dwLowDateTime ) >> 16;
-    a0 = ((UINT32)filetime->dwLowDateTime ) & 0xffff;
-
-    /* Subtract the time difference */
-    if (a0 >= 32768           ) a0 -=             32768        , carry = 0;
-    else                        a0 += (1 << 16) - 32768        , carry = 1;
-
-    if (a1 >= 54590    + carry) a1 -=             54590 + carry, carry = 0;
-    else                        a1 += (1 << 16) - 54590 - carry, carry = 1;
-
-    a2 -= 27111902 + carry;
-    
-    /* If a is negative, replace a by (-1-a) */
-    negative = (a2 >= ((UINT32)1) << 31);
-    if (negative)
-    {
-	/* Set a to -a - 1 (a is a2/a1/a0) */
-	a0 = 0xffff - a0;
-	a1 = 0xffff - a1;
-	a2 = ~a2;
-    }
-
-    /* Divide a by 10000000 (a = a2/a1/a0), put the rest into r.
-       Split the divisor into 10000 * 1000 which are both less than 0xffff. */
-    a1 += (a2 % 10000) << 16;
-    a2 /=       10000;
-    a0 += (a1 % 10000) << 16;
-    a1 /=       10000;
-    r   =  a0 % 10000;
-    a0 /=       10000;
-
-    a1 += (a2 % 1000) << 16;
-    a2 /=       1000;
-    a0 += (a1 % 1000) << 16;
-    a1 /=       1000;
-    r  += (a0 % 1000) * 10000;
-    a0 /=       1000;
-
-    /* If a was negative, replace a by (-1-a) and r by (9999999 - r) */
-    if (negative)
-    {
-	/* Set a to -a - 1 (a is a2/a1/a0) */
-	a0 = 0xffff - a0;
-	a1 = 0xffff - a1;
-	a2 = ~a2;
-
-        r  = 9999999 - r;
-    }
-
-    if (remainder) *remainder = r;
-
-    /* Do not replace this by << 32, it gives a compiler warning and it does
-       not work. */
-    return ((((time_t)a2) << 16) << 16) + (a1 << 16) + a0;
-#endif
-}
-
 /* A wrapper for gettimeofday so that it can be used on Windows platforms. */
-/*
-	NOTE:
-	
-	It has been observed that at times the value returned from this function
-	is unexpectedly high. (tv->usec >= 2^32)
-*/
 int gettimeofday(struct timeval *tv, void *tz)
 {
-	time_t unixtime;
-	DWORD remainder; // In microseconds
+	DWORD tickcount, tickcount_diff; // In milliseconds
 #ifdef WINCE
 	/* In Windows CE, GetSystemTime() returns a time accurate only to the second.
 	For higher performance timers we need to use something better. */
 	
-	// This is true when the base time is not correctly calculated. It will be
-	// calculated the next time gettimeofday() is called.
-	static int shouldCheckTime = 1;
 	// This holds the base time, i.e. the estimated time of boot. This value plus
 	// the value the high-performance timer/GetTickCount() provides gives us the
 	// right time.
-	static struct timeval baseTime;
+	static struct timeval base_time = { 0, 0};
+	static DWORD base_tickcount = 0;
 
 	if (!tv) 
 		return (-1);
 
 	/* The hardware does not implement a high performance timer.
-	Note, the time will wrap around after 49.7 days. */
-	remainder = GetTickCount();
-	unixtime = remainder / 1000;
-	remainder = (remainder % 1000) * 1000;
+	Note, the tick counter will wrap around after 49.7 days. 
+	GetTickCount() returns number of milliseconds since device start. 
+	*/
+	tickcount = GetTickCount();
 	
 	// Should we determine the base time?
-	if (shouldCheckTime) {
+	if (base_tickcount == 0) {
 		FILETIME  ft;
 		SYSTEMTIME st;
-		time_t nixtime;
-		DWORD rem;
+		LARGE_INTEGER date, adjust;
 		
+		// Save tickcount
+		base_tickcount = tickcount;
+
 		// Find the system time:
 		GetSystemTime(&st);
 		// Convert it into "file time":
 		SystemTimeToFileTime(&st, &ft);
 		
-		// Convert "file time" into readable values:
-		nixtime = FileTimeToUnixTime(&ft, &rem);
+		date.HighPart = ft.dwHighDateTime;
+		date.LowPart = ft.dwLowDateTime;
+
+		// 11644473600000 is the timestamp of January 1, 1601 (UTC), when
+		// FILETIME started.
+		// 100-nanoseconds = milliseconds * 10000
+		adjust.QuadPart = 11644473600000 * 10000;
+
+		// removes the diff between 1970 and 1601
+		date.QuadPart -= adjust.QuadPart;
+
+		// converts back from 100-nanoseconds to seconds and microseconds
+		base_time.tv_sec =  (long)(date.QuadPart / 10000000);
+		adjust.QuadPart = base_time.tv_sec;
+		adjust.QuadPart *= 1000000;
+		base_time.tv_usec = (long)((date.QuadPart - adjust.QuadPart) / 10);
 		
-		// Set up the base time:
-		baseTime.tv_sec = nixtime - tv->tv_sec;
-		baseTime.tv_usec = rem - tv->tv_usec;
-		
-		// normalize the base time:
-		while (baseTime.tv_usec < 0) {
-			baseTime.tv_sec--;
-			baseTime.tv_usec += 1000000;
-		}
-		while (baseTime.tv_usec >= 1000000) {
-			baseTime.tv_sec++;
-			baseTime.tv_usec -= 1000000;
-		}
-		
-		// Set this so we don't do all this over again:
-		shouldCheckTime = 0;
+		printf("base_time: sec:%ld usec:%ld\n", base_time.tv_sec, base_time.tv_usec);
+		printf("base_tickcount: %lu\n", tickcount);
 	}
+
+	tickcount_diff = tickcount - base_tickcount;
+	tv->tv_sec = base_time.tv_sec;
+	tv->tv_usec = base_time.tv_usec;
 	
-	tv->tv_sec  = (long) unixtime + baseTime.tv_sec;
-	tv->tv_usec = (long) remainder + baseTime.tv_usec;
+	// Add tickcount to seconds
+	while (tickcount_diff >= 1000) {
+		tv->tv_sec++;
+		tickcount_diff -= 1000;
+	}
+
+	// Add remainding milliseconds to the microseconds part
+	tv->tv_usec += (tickcount_diff * 1000);
+
+	// If the milliseconds part is larger then 1 sec, adjust
+	while (tv->tv_usec >= 1000000) {
+		tv->tv_sec++;
+		tv->tv_usec -= 1000000;
+	}
 #else
 	FILETIME  ft;
 	SYSTEMTIME st;
+	LARGE_INTEGER date, adjust;
 
 	if (!tv) 
 		return (-1);
@@ -257,24 +154,26 @@ int gettimeofday(struct timeval *tv, void *tz)
 	GetSystemTime(&st);
 	SystemTimeToFileTime(&st, &ft);
 
-	unixtime = FileTimeToUnixTime(&ft, &remainder);
+	date.HighPart = ft.dwHighDateTime;
+	date.LowPart = ft.dwLowDateTime;
 
-	tv->tv_sec  = (long) unixtime;
-	tv->tv_usec = (long) remainder;
+	// 11644473600000 is the timestamp of January 1, 1601 (UTC), when
+	// FILETIME started.
+	// 100-nanoseconds = milliseconds * 10000
+	adjust.QuadPart = 11644473600000 * 10000;
+
+	// removes the diff between 1970 and 1601
+	date.QuadPart -= adjust.QuadPart;
+
+	// converts back from 100-nanoseconds to seconds and microseconds
+	base_time.tv_sec =  (long)(date.QuadPart / 10000000);
+	adjust.QuadPart = base_time.tv_sec;
+	adjust.QuadPart *= 1000000;
+	base_time.tv_usec = (long)((date.QuadPart - adjust.QuadPart) / 10);
 #endif
-	
-	// normalize the time:
-	while (tv->tv_usec < 0) {
-		tv->tv_sec--;
-		tv->tv_usec += 1000000;
-	}
-	while (tv->tv_usec >= 1000000) {
-		tv->tv_sec++;
-		tv->tv_usec -= 1000000;
-	}
-
 	return 0;
 }
+
 char *strsep(char **stringp, const char *delim)
 {
 	register char *s;

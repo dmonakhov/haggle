@@ -74,8 +74,6 @@ HaggleKernel::HaggleKernel(DataStore *ds , const string _storagepath) :
 	// is a potential problem.
 	//dataStore->insertNode(&thisNode);
 
-	dataStore->start();
-
 	int res = gethostname(hostname, HOSTNAME_LEN);
 
 	if (res != 0) {
@@ -97,11 +95,6 @@ HaggleKernel::~HaggleKernel()
 	// Cleanup winsock
 	WSACleanup();
 #endif
-	// stop the dataStore thread and try to join with its thread
-	HAGGLE_DBG("Joining with DataStore thread\n");
-	dataStore->stop();
-	HAGGLE_DBG("Joined\n");
-	
 	// Now that it has finished processing, delete the data store:
 	delete dataStore;
 
@@ -228,6 +221,7 @@ void HaggleKernel::signalIsReadyForShutdown(Manager *m)
 	enableShutdownEvent();
 	// Tell the data store to cancel itself
 	dataStore->cancel();
+	HAGGLE_DBG("Data store cancelled!\n");
 }
 
 #ifdef DEBUG
@@ -381,6 +375,9 @@ void HaggleKernel::run()
 {
 	bool shutdownmode = false;
 	
+	// Start the data store
+	dataStore->start();
+
 	addEvent(new Event(EVENT_TYPE_PREPARE_STARTUP));
 	
 	readStartupDataObjectFile();
@@ -410,9 +407,7 @@ void HaggleKernel::run()
 		
 		switch (ee) {
 			case EQ_EVENT_SHUTDOWN:
-				
-				printf("\n****************** SHUTDOWN EVENT *********************\n\n");
-					
+				HAGGLE_DBG("\n****************** SHUTDOWN EVENT *********************\n\n");
 				shutdownmode = true;
 			case EQ_EVENT:
 				if (shutdownmode)
@@ -542,6 +537,11 @@ void HaggleKernel::run()
 			}
 		}
 	}
-	HAGGLE_DBG("Kernel exit from main loop\n");
+	HAGGLE_DBG("Kernel exits from main loop\n");
+
+	// stop the dataStore thread and try to join with its thread
+	HAGGLE_DBG("Joining with DataStore thread\n");
+	dataStore->stop();
+	HAGGLE_DBG("Joined\n");
 }
 

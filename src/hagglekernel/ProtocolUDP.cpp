@@ -209,6 +209,7 @@ ProtocolEvent ProtocolUDP::receiveDataObject()
 	ProtocolEvent pEvent;
         unsigned short port;
         Address *addr = NULL;
+	struct sockaddr_in *sa = NULL;
 
 #ifdef OS_WINDOWS
 	pEvent = receiveData(buffer, PROTOCOL_BUFSIZE, peer_addr, 0, &len);
@@ -220,15 +221,11 @@ ProtocolEvent ProtocolUDP::receiveDataObject()
 		return pEvent;
 
         if (peer_addr->sa_family == AF_INET) {
-                struct sockaddr_in *sa = (struct sockaddr_in *)peer_addr;
+                sa = (struct sockaddr_in *)peer_addr;
                 port = ntohs(sa->sin_port);
                 
                 addr = new Address(AddressType_IPv4, (unsigned char *) &(sa->sin_addr), 
-                                   NULL, ProtocolSpecType_UDP, port);
-
-                HAGGLE_DBG("Received data object from %s:%u\n", 
-                           ip_to_str(sa->sin_addr), port);
-                
+                                   NULL, ProtocolSpecType_UDP, port);                
         }
 #if defined(ENABLE_IPv6) 
         else if (peer_addr->sa_family == AF_INET6) {
@@ -267,10 +264,13 @@ ProtocolEvent ProtocolUDP::receiveDataObject()
 	}
 
 	dObj->setReceiveTime(Timeval::now());
-	
+
 	// Generate first an incoming event to conform with the base Protocol class
 	getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_INCOMING, dObj));
 	
+	HAGGLE_DBG("Received data object [%s] from interface %s:%u\n", 
+		dObj->getIdStr(), sa ? ip_to_str(sa->sin_addr) : "undefined", port);
+
 	// Since there is no data following, we generate the received event immediately 
 	// following the incoming one
 	getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_RECEIVED, dObj));

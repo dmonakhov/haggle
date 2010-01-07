@@ -41,8 +41,7 @@ class NodeManager : public Manager
 	EventCallback<EventHandler> *onRetrieveThisNodeCallback;
 	EventCallback<EventHandler> *onRetrieveNodeDescriptionCallback;
         EventType nodeDescriptionEType;
-        //int handleNodeId(Event *e);
-        int sendNodeDescription(NodeRef neigh);
+        int sendNodeDescription(NodeRefList& neighList);
         void onFilterQueryResult(Event *e);
         void onApplicationFilterMatchEvent(Event *e);
         void onSendNodeDescription(Event *e);

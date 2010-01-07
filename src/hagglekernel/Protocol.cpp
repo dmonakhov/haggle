@@ -692,7 +692,6 @@ ProtocolEvent Protocol::receiveDataObject()
 	ProtocolEvent pEvent;
 	DataObjectRef dObj;
         struct ctrlmsg m;
-        
 
 	HAGGLE_DBG("%s receiving data object\n", getName());
 
@@ -797,6 +796,9 @@ ProtocolEvent Protocol::receiveDataObject()
 	sendControlMessage(&m);
 
 	dObj->setReceiveTime(Timeval::now());
+
+	HAGGLE_DBG("Received data object [%s] from interface %s\n", 
+		dObj->getIdStr(), peerIface->getIdentifierStr());
 
 	getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_RECEIVED, dObj));
        

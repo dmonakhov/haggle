@@ -171,23 +171,36 @@ void NodeManager::onRetrieveThisNode(Event *e)
 	kernel->getThisNode()->setCreateTime();
 }
 
-int NodeManager::sendNodeDescription(NodeRef neigh)
+int NodeManager::sendNodeDescription(NodeRefList& neighList)
 {
-	DataObjectRef dObj = kernel->getThisNode()->getDataObject();
+	NodeRefList targetList;
 
-	if (neigh->getBloomfilter()->has(dObj)) {
-		HAGGLE_DBG("Neighbor %s already has our most recent node description\n", neigh->getName().c_str());
-		return 0;
-	}
+	HAGGLE_DBG("Pushing node description to %lu neighbors\n", neighList.size());
+
+	DataObjectRef dObj = kernel->getThisNode()->getDataObject();
 
 	if (thumbnail != NULL)
 		dObj->setThumbnail(thumbnail, thumbnail_size);
 	
-	HAGGLE_DBG("Sending node description [id=%s] to \'%s\'\n", dObj->getIdStr(), neigh->getName().c_str());
-	kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, neigh));
+	for (NodeRefList::iterator it = neighList.begin(); it != neighList.end(); it++) {
+		NodeRef& neigh = *it;
 	
-	// Remember that we tried to send our node description to this node:
-	nodeExchangeList.push_back(Pair<NodeRef, DataObjectRef>(neigh,dObj));
+		if (neigh->getBloomfilter()->has(dObj)) {
+			HAGGLE_DBG("Neighbor %s already has our most recent node description\n", neigh->getName().c_str());
+		} else {
+			HAGGLE_DBG("Sending node description [id=%s] to \'%s\'\n", dObj->getIdStr(), neigh->getName().c_str());
+			targetList.push_back(neigh);
+			// Remember that we tried to send our node description to this node:
+			nodeExchangeList.push_back(Pair<NodeRef, DataObjectRef>(neigh, dObj));
+		}
+	}
+	
+	if (targetList.size()) {
+		HAGGLE_DBG("Pushing node description to %lu neighbors\n", targetList.size());
+		kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, targetList));
+	} else {
+		HAGGLE_DBG("All neighbors already had our most recent node description\n");
+	}
 	
 	return 1;
 }
@@ -316,6 +329,8 @@ void NodeManager::onNeighborInterfaceDown(Event *e)
 
 void NodeManager::onNewNodeContact(Event *e)
 {
+	NodeRefList neighList;
+
 	if (!e)
 		return;
 
@@ -335,7 +350,9 @@ void NodeManager::onNewNodeContact(Event *e)
 		break;
 	}
 
-	sendNodeDescription(neigh);
+	neighList.push_back(neigh);
+
+	sendNodeDescription(neighList);
 }
 
 // Push our node description to all neighbors
@@ -350,14 +367,7 @@ void NodeManager::onSendNodeDescription(Event *e)
 		return;
 	}
 
-	// We ignore "this node", i.e., ourselves
-	HAGGLE_DBG("Pushing node description to %d neighbors\n", neighList.size());
-
-	for (NodeRefList::iterator it = neighList.begin(); it != neighList.end(); it++) {
-		NodeRef neigh = *it;
-		
-		sendNodeDescription(neigh);
-	}
+	sendNodeDescription(neighList);
 }
 
 
