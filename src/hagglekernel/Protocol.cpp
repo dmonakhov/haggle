@@ -798,7 +798,7 @@ ProtocolEvent Protocol::receiveDataObject()
 	dObj->setReceiveTime(Timeval::now());
 
 	HAGGLE_DBG("Received data object [%s] from interface %s\n", 
-		dObj->getIdStr(), peerIface->getIdentifierStr());
+		dObj->getIdStr(), peerIface ? peerIface->getIdentifierStr() : "undefined");
 
 	getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_RECEIVED, dObj));
        

@@ -581,47 +581,68 @@ char *eth_to_str(char *addr)
 
 
 #if defined(WIN32) || defined(WINCE)
-int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, char *mac, int maclen)
+int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsigned char *mac, size_t maclen)
 {
-	DWORD res, index;
-	MIB_IFROW mib;
+	MIB_IPNETTABLE *ipnet_table;
+	ULONG size;
+	DWORD ret;
+	unsigned int i;
 
 	if (mac == NULL || saddr == NULL || maclen < 6)
 		return -1;
 
 	switch (saddr->sa_family) {
 	case PF_INET:
-		res = GetBestInterface((IPAddr)&((struct sockaddr_in *)saddr)->sin_addr, &index);
 		break;
 	case PF_INET6:
-		res = GetBestInterface((IPAddr)&((struct sockaddr_in6 *)saddr)->sin6_addr, &index);
-		break;
+		// Not supported
+		return -2;
 	default:
-		return -1;
+		return -3;
 	}
-	if (res != NO_ERROR)
-		return 0;
 
-	mib.dwIndex = index;
+	// Get the size we need for the buffer
+	ret = GetIpNetTable(NULL, &size, TRUE);
 
-	res = GetIfEntry(&mib);
+	// We expect ERROR_INSUFFICIENT_BUFFER in return
+	if (ret != ERROR_INSUFFICIENT_BUFFER) {
+		fprintf(stderr, "get_peer_mac_address: error %lu\n", ret);
+		return -4;
+	}
 
-	if (res != NO_ERROR)
-		return 0;
+	ipnet_table = (MIB_IPNETTABLE *)malloc(size);
 
-	if ((unsigned int)maclen < mib.dwPhysAddrLen)
-		return -1;
+	if (!ipnet_table)
+		return -5;
 
-	memcpy(mac, mib.bPhysAddr, mib.dwPhysAddrLen);
+	ret = GetIpNetTable(ipnet_table, &size, TRUE);
 
-	return 1;
+	if (ret != NO_ERROR) {
+		fprintf(stderr, "get_peer_mac_address: error %lu\n", ret);
+		free(ipnet_table);
+		return -6;
+	}
+
+	for (i = 0; i < ipnet_table->dwNumEntries; i++) {
+		if (memcmp(&ipnet_table->table[i].dwAddr, &((struct sockaddr_in *)saddr)->sin_addr, 4) == 0) {
+			if (maclen >= ipnet_table->table[i].dwPhysAddrLen) {
+				memcpy(mac, &ipnet_table->table[i].bPhysAddr, maclen);
+				free(ipnet_table);
+				return 1;
+			}
+		}
+	}
+
+	free(ipnet_table);
+
+	return 0;
 }
 #elif defined(OS_LINUX)
 #include <netinet/ip.h>
 #include <netinet/in.h>
 #include <linux/icmp.h>
 
-int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, char *mac, int maclen)
+int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsigned char *mac, size_t maclen)
 {
         struct {
                 struct cmsghdr cm;
@@ -719,7 +740,7 @@ int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, char 
 	return ret;
 }
 #elif defined(OS_MACOSX_IPHONE)
-int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, char *mac, int maclen)
+int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsigned char *mac, size_t maclen)
 {
 
 	return 0;
@@ -732,7 +753,7 @@ int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, char 
  */
 #define ROUNDUP(a) \
 ((a) > 0 ? (1 + (((a) - 1) | (sizeof(long) - 1))) : sizeof(long))
-int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, char *mac, int maclen)
+int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsigned char *mac, size_t maclen)
 {	
 	size_t needed;
 	char *lim, *buf, *next;

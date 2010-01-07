@@ -136,7 +136,7 @@ void set_trace_timestamp_base(const struct timeval *tv);
 
         'ifname' may be NULL.
 */
-int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, char *mac, int maclen);
+int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsigned char *mac, size_t maclen);
 
 int send_file(const char* filename, int fd);
 	

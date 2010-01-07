@@ -167,7 +167,7 @@ void ProtocolTCP::setPeerInterface(const Address *addr)
 		HAGGLE_DBG("Peer interface is [%s]\n", pIface->getIdentifierStr());
 	} else {
                 char buf[SOCKADDR_SIZE];
-                char mac[6];
+                unsigned char mac[6];
                 struct sockaddr *peer_addr = (struct sockaddr *)buf;
                 addr->fillInSockaddr(peer_addr);
                 
