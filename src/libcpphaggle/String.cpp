@@ -686,7 +686,7 @@ int main(int argc, char **argv)
 */
 static int vasprintf(char **ret, const char *format, va_list ap)
 {
-	int to_allocate = 512;
+	size_t to_allocate = 512;
 	int retval;
 
 	*ret = NULL;

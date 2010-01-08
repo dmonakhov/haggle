@@ -78,7 +78,7 @@ void ProtocolManager::onDebugCmdEvent(Event *e)
 		printf("\tcommunication interfaces: %s <-> %s\n", 
                        p->getLocalInterface() ? p->getLocalInterface()->getIdentifierStr() : "None",  
                        p->getPeerInterface() ?  p->getPeerInterface()->getIdentifierStr() : "None");
-		if (p->getQueue()->size()) {
+		if (p->getQueue() && p->getQueue()->size()) {
 			printf("\tQueue:\n");
 			p->getQueue()->print();
 		} else {

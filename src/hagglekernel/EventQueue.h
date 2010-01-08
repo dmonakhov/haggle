@@ -72,6 +72,9 @@ public:
         EQEvent_t getNextEventTime(Timeval *tv) {
                 Mutex::AutoLocker l(mutex);
 
+		if (!tv)
+			return EQ_ERROR;
+
 		signal.lower();
 		
                 if (shutdownEvent) {
@@ -108,7 +111,8 @@ public:
         }
         void addEvent(Event *e) {
                 Mutex::AutoLocker l(mutex);
-                if (insert(e))
+		
+                if (e && insert(e))
 			signal.raise();
         }
 };

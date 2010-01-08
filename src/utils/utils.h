@@ -48,8 +48,6 @@ typedef DWORD32 in_addr_t;
 #pragma warning( disable : 4996 ) /* This disables warnings against
 				   * unsecure versions of strcpy,
 				   * vsnprintf, etc. */
-
-time_t FileTimeToUnixTime(const FILETIME *filetime, DWORD *remainder);
 int gettimeofday(struct timeval *tv, void *tz);
 char *strsep(char **stringp, const char *delim);
 

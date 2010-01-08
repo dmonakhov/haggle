@@ -159,7 +159,7 @@ void WIDCOMMBluetooth::OnInquiryComplete(BOOL success, short num_responses)
 	SetEvent(hInquiryEvent);
 }
 
-#define INQUIRY_TIMEOUT (30000)
+#define INQUIRY_TIMEOUT (50000)
 
 int WIDCOMMBluetooth::_doInquiry(widcomm_inquiry_callback_t callback, void *data, bool async)
 {
@@ -202,8 +202,8 @@ int WIDCOMMBluetooth::_doInquiry(widcomm_inquiry_callback_t callback, void *data
 				inquiryResult = -1;
 				break;
 			case WAIT_OBJECT_0:
-				HAGGLE_DBG("Inquiry completed\n");
-				inquiryResult = 0;
+				HAGGLE_DBG("Inquiry completed with res=%d\n", inquiryResult);
+				// inquiryResult set in OnDeviceResponded() or OnInquiryComplete()
 				break;
 		}
 		// We need to unset the isInInquiry flag, otherwise we will
@@ -320,8 +320,8 @@ int WIDCOMMBluetooth::_doDiscovery(const RemoteDevice *rd, GUID *guid, widcomm_d
 				discoveryResult = -1;
 				break;
 			case WAIT_OBJECT_0:
-				HAGGLE_DBG("Discovery completed\n");
-				discoveryResult = 0;
+				HAGGLE_DBG("Discovery completed with res=\n", discoveryResult);
+				// discoveryResult set by OnDiscoveryComplete()
 				break;
 		}
 		isInDiscovery = false;

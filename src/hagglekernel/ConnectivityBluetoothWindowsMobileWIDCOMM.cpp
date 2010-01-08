@@ -96,7 +96,7 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 	int res = WIDCOMMBluetooth::doInquiry();
 
 	if (res < 0) {
-		CM_DBG("Inquiry failed... Already inquiring?\n");
+		CM_DBG("Inquiry failed... res=%d\n", res);
 		return;
 	}
 	

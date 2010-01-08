@@ -140,6 +140,7 @@ class DataObjectDataRetriever {
            Negative value: error.
 	*/
 	virtual ssize_t retrieve(void *data, size_t len, bool getHeaderOnly) = 0;
+	virtual bool isValid() const = 0;
 };
 
 /**

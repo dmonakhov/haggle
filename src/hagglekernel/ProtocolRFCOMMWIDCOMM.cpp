@@ -555,6 +555,9 @@ ProtocolEvent ProtocolRFCOMMClient::receiveData(void *buf, size_t len, const int
 		}
 	}
 
+	if (*bytes == 0)
+		return PROT_EVENT_ERROR;
+
 	//HAGGLE_DBG("Successfully read %lu bytes data\n", *bytes);
 
 	return PROT_EVENT_SUCCESS;
@@ -615,11 +618,15 @@ ProtocolEvent ProtocolRFCOMMClient::waitForEvent(Timeval *timeout, bool writeeve
 ProtocolEvent ProtocolRFCOMMClient::waitForEvent(DataObjectRef &dObj, Timeval *timeout, bool writeevent)
 {
 	QueueElement *qe = NULL;
+	Queue *q = getQueue();
 	
+	if (!q)
+		return PROT_EVENT_ERROR;
+
 	if (writeevent)
 		timeout = NULL;
 
-	QueueEvent_t qev = getQueue()->retrieve(&qe, hReadQ, timeout, false);
+	QueueEvent_t qev = q->retrieve(&qe, hReadQ, timeout, false);
 
 	switch (qev) {
 	case QUEUE_TIMEOUT:

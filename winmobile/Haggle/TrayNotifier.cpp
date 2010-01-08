@@ -40,6 +40,8 @@ static struct msginfo msgnames[] = {
 	{ WM_NEXTDLGCTL, "WM_NEXTDLGCTL" },
 	{ WM_CANCELMODE, "WM_CANCELMODE" },
 	{ WM_CLOSE, "WM_CLOSE" },
+	{ WM_HIBERNATE, "WM_HIBERNATE" },
+	{ WM_ACTIVATE, "WM_ACTIVATE" },
 	{ WM_DESTROY, "WM_DESTROY" },
 	{ WM_CREATE, "WM_CREATE" },
 	{ WM_DESTROY, "WM_DESTROY" },
@@ -150,6 +152,18 @@ void TrayNotifier::cleanup()
 	*/
 }
 
+static void print_memory_status()
+{
+	MEMORYSTATUS memInfo;
+	
+	memInfo.dwLength = sizeof(memInfo);
+	
+	GlobalMemoryStatus(&memInfo);
+
+	HAGGLE_DBG("Memory status - Total RAM: %lu bytes Free: %lu Used: %lu\n", 
+		memInfo.dwTotalPhys, memInfo.dwAvailPhys, memInfo.dwTotalPhys - memInfo.dwAvailPhys);
+}
+
 LRESULT CALLBACK NotifyCallback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	// This is kind of ugly. We use this static variable to access
@@ -213,12 +227,6 @@ LRESULT CALLBACK NotifyCallback(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
 			is displayed; this enables the focus window to cancel modes, such as stylus capture.
 		*/
 		break;
-	case WM_CLOSE:
-		/*
-			This message is sent as a signal that a window or an application should terminate.
-		*/
-		ShowWindow(hDlg, SW_HIDE); 
-		return TRUE;
 	case WM_CREATE:
 		/*
 			This message is sent when an application requests that a window be created by 
@@ -338,6 +346,19 @@ LRESULT CALLBACK NotifyCallback(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
 	case WM_SETFONT:
 		break;
 	case WM_GETFONT:
+		break;
+	case WM_CLOSE:
+		/*
+			This message is sent as a signal that a window or an application should terminate.
+		*/
+		ShowWindow(hDlg, SW_HIDE);
+		HAGGLE_DBG("NotifyCallback : %s\n", msgname(message));
+		print_memory_status();
+		return TRUE;
+	case WM_ACTIVATE:
+	case WM_HIBERNATE:
+		HAGGLE_DBG("NotifyCallback : %s\n", msgname(message));
+		print_memory_status();
 		break;
 	default:
 		break;

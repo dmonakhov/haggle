@@ -446,7 +446,7 @@ void trace_disable(int disable)
 	trace_disabled = disable;
 }
 
-#define TRACE_BUFLEN 5000
+#define TRACE_BUFLEN (4096)
 
 struct timeval trace_base = {0,0};
 
@@ -805,7 +805,7 @@ int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsig
 			break;
 		} else {
 			res = -5;
-			fprintf(stderr, "utils/retrieve_outgoing_interface_address: allocated memory for mac address (%d bytes) too small (actual address: %d bytes)\n", maclen, sdl->sdl_alen);
+			fprintf(stderr, "utils/retrieve_outgoing_interface_address: allocated memory for mac address (%lu bytes) too small (actual address: %d bytes)\n", maclen, sdl->sdl_alen);
 		}
 	}
 	free(buf);

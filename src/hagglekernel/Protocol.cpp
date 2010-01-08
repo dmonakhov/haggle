@@ -94,18 +94,14 @@ Protocol::~Protocol()
 
 	// With all the data objects in the queue:
 	while (!q->empty()) {
-		QueueElement *qe;
+		QueueElement *qe = NULL;
+		DataObjectRef dObj;
 		
-		qe = NULL;
 		// Get the first element. Don't delay:
 		switch (q->retrieveTry(&qe)) {
 			default:
-			break;
-			
+				break;
 			case QUEUE_ELEMENT:
-			{
-				DataObjectRef dObj;
-				
 				// Get data object:
 				dObj = qe->getDataObject();
 
@@ -114,11 +110,10 @@ Protocol::~Protocol()
 					// sent:
 					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_FAILURE, dObj, target));
 				}
-			}
-			break;
+				break;
 		}
 		// Delete the queue element:
-		if(qe)
+		if (qe)
 			delete qe;
 	}
 }
@@ -146,8 +141,12 @@ ProtocolEvent Protocol::waitForEvent(Timeval *timeout, bool writeevent)
 ProtocolEvent Protocol::waitForEvent(DataObjectRef& dObj, Timeval *timeout, bool writeevent)
 {	
 	QueueElement *qe = NULL;
+	Queue *q = getQueue();
 
-	QueueEvent_t qev = getQueue()->retrieve(&qe, timeout);
+	if (!q)
+		return PROT_EVENT_ERROR;
+
+	QueueEvent_t qev = q->retrieve(&qe, timeout);
 
 	switch (qev) {
 	case QUEUE_TIMEOUT:
@@ -425,7 +424,12 @@ ProtocolEvent Protocol::startTxRx()
    the protocol is in idle mode, i.e., it was just created. */
 bool Protocol::sendDataObject(const DataObjectRef& dObj, const NodeRef& peer, const InterfaceRef& iface)
 {
-	
+	Queue *q = getQueue();
+
+	if (!q) {
+		HAGGLE_ERR("No valid Queue for protocol %s\n", getName());
+		return false;
+	}
 	if (isGarbage()) {
 		HAGGLE_DBG("Send DataObject on garbage protocol %s, trying to recycle?\n", getName());
 		return false;
@@ -435,7 +439,10 @@ bool Protocol::sendDataObject(const DataObjectRef& dObj, const NodeRef& peer, co
 	// is already connected to a peer interface.
 	QueueElement *qe = new QueueElement(dObj, peer, iface);
 
-	if (!getQueue()->insert(qe)) {
+	if (!qe)
+		return false;
+
+	if (!q->insert(qe)) {
 		delete qe;
 		return false;
 	}
@@ -633,7 +640,14 @@ ProtocolEvent Protocol::receiveControlMessage(struct ctrlmsg *m)
 
 			// Did we get it?
 			if (pEvent == PROT_EVENT_SUCCESS) {
-                                HAGGLE_DBG("Got control message '%s', %lu bytes\n", ctrlmsgToStr(m).c_str(), bytesReceived);
+				if (bytesReceived != sizeof(struct ctrlmsg)) {
+					pEvent = PROT_EVENT_ERROR;
+					HAGGLE_ERR("Control message has bad size %lu, expected %lu\n", 
+						bytesReceived, sizeof(struct ctrlmsg));
+				} else {
+					HAGGLE_DBG("Got control message '%s', %lu bytes\n", 
+						ctrlmsgToStr(m).c_str(), bytesReceived);
+				}
                                 break;
                         } else if (pEvent == PROT_EVENT_ERROR) {
                                 switch (getProtocolError()) {
@@ -816,12 +830,12 @@ ProtocolEvent Protocol::sendDataObjectNow(const DataObjectRef& dObj)
 	ssize_t len;
         struct ctrlmsg m;
 
-	HAGGLE_DBG("%s : Sending data object to \'%s\'\n", 
-			getName(), (peerIface ? peerIface->getName() : "n/a"));
+	HAGGLE_DBG("%s : Sending data object to interface \'%s\'\n", 
+			getName(), (peerIface ? peerIface->getIdentifierStr() : "n/a"));
 	
 	DataObjectDataRetrieverRef retriever = dObj->getDataObjectDataRetriever();
 
-	if (!retriever) {
+	if (!retriever || !retriever->isValid()) {
 		HAGGLE_ERR("%s unable to start reading data\n", getName());
 		return PROT_EVENT_ERROR;
 	}
@@ -965,6 +979,13 @@ bool Protocol::run()
 	int numConnectTry = 0;
 	setMode(PROT_MODE_IDLE);
 	int numerr = 0;
+	Queue *q = getQueue();
+
+	if (!q) {
+		HAGGLE_ERR("Could not get a Queue for protocol %s\n", getName());
+		setMode(PROT_MODE_DONE);
+		return false;
+	}
 
 	while (!isDone() && !shouldExit()) {
 
@@ -982,7 +1003,7 @@ bool Protocol::run()
 
 				if (numConnectTry == PROT_CONNECTION_ATTEMPTS) {
 					HAGGLE_DBG("%s failed to connect...\n", getName());
-					getQueue()->close();
+					q->close();
 					setMode(PROT_MODE_DONE);
 				} else {
 					unsigned int sleep_secs = RANDOM_INT(20) + 5;
@@ -1017,12 +1038,12 @@ bool Protocol::run()
 				if (!dObj) {
 					// Something is wrong here. TODO: better error handling than continue?
 					HAGGLE_ERR("%s No data object in queue despite indicated. Something is WRONG!\n", 
-						   getName(), (peerIface ? peerIface->getName() : "n/a"));
+						   getName(), (peerIface ? peerIface->getIdentifierStr() : "n/a"));
 					
 					break;
 				}
 				HAGGLE_DBG("%s Data object retrieved from queue, sending to [%s]\n", 
-					   getName(), (peerIface ? peerIface->getName() : "n/a"));
+					   getName(), (peerIface ? peerIface->getIdentifierStr() : "n/a"));
 				
 				pEvent = sendDataObjectNow(dObj);
 				
@@ -1043,8 +1064,8 @@ bool Protocol::run()
 							// the same way as if the peer closed the connection.
 						case PROT_EVENT_PEER_CLOSED:
 							HAGGLE_DBG("%s Peer [%s] closed its end of the connection...\n", 
-									   getName(), (peerIface ? peerIface->getName() : "n/a"));
-							getQueue()->close();
+									   getName(), (peerIface ? peerIface->getIdentifierStr() : "n/a"));
+							q->close();
 							setMode(PROT_MODE_DONE);
 							closeConnection();
 							break;
@@ -1053,11 +1074,11 @@ bool Protocol::run()
 							break;
 						case PROT_EVENT_ERROR_FATAL:
 							HAGGLE_ERR("%s Data object send fatal error!\n", getName());
-							getQueue()->close();
+							q->close();
 							setMode(PROT_MODE_DONE);
 							break;
 						default:
-							getQueue()->close();
+							q->close();
 							setMode(PROT_MODE_DONE);
 					}
 					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_FAILURE, dObj, getManager()->getKernel()->getNodeStore()->retrieve(peerIface)));
@@ -1065,26 +1086,26 @@ bool Protocol::run()
 				break;
 			case PROT_EVENT_INCOMING_DATA:
 				// Data object to receive:
-				HAGGLE_DBG("%s Incoming data object from [%s]\n", getName(), (peerIface ? peerIface->getName() : "n/a"));
+				HAGGLE_DBG("%s Incoming data object from [%s]\n", getName(), (peerIface ? peerIface->getIdentifierStr() : "n/a"));
 				
 				pEvent = receiveDataObject();	
 
 				switch (pEvent) {
 					case PROT_EVENT_SUCCESS:
 						HAGGLE_DBG("%s Data object successfully received from [%s]\n", 
-								   getName(), (peerIface ? peerIface->getName() : "n/a"));
+							getName(), (peerIface ? peerIface->getIdentifierStr() : "n/a"));
 						break;
 					case PROT_EVENT_PEER_CLOSED:
 						HAGGLE_DBG("%s Peer [%s] closed its end of the connection...\n", 
-							   getName(), (peerIface ? peerIface->getName() : "n/a"));
-						getQueue()->close();
+							getName(), (peerIface ? peerIface->getIdentifierStr() : "n/a"));
+						q->close();
 						setMode(PROT_MODE_DONE);
 						closeConnection();
 						break;
 					case PROT_EVENT_ERROR:
 						HAGGLE_ERR("%s Data object receive failed... error num %d\n", getName(), numerr);
 						if (numerr++ > 3 || shouldExit()) {
-							getQueue()->close();
+							q->close();
 							closeConnection();
 							setMode(PROT_MODE_DONE);
 							HAGGLE_DBG("%s Reached max errors=%d - Cancelling protocol!\n", 
@@ -1093,11 +1114,11 @@ bool Protocol::run()
 						continue;
 					case PROT_EVENT_ERROR_FATAL:
 						HAGGLE_ERR("%s Data object receive fatal error!\n", getName());
-						getQueue()->close();
+						q->close();
 						setMode(PROT_MODE_DONE);
 						break;
 					default:
-						getQueue()->close();
+						q->close();
 						setMode(PROT_MODE_DONE);
 				}
 				break;
@@ -1108,7 +1129,7 @@ bool Protocol::run()
 				HAGGLE_ERR("Error num %d in protocol %s\n", numerr, getName());
 
 				if (numerr++ > 3 || shouldExit()) {
-					getQueue()->close();
+					q->close();
 					closeConnection();
 					setMode(PROT_MODE_DONE);
 					HAGGLE_DBG("%s Reached max errors=%d - Cancelling protocol!\n", 

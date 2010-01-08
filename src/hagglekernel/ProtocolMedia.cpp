@@ -91,7 +91,12 @@ ProtocolEvent ProtocolMedia::sendDataObjectNow()
 	HAGGLE_DBG("BEGIN -----------------------------------------\n");
 	
 	QueueElement *qe;
-	getQueue()->retrieve(&qe);
+	Queue *q = getQueue();
+
+	if (!q)
+		return PROT_EVENT_ERROR;
+
+	q->retrieve(&qe);
 	DataObjectRef dObj = qe->getDataObject();
 	delete qe;
 	

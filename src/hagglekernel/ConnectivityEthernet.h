@@ -27,7 +27,7 @@
 
 struct haggle_beacon {
         u_int32_t seqno;
-	u_int8_t interval; // The beacon interval used by the other node (in seconds)
+	u_int32_t interval; // The beacon interval used by the other node (in seconds)
         char mac[6];
         char pad[2];
 };

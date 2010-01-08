@@ -186,7 +186,7 @@ class Protocol : public ManagerModule<ProtocolManager>
         } ctrlmsg_type_t;
 
         typedef struct ctrlmsg {
-                u_int8_t type;
+                u_int32_t type;
                 DataObjectId_t dobj_id;
         } ctrlmsg_t;
 protected:	

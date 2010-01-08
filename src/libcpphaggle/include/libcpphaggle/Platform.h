@@ -45,16 +45,20 @@
 * vsnprintf, etc. */
 
 // Prototype for conversion functions
-static inline wchar_t *strtowstr(const char *str)
+static inline wchar_t *strtowstr_alloc(const char *str)
 {
 	wchar_t *wstr;
+	size_t str_len = strlen(str);
 
-	wstr = (wchar_t *)malloc(sizeof(wchar_t) * (strlen(str) + 1));
+	wstr = (wchar_t *)malloc(sizeof(wchar_t) * (str_len + 1));
 
 	if (!wstr)
 		return NULL;
 
-	MultiByteToWideChar(CP_UTF8, 0, str, strlen(str) + 1, wstr, strlen(str) + 1);
+	if (MultiByteToWideChar(CP_UTF8, 0, str, -1, wstr, str_len + 1) == 0) {
+		free(wstr);
+		return NULL;
+	}
 
 	return wstr;
 }
@@ -85,8 +89,6 @@ typedef unsigned int uintptr_t;
 // Winsock errors
 #define ENOTSOCK WSAENOTSOCK
 #define EOPNOTSUPP WSAEOPNOTSUPP
-//#define EBADF WSAEBADF
-//#define EINVAL WSAEINVAL
 
 //typedef unsigned long socklen_t;
 typedef SSIZE_T ssize_t;

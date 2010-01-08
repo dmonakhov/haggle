@@ -259,9 +259,11 @@ static void cleanup_pid_file()
 {
         string pidfile = PID_FILE;
 #if defined(OS_WINDOWS_MOBILE) || defined(OS_WINDOWS_VISTA)
-	wchar_t *wpidfile = strtowstr(pidfile.c_str());
-        DeleteFile(wpidfile);
-	free(wpidfile);
+	wchar_t *wpidfile = strtowstr_alloc(pidfile.c_str());
+	if (wpidfile) {
+		DeleteFile(wpidfile);
+		free(wpidfile);
+	}
 #elif defined(OS_WINDOWS)
 	DeleteFileA(pidfile.c_str());
 #else

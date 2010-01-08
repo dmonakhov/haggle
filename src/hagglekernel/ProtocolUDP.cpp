@@ -265,6 +265,12 @@ ProtocolEvent ProtocolUDP::receiveDataObject()
 
 	dObj->setReceiveTime(Timeval::now());
 
+	if (getKernel()->getThisNode()->getBloomfilter()->has(dObj)) {
+		HAGGLE_DBG("Data object [%s] from interface %s:%u has already been received, ignoring.\n", 
+			dObj->getIdStr(), sa ? ip_to_str(sa->sin_addr) : "undefined", port);
+		return PROT_EVENT_SUCCESS;
+	}
+
 	// Generate first an incoming event to conform with the base Protocol class
 	getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_INCOMING, dObj));
 	

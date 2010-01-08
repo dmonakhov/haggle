@@ -37,7 +37,7 @@ Trace::~Trace()
 }
 
 
-#define TRACE_BUFLEN 5000
+#define TRACE_BUFLEN (4096)
 
 int Trace::write(const TraceType_t _type, const char *func, const char *fmt, ...)
 {

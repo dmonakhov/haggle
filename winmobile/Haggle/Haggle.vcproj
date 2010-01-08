@@ -976,6 +976,7 @@
 				PreprocessorDefinitions="DEBUG;DEBUG_LEAKS;HAVE_EXCEPTION;_WIN32_WCE=$(CEVER);UNDER_CE;$(PLATFORMDEFINES);WINCE;_DEBUG;_CONSOLE;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE;WIDCOMM_BLUETOOTH"
 				MinimalRebuild="true"
 				RuntimeLibrary="1"
+				StructMemberAlignment="0"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"

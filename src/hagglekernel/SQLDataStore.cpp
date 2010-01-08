@@ -1300,14 +1300,16 @@ SQLDataStore::SQLDataStore(const bool recreate, const string filepath, const str
 
 	if (recreate) {
 #if defined(OS_WINDOWS)
-		wchar_t *wfilepath = strtowstr(file.c_str());
+		wchar_t *wfilepath = strtowstr_alloc(file.c_str());
 
-		if (DeleteFile(wfilepath) != 0) {
-			printf("Deleted existing database file: %s\n", file.c_str());
-		} else {
-			printf("Failed to delete database file: %s\n", file.c_str());
+		if (wfilepath) {
+			if (DeleteFile(wfilepath) != 0) {
+				printf("Deleted existing database file: %s\n", file.c_str());
+			} else {
+				printf("Failed to delete database file: %s\n", file.c_str());
+			}
+			free(wfilepath);
 		}
-		free(wfilepath);
 #else
 		if (unlink(file.c_str()) == 0) {
 			printf("Deleted existing database file: %s\n", file.c_str());

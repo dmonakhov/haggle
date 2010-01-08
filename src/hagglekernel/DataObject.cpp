@@ -87,9 +87,9 @@ void DataObject::free_pDd(void)
 	if (!data)
 		return;
 	
-	if(data->header != NULL)
+	if (data->header != NULL)
 		free(data->header);
-	if(data->fp != NULL)
+	if (data->fp != NULL)
 		fclose(data->fp);
 	free(data);
 	// Let's not have any lingering pointers to dead data:
@@ -390,6 +390,11 @@ ssize_t DataObject::putData(void *_data, size_t len, size_t *remaining)
                   to the header.
                 */
 
+		if (info->header_len + len >= DATAOBJECT_MAX_METADATA_SIZE) {
+			HAGGLE_ERR("Header length %lu exceeds maximum length %lu\n", 
+				info->header_len + len, DATAOBJECT_MAX_METADATA_SIZE);
+			return -1;
+		} 
 		if (info->header_len + len > info->header_alloc_len) {
 			unsigned char *tmp;
 			/* We allocate a larger chunk of memory to put the header data into 
@@ -562,6 +567,7 @@ class DataObjectDataRetrieverImplementation : public DataObjectDataRetriever {
         ~DataObjectDataRetrieverImplementation();
 	
         ssize_t retrieve(void *data, size_t len, bool getHeaderOnly);
+	bool isValid() const;
 };
 
 DataObjectDataRetrieverImplementation::DataObjectDataRetrieverImplementation(const DataObjectRef _dObj) :
@@ -597,16 +603,19 @@ DataObjectDataRetrieverImplementation::DataObjectDataRetrieverImplementation(con
         }
 
         // Find header size:
-        if (!dObj->getRawMetadataAlloc(&(header), (size_t *)&(header_len))) {
+        if (!dObj->getRawMetadataAlloc(&header, &header_len)) {
                 HAGGLE_ERR("ERROR: Unable to retrieve header.\n");
                 goto fail_header;
         }
 	
         // Remove trailing characters up to the end of the metadata:
-        while (header[header_len-1] != '>' && header_len) {
+        while (header_len && (char)header[header_len-1] != '>') {
                 header_len--;
         }
 	
+	if (header_len <= 0)
+		goto fail_header;
+
         // The entire header is left to read:
         header_bytes_left = header_len;
 
@@ -636,9 +645,19 @@ DataObjectDataRetrieverImplementation::~DataObjectDataRetrieverImplementation()
                 free(header);
 }
 
+bool DataObjectDataRetrieverImplementation::isValid() const
+{
+	return (header != NULL && header_len > 0);
+}
+
 DataObjectDataRetrieverRef DataObject::getDataObjectDataRetriever(void) const
 {
-       return new DataObjectDataRetrieverImplementation(this);
+       DataObjectDataRetrieverImplementation *retriever = new DataObjectDataRetrieverImplementation(this);
+
+       if (!retriever  || !retriever->isValid())
+	       return NULL;
+
+       return retriever;
 }
 
 ssize_t DataObjectDataRetrieverImplementation::retrieve(void *data, size_t len, bool getHeaderOnly)

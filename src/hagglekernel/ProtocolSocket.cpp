@@ -405,8 +405,12 @@ ProtocolEvent ProtocolSocket::waitForEvent(Timeval *timeout, bool writeevent)
 ProtocolEvent ProtocolSocket::waitForEvent(DataObjectRef &dObj, Timeval *timeout, bool writeevent)
 {
 	QueueElement *qe = NULL;
-	
-	QueueEvent_t qev = getQueue()->retrieve(&qe, sock, timeout, writeevent);
+	Queue *q = getQueue();
+
+	if (!q)
+		return PROT_EVENT_ERROR;
+
+	QueueEvent_t qev = q->retrieve(&qe, sock, timeout, writeevent);
 
 	switch (qev) {
 	case QUEUE_TIMEOUT:
