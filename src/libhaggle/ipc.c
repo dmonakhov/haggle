@@ -449,6 +449,11 @@ static int spawn_daemon_internal(const char *daemonpath)
 	int maxfd = 0;
 	
 #if defined(OS_WINDOWS)
+#if defined(OS_WINDOWS_MOBILE) || defined(OS_WINDOWS_VISTA)
+	wchar_t *path;
+#else
+	const char *path;
+#endif
 	PROCESS_INFORMATION pi;
 	
 	if (num_handles == 0) {
@@ -502,9 +507,9 @@ static int spawn_daemon_internal(const char *daemonpath)
 
 #elif defined(OS_WINDOWS)
 #if defined(OS_WINDOWS_MOBILE) || defined(OS_WINDOWS_VISTA)
-	wchar_t *path = strtowstr_alloc(daemonpath);
+	path = strtowstr_alloc(daemonpath);
 #else
-	const char *path = daemonpath;
+	path = daemonpath;
 #endif
 	if (!path)
 		return HAGGLE_ERROR;

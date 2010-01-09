@@ -376,7 +376,7 @@ int bloomfilter_calculate_length(unsigned int num_keys, double error_rate,
 	return 0;
 }
 
-#ifdef MAIN_DEFINED
+#ifdef BLOOMFILTER_MAIN
 
 int main(int argc, char **argv)
 {

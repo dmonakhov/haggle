@@ -449,7 +449,7 @@ int counting_bloomfilter_calculate_length(unsigned int num_keys, double error_ra
 	return 0;
 }
 
-#ifdef MAIN_DEFINED
+#ifdef COUNTING_BLOOMFILTER_MAIN
 
 int main(int argc, char **argv)
 {

@@ -1082,9 +1082,7 @@
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="0"
-				EnableFloatingPointEmulation="false"
-				EnableFloatingPointEmulation="false"
-			/>
+				EnableFloatingPointEmulation="false"			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
 			/>
