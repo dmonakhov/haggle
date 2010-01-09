@@ -30,10 +30,11 @@ struct bloomfilter *bloomfilter_new(float error_rate, unsigned int capacity)
 	unsigned int m, k, i;
 	int bflen;
 	salt_t *salts;
+	struct timeval tv;
 
 	bloomfilter_calculate_length(capacity, error_rate, &m, &k);
 
-	bflen =  k*SALT_SIZE + m*BIN_BITS/8;
+	bflen = k*SALT_SIZE + m*BIN_BITS/8;
 
 	bf = (struct bloomfilter *)malloc(sizeof(struct bloomfilter) + bflen);
 
@@ -46,16 +47,13 @@ struct bloomfilter *bloomfilter_new(float error_rate, unsigned int capacity)
 	bf->k = k;
 	bf->n = 0;
 	
-	salts = (salt_t *)BLOOMFILTER_GET_SALTS(bf);
+	salts = BLOOMFILTER_GET_SALTS(bf);
 
-	{
 	// Seed the rand() function's state. rand() should probably be replaced
 	// by prng_uint8() or prnguint32(), but I don't know if there would be any
-	// bad effects of doing that.
-	struct timeval tv;
+	// bad effects of doing that.	
 	gettimeofday(&tv, NULL);
 	srand(tv.tv_usec);
-	}
 	
 	/* Create salts for hash functions */
 	for (i = 0; i < k; i++) {
@@ -92,12 +90,12 @@ void bloomfilter_print(struct bloomfilter *bf)
 
 #ifdef COUNTING_BLOOMFILTER	
 	for (i = 0; i < bf->m; i++) {
-		u_int16_t *bins = (u_int16_t *)BLOOMFILTER_GET_FILTER(bf);
+		bint_t *bins = BLOOMFILTER_GET_FILTER(bf);
 		printf("%u", bins[i]);
 	}
 #else
 	for (i = 0; i < bf->m / 8; i++) {
-		char *bins = BLOOMFILTER_GET_FILTER(bf);
+		bin_t *bins = BLOOMFILTER_GET_FILTER(bf);
 
 		printf("%d", bins[i] & 0x01 ? 1 : 0);
 		printf("%d", bins[i] & 0x02 ? 1 : 0);
@@ -166,10 +164,10 @@ char *bloomfilter_to_base64(const struct bloomfilter *bf)
 	bf_net->n = bf->n;
 	
 	/* Get pointers */
-	salts = (salt_t *)BLOOMFILTER_GET_SALTS(bf);
-	salts_net = (salt_t *)BLOOMFILTER_GET_SALTS(bf_net);
-	bins = (u_int16_t *)BLOOMFILTER_GET_FILTER(bf);
-	bins_net = (u_int16_t *)BLOOMFILTER_GET_FILTER(bf_net);
+	salts = BLOOMFILTER_GET_SALTS(bf);
+	salts_net = BLOOMFILTER_GET_SALTS(bf_net);
+	bins = BLOOMFILTER_GET_FILTER(bf);
+	bins_net = BLOOMFILTER_GET_FILTER(bf_net);
 
 	/* Now convert into network byte order */
 	bf_net->k = htonl(bf->k);
@@ -181,7 +179,7 @@ char *bloomfilter_to_base64(const struct bloomfilter *bf)
 	
 #ifdef COUNTING_BLOOMFILTER
 	for (i = 0; i < bf->m; i++) {
-		bins_net[i] = htons(bins[i]);
+		bins_net[i] = htonl(bins[i]);
 	}
 #else
 	memcpy(bins_net, bins, FILTER_LEN(bf));
@@ -216,7 +214,7 @@ struct bloomfilter *base64_to_bloomfilter(const char *b64str, const size_t b64le
 
 	base64_decode_ctx_init(&b64_ctx);
 
-	if (!base64_decode_alloc (&b64_ctx, b64str, b64len, &ptr, &len)) {
+	if (!base64_decode_alloc(&b64_ctx, b64str, b64len, &ptr, &len)) {
 		return NULL;
 	}
 
@@ -226,15 +224,15 @@ struct bloomfilter *base64_to_bloomfilter(const char *b64str, const size_t b64le
 	bf_net->m = ntohl(bf_net->m);
 	bf_net->n = ntohl(bf_net->n);
 
-	salts = (salt_t *)BLOOMFILTER_GET_SALTS(bf_net);
+	salts = BLOOMFILTER_GET_SALTS(bf_net);
 
 	for (i = 0; i < bf_net->k; i++)
 		salts[i] = ntohl(salts[i]);
 	
 #ifdef COUNTING_BLOOMFILTER
 	for (i = 0; i < bf_net->m; i++) {
-		u_int16_t *bins = (u_int16_t *)BLOOMFILTER_GET_FILTER(bf_net);
-		bins[i] = ntohs(bins[i]);
+		bin_t *bins = BLOOMFILTER_GET_FILTER(bf_net);
+		bins[i] = ntohl(bins[i]);
 	}
 #endif
 		
@@ -266,7 +264,7 @@ int bloomfilter_operation(struct bloomfilter *bf, const char *key,
 	
 	memcpy(buf, key, len);
 	
-	salts = (salt_t *)BLOOMFILTER_GET_SALTS(bf);
+	salts = BLOOMFILTER_GET_SALTS(bf);
 
 	for (i = 0; i < bf->k; i++) {
 		SHA_CTX ctxt;
@@ -294,7 +292,7 @@ int bloomfilter_operation(struct bloomfilter *bf, const char *key,
 		switch(op) {
 		case BF_OP_CHECK:
 #ifdef COUNTING_BLOOMFILTER
-			if (((u_int16_t *)BLOOMFILTER_GET_FILTER(bf))[index] == 0) {
+			if (BLOOMFILTER_GET_FILTER(bf)[index] == 0) {
 				res = 0;
 				goto out;
 			}
@@ -307,15 +305,15 @@ int bloomfilter_operation(struct bloomfilter *bf, const char *key,
 			break;
 		case BF_OP_ADD:
 #ifdef COUNTING_BLOOMFILTER
-			((u_int16_t *)BLOOMFILTER_GET_FILTER(bf))[index]++;
+			(BLOOMFILTER_GET_FILTER(bf)[index]++;
 #else
 			BLOOMFILTER_GET_FILTER(bf)[index/8] |= (1 << (index % 8));
 #endif
 			break;
 #ifdef COUNTING_BLOOMFILTER
 		case BF_OP_REMOVE:
-			if (((u_int16_t *)BLOOMFILTER_GET_FILTER(bf))[index] > 0) {
-				((u_int16_t *)BLOOMFILTER_GET_FILTER(bf))[index]--;
+			if (BLOOMFILTER_GET_FILTER(bf)[index] > 0) {
+				BLOOMFILTER_GET_FILTER(bf)[index]--;
 				removed++;
 			}
 			/*
@@ -371,7 +369,7 @@ int bloomfilter_calculate_length(unsigned int num_keys, double error_rate,
 	}
 	*lowest_m = (unsigned int)(m_tmp + 1);
 
-	/* Make sure we align with bytes */
+	/* m must be evenly divisible by eight */
 	if (*lowest_m % 8 != 0)
 		*lowest_m += (8-(*lowest_m % 8));
 

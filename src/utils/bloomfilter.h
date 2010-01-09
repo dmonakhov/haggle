@@ -46,14 +46,18 @@ struct bloomfilter {
 	/* Here follows k salts */
 	/* Then follows the actual filter */
 };
-
+			
 
 /* Bloomfilter bin size in bits */
 #ifdef COUNTING_BLOOMFILTER
-#define BIN_BITS (sizeof(u_int16_t)*8)
+typedef u_int32_t bin_t;
+#define BIN_BITS (sizeof(bin_t)*8)
 #else
+typedef unsigned char bin_t;
 #define BIN_BITS (1)
 #endif
+	
+#define BIN_SIZE (sizeof(bin_t))
 
 #define K_SIZE sizeof(u_int32_t)
 #define M_SIZE sizeof(u_int32_t)
@@ -64,8 +68,8 @@ struct bloomfilter {
 #define SALTS_LEN(bf) ((bf)->k*SALT_SIZE)
 #define BLOOMFILTER_TOT_LEN(bf) (sizeof(struct bloomfilter) + SALTS_LEN(bf) + FILTER_LEN(bf))
 
-#define BLOOMFILTER_GET_SALTS(bf) ((char *)((char *)(bf) + sizeof(struct bloomfilter)))
-#define BLOOMFILTER_GET_FILTER(bf) ((char *)((char *)(bf) + sizeof(struct bloomfilter) + SALTS_LEN(bf)))
+#define BLOOMFILTER_GET_SALTS(bf) ((salt_t *)((unsigned char *)(bf) + sizeof(struct bloomfilter)))
+#define BLOOMFILTER_GET_FILTER(bf) ((bin_t *)((unsigned char *)(bf) + sizeof(struct bloomfilter) + SALTS_LEN(bf)))
 
 enum bf_op {
 	bf_op_check,

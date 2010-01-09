@@ -138,7 +138,7 @@ typedef enum {
 // TODO: What is a good buffer size here?
 // If we have a large buffer, we will waste a lot of memory when there are
 // many protocols running. A small buffer may be inefficient.
-#define PROTOCOL_BUFSIZE 5000 /* A socket does not seem to be able to handle larger buffers than 50000 bytes by default. */
+#define PROTOCOL_BUFSIZE (4096) /* A socket does not seem to be able to handle larger buffers than 50000 bytes by default. */
 
 /**
 	Protocol class

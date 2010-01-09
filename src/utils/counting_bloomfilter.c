@@ -31,10 +31,11 @@ struct counting_bloomfilter *counting_bloomfilter_new(float error_rate, unsigned
 	unsigned int m, k, i;
 	int bflen;
 	counting_salt_t *salts;
+	struct timeval tv;
 
 	counting_bloomfilter_calculate_length(capacity, error_rate, &m, &k);
 
-	bflen =  k*COUNTING_SALT_SIZE + m*COUNTING_BIN_BITS/8;
+	bflen = k*COUNTING_SALT_SIZE + m*COUNTING_BIN_BITS/8;
 
 	bf = (struct counting_bloomfilter *)malloc(sizeof(struct counting_bloomfilter) + bflen);
 
@@ -47,16 +48,13 @@ struct counting_bloomfilter *counting_bloomfilter_new(float error_rate, unsigned
 	bf->k = k;
 	bf->n = 0;
 	
-	salts = (counting_salt_t *)COUNTING_BLOOMFILTER_GET_SALTS(bf);
+	salts = COUNTING_BLOOMFILTER_GET_SALTS(bf);
 
-	{
 	// Seed the rand() function's state. rand() should probably be replaced
 	// by prng_uint8() or prnguint32(), but I don't know if there would be any
 	// bad effects of doing that.
-	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	srand(tv.tv_usec);
-	}
 	
 	/* Create salts for hash functions */
 	for (i = 0; i < k; i++) {
@@ -93,12 +91,12 @@ void counting_bloomfilter_print(struct counting_bloomfilter *bf)
 
 #ifdef COUNTING_BLOOMFILTER_IS_COUNTING	
 	for (i = 0; i < bf->m; i++) {
-		u_int16_t *bins = (u_int16_t *)COUNTING_BLOOMFILTER_GET_FILTER(bf);
+		counting_bin_t *bins = COUNTING_BLOOMFILTER_GET_FILTER(bf);
 		printf("%u", bins[i]);
 	}
 #else
 	for (i = 0; i < bf->m / 8; i++) {
-		char *bins = COUNTING_BLOOMFILTER_GET_FILTER(bf);
+		counting_bin_t *bins = COUNTING_BLOOMFILTER_GET_FILTER(bf);
 
 		printf("%d", bins[i] & 0x01 ? 1 : 0);
 		printf("%d", bins[i] & 0x02 ? 1 : 0);
@@ -150,7 +148,7 @@ char *counting_bloomfilter_to_base64(const struct counting_bloomfilter *bf)
 	unsigned int i = 0;
 	struct counting_bloomfilter *bf_net;
 	counting_salt_t *salts, *salts_net;
-	u_int16_t *bins, *bins_net;
+	counting_bin_t *bins, *bins_net;
 	
 	if (!bf)
 		return NULL;
@@ -167,10 +165,10 @@ char *counting_bloomfilter_to_base64(const struct counting_bloomfilter *bf)
 	bf_net->n = bf->n;
 	
 	/* Get pointers */
-	salts = (counting_salt_t *)COUNTING_BLOOMFILTER_GET_SALTS(bf);
-	salts_net = (counting_salt_t *)COUNTING_BLOOMFILTER_GET_SALTS(bf_net);
-	bins = (u_int16_t *)COUNTING_BLOOMFILTER_GET_FILTER(bf);
-	bins_net = (u_int16_t *)COUNTING_BLOOMFILTER_GET_FILTER(bf_net);
+	salts = COUNTING_BLOOMFILTER_GET_SALTS(bf);
+	salts_net = COUNTING_BLOOMFILTER_GET_SALTS(bf_net);
+	bins = COUNTING_BLOOMFILTER_GET_FILTER(bf);
+	bins_net = COUNTING_BLOOMFILTER_GET_FILTER(bf_net);
 
 	/* Now convert into network byte order */
 	bf_net->k = htonl(bf->k);
@@ -182,7 +180,7 @@ char *counting_bloomfilter_to_base64(const struct counting_bloomfilter *bf)
 	
 #ifdef COUNTING_BLOOMFILTER_IS_COUNTING
 	for (i = 0; i < bf->m; i++) {
-		bins_net[i] = htons(bins[i]);
+		bins_net[i] = htonl(bins[i]);
 	}
 #else
 	memcpy(bins_net, bins, CB_FILTER_LEN(bf));
@@ -210,10 +208,12 @@ char *counting_bloomfilter_to_noncounting_base64(const struct counting_bloomfilt
 {
 	char *b64str;
 	unsigned int i = 0, j, k;
-	u_int16_t current_bin;
+	counting_bin_t current_bin;
 	struct bloomfilter *bf_other;
-	counting_salt_t *salts, *salts_other;
-	u_int16_t *bins, *bins_other;
+	counting_salt_t *salts;
+	salt_t *salts_other;
+	counting_bin_t *bins;
+	bin_t *bins_other;
 	
 	if (!bf)
 		return NULL;
@@ -226,17 +226,17 @@ char *counting_bloomfilter_to_noncounting_base64(const struct counting_bloomfilt
 		return NULL;
 	
 	/* Get pointers */
-	salts = (counting_salt_t *)COUNTING_BLOOMFILTER_GET_SALTS(bf);
-	salts_other = (counting_salt_t *)BLOOMFILTER_GET_SALTS(bf_other);
-	bins = (u_int16_t *)COUNTING_BLOOMFILTER_GET_FILTER(bf);
-	bins_other = (u_int16_t *)BLOOMFILTER_GET_FILTER(bf_other);
+	salts = COUNTING_BLOOMFILTER_GET_SALTS(bf);
+	salts_other = BLOOMFILTER_GET_SALTS(bf_other);
+	bins = COUNTING_BLOOMFILTER_GET_FILTER(bf);
+	bins_other = BLOOMFILTER_GET_FILTER(bf_other);
 
 	j = 0;
 	k = 0;
 	current_bin = 0;
 	for (i = 0; i < bf->m; i++) {
 		current_bin = current_bin >> 1;
-		if(bins[i] != 0)
+		if (bins[i] != 0)
 			current_bin |= 
 #if 0
 				1
@@ -245,8 +245,8 @@ char *counting_bloomfilter_to_noncounting_base64(const struct counting_bloomfilt
 #endif
 				;
 		k++;
-		if(k == COUNTING_BIN_BITS)
-		{
+		
+		if (k == COUNTING_BIN_BITS) {
 			bins_other[j] = 
 #if 1
 				current_bin
@@ -289,15 +289,15 @@ struct counting_bloomfilter *base64_to_counting_bloomfilter(const char *b64str, 
 	bf_net->m = ntohl(bf_net->m);
 	bf_net->n = ntohl(bf_net->n);
 
-	salts = (counting_salt_t *)COUNTING_BLOOMFILTER_GET_SALTS(bf_net);
+	salts = COUNTING_BLOOMFILTER_GET_SALTS(bf_net);
 
 	for (i = 0; i < bf_net->k; i++)
 		salts[i] = ntohl(salts[i]);
 	
 #ifdef COUNTING_BLOOMFILTER_IS_COUNTING
 	for (i = 0; i < bf_net->m; i++) {
-		u_int16_t *bins = (u_int16_t *)COUNTING_BLOOMFILTER_GET_FILTER(bf_net);
-		bins[i] = ntohs(bins[i]);
+		counting_bin_t *bins = COUNTING_BLOOMFILTER_GET_FILTER(bf_net);
+		bins[i] = ntohl(bins[i]);
 	}
 #endif
 		
@@ -330,7 +330,7 @@ int counting_bloomfilter_operation(struct counting_bloomfilter *bf, const char *
 	
 	memcpy(buf, key, len);
 	
-	salts = (counting_salt_t *)COUNTING_BLOOMFILTER_GET_SALTS(bf);
+	salts = COUNTING_BLOOMFILTER_GET_SALTS(bf);
 
 	/* Increment number of objects in filter */
 	if (op == COUNTING_BF_OP_ADD)
@@ -362,7 +362,7 @@ int counting_bloomfilter_operation(struct counting_bloomfilter *bf, const char *
 		switch(op) {
 		case COUNTING_BF_OP_CHECK:
 #ifdef COUNTING_BLOOMFILTER_IS_COUNTING
-			if (((u_int16_t *)COUNTING_BLOOMFILTER_GET_FILTER(bf))[index] == 0) {
+			if (COUNTING_BLOOMFILTER_GET_FILTER(bf)[index] == 0) {
 				res = 0;
 				goto out;
 			}
@@ -375,15 +375,15 @@ int counting_bloomfilter_operation(struct counting_bloomfilter *bf, const char *
 			break;
 		case COUNTING_BF_OP_ADD:
 #ifdef COUNTING_BLOOMFILTER_IS_COUNTING
-			((u_int16_t *)COUNTING_BLOOMFILTER_GET_FILTER(bf))[index]++;
+			COUNTING_BLOOMFILTER_GET_FILTER(bf)[index]++;
 #else
 			COUNTING_BLOOMFILTER_GET_FILTER(bf)[index/8] |= (1 << (index % 8));
 #endif
 			break;
 #ifdef COUNTING_BLOOMFILTER_IS_COUNTING
 		case COUNTING_BF_OP_REMOVE:
-			if (((u_int16_t *)COUNTING_BLOOMFILTER_GET_FILTER(bf))[index] > 0) {
-				((u_int16_t *)COUNTING_BLOOMFILTER_GET_FILTER(bf))[index]--;
+			if (COUNTING_BLOOMFILTER_GET_FILTER(bf)[index] > 0) {
+				COUNTING_BLOOMFILTER_GET_FILTER(bf)[index]--;
 				removed++;
 			}
 			

@@ -35,25 +35,27 @@ typedef DWORD32 u_int32_t;
 #include <netinet/in.h>
 #endif
 
-
 typedef u_int32_t counting_salt_t;
 
 struct counting_bloomfilter {
 	u_int32_t k; /* Number of salts = # hash functions. 32-bits for this is probably overkill, 
 		     but it keeps word alignment in the struct so that it is easier to serialize and send over the net */
-	u_int32_t m; /* Number of bins/bits in filter */
+	u_int32_t m; /* Number of bins in filter */
 	u_int32_t n; /* Number of inserted objects */
 	/* Here follows k salts */
 	/* Then follows the actual filter */
 };
 
-
 /* Counting bloomfilter bin size in bits */
 #ifdef COUNTING_BLOOMFILTER_IS_COUNTING
-#define COUNTING_BIN_BITS (sizeof(u_int16_t)*8)
+typedef u_int32_t counting_bin_t;
+#define COUNTING_BIN_BITS (COUNTING_BIN_SIZE*8)
 #else
+typedef unsigned char counting_bin_t;
 #define COUNTING_BIN_BITS (1)
 #endif
+	
+#define COUNTING_BIN_SIZE (sizeof(counting_bin_t))
 
 #define K_SIZE sizeof(u_int32_t)
 #define M_SIZE sizeof(u_int32_t)
@@ -64,8 +66,8 @@ struct counting_bloomfilter {
 #define CB_SALTS_LEN(bf) ((bf)->k*COUNTING_SALT_SIZE)
 #define COUNTING_BLOOMFILTER_TOT_LEN(bf) (sizeof(struct counting_bloomfilter) + CB_SALTS_LEN(bf) + CB_FILTER_LEN(bf))
 
-#define COUNTING_BLOOMFILTER_GET_SALTS(bf) ((char *)((char *)(bf) + sizeof(struct counting_bloomfilter)))
-#define COUNTING_BLOOMFILTER_GET_FILTER(bf) ((char *)((char *)(bf) + sizeof(struct counting_bloomfilter) + CB_SALTS_LEN(bf)))
+#define COUNTING_BLOOMFILTER_GET_SALTS(bf) ((counting_salt_t *)((unsigned char *)(bf) + sizeof(struct counting_bloomfilter)))
+#define COUNTING_BLOOMFILTER_GET_FILTER(bf) ((counting_bin_t *)((unsigned char *)(bf) + sizeof(struct counting_bloomfilter) + CB_SALTS_LEN(bf)))
 
 enum counting_bf_op {
 	counting_bf_op_check,
