@@ -147,7 +147,7 @@ char *bloomfilter_to_base64(const struct bloomfilter *bf)
 	unsigned int i = 0;
 	struct bloomfilter *bf_net;
 	salt_t *salts, *salts_net;
-	u_int16_t *bins, *bins_net;
+	bin_t *bins, *bins_net;
 	
 	if (!bf)
 		return NULL;

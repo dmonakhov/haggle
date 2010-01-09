@@ -148,7 +148,7 @@ enum {
 #if defined(OS_WINDOWS)
 
 // This function is defined in platform.c, but we do not want to expose it in a header file
-extern wchar_t *strtowstr(const char *str);
+extern wchar_t *strtowstr_alloc(const char *str);
 
 typedef int socklen_t;
 
@@ -449,6 +449,8 @@ static int spawn_daemon_internal(const char *daemonpath)
 	int maxfd = 0;
 	
 #if defined(OS_WINDOWS)
+	PROCESS_INFORMATION pi;
+	
 	if (num_handles == 0) {
 		int iResult = 0;
 		WSADATA wsaData;
@@ -483,8 +485,7 @@ static int spawn_daemon_internal(const char *daemonpath)
 #define PATH_LEN 200
 	char cmd[PATH_LEN];
 	
-	if (!daemonpath)
-	{
+	if (!daemonpath) {
 		ret = HAGGLE_ERROR;
 		goto fail_start;
 	}
@@ -500,11 +501,8 @@ static int spawn_daemon_internal(const char *daemonpath)
 	}
 
 #elif defined(OS_WINDOWS)
-	{
-	PROCESS_INFORMATION pi;
-	int ret;
 #if defined(OS_WINDOWS_MOBILE) || defined(OS_WINDOWS_VISTA)
-	wchar_t *path = strtowstr(daemonpath);
+	wchar_t *path = strtowstr_alloc(daemonpath);
 #else
 	const char *path = daemonpath;
 #endif
@@ -521,13 +519,13 @@ static int spawn_daemon_internal(const char *daemonpath)
 		ret = HAGGLE_ERROR;
 		goto fail_start;
 	}
-	}
 #endif
 	
 	// Wait for 60 seconds max.
 	time_left = 60;
 	tv.tv_sec = 1;
 	tv.tv_usec = 0;
+	
 	do {
 		FD_ZERO(&readfds);
 		FD_SET(sock, &readfds);

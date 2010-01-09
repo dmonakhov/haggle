@@ -128,17 +128,21 @@ cont:
     /* NOTREACHED */
 }
 
-wchar_t *strtowstr(const char *str)
+wchar_t *strtowstr_alloc(const char *str)
 {
 	wchar_t *wstr;
-
-	wstr = (wchar_t *)malloc(sizeof(wchar_t) * (strlen(str) + 1));
-
+	size_t str_len = strlen(str);
+	
+	wstr = (wchar_t *)malloc(sizeof(wchar_t) * (str_len + 1));
+	
 	if (!wstr)
 		return NULL;
-
-	MultiByteToWideChar(CP_UTF8, 0, str, strlen(str) + 1, wstr, strlen(str) + 1);
-
+	
+	if (MultiByteToWideChar(CP_UTF8, 0, str, -1, wstr, str_len + 1) == 0) {
+		free(wstr);
+		return NULL;
+	}
+	
 	return wstr;
 }
 
@@ -154,30 +158,33 @@ static char path[MAX_PATH_LEN + 1];
 #if defined(OS_WINDOWS_MOBILE)
 static int has_haggle_folder(LPCWSTR path)
 {
-	WCHAR	my_path[MAX_PATH+1];
-	long	i, len;
-	WIN32_FILE_ATTRIBUTE_DATA	data;
+	WCHAR my_path[MAX_PATH+1];
+	long i, len;
+	WIN32_FILE_ATTRIBUTE_DATA data;
 	
 	len = MAX_PATH;
-	for(i = 0; i < MAX_PATH && len == MAX_PATH; i++)
-	{
+	
+	for (i = 0; i < MAX_PATH && len == MAX_PATH; i++) {
 		my_path[i] = path[i];
-		if(my_path[i] == 0)
+		if (my_path[i] == 0)
 			len = i;
 	}
-	if(len == MAX_PATH)
+	
+	if (len == MAX_PATH)
 		return 0;
+	
 	i = -1;
-	do{
+	
+	do {
 		i++;
 		my_path[len+i] = DEFAULT_STORAGE_PATH_POSTFIX[i];
-	}while(DEFAULT_STORAGE_PATH_POSTFIX[i] != 0 && i < 15);
-	if(GetFileAttributesEx(my_path, GetFileExInfoStandard, &data))
-	{
+	} while(DEFAULT_STORAGE_PATH_POSTFIX[i] != 0 && i < 15);
+	
+	if (GetFileAttributesEx(my_path, GetFileExInfoStandard, &data)) {
 		return (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
-	}else{
-		return 0;
-	}
+	} 
+		
+	return 0;
 }
 
 #include <projects.h>
@@ -197,7 +204,7 @@ void fill_in_default_path()
 		best_avail.QuadPart = 0;
 		best_size.QuadPart = 0;
 		best_path_has_haggle_folder = 0;
-	}else{
+	} else {
 		GetDiskFreeSpaceEx(best_path, &best_avail, &best_size, NULL);
 		best_path_has_haggle_folder = has_haggle_folder(best_path);
 	}
@@ -206,13 +213,12 @@ void fill_in_default_path()
 		best_path_has_haggle_folder?"Yes":"No");
 
 	find_handle = FindFirstFlashCard(&find_data);
-	if(find_handle != INVALID_HANDLE_VALUE)
-	{
-		do{
+	
+	if (find_handle != INVALID_HANDLE_VALUE) {
+		do {
 			// Ignore the root directory (this has been checked for above)
-			if(find_data.cFileName[0] != 0)
-			{
-				ULARGE_INTEGER	avail, size, free;
+			if (find_data.cFileName[0] != 0) {
+				ULARGE_INTEGER avail, size, free;
 				int haggle_folder;
 				
 				GetDiskFreeSpaceEx(find_data.cFileName, &avail, &size, &free);
@@ -222,24 +228,23 @@ void fill_in_default_path()
 					haggle_folder?"Yes":"No");
 				// is this a better choice than the previous one?
 				// FIXME: should there be any case when a memory card is not used?
-				if(1)
-				{
+				if (1) {
 					// Yes.
 					
 					// Save this as the path to use:
-					for(i = 0; i < MAX_PATH; i++)
+					for (i = 0; i < MAX_PATH; i++)
 						best_path[i] = find_data.cFileName[i];
 					best_avail = avail;
 					best_size = size;
 					best_path_has_haggle_folder = haggle_folder;
 				}
 			}
-		}while(FindNextFlashCard(find_handle, &find_data));
+		} while(FindNextFlashCard(find_handle, &find_data));
 
 		FindClose(find_handle);
 	}
 	// Convert the path to normal characters.
-	for(i = 0; i < MAX_PATH; i++)
+	for (i = 0; i < MAX_PATH; i++)
 		path[i] = (char) best_path[i];
 }
 
