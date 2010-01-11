@@ -142,7 +142,6 @@ bool ProtocolUDP::isReceiver()
 
 bool ProtocolUDP::isForInterface(const InterfaceRef& iface)
 {
-	const Address *addr = NULL;
 	/*
 		FIXME:
 		This is a pretty crude check. We simply assume that 

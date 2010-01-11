@@ -296,7 +296,7 @@ void DataManager::onIncomingDataObject(Event *e)
 	if (!e || !e->hasData())
 		return;
 
-	DataObjectRef dObj = e->getDataObject();
+	DataObjectRef& dObj = e->getDataObject();
 	
 	if (!dObj) {
 		HAGGLE_DBG("Incoming data object event without data object!\n");
@@ -304,7 +304,7 @@ void DataManager::onIncomingDataObject(Event *e)
 	}
 	// Add the data object to the bloomfilter of the one who sent it:
 	// Find the interface it came from:
-	InterfaceRef& iface = dObj->getRemoteInterface();
+	const InterfaceRef& iface = dObj->getRemoteInterface();
 
 	// Was there one?
 	if (iface) {
@@ -392,7 +392,7 @@ void DataManager::onInsertedDataObject(Event * e)
 	if (!e || !e->hasData())
 		return;
 	
-	DataObjectRef dObj = e->getDataObject();
+	DataObjectRef& dObj = e->getDataObject();
 	
 	/*
 		The DATAOBJECT_NEW event signals that a new data object has been 
