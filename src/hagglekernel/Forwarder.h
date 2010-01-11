@@ -72,6 +72,14 @@ public:
 	const Metadata *getRoutingInformation(const DataObjectRef& dObj) const;
 	
 	/**
+		Convenience function that allows the forwarder module to check
+		a delegate node against a list of target nodes in order to make
+		sure a data object is not delegated to a node which is also a 
+		target.
+	*/
+	bool isTarget(const NodeRef &delegate, const NodeRefList *targets) const;
+
+	/**
 		A forwarding module should implement addRoutingInformation() in order
 		to generate the Metadata containing routing information which is specific
 		for that forwarding module.
@@ -124,7 +132,7 @@ public:
 		
 		If no nodes are found, no event should be created.
 	*/
-	virtual void generateDelegatesFor(const DataObjectRef &dObj, const NodeRef &target) {}
+	virtual void generateDelegatesFor(const DataObjectRef &dObj, const NodeRef &target, const NodeRefList *other_targets) {}
 	
 	/**
 		Generates an event (EVENT_TYPE_TARGET_NODES) providing all the target 

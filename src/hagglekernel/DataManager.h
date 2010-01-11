@@ -88,6 +88,7 @@ private:
         void onVerifiedDataObject(Event *e);
 	void onInsertedDataObject(Event *e);
         void onDeletedDataObject(Event *e);
+	void onIncomingDataObject(Event *e);
         void onNewRelation(Event *e);
 	void onDataTaskComplete(Event *e);
 	void onAgedDataObjects(Event *e);

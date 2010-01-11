@@ -34,17 +34,17 @@ public:
 	ForwarderRank(ForwardingManager *m = NULL);
 	~ForwarderRank();
 
-	bool addForwardingMetadata(DataObjectRef& dObj, Metadata *parent);
+	bool addRoutingInformation(DataObjectRef& dObj, Metadata *parent);
 	/**
 		Called when a neighbor node is discovered.
 	*/
-	void newNeighbor(NodeRef &neighbor);
+	void newNeighbor(const NodeRef &neighbor);
 
 
 	/**
 		Called when a node just ended being a neighbor.
 	*/
-	void endNeighbor(NodeRef &neighbor);
+	void endNeighbor(const NodeRef &neighbor);
 	
 	/**
 		Generates an event (EVENT_TYPE_TARGET_NODES) providing all the target 
@@ -52,7 +52,7 @@ public:
 		
 		If no nodes are found, no event should be created.
 	*/
-	void generateTargetsFor(NodeRef &neighbor);
+	void generateTargetsFor(const NodeRef &neighbor);
 	
 	/**
 		Generates an event (EVENT_TYPE_DELEGATE_NODES) providing all the nodes 
@@ -60,7 +60,7 @@ public:
 		
 		If no nodes are found, no event should be created.
 	*/
-	void generateDelegatesFor(DataObjectRef &dObj, NodeRef &target);
+	void generateDelegatesFor(const DataObjectRef &dObj, const NodeRef &target, const NodeRefList *other_targets);
 };
 
 #endif

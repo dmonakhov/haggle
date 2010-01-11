@@ -70,12 +70,12 @@ void ForwarderAsynchronous::generateTargetsFor(const NodeRef &neighbor)
 	taskQ.insert(new ForwardingTask(FWD_TASK_GENERATE_TARGETS, neighbor));
 }
 
-void ForwarderAsynchronous::generateDelegatesFor(const DataObjectRef &dObj, const NodeRef &target)
+void ForwarderAsynchronous::generateDelegatesFor(const DataObjectRef &dObj, const NodeRef &target, const NodeRefList *other_targets)
 {
 	if (!dObj || !target)
 		return;
 	
-	taskQ.insert(new ForwardingTask(FWD_TASK_GENERATE_DELEGATES, dObj, target));
+	taskQ.insert(new ForwardingTask(FWD_TASK_GENERATE_DELEGATES, dObj, target, other_targets));
 }
 
 void ForwarderAsynchronous::generateRoutingInformationDataObject(const NodeRef& node)
@@ -136,7 +136,7 @@ bool ForwarderAsynchronous::run(void)
 						break;
 						
 					case FWD_TASK_GENERATE_DELEGATES:
-						_generateDelegatesFor(task->getDataObject(), task->getNode());
+						_generateDelegatesFor(task->getDataObject(), task->getNode(), task->getNodeList());
 						break;
 					case FWD_TASK_GENERATE_ROUTING_INFO_DATA_OBJECT:
 						task->setDataObject(createRoutingInformationDataObject());

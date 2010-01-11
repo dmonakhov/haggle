@@ -142,25 +142,21 @@ bool ProtocolUDP::isReceiver()
 
 bool ProtocolUDP::isForInterface(const InterfaceRef& iface)
 {
-	Address	*addr = NULL;
+	const Address *addr = NULL;
+	/*
+		FIXME:
+		This is a pretty crude check. We simply assume that 
+		if this protocol is our IPC mechanism to communicate
+		with applications, and the interface to check is also 
+		an application interface, then this is the protocol to
+		use.
+	*/
+	if (iface->getType() == IFTYPE_APPLICATION_PORT &&
+		localIface->getType() == IFTYPE_APPLICATION_PORT)
+		return true;
+	else if (peerIface && iface == peerIface)
+		return true;
 
- 	if (!localIface)
- 		return false;
-
-#if defined(ENABLE_IPv6)
-	addr = localIface->getAddressByType(AddressType_IPv6);
-#endif
-
-	if (addr) {
-		if (addr->getProtocolType() == ProtocolSpecType_UDP)
-			return true;
-        }
-	addr = localIface->getAddressByType(AddressType_IPv4);
-	
-	if (addr) {
-		if (addr->getProtocolType() == ProtocolSpecType_UDP)
-			return true;
-	}
 	return false;
 }
 

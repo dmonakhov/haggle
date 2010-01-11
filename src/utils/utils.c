@@ -118,8 +118,17 @@ int gettimeofday(struct timeval *tv, void *tz)
 		// converts back from 100-nanoseconds to seconds and microseconds
 		base_time.tv_sec =  (long)(date.QuadPart / 10000000);
 		adjust.QuadPart = base_time.tv_sec;
-		adjust.QuadPart *= 1000000;
-		base_time.tv_usec = (long)((date.QuadPart - adjust.QuadPart) / 10);
+
+		 // convert seconds to 100-nanoseconds
+		adjust.QuadPart *= 10000000;
+
+		// Remove the whole seconds
+		date.QuadPart -= adjust.QuadPart;
+
+		// Convert the remaining 100-nanoseconds to microseconds
+		date.QuadPart /= 10;
+
+		base_time.tv_usec = (long)date.QuadPart;
 		
 		printf("base_time: sec:%ld usec:%ld\n", base_time.tv_sec, base_time.tv_usec);
 		printf("base_tickcount: %lu\n", tickcount);
@@ -168,8 +177,17 @@ int gettimeofday(struct timeval *tv, void *tz)
 	// converts back from 100-nanoseconds to seconds and microseconds
 	base_time.tv_sec =  (long)(date.QuadPart / 10000000);
 	adjust.QuadPart = base_time.tv_sec;
-	adjust.QuadPart *= 1000000;
-	base_time.tv_usec = (long)((date.QuadPart - adjust.QuadPart) / 10);
+
+	// convert seconds to 100-nanoseconds
+	adjust.QuadPart *= 10000000;
+
+	// Remove the whole seconds
+	date.QuadPart -= adjust.QuadPart;
+
+	// Convert the remaining 100-nanoseconds to microseconds
+	date.QuadPart /= 10;
+
+	base_time.tv_usec = (long)date.QuadPart;		
 #endif
 	return 0;
 }

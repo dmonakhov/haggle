@@ -96,6 +96,8 @@ public:
 	int delDataObject(DataObjectRef& dObj);
 	NodeRef detachFirstNode();
 	DataObjectRef detachFirstDataObject();
+	const NodeRefList *getNodeList() const;
+	const DataObjectRefList *getDataObjectList() const;
 	int countDataObjects();
 	int countNodes();
 	int addRepositoryEntry(RepositoryEntryRef& re);

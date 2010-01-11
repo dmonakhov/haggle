@@ -158,7 +158,7 @@ private:
 	/**
 		Does the actual work of getDelegatesFor.
 	*/
-	void _generateDelegatesFor(const DataObjectRef &dObj, const NodeRef &target);
+	void _generateDelegatesFor(const DataObjectRef &dObj, const NodeRef &target, const NodeRefList *other_targets);
 #ifdef DEBUG
 	/**
 		Does the actual work or printRoutingTable().

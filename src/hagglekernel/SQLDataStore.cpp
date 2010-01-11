@@ -2486,6 +2486,7 @@ int SQLDataStore::_retrieveNode(NodeRef& refNode, const EventCallback<EventHandl
 	
 	
 	kernel->addEvent(new Event(callback, node));
+
 	return 1;
 }
 

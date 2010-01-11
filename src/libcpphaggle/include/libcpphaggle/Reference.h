@@ -474,7 +474,7 @@ class ReferenceList : public List<Reference<T> >
         }
         ~ReferenceList() {}
 
-        ReferenceList<T> *copy() 
+        ReferenceList<T> *copy() const
 	{
                 return new ReferenceList(*this);
         }

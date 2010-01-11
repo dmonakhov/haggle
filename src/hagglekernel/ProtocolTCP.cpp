@@ -256,21 +256,6 @@ ProtocolTCPServer::~ProtocolTCPServer()
 {
 }
 
-bool ProtocolTCPServer::isForInterface(const InterfaceRef &iface)
-{
-	// Assume that TCP connections are only made using Ethernet and WiFi 
-	// interfaces
-	if (iface->getType() == IFTYPE_ETHERNET || 
-		iface->getType() == IFTYPE_WIFI) {
-		return true;
-	} else
-		return false;
-}
-
-void ProtocolTCPServer::handleInterfaceDown(const InterfaceRef &iface)
-{
-	// Do nothing - if all interfaces went down, the socket will disconnect.
-}
 
 ProtocolEvent ProtocolTCPServer::acceptClient()
 {
@@ -310,7 +295,7 @@ ProtocolEvent ProtocolTCPServer::acceptClient()
 #endif
 
 	if (!p) {
-		HAGGLE_DBG("Unable to start client thread for socket %d\n", clientsock);
+		HAGGLE_DBG("Unable to create new TCP client on socket %d\n", clientsock);
 		CLOSE_SOCKET(clientsock);
 		return PROT_EVENT_ERROR;
 	}

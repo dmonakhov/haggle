@@ -467,9 +467,6 @@ ssize_t DataObject::putData(void *_data, size_t len, size_t *remaining)
 
                 *remaining = info->bytes_left;
 
-                HAGGLE_DBG("Going to put %lu bytes into file %s\n", 
-                           info->bytes_left, getFilePath().c_str());
-
                 // Any bytes at all?
                 if (info->bytes_left == 0) {
                         // Nope.
@@ -479,6 +476,10 @@ ssize_t DataObject::putData(void *_data, size_t len, size_t *remaining)
                         *remaining = 0;
                         return putLen;
                 }
+		
+                HAGGLE_DBG("Going to put %lu bytes into file %s\n", 
+                           info->bytes_left, getFilePath().c_str());
+
                 // Create the path and file were we store the data.
                 createFilePath();
                 // Open the file for writing:

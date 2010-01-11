@@ -639,6 +639,9 @@ void SecurityManager::onReceivedDataObject(Event *e)
 	
 	dObj = e->getDataObject();
 	
+	if (dObj->isDuplicate())
+		return;
+
 	// Check if the data object's signature should be verified. Otherwise, generate the 
 	// verified event immediately.
 	if (dObj->shouldVerifySignature() && 
@@ -665,6 +668,9 @@ void SecurityManager::onIncomingDataObject(Event *e)
 	
 	dObj = e->getDataObject();
 	
+	if (dObj->isDuplicate())
+		return;
+
 	Metadata *m = dObj->getMetadata()->getMetadata("Security");
 	
 	// Check if there is a certificate embedded that we do not already have stored

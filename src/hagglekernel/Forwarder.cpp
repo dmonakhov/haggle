@@ -97,3 +97,15 @@ const Metadata *Forwarder::getRoutingInformation(const DataObjectRef& dObj) cons
 	
 	return md;
 }
+
+bool Forwarder::isTarget(const NodeRef &delegate, const NodeRefList *targets) const
+{
+	if (!targets)
+		return false;
+
+	for (NodeRefList::const_iterator it = targets->begin(); it != targets->end(); it++) {
+		if (*it == delegate)
+			return true;
+	}
+	return false;
+}

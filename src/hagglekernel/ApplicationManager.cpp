@@ -870,6 +870,11 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 			return;
 		}
 		
+		// Do not save control data objects in the bloomfilter, otherwise
+		// we won't be able to receive a similar message later.
+		if (kernel->getThisNode()->getBloomfilter()->has(dObj))
+			kernel->getThisNode()->getBloomfilter()->remove(dObj);
+
 		/*
 		  A control data object may have more than one control element.
 		  Loop through them all...

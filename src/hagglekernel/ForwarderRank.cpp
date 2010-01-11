@@ -44,7 +44,7 @@ ForwarderRank::~ForwarderRank()
 {
 }
 
-bool ForwarderRank::addForwardingMetadata(DataObjectRef& dObj, Metadata *parent)
+bool ForwarderRank::addRoutingInformation(DataObjectRef& dObj, Metadata *parent)
 {
 	/*
 	if(!isMetricDO(metricDO))
@@ -66,30 +66,25 @@ bool ForwarderRank::addForwardingMetadata(DataObjectRef& dObj, Metadata *parent)
 	return false;
 }
 
-void ForwarderRank::newNeighbor(NodeRef &neighbor)
+void ForwarderRank::newNeighbor(const NodeRef &neighbor)
 {
 }
 
-void ForwarderRank::endNeighbor(NodeRef &neighbor)
+void ForwarderRank::endNeighbor(const NodeRef &neighbor)
 {
 }
 
-void ForwarderRank::generateTargetsFor(NodeRef &neighbor)
+void ForwarderRank::generateTargetsFor(const NodeRef &neighbor)
 {
 
 }
 
-void ForwarderRank::generateDelegatesFor(DataObjectRef &dObj, NodeRef &target)
+void ForwarderRank::generateDelegatesFor(const DataObjectRef &dObj, const NodeRef &target, const NodeRefList *other_targets)
 {
 	NodeRefList delegateList;
 
-	for (Map<String, long >::iterator it = 
-			ranks.begin();
-		it != ranks.end();
-		it++)
-	{
-		if(it->second > myRank)
-		{
+	for (Map<String, long >::iterator it = ranks.begin(); it != ranks.end(); it++) {
+		if (it->second > myRank) {
 			NodeRef new_node = new Node(it->first.c_str(), NODE_TYPE_PEER, "Rank delegate node");
 			delegateList.add(new_node);
 		}

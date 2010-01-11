@@ -320,7 +320,7 @@ int WIDCOMMBluetooth::_doDiscovery(const RemoteDevice *rd, GUID *guid, widcomm_d
 				discoveryResult = -1;
 				break;
 			case WAIT_OBJECT_0:
-				HAGGLE_DBG("Discovery completed with res=\n", discoveryResult);
+				HAGGLE_DBG("Discovery completed with res=%d\n", discoveryResult);
 				// discoveryResult set by OnDiscoveryComplete()
 				break;
 		}

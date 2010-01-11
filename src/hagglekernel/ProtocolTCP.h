@@ -49,7 +49,7 @@ public:
                     const short flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL);
         virtual ~ProtocolTCP() = 0;
 
-        virtual void setPeerInterface(const Address *addr = NULL);
+        void setPeerInterface(const Address *addr = NULL);
 class ConnectException : public ProtocolException
         {
         public:
@@ -100,7 +100,7 @@ public:
 		const unsigned short _port = TCP_DEFAULT_PORT, 
 		ProtocolManager *m = NULL) :
 	ProtocolTCPClient(_localIface, _peerIface, _port, m) {}
-	virtual bool isSender() { return true; }
+	bool isSender() { return true; }
 };
 
 /** */
@@ -112,7 +112,7 @@ public:
 		const InterfaceRef& _localIface, 
 		ProtocolManager *m = NULL) : 
 	ProtocolTCPClient(sock, addr, _localIface, m) {}
-	virtual bool isReceiver() { return true; }
+	bool isReceiver() { return true; }
 };
 
 /** */
@@ -123,8 +123,6 @@ class ProtocolTCPServer : public ProtocolTCP
 public:
         ProtocolTCPServer(const InterfaceRef& _localIface = NULL, ProtocolManager *m = NULL,
                           const unsigned short _port = TCP_DEFAULT_PORT, int _backlog = TCP_BACKLOG_SIZE);
-        virtual bool isForInterface(const InterfaceRef &iface);
-        virtual void handleInterfaceDown(const InterfaceRef &iface);
         ~ProtocolTCPServer();
         ProtocolEvent acceptClient();
 };

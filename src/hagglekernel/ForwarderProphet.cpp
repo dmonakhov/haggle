@@ -300,9 +300,9 @@ void ForwarderProphet::_generateTargetsFor(const NodeRef &neighbor)
 	}
 }
 
-void ForwarderProphet::_generateDelegatesFor(const DataObjectRef &dObj, const NodeRef &target)
+void ForwarderProphet::_generateDelegatesFor(const DataObjectRef &dObj, const NodeRef &target, const NodeRefList *other_targets)
 {
-	NodeRefList lst;
+	NodeRefList delegates;
 	// Figure out which node to look for:
 	prophet_node_id_t target_id = id_for_string(target->getIdStr());
 	
@@ -319,7 +319,7 @@ void ForwarderProphet::_generateDelegatesFor(const DataObjectRef &dObj, const No
 			
 			NodeRef delegate = kernel->getNodeStore()->retrieve(id_number_to_nodeid[it->first], true);
 			
-			if (delegate) {
+			if (delegate && !isTarget(delegate, other_targets)) {
 				// Do not age P_bc since the metric is for a current neighbor... or should we?
 				// The draft is not really clear on how to age metrics for neighbors 
 				double &P_bd = it->second[target_id].first;
@@ -329,7 +329,7 @@ void ForwarderProphet::_generateDelegatesFor(const DataObjectRef &dObj, const No
 					// Yes: insert this node into the list of delegate forwarders 
 					// for this target.
 					
-					lst.push_back(delegate);
+					delegates.push_back(delegate);
 					HAGGLE_DBG("Node '%s' is a good delegate for target '%s' [my_metric=%lf, neighbor_metric=%lf]\n", 
 						   delegate->getName().c_str(), target->getName().c_str(), P_ad, P_bd);
 					
@@ -341,8 +341,8 @@ void ForwarderProphet::_generateDelegatesFor(const DataObjectRef &dObj, const No
 		}
 	}
 	
-	if (!lst.empty()) {
-		kernel->addEvent(new Event(EVENT_TYPE_DELEGATE_NODES, dObj, target, lst));
+	if (!delegates.empty()) {
+		kernel->addEvent(new Event(EVENT_TYPE_DELEGATE_NODES, dObj, target, delegates));
 	} else {
                 HAGGLE_DBG("No delegates found for target %s\n", target->getName().c_str());
         }

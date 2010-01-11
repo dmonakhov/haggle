@@ -60,6 +60,16 @@ DataObjectRef DataStoreQueryResult::detachFirstDataObject()
 	return dataObjects.pop();
 }
 
+const NodeRefList *DataStoreQueryResult::getNodeList() const
+{
+	return &nodes;
+}
+
+const DataObjectRefList *DataStoreQueryResult::getDataObjectList() const
+{
+	return &dataObjects;
+}
+
 int DataStoreQueryResult::countDataObjects()
 {
 	return dataObjects.size();

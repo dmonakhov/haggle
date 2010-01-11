@@ -269,7 +269,7 @@ void ForwardingManager::onDebugCmd(Event *e)
   interface information and therefore has to be checked against a
   potential neighbor node in the node store).
  */
-bool ForwardingManager::isNeighbor(NodeRef& node)
+bool ForwardingManager::isNeighbor(const NodeRef& node)
 {
 	if (node->isNeighbor())
 		return true;
@@ -300,7 +300,7 @@ bool ForwardingManager::isNeighbor(NodeRef& node)
    the data object.
  */
 
-bool ForwardingManager::addToSendList(DataObjectRef& dObj, NodeRef& node, int repeatCount)
+bool ForwardingManager::addToSendList(DataObjectRef& dObj, const NodeRef& node, int repeatCount)
 {
  	// Check if the data object/node pair is already in our send list:
         for (forwardingList::iterator it = forwardedObjects.begin();
@@ -316,12 +316,12 @@ bool ForwardingManager::addToSendList(DataObjectRef& dObj, NodeRef& node, int re
         }
 	
         // Remember that we tried to send this:
-        forwardedObjects.push_front(Pair< Pair<DataObjectRef, NodeRef>,int>(Pair<DataObjectRef, NodeRef>(dObj,node), repeatCount));
+        forwardedObjects.push_front(Pair< Pair<const DataObjectRef, const NodeRef>,int>(Pair<const DataObjectRef, const NodeRef>(dObj,node), repeatCount));
         
         return true;
 }
 
-bool ForwardingManager::shouldForward(DataObjectRef dObj, NodeRef node)
+bool ForwardingManager::shouldForward(const DataObjectRef& dObj, const NodeRef& node)
 {
         NodeRef nodeInStore;
         
@@ -359,10 +359,10 @@ bool ForwardingManager::shouldForward(DataObjectRef dObj, NodeRef node)
 	return false;
 }
 
-void ForwardingManager::forwardByDelegate(DataObjectRef &dObj, NodeRef &target)
+void ForwardingManager::forwardByDelegate(DataObjectRef &dObj, const NodeRef &target, const NodeRefList *other_targets)
 {
 	if (forwardingModule)
-		forwardingModule->generateDelegatesFor(dObj, target);
+		forwardingModule->generateDelegatesFor(dObj, target, other_targets);
 }
 
 void ForwardingManager::onDataObjectForward(Event *e)
@@ -376,29 +376,29 @@ void ForwardingManager::onDataObjectForward(Event *e)
 	}
 
 	// Get the node:
-	NodeRef node = e->getNode();
+	NodeRef target = e->getNode();
 
-	if (!node) {
+	if (!target) {
 		HAGGLE_ERR("Someone posted an EVENT_TYPE_DATAOBJECT_FORWARD event without a node.\n");
 		return;
 	}
 	
 	// Start forwarding the object:
-	if (shouldForward(dObj, node)) {
+	if (shouldForward(dObj, target)) {
 		// Ok, the target wants the data object. Now check if
 		// the target is a neighbor, in which case the data
 		// object is sent directly to the target, otherwise
 		// ask the forwarding module to generate delegates.
-		if (isNeighbor(node)) {
-			if (addToSendList(dObj, node)) {
+		if (isNeighbor(target)) {
+			if (addToSendList(dObj, target)) {
 				HAGGLE_DBG("Sending data object %s directly to target neighbor %s\n", 
-					dObj->getIdStr(), node->getName().c_str());
-				kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, node));
+					dObj->getIdStr(), target->getName().c_str());
+				kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, target));
 			}
 		} else {
 			HAGGLE_DBG("Trying to find delegates for data object %s bound for target %s\n", 
-				dObj->getIdStr(), node->getName().c_str());
-			forwardByDelegate(dObj, node);
+				dObj->getIdStr(), target->getName().c_str());
+			forwardByDelegate(dObj, target);
 		}
 	}
 }
@@ -499,36 +499,44 @@ void ForwardingManager::onNodeQueryResult(Event *e)
 	
 	DataStoreQueryResult *qr = static_cast < DataStoreQueryResult * >(e->getData());
 	DataObjectRef dObj = qr->detachFirstDataObject();
-	
+	const NodeRefList *targets = qr->getNodeList();
+
 	if (!dObj) {
 		HAGGLE_DBG("No dataobject in query result\n");
 		delete qr;
 		return;
 	}
-	
-	HAGGLE_DBG("Got node query result for dataobject %s\n", dObj->getIdStr());
-	
-	NodeRef node;
-	NodeRefList ns;
+	if (!targets || targets->empty()) {
+		HAGGLE_ERR("No nodes in query result\n");
+		delete qr;
+		return;
+	}
 
-	while (node = qr->detachFirstNode()) {
+	HAGGLE_DBG("Got node query result for dataobject %s with %lu nodes\n", dObj->getIdStr(), targets->size());
+	
+	NodeRefList target_neighbors;
+
+	for (NodeRefList::const_iterator it = targets->begin(); it != targets->end(); it++) {
+		const NodeRef& target = *it;
                  // Is this node a currently available neighbor node?
-                if (shouldForward(dObj, node)) {
-                        if (isNeighbor(node)) {
+                if (shouldForward(dObj, target)) {
+                        if (isNeighbor(target)) {
                                 // Yes: it is it's own best delegate, so start "forwarding" the object:
-                                if (addToSendList(dObj, node)) {
-                                        HAGGLE_DBG("Sending data object %s directly to target neighbor %s\n", dObj->getIdStr(), node->getName().c_str());
-                                        ns.push_front(node);
+                                if (addToSendList(dObj, target)) {
+                                        HAGGLE_DBG("Sending data object %s directly to target neighbor %s\n", 
+						dObj->getIdStr(), target->getName().c_str());
+                                        target_neighbors.push_front(target);
                                 }
-                        } else if (node->getType() == NODE_TYPE_PEER || node->getType() == NODE_TYPE_GATEWAY) { 
-                                HAGGLE_DBG("Trying to find delegates for data object %s bound for target %s\n", dObj->getIdStr(), node->getName().c_str());
-                                forwardByDelegate(dObj, node);
+                        } else if (target->getType() == NODE_TYPE_PEER || target->getType() == NODE_TYPE_GATEWAY) { 
+                                HAGGLE_DBG("Trying to find delegates for data object %s bound for target %s\n", 
+					dObj->getIdStr(), target->getName().c_str());
+                                forwardByDelegate(dObj, target, targets);
                         }
                 }
 	}
 
-	if (!ns.empty()) {
-		kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, ns));
+	if (!target_neighbors.empty()) {
+		kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, target_neighbors));
 	}
 	
 	delete qr;
@@ -701,6 +709,10 @@ void ForwardingManager::onTargetNodes(Event * e)
 void ForwardingManager::onDelegateNodes(Event * e)
 {
 	NodeRefList *delegates = e->getNodeList().copy();
+
+	if (!delegates)
+		return;
+
 	DataObjectRef dObj = e->getDataObject();
 	
 	// Go through the list of delegates:

@@ -19,8 +19,6 @@
 extern "C" {
 #endif
 
-/* Enable counting bloomfilter support */
-#define COUNTING_BLOOMFILTER_IS_COUNTING
 #ifdef _WIN32
 #include <windef.h>
 #include <winsock2.h>
@@ -47,15 +45,9 @@ struct counting_bloomfilter {
 };
 
 /* Counting bloomfilter bin size in bits */
-#ifdef COUNTING_BLOOMFILTER_IS_COUNTING
 typedef u_int32_t counting_bin_t;
-#define COUNTING_BIN_BITS (COUNTING_BIN_SIZE*8)
-#else
-typedef unsigned char counting_bin_t;
-#define COUNTING_BIN_BITS (1)
-#endif
-	
 #define COUNTING_BIN_SIZE (sizeof(counting_bin_t))
+#define COUNTING_BIN_BITS (COUNTING_BIN_SIZE*8)
 
 #define K_SIZE sizeof(u_int32_t)
 #define M_SIZE sizeof(u_int32_t)
@@ -74,10 +66,8 @@ enum counting_bf_op {
 #define COUNTING_BF_OP_CHECK   counting_bf_op_check
 	counting_bf_op_add,
 #define COUNTING_BF_OP_ADD     counting_bf_op_add
-#ifdef COUNTING_BLOOMFILTER_IS_COUNTING
 	counting_bf_op_remove,
 #define COUNTING_BF_OP_REMOVE  counting_bf_op_remove
-#endif /* COUNTING_BLOOMFILTER_IS_COUNTING */
 	COUNTING_BF_OP_MAX,
 };
 
@@ -113,12 +103,10 @@ static inline int counting_bloomfilter_add(struct counting_bloomfilter *bf, cons
 void counting_bloomfilter_print(struct counting_bloomfilter *bf);
 #endif
 
-#ifdef COUNTING_BLOOMFILTER_IS_COUNTING
 static inline int counting_bloomfilter_remove(struct counting_bloomfilter *bf, const char *key, const unsigned int len)
 {
 	return counting_bloomfilter_operation(bf, key, len, COUNTING_BF_OP_REMOVE);
 }
-#endif
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

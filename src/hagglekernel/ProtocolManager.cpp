@@ -445,7 +445,7 @@ void ProtocolManager::onLocalInterfaceUp(Event *e)
 
 void ProtocolManager::onLocalInterfaceDown(Event *e)
 {
-	InterfaceRef iface = e->getInterface();
+	InterfaceRef& iface = e->getInterface();
 
 	if (!iface)
 		return;
@@ -453,10 +453,17 @@ void ProtocolManager::onLocalInterfaceDown(Event *e)
 	// Go through the protocol list
 	protocol_registry_t::iterator it = protocol_registry.begin();
 
-	while (it != protocol_registry.end()) {
+	for (;it != protocol_registry.end(); it++) {
 		Protocol *p = (*it).second;
 
-		// Is this a server protocol associated with this interface?
+		/* 
+		Never bring down our application IPC protocol when
+		application interfaces go down (i.e., applications deregister).
+		*/
+		if (p->getLocalInterface()->getType() == IFTYPE_APPLICATION_PORT) {
+			continue;
+		}
+		// Is the associated with this protocol?
 		if (p->isForInterface(iface)) {
 			/*
 			   NOTE: I am unsure about how this should be done. Either:
@@ -498,9 +505,10 @@ void ProtocolManager::onLocalInterfaceDown(Event *e)
 			   For now, I've chosen the first solution.
 			 */
 			// Tell the protocol to handle this:
+			HAGGLE_DBG("Shutting down protocol %s because interface %s went down\n",
+				p->getName(), iface->getIdentifierStr());
 			p->handleInterfaceDown(iface);
 		}
-		it++;
 	}
 }
 
@@ -682,7 +690,7 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 					break;
 				}
 			} else {
-				HAGGLE_DBG("Send interface %s was down, ignoring...\n", iface->getIdentifierStr());
+				//HAGGLE_DBG("Send interface %s was down, ignoring...\n", iface->getIdentifierStr());
 			}
 		}
 		

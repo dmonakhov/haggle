@@ -190,9 +190,11 @@ const ProtType_t Protocol::getType() const
 	return type;
 } 
 
-void Protocol::handleInterfaceDown(const InterfaceRef& _iface)
+void Protocol::handleInterfaceDown(const InterfaceRef& iface)
 {
-	if (localIface == _iface)
+	if (localIface == iface)
+		shutdown();
+	else if (peerIface && peerIface == iface)
 		shutdown();
 }
 
@@ -1164,7 +1166,7 @@ void Protocol::registerWithManager()
 	}
 	
 	isRegistered = true;
-	getKernel()->addEvent(new Event(getManager()->add_protocol_event, (void *) this));
+	getKernel()->addEvent(new Event(getManager()->add_protocol_event, this));
 }
 
 
@@ -1178,7 +1180,7 @@ void Protocol::unregisterWithManager()
 
 	HAGGLE_DBG("Protocol %s sends unregister event\n", getName()); 
 
-	getKernel()->addEvent(new Event(getManager()->delete_protocol_event, (void *) this));
+	getKernel()->addEvent(new Event(getManager()->delete_protocol_event, this));
 }
 
 void Protocol::shutdown()

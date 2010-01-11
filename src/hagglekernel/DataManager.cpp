@@ -138,6 +138,12 @@ DataManager::DataManager(HaggleKernel * _kernel, const bool _setCreateTimeOnBloo
 	if (ret < 0)
 		throw DMException(ret, "Could not register event");
 #endif
+	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_INCOMING, onIncomingDataObject);
+
+#if HAVE_EXCEPTION
+	if (ret < 0)
+		throw DMException(ret, "Could not register event");
+#endif
 	onInsertedDataObjectCallback = newEventCallback(onInsertedDataObject);
 	onAgedDataObjectsCallback = newEventCallback(onAgedDataObjects);
 
@@ -268,6 +274,11 @@ void DataManager::onVerifiedDataObject(Event *e)
 
 	if (dObj->getDataState() == DataObject::DATA_STATE_VERIFIED_BAD) {
 		HAGGLE_ERR("Data in data object flagged as bad! -- discarding\n");
+		if (localBF.has(dObj)) {
+			// Remove the data object from the bloomfilter since it was bad.
+			localBF.remove(dObj);
+			kernel->getThisNode()->setBloomfilter(localBF, setCreateTimeOnBloomfilterUpdate);
+		}
 		return;
 	} else if (dObj->getDataState() == DataObject::DATA_STATE_NOT_VERIFIED && helper) {
 		// Call our helper to verify the data in the data object.
@@ -280,11 +291,20 @@ void DataManager::onVerifiedDataObject(Event *e)
 	handleVerifiedDataObject(dObj);
 }
 
-void DataManager::handleVerifiedDataObject(DataObjectRef& dObj)
+void DataManager::onIncomingDataObject(Event *e)
 {
+	if (!e || !e->hasData())
+		return;
+
+	DataObjectRef dObj = e->getDataObject();
+	
+	if (!dObj) {
+		HAGGLE_DBG("Incoming data object event without data object!\n");
+		return;
+	}
 	// Add the data object to the bloomfilter of the one who sent it:
 	// Find the interface it came from:
-	InterfaceRef iface = dObj->getRemoteInterface();
+	InterfaceRef& iface = dObj->getRemoteInterface();
 
 	// Was there one?
 	if (iface) {
@@ -303,12 +323,28 @@ void DataManager::handleVerifiedDataObject(DataObjectRef& dObj)
 			}
 		}
 	}
+	
+	// Add the incoming data object to our own bloomfilter
+	// We do this early in order to avoid receiving duplicates in case
+	// the same object is received at nearly the same time from multiple neighbors
+	if (dObj->isPersistent()) {
+		if (localBF.has(dObj)) {
+			dObj->setDuplicate();
+		} else {
+			localBF.add(dObj);
+			kernel->getThisNode()->setBloomfilter(localBF, setCreateTimeOnBloomfilterUpdate);
+		}
+	}
+}
 
+void DataManager::handleVerifiedDataObject(DataObjectRef& dObj)
+{
 	// insert into database (including filering)
 	if (dObj->isPersistent()) {
 		kernel->getDataStore()->insertDataObject(dObj, onInsertedDataObjectCallback);
 	} else {
-		// do not expect a callback for non-persistent data objects
+		// do not expect a callback for a non-persistent data object,
+		// but we still call insertDataObject in order to filter the data object.
 		kernel->getDataStore()->insertDataObject(dObj, NULL);
 	}
 }
@@ -333,8 +369,14 @@ void DataManager::onDeletedDataObject(Event * e)
 	
 	DataObjectRefList dObjs = e->getDataObjectList();
 	
-	for (DataObjectRefList::iterator it = dObjs.begin(); it != dObjs.end(); it++)
-		localBF.remove(*it);
+	for (DataObjectRefList::iterator it = dObjs.begin(); it != dObjs.end(); it++) {
+		/* 
+		  Do not remove Node descriptions from the bloomfilter. We do not
+		  want to receive old node descriptions again.
+		*/
+		if (!(*it)->isNodeDescription())
+			localBF.remove(*it);
+	}
 	
 	if (dObjs.size() > 0)
 		kernel->getThisNode()->setBloomfilter(localBF, setCreateTimeOnBloomfilterUpdate);
@@ -360,14 +402,9 @@ void DataManager::onInsertedDataObject(Event * e)
 		processed after the insertion task).
 	*/
 	if (dObj->isDuplicate()) {
-		HAGGLE_DBG("Data object %s is a duplicate, but adding to bloomfilter to be sure\n", dObj->getIdStr());
+		HAGGLE_DBG("Data object %s is a duplicate! Not generating DATAOBJECT_NEW event\n", dObj->getIdStr());
 	} else {
 		kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_NEW, dObj));
-	}
-
-	if (dObj->isPersistent() && !localBF.has(dObj)) {
-		localBF.add(dObj);
-		kernel->getThisNode()->setBloomfilter(localBF, setCreateTimeOnBloomfilterUpdate);
 	}
 }
 

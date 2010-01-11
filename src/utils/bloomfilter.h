@@ -19,8 +19,6 @@
 extern "C" {
 #endif
 
-/* Enable counting bloomfilter support */
-//#define COUNTING_BLOOMFILTER
 #ifdef _WIN32
 #include <windef.h>
 #include <winsock2.h>
@@ -35,7 +33,6 @@ typedef DWORD32 u_int32_t;
 #include <netinet/in.h>
 #endif
 
-
 typedef u_int32_t salt_t;
 
 struct bloomfilter {
@@ -49,13 +46,8 @@ struct bloomfilter {
 			
 
 /* Bloomfilter bin size in bits */
-#ifdef COUNTING_BLOOMFILTER
-typedef u_int32_t bin_t;
-#define BIN_BITS (sizeof(bin_t)*8)
-#else
 typedef unsigned char bin_t;
 #define BIN_BITS (1)
-#endif
 	
 #define BIN_SIZE (sizeof(bin_t))
 
@@ -76,10 +68,6 @@ enum bf_op {
 #define BF_OP_CHECK   bf_op_check
 	bf_op_add,
 #define BF_OP_ADD     bf_op_add
-#ifdef COUNTING_BLOOMFILTER
-	bf_op_remove,
-#define BF_OP_REMOVE  bf_op_remove
-#endif /* COUNTING_BLOOMFILTER */
 	BF_OP_MAX,
 };
 
@@ -112,13 +100,6 @@ static inline int bloomfilter_add(struct bloomfilter *bf, const char *key, const
 }
 #ifdef DEBUG
 void bloomfilter_print(struct bloomfilter *bf);
-#endif
-
-#ifdef COUNTING_BLOOMFILTER
-static inline int bloomfilter_remove(struct bloomfilter *bf, const char *key, const unsigned int len)
-{
-	return bloomfilter_operation(bf, key, len, BF_OP_REMOVE);
-}
 #endif
 
 #ifdef __cplusplus
