@@ -144,6 +144,12 @@ DataManager::DataManager(HaggleKernel * _kernel, const bool _setCreateTimeOnBloo
 	if (ret < 0)
 		throw DMException(ret, "Could not register event");
 #endif
+	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, onSendResult);
+
+#if HAVE_EXCEPTION
+	if (ret < 0)
+		throw DMException(ret, "Could not register event");
+#endif
 	onInsertedDataObjectCallback = newEventCallback(onInsertedDataObject);
 	onAgedDataObjectsCallback = newEventCallback(onAgedDataObjects);
 
@@ -289,6 +295,17 @@ void DataManager::onVerifiedDataObject(Event *e)
 	}
 	
 	handleVerifiedDataObject(dObj);
+}
+
+void DataManager::onSendResult(Event *e)
+{
+	DataObjectRef& dObj = e->getDataObject();
+	NodeRef& node = e->getNode();
+
+	if (e->getType() == EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL) {
+		// Add data object to node's bloomfilter.
+		node->getBloomfilter()->add(dObj);
+	} 
 }
 
 void DataManager::onIncomingDataObject(Event *e)

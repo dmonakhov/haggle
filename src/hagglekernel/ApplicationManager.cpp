@@ -546,8 +546,6 @@ void ApplicationManager::onApplicationFilterMatchEvent(Event *e)
 				HAGGLE_DBG("Application %s already has data object. Not sending.\n", 
 					app->getName().c_str());
 			} else {
-				// Nope. Add it to the bloomfilter, then send.
-				app->getBloomfilter()->add(dObj);
 				string dObjName = "DataObject[App:" + app->getName() + "]";
 
 				DataObjectRef dObjSend = dObj->copy();

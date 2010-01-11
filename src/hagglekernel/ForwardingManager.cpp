@@ -405,8 +405,8 @@ void ForwardingManager::onDataObjectForward(Event *e)
 
 void ForwardingManager::onSendDataObjectResult(Event *e)
 {
-	DataObjectRef dObj = e->getDataObject();
-	NodeRef	node = e->getNode();
+	DataObjectRef& dObj = e->getDataObject();
+	NodeRef& node = e->getNode();
 
         HAGGLE_DBG("Checking data object results\n");
 
@@ -418,9 +418,6 @@ void ForwardingManager::onSendDataObjectResult(Event *e)
 			if (e->getType() == EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL) {
 				// Remove the data object - it has been forwarded.
 				forwardedObjects.erase(it);
-				
-				// Add data object to neighbor's bloomfilter.
-				node->getBloomfilter()->add(dObj);
 			} else if (e->getType() == EVENT_TYPE_DATAOBJECT_SEND_FAILURE) {
 				int repeatCount;
 				repeatCount = (*it).second + 1;
