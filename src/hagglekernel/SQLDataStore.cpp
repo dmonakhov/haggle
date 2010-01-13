@@ -2359,6 +2359,16 @@ int SQLDataStore::_insertDataObject(DataObjectRef& dObj, const EventCallback<Eve
 	sqlite3_finalize(stmt);
 
 	if (ret == SQLITE_CONSTRAINT) {
+		if (!dObj->isPersistent()) {
+			/*
+			   There was already a copy of a non-persistent data object in the data store.
+			   This can happen if Haggle crashed or was forced to shutdown before the
+			   non-persistent object had been deleted. Therefore, we now delete the data object, 
+			   and then try to insert it again.
+			*/
+			_deleteDataObject(dObj, false);
+			return _insertDataObject(dObj, callback);
+		}
 		HAGGLE_ERR("DataObject already in datastore\n");
                 dObj->setDuplicate();
 		goto out_insertDataObject_duplicate;
@@ -2462,7 +2472,7 @@ int SQLDataStore::_retrieveNode(NodeRef& refNode, const EventCallback<EventHandl
 		if (forceCallback) {
 			kernel->addEvent(new Event(callback, refNode));
 			return 1;
-		} else{
+		} else {
 			return -1;
 		}
 	}
@@ -2483,7 +2493,6 @@ int SQLDataStore::_retrieveNode(NodeRef& refNode, const EventCallback<EventHandl
 		}
 		refNode.unlock();
 	}
-	
 	
 	kernel->addEvent(new Event(callback, node));
 

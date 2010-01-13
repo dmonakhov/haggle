@@ -76,7 +76,19 @@ Metadata *Metadata::getMetadata(const string name, unsigned int n)
 
 const Metadata *Metadata::getMetadata(const string name, unsigned int n) const
 {
-        return const_cast<Metadata *>(this)->getMetadata(name, n);
+        const_cast<Metadata*>(this)->r_const = registry.equal_range(name);
+
+        if (r_const.first == r_const.second)
+                return NULL;
+        
+        while (n) { 
+                const_cast<Metadata*>(this)->r_const.first++;
+                n--;
+                
+                if (r_const.first == r_const.second)
+                        return NULL;
+        }
+        return (*r_const.first).second;
 }
 
 Metadata *Metadata::getNextMetadata()
@@ -94,7 +106,15 @@ Metadata *Metadata::getNextMetadata()
 
 const Metadata *Metadata::getNextMetadata() const
 {
-	return const_cast<Metadata *>(this)->getNextMetadata();
+	if (r_const.first == registry.end() || r_const.first == r_const.second)
+                return NULL;
+        
+        const_cast<Metadata*>(this)->r_const.first++;
+
+        if (r_const.first == r_const.second)
+                return NULL;
+
+        return (*r_const.first).second;
 }
 
 string& Metadata::setParameter(const string name, const string value)

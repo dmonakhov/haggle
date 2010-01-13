@@ -107,7 +107,7 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 
 	CM_DBG("Inquiry done\n");
 
-	while (true) {
+	while (!conn->shouldExit()) {
 		InterfaceStatus_t status;
 		const RemoteDevice *rd = WIDCOMMBluetooth::getNextRemoteDevice();
 		bool report_interface = false;
@@ -122,8 +122,7 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 		if (status == INTERFACE_STATUS_HAGGLE) {
 			report_interface = true;
 		} else if (status == INTERFACE_STATUS_UNKNOWN) {
-			switch(ConnectivityBluetoothBase::classifyAddress(IFTYPE_BLUETOOTH, (char *)rd->bda))
-			{
+			switch(ConnectivityBluetoothBase::classifyAddress(IFTYPE_BLUETOOTH, (char *)rd->bda)) {
 				case BLUETOOTH_ADDRESS_IS_UNKNOWN:
 				{
 					unsigned char uuid[] = HAGGLE_BLUETOOTH_SDP_UUID;
@@ -135,7 +134,10 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 
 					int ret = WIDCOMMBluetooth::doDiscovery(rd, &guid);
 
-					if (ret > 0) {
+					if (ret < 0) {
+						HAGGLE_ERR("Discovery failed for device %s\n", rd->name.c_str());
+						continue;
+					} else if (ret > 0) {
 						report_interface = true;
 						conn->report_known_interface(IFTYPE_BLUETOOTH, (char *)rd->bda, true);
 					} else if (ret == 0) {
@@ -143,12 +145,10 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 					}
 				}
 				break;
-
 				case BLUETOOTH_ADDRESS_IS_HAGGLE_NODE:
 					report_interface = true;
 					conn->report_known_interface(IFTYPE_BLUETOOTH, (char *)rd->bda, true);
 				break;
-				
 				case BLUETOOTH_ADDRESS_IS_NOT_HAGGLE_NODE:
 					conn->report_known_interface(IFTYPE_BLUETOOTH, (char *)rd->bda, false);
 				break;

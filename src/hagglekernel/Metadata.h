@@ -56,6 +56,7 @@ class Metadata
     private:
         // Used for iteration
         Pair<registry_t::iterator, registry_t::iterator> r;
+        Pair<registry_t::const_iterator, registry_t::const_iterator> r_const;
     public:
         virtual ~Metadata() = 0;
         virtual Metadata *copy() const = 0;
@@ -65,7 +66,7 @@ class Metadata
         // derived class
         virtual bool addMetadata(Metadata *m) = 0;
         virtual Metadata *addMetadata(const string name, const string content = "") = 0;
-        
+	virtual bool initFromRaw(const unsigned char *raw, size_t len) { return false; }
         string getName() const { return name; }
         const string& getName() { return name; }
         bool removeMetadata(const string name);

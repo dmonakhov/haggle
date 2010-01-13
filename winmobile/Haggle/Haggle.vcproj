@@ -973,7 +973,7 @@
 				ExecutionBucket="7"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)..\..\src\hagglekernel&quot;;&quot;$(ProjectDir)..\..\src\utils&quot;;&quot;$(ProjectDir)..\..\src\libcpphaggle\include&quot;;&quot;$(ProjectDir)..\..\src\libhaggle\include&quot;;&quot;$(ProjectDir)..\..\extlibs\libxml2-2.6.31\include&quot;;&quot;$(ProjectDir)..\OpenSSL\Compat&quot;;&quot;$(ProjectDir)..\..\extlibs\openssl-0.9.8j\inc32&quot;;&quot;$(ProjectDir)..\..\extlibs\sqlite-3.6.6.2&quot;;&quot;$(VSInstallDir)..\WIDCOMM\WIDCOMM BTW-CE SDK\Sdk\Inc&quot;"
-				PreprocessorDefinitions="DEBUG;DEBUG_LEAKS;HAVE_EXCEPTION;_WIN32_WCE=$(CEVER);UNDER_CE;$(PLATFORMDEFINES);WINCE;_DEBUG;_CONSOLE;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE;WIDCOMM_BLUETOOTH"
+				PreprocessorDefinitions="ENABLE_STL;DEBUG;DEBUG_LEAKS;HAVE_EXCEPTION;_WIN32_WCE=$(CEVER);UNDER_CE;$(PLATFORMDEFINES);WINCE;_DEBUG;_CONSOLE;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE;WIDCOMM_BLUETOOTH"
 				MinimalRebuild="true"
 				RuntimeLibrary="1"
 				StructMemberAlignment="0"

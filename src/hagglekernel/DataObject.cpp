@@ -139,16 +139,19 @@ DataObject::DataObject(const unsigned char *raw, const unsigned long len, Interf
                 }
 	} else {
 	
-                metadata = new XMLMetadata((char *)raw, len);
+                metadata = new XMLMetadata();
                 
-                if (!metadata || metadata->getName() != "Haggle") {
-                        if (metadata) {
-                                HAGGLE_ERR("Could not create metadata\n");
-                                delete metadata;
-                                metadata = NULL;
-                        }
-                        return;
-                }
+		if (!metadata) {
+			HAGGLE_ERR("Could not allocate new metadata\n");
+			return;
+		}
+
+		if (!metadata->initFromRaw(raw, len) || metadata->getName() != "Haggle") {
+			HAGGLE_ERR("Could not create metadata\n");
+			delete metadata;
+			metadata = NULL;
+			return;
+		}
 	}
         
 	if (parseMetadata() < 0) {
@@ -432,13 +435,22 @@ ssize_t DataObject::putData(void *_data, size_t len, size_t *remaining)
                                     && info->header[info->header_len - 1] == '>') {
                                         // Yes. Yay!
 
-                                        metadata = new XMLMetadata((const char *)info->header, info->header_len);
+                                        metadata = new XMLMetadata();
 
                                         if (!metadata) {
 						free_pDd_header(info);
                                                 HAGGLE_ERR("Caught XML exception\n");
                                                 return -1;
                                         }
+
+					if (!metadata->initFromRaw(info->header, info->header_len)) {
+						free_pDd_header(info);
+                                                HAGGLE_ERR("data object header not could not be parsed\n");
+                                                delete metadata;
+						metadata = NULL;
+                                                return -1;
+					}
+
                                         if (metadata->getName() != "Haggle") {
 						free_pDd_header(info);
                                                 HAGGLE_ERR("Metadata not recognized\n");

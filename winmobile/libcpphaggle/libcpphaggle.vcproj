@@ -994,7 +994,7 @@
 				ExecutionBucket="7"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..\src\utils&quot;;&quot;$(ProjectDir)\..\..\src\libcpphaggle\include&quot;"
-				PreprocessorDefinitions="DEBUG;_DEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;$(PLATFORMDEFINES);WINCE;DEBUG;_LIB;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
+				PreprocessorDefinitions="ENABLE_STL;DEBUG;_DEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;$(PLATFORMDEFINES);WINCE;DEBUG;_LIB;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
 				MinimalRebuild="true"
 				RuntimeLibrary="1"
 				StructMemberAlignment="0"

@@ -5,6 +5,9 @@
 
 char *XMLMetadata::initDoc(const char *raw, size_t len)
 {
+	if (doc)
+		xmlFreeDoc(doc);
+
         doc = xmlParseMemory(raw, len);
         
         if (!doc) {
@@ -15,12 +18,12 @@ char *XMLMetadata::initDoc(const char *raw, size_t len)
 }
 
 XMLMetadata::XMLMetadata(const string name, const string content, XMLMetadata *parent) :
-                Metadata(name, content, parent)
+	Metadata(name, content, parent), doc(NULL)
 {
 }
 
 XMLMetadata::XMLMetadata(const XMLMetadata& m) :
-                Metadata(m)
+                Metadata(m), doc(m.doc)
 {
 }
 #if defined(OS_WINDOWS)
@@ -28,30 +31,49 @@ XMLMetadata::XMLMetadata(const XMLMetadata& m) :
 // base member initialization list
 #pragma warning(disable : 4355)
 #endif
-XMLMetadata::XMLMetadata(const char *raw, size_t len) :
-                Metadata(initDoc(raw, len), "", this)
+XMLMetadata::XMLMetadata() : Metadata("", "", this), doc(NULL)
 {
-        if (!doc) {
-                return;
-        }
-
-        if (!parseXML(xmlDocGetRootElement(doc))) {
-                fprintf(stderr, "Parse XML failed\n");
-                xmlFreeDoc(doc);
-                return;
-        }
-        
-        xmlChar *content = xmlNodeGetContent(xmlDocGetRootElement(doc));
-        
-        if (content)
-                setContent((char *)content);
-        
-        xmlFree(content);
-        xmlFreeDoc(doc);
+	
 }
 
 XMLMetadata::~XMLMetadata()
 {
+	if (doc)
+		xmlFreeDoc(doc);
+}
+
+bool XMLMetadata::initFromRaw(const unsigned char *raw, size_t len)
+{
+	char *_name = initDoc((const char *)raw, len);
+
+	if (!_name) {
+		fprintf(stderr, "Could not create document\n");
+		if (doc)
+			xmlFreeDoc(doc);
+		doc = NULL;
+		return false;
+	}
+
+        if (!parseXML(xmlDocGetRootElement(doc))) {
+                fprintf(stderr, "Parse XML failed\n");
+                xmlFreeDoc(doc);
+		doc = NULL;
+                return false;
+        }
+
+	name = _name;
+        
+        xmlChar *content = xmlNodeGetContent(xmlDocGetRootElement(doc));
+        
+	if (content) {
+                setContent((char *)content);
+		xmlFree(content);
+	}
+
+        xmlFreeDoc(doc);
+	doc = NULL;
+
+	return true;
 }
 
 XMLMetadata *XMLMetadata::copy() const
@@ -123,12 +145,13 @@ ssize_t XMLMetadata::getRaw(unsigned char *buf, size_t len)
 
 	memset(buf, 0, len);
 
-        doc = createXMLDoc();
-
-        if (!doc)
+        if (!createXMLDoc())
                 return false;
 
 	xmlDocDumpFormatMemory(doc, &xml, &xmlLen, 1);
+
+        xmlFreeDoc(doc);
+	doc = NULL;
 
         if (xmlLen < 0)
                 return -2;
@@ -154,14 +177,13 @@ bool XMLMetadata::getRawAlloc(unsigned char **buf, size_t *len)
 
 	*len = 0;
 
-        doc = createXMLDoc();
-
-        if (!doc)
+        if (!createXMLDoc())
                 return false;
 
 	xmlDocDumpFormatMemory(doc, (xmlChar **) buf, &count, 1);
 	
         xmlFreeDoc(doc);
+	doc = NULL;
         
 	if (count <= 0)
                 return false;
@@ -192,12 +214,15 @@ bool XMLMetadata::createXML(xmlNodePtr xn)
         return true;
 }
 
-xmlDocPtr XMLMetadata::createXMLDoc()
+bool XMLMetadata::createXMLDoc()
 {
+	if (doc)
+		xmlFreeDoc(doc);
+
         doc = xmlNewDoc((xmlChar *)"1.0");
 
         if (!doc)
-                return NULL;
+                return false;
 
         xmlNodePtr xn = xmlNewNode(NULL, (xmlChar *)name.c_str());
         
@@ -206,8 +231,9 @@ xmlDocPtr XMLMetadata::createXMLDoc()
 
         xmlDocSetRootElement(doc, xn);
 
-        return doc;
+        return true;
 out_err:
         xmlFreeDoc(doc);
-        return NULL;
+        doc = NULL;
+	return false;
 }

@@ -964,7 +964,7 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 										   interest->getContent().c_str(), weight);
 								}
 							}
-							interest = interest->getNextMetadata();
+							interest = mc->getNextMetadata();
 						}
 						if (numattrs) {
 							updateApplicationInterests(appNode);
@@ -991,7 +991,7 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 								HAGGLE_DBG("Application %s removes interest %s:%s\n", 
 									   appNode->getName().c_str(), interest_name_str, interest->getContent().c_str());
 							}
-							interest = interest->getNextMetadata();
+							interest = mc->getNextMetadata();
 						}
 						if (numattrs) {
 							updateApplicationInterests(appNode);
@@ -1055,7 +1055,7 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 							if (event_type_str) {
 								addApplicationEventInterest(appNode, atoi(event_type_str));
 							}
-							event = event->getNextMetadata();
+							event = mc->getNextMetadata();
 						}
 					}
 					break;
@@ -1095,7 +1095,7 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 					HAGGLE_ERR("Data object from application has invalid control type=%s\n", type_str);
 					return;
 			}
-			mc = mc->getNextMetadata();
+			mc = m->getNextMetadata();
 		}
 	}
 }
