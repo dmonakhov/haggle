@@ -83,12 +83,25 @@ public:
 	};
 	struct haggle_beacon broadcast_packet;
 	
+	bool openBroadcastSocket();
 	ConnEthIfaceListElement(const InterfaceRef &_iface);
 	~ConnEthIfaceListElement();
 };
 
 ConnEthIfaceListElement::ConnEthIfaceListElement(const InterfaceRef &_iface) :
-	iface(_iface)
+	iface(_iface), broadcastSocket(INVALID_SOCKET)
+{
+	// Initialize:
+	memset(&broadcast_packet, 0, sizeof(broadcast_packet));
+}
+
+ConnEthIfaceListElement::~ConnEthIfaceListElement()
+{
+	if (broadcastSocket != INVALID_SOCKET)
+		CLOSE_SOCKET(broadcastSocket);
+}
+
+bool ConnEthIfaceListElement::openBroadcastSocket()
 {
 #if defined(ENABLE_IPv6)
 	struct sockaddr_in6 my_addr6;
@@ -99,17 +112,18 @@ ConnEthIfaceListElement::ConnEthIfaceListElement(const InterfaceRef &_iface) :
 	bool has_broadcast = false;
 	Address *addr;
 	int on = 1;
-	
+
+	if (broadcastSocket != INVALID_SOCKET)
+		return false;
+
 	addr = iface->getAddressByType(AddressType_EthMAC);
-#if HAVE_EXCEPTION
-	if (!addr)
-		throw Exception(0, "No ethernet MAC address in interface!");
-#endif
-	// Initialize:
-	memset(&broadcast_packet, 0, sizeof(broadcast_packet));
-	
+
+	if (!addr) {
+		HAGGLE_ERR("No ethernet MAC address in interface!");
+		return false;
+	}
 	memcpy(broadcast_packet.mac, addr->getRaw(), addr->getLength());
-	
+
 #if defined(ENABLE_IPv6)
 	// Prefer IPv6 addresses:
 	addr = iface->getAddressByType(AddressType_IPv6);
@@ -154,22 +168,21 @@ ConnEthIfaceListElement::ConnEthIfaceListElement(const InterfaceRef &_iface) :
 		}
 	}
 	
-#if HAVE_EXCEPTION
-	if(!has_broadcast)
-		throw Exception(0, "No broadcast address found\n");
-#endif
+	if (!has_broadcast) {
+		HAGGLE_ERR("No broadcast address found\n");
+		return false;
+	}
 	// Open a UDP socket:
 	broadcastSocket = socket(AF_INET, SOCK_DGRAM, 0);
 
-#if HAVE_EXCEPTION
-	if (broadcastSocket == INVALID_SOCKET)
-		throw Exception(0, "Could not open socket\n");
-#endif
+	if (broadcastSocket == INVALID_SOCKET) {
+		HAGGLE_ERR("Could not open socket\n");
+		return false;
+	}
+
 	if (setsockopt(broadcastSocket, SOL_SOCKET, SO_BROADCAST, (const char *) &on, sizeof(on)) == -1) {
 		CLOSE_SOCKET(broadcastSocket);
-#if HAVE_EXCEPTION
-		throw Exception(0, "Could not set broadcast socketopt\n");
-#endif
+		return false;
 	}
 #if defined(OS_LINUX)
 #if defined(OS_ANDROID)
@@ -181,23 +194,16 @@ ConnEthIfaceListElement::ConnEthIfaceListElement(const InterfaceRef &_iface) :
 #endif
 	if (setsockopt(broadcastSocket, SOL_SOCKET, SO_PRIORITY, (const char *) &priority, sizeof(priority)) == -1) {
 		CLOSE_SOCKET(broadcastSocket);
-#if HAVE_EXCEPTION
-		throw Exception(0, "Could not set SO_PRIORITY socketopt\n");
-#endif
+		return false;
 	}
 #endif
 	// Bind the socket to the address:
 	if (bind(broadcastSocket, my_addr, my_addr_len) == -1) {
 		CLOSE_SOCKET(broadcastSocket);
-#if HAVE_EXCEPTION
-		throw Exception(0, "Could not bind socket\n");
-#endif
+		return false;
 	}
-}
 
-ConnEthIfaceListElement::~ConnEthIfaceListElement()
-{
-	CLOSE_SOCKET(broadcastSocket);
+	return true;
 }
 
 ConnectivityEthernet::ConnectivityEthernet(ConnectivityManager * m, const InterfaceRef& iface) :
@@ -291,13 +297,18 @@ bool ConnectivityEthernet::handleInterfaceUp(const InterfaceRef &iface)
         }
 	
 	// Create a new element to hold this interface:
-
 	new_elem = new ConnEthIfaceListElement(iface);
 
-	if (new_elem != NULL) {
-		// Insert into list:
-		ifaceList.push_front(new_elem);
+	if (!new_elem)
+		return false;
+
+	if (!new_elem->openBroadcastSocket()) {
+		delete new_elem;
+		return false;
 	}
+
+	// Insert into list:
+	ifaceList.push_front(new_elem);
 	
 	return true;
 }
