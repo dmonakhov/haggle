@@ -322,19 +322,19 @@ JNIEXPORT jlong JNICALL Java_org_haggle_DataObject_getThumbnail(JNIEnv *env, job
  */
 JNIEXPORT jbyteArray JNICALL Java_org_haggle_DataObject_getRaw(JNIEnv *env, jobject obj)
 {
-        char *raw;
+        unsigned char *raw = NULL;
         jbyteArray jbarr;
-        jsize len;
+        size_t len;
 
-        raw = haggle_dataobject_get_raw((haggle_dobj_t *)get_native_handle(env, JCLASS_DATAOBJECT, obj));
-        if (!raw)
+        int res = haggle_dataobject_get_raw_alloc((haggle_dobj_t *)get_native_handle(env, JCLASS_DATAOBJECT, obj), &raw, &len);
+        if (res != HAGGLE_NO_ERROR || !raw)
                 return NULL;
-
-        len = (jsize)strlen(raw);
 
         jbarr = (*env)->NewByteArray(env, len);
 
         (*env)->SetByteArrayRegion(env, jbarr, 0, len, (jbyte *)raw);
+
+        free(raw);
 
         return jbarr;
 }
