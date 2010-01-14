@@ -32,13 +32,11 @@
 class ConnectivityBluetooth : public ConnectivityBluetoothBase
 {
 private:
-	InterfaceRef rootInterface;
         ULONG sdpRecordHandle;
         friend void bluetoothDiscovery(ConnectivityBluetooth *conn);
         bool run();
         void hookCleanup();
 public:
-	virtual void handleInterfaceDown(const InterfaceRef &iface);
         ConnectivityBluetooth(ConnectivityManager *m, const InterfaceRef& iface);
         ~ConnectivityBluetooth();
 };

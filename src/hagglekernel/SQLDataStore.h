@@ -44,14 +44,10 @@ class SQLDataStore;
 class SQLDataStore : public DataStore
 {
 private:
-#ifdef OS_WINDOWS_MOBILE
-	// On Windows mobile we use a static memory buffer
-	// for memory allocations
-#define MEMBUF_SIZE 1024
-	//char membuffer[MEMBUF_SIZE];
-#endif 
-	Metadata *metadata;
 	sqlite3 *db; 
+	bool recreate;
+	string filepath;
+
 	int cleanupDataStore();
 	int createTables();
 	int sqlQuery(const char *sql_cmd);
@@ -119,11 +115,7 @@ public:
 	SQLDataStore(const bool recreate = false, const string = DEFAULT_DATASTORE_FILEPATH, const string name = "SQLDataStore");
 	~SQLDataStore();
 
-	class SQLException : public DSException
-	{
-	public:
-		SQLException(const int err = 0, const char *msg = "SQLError", ...) : DSException(err, msg) {}
-	};
+	bool init();
 };
 
 #endif /* _SQLDATASTORE_H */

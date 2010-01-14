@@ -418,7 +418,7 @@ static int findHaggleService(BT_ADDR *pb)
 	return found;
 }
 
-static void btAddr2Mac(unsigned __int64 btAddr, char *mac)
+static void btAddr2Mac(unsigned __int64 btAddr, unsigned char *mac)
 {
 	for (int i = (BT_ALEN - 1); i >= 0; i--) {
 		mac[i] = (UINT8) ((unsigned __int64) 0xff & btAddr);
@@ -465,14 +465,14 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 		return;
 	}
 	// loop the results
-	while (true) {
+	while (!conn->shouldExit()) {
 		DWORD dwSize = sizeof(buf);
 		LPWSAQUERYSET pwsaResults = (LPWSAQUERYSET) buf;
 		ZeroMemory(pwsaResults, sizeof(WSAQUERYSET));
 		pwsaResults->dwSize = sizeof(WSAQUERYSET);
 		pwsaResults->dwNameSpace = NS_BTH;
 		pwsaResults->lpBlob = NULL;
-		char macaddr[BT_ALEN];
+		unsigned char macaddr[BT_ALEN];
 		string name = "bluetooth device";
 		bool report_interface = false;
 		InterfaceStatus_t status;
@@ -497,7 +497,7 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 		}
 
 		btAddr2Mac(btAddr, macaddr);
-		Address addr(AddressType_BTMAC, (unsigned char *) macaddr);
+		Address addr(AddressType_BTMAC, macaddr);
 
 		status = conn->is_known_interface(IFTYPE_BLUETOOTH, macaddr);
 

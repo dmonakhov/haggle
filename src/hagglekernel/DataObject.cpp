@@ -110,12 +110,7 @@ DataObject::DataObject(InterfaceRef _localIface, InterfaceRef _remoteIface, cons
                 persistent(true), duplicate(false), isNodeDesc(false), isThisNodeDesc(false),
                 putData_data(NULL), hasDataHash(false), dataState(DATA_STATE_NO_DATA)
 {
-	putData_data = (void *) create_pDd();
-
-#if HAVE_EXCEPTION
-	if (putData_data == NULL)
-		throw DataObjectException(-1, "Could not allocate memory");
-#endif
+	putData_data = create_pDd();
 }
 
 DataObject::DataObject(const unsigned char *raw, const unsigned long len, InterfaceRef _localIface, InterfaceRef _remoteIface, const string _storagepath) : 
@@ -157,9 +152,6 @@ DataObject::DataObject(const unsigned char *raw, const unsigned long len, Interf
 	if (parseMetadata() < 0) {
 		delete metadata;
 		metadata = NULL;
-#if HAVE_EXCEPTION
-		throw DataObjectException(-1, "Could not parse metadata");
-#endif
 	}
 }
 
@@ -220,7 +212,7 @@ DataObject::~DataObject()
 
 DataObject *DataObject::copy() const 
 {
-		return new DataObject(*this);
+	return new DataObject(*this);
 }
 
 bool DataObject::isValid() const
@@ -439,7 +431,7 @@ ssize_t DataObject::putData(void *_data, size_t len, size_t *remaining)
 
                                         if (!metadata) {
 						free_pDd_header(info);
-                                                HAGGLE_ERR("Caught XML exception\n");
+                                                HAGGLE_ERR("Could not create metadata\n");
                                                 return -1;
                                         }
 
@@ -641,9 +633,7 @@ fail_header:
                 fclose(fp);
 fail_open:
         // Failed!
-#if HAVE_EXCEPTION
-        throw Exception(0, (char *) "Unable to start getting data!\n");
-#endif
+        HAGGLE_ERR("Unable to start getting data!\n");
         return;
 }
 

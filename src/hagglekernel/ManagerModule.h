@@ -76,7 +76,7 @@ public:
 		LeakMonitor(LEAK_TYPE_MANAGERMODULE),
 #endif
 		Runnable(name), h(NULL), manager(m) {}
-        ~ManagerModule() { if(h) delete h; }
+        ~ManagerModule() { if (h) delete h; }
         /**
         	Returns the haggle kernel reference the manager has. Or NULL if there
         	was no manager reference.
@@ -112,14 +112,15 @@ public:
 		if (getKernel())
 			getKernel()->addEvent(e);
 	}
+	/**
+	  The init() function is used to initialize a manager module before it
+	  is started. The function should be overridden in those modules that
+	  need to do initializations which can fail (i.e., opening sockets, etc.).
+	  Such initializations are not suitable to perform in the constructor.
 
-	class ModuleException : public Exception
-        {
-        public:
-                ModuleException(const int err = 0,
-				const char* data = "ManagerModule Error") :
-			Exception(err, data) {}
-        };
+	  Returns: true if the initialization is successful, or false otherwise.
+	*/
+	virtual bool init() { return true; }
 };
 
 #endif /* _MANAGERMODULE_H */

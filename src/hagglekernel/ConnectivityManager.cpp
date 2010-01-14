@@ -42,26 +42,49 @@
 #endif
 
 ConnectivityManager::ConnectivityManager(HaggleKernel * _haggle) :
-                Manager("ConnectivityManager", _haggle), blMutex("blacklist"),
-                connMutex("ConnRegistry"), ifMutex("ifRegistry")
+                Manager("ConnectivityManager", _haggle)
 {
-#define __CLASS__ ConnectivityManager
-	CM_DBG("Starting up\n");
+}
 
-	setEventHandler(EVENT_TYPE_DATAOBJECT_RECEIVED, onReceivedDataObject);
-	setEventHandler(EVENT_TYPE_RESOURCE_POLICY_NEW, onNewPolicy);
+bool ConnectivityManager::init_derived()
+{
+	int ret;
+
+#define __CLASS__ ConnectivityManager
+	CM_DBG("Initializing\n");
+	
+	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_RECEIVED, onReceivedDataObject);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event interest\n");
+		return false;
+	}
+
+	ret = setEventHandler(EVENT_TYPE_RESOURCE_POLICY_NEW, onNewPolicy);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event interest\n");
+		return false;
+	}
 #ifdef DEBUG
-	setEventHandler(EVENT_TYPE_DEBUG_CMD, onDebugCmdEvent);
+	ret = setEventHandler(EVENT_TYPE_DEBUG_CMD, onDebugCmdEvent);
+	
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event interest\n");
+		return false;
+	}
 #endif
 	
 	deleteConnectivityEType = registerEventType("ConnectivitManager Delete Connectivity Event", onDeleteConnectivity);
 
-#if HAVE_EXCEPTION
-	if (deleteConnectivityEType < 0)
-		throw ConnectivityException(deleteConnectivityEType, "Could not register connectivity event type...");
-#endif
-	
+	if (deleteConnectivityEType < 0) {
+		HAGGLE_ERR("Could not register connectivity event type...\n");
+		return false;
+	}
+
 	registerEventTypeForFilter(blacklistFilterEvent, "Blacklist filter", onBlacklistDataObject, "Connectivity=*");
+
+	return true;
 }
 
 /*
@@ -214,17 +237,17 @@ void ConnectivityManager::onBlacklistDataObject(Event *e)
 					struct ether_addr etha;
 
 					if (ether_aton_r(mac.c_str(), &etha)) {
-						if (isBlacklisted(iftype, (char *)&etha)) {
+						if (isBlacklisted(iftype, (unsigned char *)&etha)) {
 							if (act != 1) {
 								HAGGLE_DBG("Removing interface [%s - %s] from blacklist\n", type, mac.c_str());
-								removeFromBlacklist(iftype, (char *)&etha);
+								removeFromBlacklist(iftype, (unsigned char *)&etha);
 							} else {
 								HAGGLE_DBG("NOT removing interface [%s - %s] from blacklist (it's not there)\n", type, mac.c_str());
 							}
 						} else {
 							if (act != 2) {
 								HAGGLE_DBG("Blacklisting interface [%s - %s]\n", type, mac.c_str());
-								addToBlacklist(iftype, (char *)&etha);
+								addToBlacklist(iftype, (unsigned char *)&etha);
 							} else {
 								HAGGLE_DBG("NOT blacklisting interface [%s - %s] - already blacklisted\n", type, mac.c_str());
 							}
@@ -237,7 +260,7 @@ void ConnectivityManager::onBlacklistDataObject(Event *e)
 	}
 }
 
-void ConnectivityManager::addToBlacklist(InterfaceType_t type, const void *identifier)
+void ConnectivityManager::addToBlacklist(InterfaceType_t type, const unsigned char *identifier)
 {
         if (isBlacklisted(type, identifier))
                 return;
@@ -252,25 +275,25 @@ void ConnectivityManager::addToBlacklist(InterfaceType_t type, const void *ident
         blMutex.unlock();
 }
 
-bool ConnectivityManager::isBlacklisted(InterfaceType_t type, const void *identifier)
+bool ConnectivityManager::isBlacklisted(InterfaceType_t type, const unsigned char *identifier)
 {
 	Mutex::AutoLocker l(blMutex);
 
         for (List<Interface *>::iterator it = blacklist.begin(); it != blacklist.end(); it++) {
                 if ((*it)->getType() == type && 
-                    memcmp((*it)->getRawIdentifier(), identifier, (*it)->getIdentifierLen()) == 0)
+                    memcmp((*it)->getIdentifier(), identifier, (*it)->getIdentifierLen()) == 0)
                         return true;
         }
         return false;
 }
 
-bool ConnectivityManager::removeFromBlacklist(InterfaceType_t type, const void *identifier)
+bool ConnectivityManager::removeFromBlacklist(InterfaceType_t type, const unsigned char *identifier)
 {
 	Mutex::AutoLocker l(blMutex);
 
         for (List<Interface *>::iterator it = blacklist.begin(); it != blacklist.end(); it++) {
                 if ((*it)->getType() == type && 
-                    memcmp((*it)->getRawIdentifier(), identifier, (*it)->getIdentifierLen()) == 0) {
+                    memcmp((*it)->getIdentifier(), identifier, (*it)->getIdentifierLen()) == 0) {
                         Interface *iface = *it;
                         blacklist.erase(it);
                         delete iface;
@@ -370,8 +393,9 @@ void ConnectivityManager::spawn_connectivity(const InterfaceRef& iface)
 	}
 	
 	if (conn) {
-		// Start this connectivity:
-		if (conn->startDiscovery()) {
+		// Call init function to initialize the connectivity
+		// and then start it:
+		if (conn->init() && conn->startDiscovery()) {
 			// Tell the connectivity what the current resource policy is:
 			conn->setPolicy(kernel->getCurrentPolicy());
 			// Success! Store the connectivity:
@@ -402,7 +426,7 @@ InterfaceStatus_t ConnectivityManager::report_known_interface(const Interface& i
 	return (*p.first).second.isHaggle ? INTERFACE_STATUS_HAGGLE : INTERFACE_STATUS_OTHER;
 }
 
-InterfaceStatus_t ConnectivityManager::report_known_interface(const InterfaceType_t type, const char *identifier, bool isHaggle)
+InterfaceStatus_t ConnectivityManager::report_known_interface(const InterfaceType_t type, const unsigned char *identifier, bool isHaggle)
 {
 	Interface iface(type, identifier);
 
@@ -429,7 +453,7 @@ InterfaceStatus_t ConnectivityManager::report_interface(Interface *found, const 
 {
 	bool was_added;
 	
-        if (!found || isBlacklisted(found->getType(), found->getRawIdentifier()))
+        if (!found || isBlacklisted(found->getType(), found->getIdentifier()))
                 return INTERFACE_STATUS_NONE;
 
 	InterfaceRef iface = kernel->getInterfaceStore()->addupdate(found, found_by, policy, &was_added);
@@ -458,7 +482,7 @@ InterfaceStatus_t ConnectivityManager::report_interface(InterfaceRef& found, con
 {
 	bool was_added;
 	
-        if (!found || isBlacklisted(found->getType(), found->getRawIdentifier()))
+        if (!found || isBlacklisted(found->getType(), found->getIdentifier()))
                 return INTERFACE_STATUS_NONE;
 
 	InterfaceRef iface = kernel->getInterfaceStore()->addupdate(found, found_by, policy, &was_added);
@@ -520,7 +544,7 @@ void ConnectivityManager::onReceivedDataObject(Event *e)
 			   remoteIface->getIdentifierStr());
 
 		// Check whether this interface is already registered or not
-		if (!have_interface(remoteIface->getType(), remoteIface->getRawIdentifier())) {
+		if (!have_interface(remoteIface->getType(), remoteIface->getIdentifier())) {
 			remoteIface->setFlag(IFFLAG_SNOOPED);
 			if (remoteIface->getType() == IFTYPE_BLUETOOTH)
 				report_interface(remoteIface, localIface, new ConnectivityInterfacePolicyTTL(2));
@@ -618,7 +642,7 @@ void ConnectivityManager::delete_interface(Interface *iface)
 	}
 }
 
-void ConnectivityManager::delete_interface(const InterfaceType_t type, const char *identifier)
+void ConnectivityManager::delete_interface(const InterfaceType_t type, const unsigned char *identifier)
 {
 	InterfaceRefList dead;
         
@@ -645,7 +669,7 @@ InterfaceStatus_t ConnectivityManager::have_interface(const Interface *iface)
 	return kernel->getInterfaceStore()->stored(*iface) ? INTERFACE_STATUS_HAGGLE : INTERFACE_STATUS_NONE;
 }
 
-InterfaceStatus_t ConnectivityManager::have_interface(const InterfaceType_t type, const char *identifier)
+InterfaceStatus_t ConnectivityManager::have_interface(const InterfaceType_t type, const unsigned char *identifier)
 {
 	return kernel->getInterfaceStore()->stored(type, identifier) ? INTERFACE_STATUS_HAGGLE : INTERFACE_STATUS_NONE;
 }
@@ -687,7 +711,7 @@ InterfaceStatus_t ConnectivityManager::is_known_interface(const Interface *iface
 	return (*it).second.isHaggle ? INTERFACE_STATUS_HAGGLE : INTERFACE_STATUS_OTHER;
 }
 
-InterfaceStatus_t ConnectivityManager::is_known_interface(const InterfaceType_t type, const char *identifier)
+InterfaceStatus_t ConnectivityManager::is_known_interface(const InterfaceType_t type, const unsigned char *identifier)
 {
 	Interface iface(type, identifier);
 	

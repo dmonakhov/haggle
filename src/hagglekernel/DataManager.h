@@ -80,7 +80,7 @@ class DataManager : public Manager
 	unsigned int agingMaxAge;
 	unsigned int agingPeriod;
 public:
-        DataManager(HaggleKernel *_haggle = haggleKernel, const bool setCreateTimeOnBloomfilterUpdate = false);
+        DataManager(HaggleKernel *_haggle = haggleKernel, bool setCreateTimeOnBloomfilterUpdate = false);
         ~DataManager();
         void onGetLocalBF(Event *e);
 private:
@@ -99,11 +99,7 @@ private:
 #if defined(ENABLE_METADAPARSER)
         bool onParseMetadata(Metadata *m);
 #endif
-        class DMException : public ManagerException
-        {
-            public:
-                DMException(const int err = 0, const char* data = "Data manager Error") : ManagerException(err, data) {}
-        };
+	bool init_derived();
 };
 
 

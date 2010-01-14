@@ -33,23 +33,24 @@ class ProtocolUDP : public ProtocolSocket
         unsigned short port;
         string ipAddress;
         ProtocolEvent sendData(const void *buf, size_t buflen, const int flags, size_t *bytes);
-        ProtocolEvent receiveData(void *buf, size_t buflen, struct sockaddr *peer_addr, const int flags, size_t *bytes);
-        ProtocolEvent receiveDataObject();
+	ProtocolEvent receiveData(void *buf, size_t buflen, struct sockaddr *peer_addr, const int flags, size_t *bytes);
+	ProtocolEvent receiveDataObject();
 	void inline init(const struct sockaddr *saddr, socklen_t addrlen);
 public:
-        ProtocolUDP(const InterfaceRef& _localIface = NULL, unsigned short _port = HAGGLE_SERVICE_DEFAULT_PORT, ProtocolManager *m = NULL);
-        ProtocolUDP(const char *localIP, unsigned short _port = HAGGLE_SERVICE_DEFAULT_PORT, ProtocolManager *m = NULL);
-        ~ProtocolUDP();
-		bool isForInterface(const InterfaceRef& iface);
-		bool isSender();
-		bool isReceiver();
-        bool sendDataObject(const DataObjectRef& dObj, const NodeRef& peer, const InterfaceRef& _peerIface);
+	ProtocolUDP(const InterfaceRef& _localIface = NULL, unsigned short _port = HAGGLE_SERVICE_DEFAULT_PORT, ProtocolManager *m = NULL);
+	ProtocolUDP(const char *localIP, unsigned short _port = HAGGLE_SERVICE_DEFAULT_PORT, ProtocolManager *m = NULL);
+	~ProtocolUDP();
+	bool init();
+	bool isForInterface(const InterfaceRef& iface);
+	bool isSender();
+	bool isReceiver();
+	bool sendDataObject(const DataObjectRef& dObj, const NodeRef& peer, const InterfaceRef& _peerIface);
 
-        const unsigned short getPort() const {
-                return port;
-        }
-        const char* getAddress() const {
-                return ipAddress.c_str();
+	const unsigned short getPort() const {
+		return port;
+	}
+	const char* getAddress() const {
+		return ipAddress.c_str();
         }
 };
 

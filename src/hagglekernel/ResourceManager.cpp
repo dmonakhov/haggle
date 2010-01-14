@@ -18,35 +18,39 @@
 ResourceManager::ResourceManager(HaggleKernel *kernel) : 
 	Manager("ResourceManager", kernel), resMon(NULL)
 {
-#define __CLASS__ ResourceManager
 
-	resMon = new ResourceMonitor(this);
-
-	if (!resMon) {
-#if HAVE_EXCEPTION
-		throw ManagerException(-1, "Could not start resource monitor\n");
-#else 
-                return;
-#endif
-        }
-
-	resMon->start();
-
-	onCheckStatusCallback = newEventCallback(onCheckStatusEvent);
-
-	if (!onCheckStatusCallback) {
-#if HAVE_EXCEPTION
-		throw ManagerException(-1, "Could not create onCheckStatusCallback");
-#endif
-        }
-	
-	HAGGLE_DBG("Started Resource monitor\n");
 }
 
 ResourceManager::~ResourceManager()
 {
 	delete resMon;
 	delete onCheckStatusCallback;
+}
+
+bool ResourceManager::init_derived()
+{
+#define __CLASS__ ResourceManager
+
+	resMon = new ResourceMonitor(this);
+
+	if (!resMon || !resMon->init()) {
+		HAGGLE_ERR("Could not initialize resource monitor\n");
+                return false;
+        }
+	if (!resMon->start()) {
+		HAGGLE_ERR("Could not start resource monitor\n");
+                return false;
+        }
+	onCheckStatusCallback = newEventCallback(onCheckStatusEvent);
+
+	if (!onCheckStatusCallback) {
+		HAGGLE_ERR("Could not create onCheckStatusCallback");
+		return false;
+        }
+	
+	HAGGLE_DBG("Initialized resource manager\n");
+
+	return true;
 }
 
 void ResourceManager::onStartup()

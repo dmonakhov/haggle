@@ -70,12 +70,8 @@ Event::Event(EventType _type, const DataObjectRef& _dObjRef, double _delay) :
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
-		HAGGLE_DBG("ERROR: trying to allocate an invalid event type!\n");
-#if HAVE_EXCEPTION
-		throw EventException(type, "Unknown event type");
-#else
+		HAGGLE_ERR("ERROR: trying to allocate an invalid event type!\n");
                 return;
-#endif
 	}
 	if (dObjRef) {
 		if (EVENT_TYPE_PRIVATE(type) || 
@@ -93,18 +89,10 @@ Event::Event(EventType _type, const DataObjectRef& _dObjRef, double _delay) :
 			// created with the (..., DataObjectRefList, ...) constructor
 			dObjRef = NULL;
 		} else {
-			HAGGLE_DBG("ERROR: Event type %s does not accept a data object as data!\n",
+			HAGGLE_ERR("ERROR: Event type %s does not accept a data object as data!\n",
 				eventNames[type]);
-#if HAVE_EXCEPTION
-			throw EventException(type, "Event type %s does not accept a data object as data!");
-#endif
 		}
 	}
-	// Filters can have data and they are private
-	/*if (EVENT_TYPE_PRIVATE(type) && data) {
-	   HAGGLE_DBG("Private events currently cannot have data\n");
-	   throw EventException(type, "Private event type with data - Illegal!");
-	   } */
 }
 
 Event::Event(EventType _type, const InterfaceRef& _ifaceRef, double _delay) : 
@@ -120,11 +108,7 @@ Event::Event(EventType _type, const InterfaceRef& _ifaceRef, double _delay) :
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
-#if HAVE_EXCEPTION
-		throw EventException(type, "Unknown event type");
-#else
                 return;
-#endif
         }
 
 	if (ifaceRef) {
@@ -134,18 +118,10 @@ Event::Event(EventType _type, const InterfaceRef& _ifaceRef, double _delay) :
 		    type == EVENT_TYPE_NEIGHBOR_INTERFACE_UP || 
 		    type == EVENT_TYPE_NEIGHBOR_INTERFACE_DOWN) {
 		} else {
-			HAGGLE_DBG("ERROR: Event type %s does not accept an interface as data!\n",
+			HAGGLE_ERR("ERROR: Event type %s does not accept an interface as data!\n",
 				eventNames[type]);
-#if HAVE_EXCEPTION
-			throw EventException(type, "Event type %s does not accept an interface as data!");
-#endif
 		}
 	}
-	// Filters can have data and they are private
-	/*if (EVENT_TYPE_PRIVATE(type) && data) {
-	   HAGGLE_DBG("Private events currently cannot have data\n");
-	   throw EventException(type, "Private event type with data - Illegal!");
-	   } */
 }
 
 Event::Event(EventType _type, const NodeRef& _nodeRef, double _delay) : 
@@ -161,29 +137,17 @@ Event::Event(EventType _type, const NodeRef& _nodeRef, double _delay) :
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
-#if HAVE_EXCEPTION
-		throw EventException(type, "Unknown event type");
-#else
                 return;
-#endif
         }
 	if (nodeRef) {
 		if (EVENT_TYPE_PRIVATE(type) || 
 		    type == EVENT_TYPE_NODE_CONTACT_NEW || 
 		    type == EVENT_TYPE_NODE_CONTACT_END) {
 		} else {
-			HAGGLE_DBG("ERROR: Event type %s does not accept a node as data!\n",
+			HAGGLE_ERR("ERROR: Event type %s does not accept a node as data!\n",
 				eventNames[type]);
-#if HAVE_EXCEPTION
-			throw EventException(type, "Event type %s does not accept a node as data!");
-#endif
 		}
 	}
-	// Filters can have data and they are private
-	/*if (EVENT_TYPE_PRIVATE(type) && data) {
-	   HAGGLE_DBG("Private events currently cannot have data\n");
-	   throw EventException(type, "Private event type with data - Illegal!");
-	   } */
 }
 Event::Event(EventType _type, const PolicyRef& _policyRef, double _delay) : 
 #ifdef DEBUG_LEAKS
@@ -198,22 +162,15 @@ Event::Event(EventType _type, const PolicyRef& _policyRef, double _delay) :
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
-#if HAVE_EXCEPTION
-		throw EventException(type, "Unknown event type");
-#else
                 return;
-#endif
         }
 
 	if (policyRef) {
 		if (EVENT_TYPE_PRIVATE(type) || 
 		    type == EVENT_TYPE_RESOURCE_POLICY_NEW) {
 		} else {
-			HAGGLE_DBG("ERROR: Event type %s does not accept a policy as data!\n",
+			HAGGLE_ERR("ERROR: Event type %s does not accept a policy as data!\n",
 				eventNames[type]);
-#if HAVE_EXCEPTION
-			throw EventException(type, "Event type %s does not accept a policy as data!");
-#endif
 		}
 	}
 }
@@ -232,11 +189,7 @@ Event::Event(EventType _type, const DataObjectRef&  _dObjRef, const NodeRef& _no
 	flags(_flags)
 {
 	if (!EVENT_TYPE(type)) {
-#if HAVE_EXCEPTION
-		throw EventException(type, "Unknown event type");
-#else
                 return;
-#endif
         }
 	if (doesHaveData) {
 		if (EVENT_TYPE_PRIVATE(type) || 
@@ -254,11 +207,8 @@ Event::Event(EventType _type, const DataObjectRef&  _dObjRef, const NodeRef& _no
 			// created with the (..., DataObject, NodeRefList, ...) constructor
 			nodeRef = NULL;
 		} else {
-			HAGGLE_DBG("ERROR: Event type %s does not accept a data object and a node as data!\n",
+			HAGGLE_ERR("ERROR: Event type %s does not accept a data object and a node as data!\n",
 				eventNames[type]);
-#if HAVE_EXCEPTION
-			throw EventException(type, "Event type %s does not accept a data object and a node as data!");
-#endif
 		}
 	}
 }
@@ -278,21 +228,14 @@ Event::Event(const DebugCmdRef& _dbgCmdRef, double _delay) :
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
-#if HAVE_EXCEPTION
-		throw EventException(type, "Unknown event type");
-#else
                 return;
-#endif
         }
 
 	if (dbgCmdRef) {
 		if (EVENT_TYPE_PRIVATE(type) || 
 		    type == EVENT_TYPE_DEBUG_CMD) {
 		} else {
-			HAGGLE_DBG("ERROR: Event type %s does not accept a debug command as data!\n",eventNames[type]);
-#if HAVE_EXCEPTION
-			throw EventException(type, "Event type %s does not accept a debug command as data!");
-#endif
+			HAGGLE_ERR("ERROR: Event type %s does not accept a debug command as data!\n",eventNames[type]);
 		}
 	}
 }
@@ -313,22 +256,15 @@ Event::Event(EventType _type, const NodeRef& _nodeRef, const NodeRefList& _nodes
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
-#if HAVE_EXCEPTION
-		throw EventException(type, "Unknown event type");
-#else
                 return;
-#endif
         }
 	if (nodeRef && !(nodes.empty())) {
 		if (EVENT_TYPE_PRIVATE(type) || 
 		    type == EVENT_TYPE_TARGET_NODES || 
 		    type == EVENT_TYPE_NODE_UPDATED) {
 		} else {
-			HAGGLE_DBG("ERROR: Event type %s does not accept a node and a node list as data!\n",
+			HAGGLE_ERR("ERROR: Event type %s does not accept a node and a node list as data!\n",
 				eventNames[type]);
-#if HAVE_EXCEPTION
-			throw EventException(type, "Event type %s does not accept a node and a node list as data!");
-#endif
 		}
 	}
 }
@@ -347,21 +283,14 @@ Event::Event(EventType _type, const DataObjectRef& _dObjRef, const NodeRefList& 
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
-#if HAVE_EXCEPTION
-		throw EventException(type, "Unknown event type");
-#else
                 return;
-#endif
         }
 	if (dObjRef && !(nodes.empty())) {
 		if (EVENT_TYPE_PRIVATE(type) ||
 			type == EVENT_TYPE_DATAOBJECT_SEND) {
 		} else {
-			HAGGLE_DBG("ERROR: Event type %s does not accept a data object and a node list as data!\n",
+			HAGGLE_ERR("ERROR: Event type %s does not accept a data object and a node list as data!\n",
 				eventNames[type]);
-#if HAVE_EXCEPTION
-			throw EventException(type, "Event type %s does not accept a data object and a node list as data!");
-#endif
 		}
 	}
 }
@@ -381,21 +310,14 @@ Event::Event(EventType _type, const DataObjectRef& _dObjRef, const NodeRef& _nod
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
-#if HAVE_EXCEPTION
-		throw EventException(type, "Unknown event type");
-#else
                 return;
-#endif
         }
 	if (dObjRef && !(nodes.empty())) {
 		if (EVENT_TYPE_PRIVATE(type) || 
 		    type == EVENT_TYPE_DELEGATE_NODES) {
 		} else {
-			HAGGLE_DBG("ERROR: Event type %s does not accept a data object, a node and a node list as data!\n",
+			HAGGLE_ERR("ERROR: Event type %s does not accept a data object, a node and a node list as data!\n",
 				eventNames[type]);
-#if HAVE_EXCEPTION
-			throw EventException(type, "Event type %s does not accept a data object, a node and a node list as data!");
-#endif
 		}
 	}
 }
@@ -413,22 +335,15 @@ Event::Event(EventType _type, const DataObjectRefList& _dObjs, double _delay) :
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
-		HAGGLE_DBG("ERROR: trying to allocate an invalid event type!\n");
-#if HAVE_EXCEPTION
-		throw EventException(type, "Unknown event type");
-#else
+		HAGGLE_ERR("ERROR: trying to allocate an invalid event type!\n");
                 return;
-#endif
 	}
 	if (dObjRef) {
 		if (EVENT_TYPE_PRIVATE(type) || 
 		    type == EVENT_TYPE_DATAOBJECT_DELETED) {
 		} else {
-			HAGGLE_DBG("ERROR: Event type %s does not accept a list of data objects as data!\n",
+			HAGGLE_ERR("ERROR: Event type %s does not accept a list of data objects as data!\n",
 				eventNames[type]);
-#if HAVE_EXCEPTION
-			throw EventException(type, "Event type %s does not accept a list of data objects as data!");
-#endif
 		}
 	}
 }
@@ -445,11 +360,7 @@ Event::Event(EventType _type, void *_data, double _delay) :
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
-#if HAVE_EXCEPTION
-		throw EventException(type, "Unknown event type");
-#else
                 return;
-#endif
         }
 
 	if (data != NULL) {
@@ -459,144 +370,71 @@ Event::Event(EventType _type, void *_data, double _delay) :
 		    type == EVENT_TYPE_PREPARE_SHUTDOWN || 
 		    type == EVENT_TYPE_SHUTDOWN) {
 		} else {
-			switch(type)
-			{
+			switch(type) {
 				case EVENT_TYPE_DATAOBJECT_RECEIVED:
 				case EVENT_TYPE_DATAOBJECT_VERIFIED:
 				case EVENT_TYPE_DATAOBJECT_NEW:
 				case EVENT_TYPE_DATAOBJECT_DELETED:
 				case EVENT_TYPE_DATAOBJECT_INCOMING:
-					HAGGLE_DBG(
-						"ERROR: Event type %s does not accept void * as data - "
+					HAGGLE_ERR("ERROR: Event type %s does not accept void * as data - "
 						"only a data object!\n",
 						eventNames[type]);
-#if HAVE_EXCEPTION
-					throw 
-						EventException(
-							type, 
-							"Event type %s does not accept void * as data - "
-							"only a data object!");
-#endif
 				break;
 				
 				case EVENT_TYPE_DATAOBJECT_FORWARD:
 				case EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL:
 				case EVENT_TYPE_DATAOBJECT_SEND_FAILURE:
-					HAGGLE_DBG(
-						"ERROR: Event type %s does not accept void * as data - "
+					HAGGLE_ERR("ERROR: Event type %s does not accept void * as data - "
 						"only a data object and a node!\n",
 						eventNames[type]);
-#if HAVE_EXCEPTION
-					throw 
-						EventException(
-							type, 
-							"Event type %s does not accept void * as data - "
-							"only a data object and a node!");
-#endif
 				break;
 				
 				case EVENT_TYPE_TARGET_NODES:
 				case EVENT_TYPE_NODE_UPDATED:
-					HAGGLE_DBG(
-						"ERROR: Event type %s does not accept void * as data - "
+					HAGGLE_ERR("ERROR: Event type %s does not accept void * as data - "
 						"only a node and a node list!\n",
 						eventNames[type]);
-#if HAVE_EXCEPTION
-					throw 
-						EventException(
-							type, 
-							"Event type %s does not accept void * as data - "
-							"only a node and a node list!");
-#endif
 				break;
 				
 				case EVENT_TYPE_DATAOBJECT_SEND:
-					HAGGLE_DBG(
-						"ERROR: Event type %s does not accept void * as data - "
+					HAGGLE_ERR("ERROR: Event type %s does not accept void * as data - "
 						"only a data object and a node list!\n",
 						eventNames[type]);
-#if HAVE_EXCEPTION
-					throw 
-						EventException(
-							type, 
-							"Event type %s does not accept void * as data - "
-							"only a data object and a node list!");
-#endif
 				break;
 				
 				case EVENT_TYPE_DELEGATE_NODES:
-					HAGGLE_DBG(
-						"ERROR: Event type %s does not accept void * as data - "
+					HAGGLE_ERR("ERROR: Event type %s does not accept void * as data - "
 						"only a data object, a node and a node list!\n",
 						eventNames[type]);
-#if HAVE_EXCEPTION
-					throw 
-						EventException(
-							type, 
-							"Event type %s does not accept void * as data - "
-							"only a data object, a node and a node list!");
-#endif
 				break;
 				
 				case EVENT_TYPE_LOCAL_INTERFACE_UP:
 				case EVENT_TYPE_LOCAL_INTERFACE_DOWN:
 				case EVENT_TYPE_NEIGHBOR_INTERFACE_UP:
 				case EVENT_TYPE_NEIGHBOR_INTERFACE_DOWN:
-					HAGGLE_DBG(
-						"ERROR: Event type %s does not accept void * as data - "
+					HAGGLE_ERR("ERROR: Event type %s does not accept void * as data - "
 						"only an interface!\n",
 						eventNames[type]);
-#if HAVE_EXCEPTION
-					throw 
-						EventException(
-							type, 
-							"Event type %s does not accept void * as data - "
-							"only an interface!");
-#endif
 				break;
 				
 				case EVENT_TYPE_NODE_CONTACT_NEW:
 				case EVENT_TYPE_NODE_CONTACT_END:
-					HAGGLE_DBG(
-						"ERROR: Event type %s does not accept void * as data - "
+					HAGGLE_ERR("ERROR: Event type %s does not accept void * as data - "
 						"only a node!\n",
 						eventNames[type]);
-#if HAVE_EXCEPTION
-					throw 
-						EventException(
-							type, 
-							"Event type %s does not accept void * as data - "
-							"only a node!");
-#endif
 				break;
 				
 				case EVENT_TYPE_RESOURCE_POLICY_NEW:
-					HAGGLE_DBG(
-						"ERROR: Event type %s does not accept void * as data - "
+					HAGGLE_ERR("ERROR: Event type %s does not accept void * as data - "
 						"only a resource policy!\n",
 						eventNames[type]);
-#if HAVE_EXCEPTION
-					throw 
-						EventException(
-							type, 
-							"Event type %s does not accept void * as data - "
-							"only a resource policy!");
-#endif
 				break;
 				
 #ifdef DEBUG
 				case EVENT_TYPE_DEBUG_CMD:
-					HAGGLE_DBG(
-						"ERROR: Event type %s does not accept void * as data - "
+					HAGGLE_ERR("ERROR: Event type %s does not accept void * as data - "
 						"only a debug command!\n",
 						eventNames[type]);
-#if HAVE_EXCEPTION
-					throw 
-						EventException(
-							type, 
-							"Event type %s does not accept void * as data - "
-							"only a debug command!");
-#endif
 				break;
 #endif
 				
@@ -619,10 +457,6 @@ Event::Event(const EventCallback < EventHandler > *_callback, void *_data, doubl
 	doesHaveData(_data ? true : false),
 	flags(0)
 {
-#if HAVE_EXCEPTION
-	if (!callback)
-		throw EventException(type, "No callback function in argument");
-#endif
 }
 
 
@@ -639,10 +473,6 @@ Event::Event(const EventCallback<EventHandler> *_callback, const DataObjectRef& 
 	doesHaveData(_dObjRef ? true : false),
 	flags(0)
 {
-#if HAVE_EXCEPTION
-	if (!callback)
-		throw EventException(type, "No callback function in argument");
-#endif
 }
 
 Event::Event(const EventCallback<EventHandler> *_callback, const InterfaceRef& _ifaceRef, double _delay) :
@@ -658,10 +488,6 @@ Event::Event(const EventCallback<EventHandler> *_callback, const InterfaceRef& _
 	doesHaveData(_ifaceRef ? true : false),
 	flags(0)
 {
-#if HAVE_EXCEPTION
-	if (!callback)
-		throw EventException(type, "No callback function in argument");
-#endif
 }
 
 Event::Event(const EventCallback<EventHandler> *_callback, const NodeRef& _nodeRef, double _delay) :
@@ -677,10 +503,6 @@ Event::Event(const EventCallback<EventHandler> *_callback, const NodeRef& _nodeR
 	doesHaveData(_nodeRef ? true : false),
 	flags(0)
 {
-#if HAVE_EXCEPTION
-	if (!callback)
-		throw EventException(type, "No callback function in argument");
-#endif
 }
 
 Event::Event(const EventCallback<EventHandler> *_callback, const PolicyRef& _policyRef, double _delay) :
@@ -696,10 +518,6 @@ Event::Event(const EventCallback<EventHandler> *_callback, const PolicyRef& _pol
 	doesHaveData(_policyRef ? true : false),
 	flags(0)
 {
-#if HAVE_EXCEPTION
-	if (!callback)
-		throw EventException(type, "No callback function in argument");
-#endif
 }
 
 
@@ -716,10 +534,6 @@ Event::Event(const EventCallback<EventHandler> *_callback, const DataObjectRefLi
 	doesHaveData(_dObjs.empty() ? false : true),
 	flags(0)
 {
-#if HAVE_EXCEPTION
-	if (!callback)
-		throw EventException(type, "No callback function in argument");
-#endif
 }
 
 #ifdef DEBUG
@@ -736,10 +550,6 @@ Event::Event(const EventCallback<EventHandler> *_callback, const DebugCmdRef& _d
 	doesHaveData(_dbgCmdRef ? true : false),
 	flags(0)
 {
-#if HAVE_EXCEPTION
-	if (!callback)
-		throw EventException(type, "No callback function in argument");
-#endif
 }
 #endif
 

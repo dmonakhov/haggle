@@ -71,7 +71,7 @@ void RFCOMMConnection::OnEventReceived(UINT32 event_code)
 	}
 }
 
-bool RFCOMMConnection::connect(unsigned short channel, const char *addr)
+bool RFCOMMConnection::connect(unsigned short channel, const unsigned char *addr)
 {
 	if (!addr)
 		return false;
@@ -107,11 +107,15 @@ bool RFCOMMConnection::getRemoteAddr(BD_ADDR *addr) const
 
 List<const RFCOMMConnection *> ProtocolRFCOMM::connectionList;
 
-bool ProtocolRFCOMM::init(bool autoAssignScn)		
+
+bool ProtocolRFCOMM::initbase()		
 {
 	unsigned char uuid[] = HAGGLE_BLUETOOTH_SDP_UUID;
 	GUID guid;
 	UINT8 scn = autoAssignScn ? 0 : channel & 0xff;
+
+	if (!rfCommConn)
+		return false;
 
 	convertUUIDBytesToGUID((char *)uuid, &guid);
 
@@ -138,41 +142,24 @@ bool ProtocolRFCOMM::init(bool autoAssignScn)
 	return true;
 }
 
-ProtocolRFCOMM::ProtocolRFCOMM(RFCOMMConnection *_rfCommConn, const char *mac, const unsigned short _channel,
+ProtocolRFCOMM::ProtocolRFCOMM(RFCOMMConnection *_rfCommConn, const unsigned char *mac, const unsigned short _channel,
 			       const InterfaceRef& _localIface, const short flags, ProtocolManager *m) :
-	Protocol(PROT_TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, NULL, flags, m), rfCommConn(_rfCommConn), channel(_channel)
+	Protocol(PROT_TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, NULL, flags, m), rfCommConn(_rfCommConn), 
+		channel(_channel), autoAssignScn(true)
 {
-	Address addr(AddressType_BTMAC, (unsigned char *) mac);
+	Address addr(AddressType_BTMAC, mac);
 
 	peerIface = new Interface(IFTYPE_BLUETOOTH, mac, &addr, "Peer Bluetooth", IFFLAG_UP);
 
 	rfCommConn->setProtocol(this);
-
-	if (!init(true)) {
-		HAGGLE_ERR("Could not initialize RFCOMM protocol\n");
-#if HAVE_EXCEPTION
-		throw ProtocolException(-1, "Could not initialize RFCOMM protocol");
-#else
-		return;
-#endif
-	}
 }
 
 ProtocolRFCOMM::ProtocolRFCOMM(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
 			       const unsigned short _channel, const short flags, ProtocolManager * m) : 
 	Protocol(PROT_TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, _peerIface, flags, m), 
-		rfCommConn(NULL), channel(_channel)
+		rfCommConn(NULL), channel(_channel), autoAssignScn(false)
 {
 	rfCommConn = new RFCOMMConnection(this);
-
-	if (!init()) {
-		HAGGLE_ERR("Could not initialize RFCOMM protocol\n");
-#if HAVE_EXCEPTION
-		throw ProtocolException(-1, "Could not initialize RFCOMM protocol");
-#else
-		return;
-#endif
-	}
 }
 
 ProtocolRFCOMM::~ProtocolRFCOMM()
@@ -253,10 +240,41 @@ void ProtocolRFCOMM::removeConnection(const RFCOMMConnection *c)
 #define DATA_BUFFER_EMPTY(p) ((p)->db_head == (p)->db_tail)
 #define DATA_BUFFER_SPACE(p) (((p)->db_head >= (p)->db_tail) ? (RFCOMM_DATA_BUFFER_SIZE - ((p)->db_head - (p)->db_tail)) : ((p)->db_tail  - (p)->db_head))
 
+ProtocolRFCOMMClient::ProtocolRFCOMMClient(RFCOMMConnection *rfCommConn, BD_ADDR bdaddr, const unsigned short _channel, 
+					   const InterfaceRef& _localIface, ProtocolManager *m) :
+	ProtocolRFCOMM(rfCommConn, bdaddr, _channel, _localIface, PROT_FLAG_CLIENT | PROT_FLAG_CONNECTED, m), 
+			hReadQ(NULL), hWriteQ(NULL), blockingTimeout(INFINITE), db_head(0), db_tail(0)
+{
+}
+
+ProtocolRFCOMMClient::ProtocolRFCOMMClient(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
+					   const unsigned short channel, ProtocolManager *m) :
+	ProtocolRFCOMM(_localIface, _peerIface, channel, PROT_FLAG_CLIENT, m), db_head(0), db_tail(0)
+{
+}
+
+ProtocolRFCOMMClient::~ProtocolRFCOMMClient()
+{
+	HAGGLE_DBG("Destroying %s\n", getName());
+
+	if (hReadQ)
+		CloseMsgQueue(hReadQ);
+	if (hWriteQ)
+		CloseMsgQueue(hWriteQ);
+}
+
 bool ProtocolRFCOMMClient::init()
 {
 	MSGQUEUEOPTIONS mqOpts = { sizeof(MSGQUEUEOPTIONS), MSGQUEUE_NOPRECOMMIT, 0, 
 			sizeof(struct QMsg), FALSE };
+
+	if (!peerIface) {
+		HAGGLE_ERR("Client has no peer interface\n");
+		return false;
+	}
+
+	if (!initbase())
+		return false;
 
 	hWriteQ = CreateMsgQueue(NULL, &mqOpts);
 
@@ -277,35 +295,6 @@ bool ProtocolRFCOMMClient::init()
 	}
 	
 	return true;
-}
-
-ProtocolRFCOMMClient::ProtocolRFCOMMClient(RFCOMMConnection *rfCommConn, BD_ADDR bdaddr, const unsigned short _channel, 
-					   const InterfaceRef& _localIface, ProtocolManager *m) :
-		ProtocolRFCOMM(rfCommConn, (char *)bdaddr, _channel, _localIface, PROT_FLAG_CLIENT, m), 
-			hReadQ(NULL), hWriteQ(NULL), blockingTimeout(INFINITE), 
-			db_head(0), db_tail(0)
-{
-	init();
-}
-
-ProtocolRFCOMMClient::ProtocolRFCOMMClient(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
-					   const unsigned short channel, ProtocolManager *m) :
-		ProtocolRFCOMM(_localIface, _peerIface, channel, PROT_FLAG_CLIENT, m), 
-			hReadQ(NULL), hWriteQ(NULL), blockingTimeout(INFINITE),
-			db_head(0), db_tail(0)
-{
-	init();
-}
-
-
-ProtocolRFCOMMClient::~ProtocolRFCOMMClient()
-{
-	HAGGLE_DBG("Destroying %s\n", getName());
-
-	if (hReadQ)
-		CloseMsgQueue(hReadQ);
-	if (hWriteQ)
-		CloseMsgQueue(hWriteQ);
 }
 
 size_t ProtocolRFCOMMClient::dataBufferWrite(const void *data, size_t len)
@@ -378,6 +367,8 @@ void ProtocolRFCOMMClient::OnEventReceived(UINT32 event_code)
 
 		if (!WriteMsgQueue(hWriteQ, &msg, sizeof(struct QMsg), 500, 0)) {
 			HAGGLE_ERR("Could not write connection error event to msg queue\n");
+		} else {
+			HAGGLE_DBG("Wrote connection ERROR event to msg queue\n");
 		}
 	} 
 	if (event_code & PORT_EV_CONNECTED) {
@@ -394,6 +385,8 @@ void ProtocolRFCOMMClient::OnEventReceived(UINT32 event_code)
 
 			if (!WriteMsgQueue(hWriteQ, &msg, sizeof(struct QMsg), 500, 0)) {
 				HAGGLE_ERR("Could not write connection error event to msg queue\n");
+			} else {
+				HAGGLE_DBG("Wrote connection SUCCESS event to msg queue\n");
 			}
 		}
 		
@@ -414,10 +407,6 @@ void ProtocolRFCOMMClient::OnDataReceived(void *p_data, UINT16 len)
 	struct QMsg msg;
 
 	msg.type = QMSG_TYPE_DATA;
-	//msg.data = new char[len];
-	//msg.len = len;
-
-	//memcpy(msg.data, p_data, len);
 
 	msg.len = dataBufferWrite(p_data, len);
 
@@ -430,7 +419,6 @@ void ProtocolRFCOMMClient::OnDataReceived(void *p_data, UINT16 len)
 	BOOL res = WriteMsgQueue(hWriteQ, &msg, sizeof(struct QMsg), 500, 0);
 
 	if (res == FALSE) {
-		//delete [] msg.data;
 		HAGGLE_ERR("Could not write %u bytes data to message queue\n", len);
 	} else {
 		//HAGGLE_DBG("Wrote %u bytes out of %u bytes data to message queue\n", msg.len, len);
@@ -470,11 +458,17 @@ ProtocolEvent ProtocolRFCOMMClient::connectToPeer()
 		return PROT_EVENT_ERROR;
 	}
 
-	if (msg.type != QMSG_TYPE_CONNECTION_SUCCESS)
+	if (msg.type != QMSG_TYPE_CONNECTION_SUCCESS) {
+		HAGGLE_ERR("Expected event %u (CONNECTION_SUCCESS) on msg queue, but got %u\n", 
+			QMSG_TYPE_CONNECTION_SUCCESS, msg.type);
 		return PROT_EVENT_ERROR;
+	}
 
 	HAGGLE_DBG("%s Connected to [%s] channel=%u\n", 
 		   getName(), addr->getAddrStr(), channel);
+
+	// Do not set PROT_FLAG_CONNECTED here, wait until we receive a
+	// connection successful event.
 
 	return PROT_EVENT_SUCCESS;
 }
@@ -519,6 +513,7 @@ ProtocolEvent ProtocolRFCOMMClient::receiveData(void *buf, size_t len, const int
 		// it is already handled in connectToPeer(). However, lets
 		// handle the type here anyway just in case and return
 		// success with zero bytes read.
+		HAGGLE_DBG("Read connection SUCCESS event from msg queue\n");
 		return PROT_EVENT_SUCCESS;
 	} else if (msg.type == QMSG_TYPE_CONNECTION_ERROR) {
 		HAGGLE_ERR("Got CONNECTION_ERROR event - peer closed?\n");
@@ -527,37 +522,35 @@ ProtocolEvent ProtocolRFCOMMClient::receiveData(void *buf, size_t len, const int
 		HAGGLE_ERR("WARNING: Unknown Queue message type\n");
 		return PROT_EVENT_ERROR;
 	}
-	/*
-	if (len < msg.len) {
-		delete [] msg.data;
-		HAGGLE_ERR("The buffer to read (%lu bytes) was too small for the queued data (%lu bytes)\n", len, msg.len);
-		return PROT_EVENT_ERROR;
+
+	//HAGGLE_DBG("Got message saying that there is %lu bytes data to read\n", msg.len);
+
+	if (msg.len > len) {
+		*bytes = len;
+	} else {
+		*bytes = msg.len;
 	}
-	*bytes = msg.len;
-	memcpy(buf, msg.data, msg.len);
 
-	delete [] msg.data;
-	*/
-
-	*bytes = dataBufferRead(buf, len);
+	*bytes = dataBufferRead(buf, *bytes);
 
 	// If there is still data to read, signal the message queue again
-	if (!dataBufferIsEmpty()) {
-		struct QMsg msg;
-
+	if (*bytes < msg.len) {
 		msg.type = QMSG_TYPE_DATA;
-		msg.len = dataBufferBytesToRead();
+		msg.len = msg.len - *bytes;
 
 		BOOL res = WriteMsgQueue(hWriteQ, &msg, sizeof(struct QMsg), 500, 0);
 
 		if (res == FALSE) {
 			HAGGLE_ERR("Could not write data msg to message queue\n");
+		} else {
+			//HAGGLE_DBG("Signaled to queue that there is still %lu bytes data to read\n", msg.len);
 		}
 	}
 
-	if (*bytes == 0)
+	if (*bytes == 0) {
+		HAGGLE_ERR("Error: received 0 bytes\n");	
 		return PROT_EVENT_ERROR;
-
+	}
 	//HAGGLE_DBG("Successfully read %lu bytes data\n", *bytes);
 
 	return PROT_EVENT_SUCCESS;
@@ -657,24 +650,9 @@ void ProtocolRFCOMMClient::hookShutdown()
 	closeConnection();
 }
 
-ProtocolRFCOMMServer::ProtocolRFCOMMServer(const InterfaceRef& localIface, ProtocolManager *m,
-					   unsigned short channel) :
+ProtocolRFCOMMServer::ProtocolRFCOMMServer(const InterfaceRef& localIface, ProtocolManager *m, unsigned short channel) :
 	ProtocolRFCOMM(localIface, NULL, channel, PROT_FLAG_SERVER, m)
 {
-	connectionEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-
-	if (!setListen()) {
-		HAGGLE_ERR("Could not listen on channel %d\n", channel);
-		CloseHandle(connectionEvent);
-		connectionEvent = NULL;
-#if HAVE_EXCEPTION
-		throw ProtocolException(-1, "Could not listen on channel");
-#else
-		return;
-#endif
-	}
-	
-	getKernel()->registerWatchable(connectionEvent, m);
 }
 
 ProtocolRFCOMMServer::~ProtocolRFCOMMServer()
@@ -687,6 +665,35 @@ ProtocolRFCOMMServer::~ProtocolRFCOMMServer()
 
 	if (rfCommConn)
 		rfCommConn->Close();
+}
+
+
+bool ProtocolRFCOMMServer::init()
+{
+	if (!initbase())
+		return false;
+
+	connectionEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+
+	if (!connectionEvent) {
+		HAGGLE_ERR("Could not create connection event\n");
+		return false;
+	}
+	if (!setListen()) {
+		CloseHandle(connectionEvent);
+		connectionEvent = NULL;
+		HAGGLE_ERR("Could not listen on channel %u\n", channel);
+		return false;
+	}
+	
+	if (getKernel()->registerWatchable(connectionEvent, getManager()) < 0) {
+		CloseHandle(connectionEvent);
+		connectionEvent = NULL;
+		HAGGLE_ERR("Could not register watchable\n");
+		return false;
+	}
+
+	return true;
 }
 
 bool ProtocolRFCOMMServer::hasWatchable(const Watchable &wbl)
@@ -754,11 +761,9 @@ ProtocolEvent ProtocolRFCOMMServer::acceptClient()
 
 	ProtocolRFCOMMClient *p = static_cast<ProtocolRFCOMMClient *>(c->getProtocol());
 
-	if (!p) {
+	if (!p || !p->init()) {
 		return PROT_EVENT_ERROR;
 	}
-
-	p->setFlag(PROT_FLAG_CONNECTED);
 
 	HAGGLE_DBG("Accepted client %s, starting client thread\n", 
 			p->getPeerInterface()->getAddressByType(AddressType_BTMAC)->getAddrStr());
@@ -799,15 +804,6 @@ void ProtocolRFCOMMServer::OnEventReceived(UINT32 event_code)
 
 			RFCOMMConnection *client_rfCommConn = rfCommConn;
 
-			// Create a client immediately and associate with connection, but
-			// do not start it until acceptClient() is called.
-			ProtocolRFCOMMReceiver *p = new ProtocolRFCOMMReceiver(client_rfCommConn, remote_addr, 
-				(unsigned short)channel, this->getLocalInterface(), getManager());
-
-			if (!p) {
-				HAGGLE_ERR("Could not allocate new protocol receiver!!!\n");
-			}	
-
 			rfCommConn = new RFCOMMConnection(this);
 
 			if (!setListen()) {
@@ -816,6 +812,16 @@ void ProtocolRFCOMMServer::OnEventReceived(UINT32 event_code)
 			}
 
 			mutex.unlock();
+
+			// Create a client immediately and associate with connection, but
+			// do not start it until acceptClient() is called.
+			ProtocolRFCOMMReceiver *p = new ProtocolRFCOMMReceiver(client_rfCommConn, remote_addr, 
+				(unsigned short)channel, this->getLocalInterface(), getManager());
+
+			if (!p || !p->init()) {
+				HAGGLE_ERR("Could not create new protocol receiver!!!\n");
+				return;
+			}	
 
 			addConnection(client_rfCommConn);
 			

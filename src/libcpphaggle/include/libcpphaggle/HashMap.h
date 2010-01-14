@@ -294,7 +294,7 @@ public:
 		}
 		const_iterator& operator++() { find_next_filled_bucket(); return *this; }
 		const_iterator operator++(int) { const_iterator cit = *this; find_next_filled_bucket(); return cit; }
-		const PairType& operator*() { return *it; }
+		const PairType& operator*() const { return *it; }
 	};
 	iterator begin() { return iterator(this, 0, table[0].begin()).begin(); }
 	iterator end() {return iterator(this, table_size-1, table[table_size-1].end()); }

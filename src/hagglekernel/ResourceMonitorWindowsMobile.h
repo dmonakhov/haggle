@@ -41,6 +41,7 @@ class ResourceMonitor : public ManagerModule<ResourceManager>
 public:
 	ResourceMonitor(ResourceManager *resMan);
 	~ResourceMonitor();
+	bool init();
 
 	/**
 		Returns: battery charge left in percent.

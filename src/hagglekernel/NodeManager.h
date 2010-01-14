@@ -63,15 +63,10 @@ class NodeManager : public Manager
 #endif
 	
 	void onPrepareShutdown();
+	bool init_derived();
 public:
         NodeManager(HaggleKernel *_haggle = haggleKernel);
         ~NodeManager();
-
-class NodeManagerException : public ManagerException
-        {
-        public:
-                NodeManagerException(const int err = 0, const char* data = "Node manager Error") : ManagerException(err, data) {}
-        };
 };
 
 

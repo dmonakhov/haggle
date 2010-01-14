@@ -56,8 +56,7 @@ private:
 protected:
 	Signal signal;
 public:
-        EventQueue() : Heap(), mutex("EventQ mutex"), 
-                       shutdown_mutex("EventQ shutdown mutex"), 
+        EventQueue() : Heap(),
                        shutdownEvent(false) {}
         ~EventQueue() {
                 Event *e;

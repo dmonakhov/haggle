@@ -23,8 +23,9 @@ ProtocolSocket::ProtocolSocket(const ProtType_t _type, const char *_name, Interf
 	Protocol(_type, _name, _localIface, _peerIface, _flags, m), 
         sock(_sock), socketIsRegistered(false), nonblock(false)
 {
-        if (sock != INVALID_SOCKET)
+	if (sock != INVALID_SOCKET) {
                 setSocketOptions();
+	}
 }
 
 void ProtocolSocket::setSocketOptions()
@@ -84,6 +85,7 @@ bool ProtocolSocket::openSocket(int domain, int type, int protocol, bool registe
 	}
 	return true;
 }
+
 bool ProtocolSocket::setSocket(SOCKET _sock, bool registersock)
 {
 	if (sock != INVALID_SOCKET)

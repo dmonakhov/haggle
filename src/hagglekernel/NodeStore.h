@@ -40,7 +40,7 @@ class NodeStore : protected List<NodeRecord *>
 	 */
         bool _stored(const NodeRef &node, bool mustBeNeighbor = false);
         bool _stored(const Node &node, bool mustBeNeighbor = false);
-        bool _stored(const char *id, bool mustBeNeighbor = false);
+        bool _stored(const NodeId_t id, bool mustBeNeighbor = false);
 	bool _stored(const string idStr, bool mustBeNeighbor = false);
 public:
 	/**
@@ -94,7 +94,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
 		reference or an interface reference while calling this function.
 	*/
-        bool stored(const char *id, bool mustBeNeighbor = false);
+        bool stored(const NodeId_t id, bool mustBeNeighbor = false);
 	/**
 		Check if a node is currently stored in the store. The caller
 		may optionally specify whether the given node must be marked
@@ -149,7 +149,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
 		reference or an interface reference while calling this function.
 	*/
-        NodeRef retrieve(const char *id, bool mustBeNeighbor = false);
+        NodeRef retrieve(const NodeId_t id, bool mustBeNeighbor = false);
 	/**
 		Retrieve a node from the node store. The caller may optionally 
 		specify to only retrieve current neighbors.

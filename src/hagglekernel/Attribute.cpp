@@ -16,7 +16,6 @@
 #include <stdlib.h>
 
 #include <libcpphaggle/Platform.h>
-#include <libcpphaggle/Exception.h>
 #include <libcpphaggle/String.h>
 #include <haggleutils.h>
 

@@ -12,9 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include <libcpphaggle/Exception.h>
-
 #include "RepositoryEntry.h"
 
 int RepositoryEntry::init(const char* _authority, const char* _key, const char* _value, unsigned int _id) 
@@ -60,9 +57,7 @@ RepositoryEntry::RepositoryEntry(const char* _authority, const char* _key, const
 	authority(NULL), key(NULL), value(NULL), id(_id)
 {
 	if (init(_authority, _key, _value, _id) == -1) {
-#if HAVE_EXCEPTION
-		throw Exception(-1, "Could not create repository entry\n");
-#endif
+		fprintf(stderr, "Could not initialize repository entry\n");
 	}
 }
 

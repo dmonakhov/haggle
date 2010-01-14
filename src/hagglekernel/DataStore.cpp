@@ -151,9 +151,6 @@ DataStoreTask::DataStoreTask(DataObjectRef& _dObj, TaskType _type, const EventCa
 	} else if (type == TASK_DELETE_DATAOBJECT) {
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-		throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
 	}
 }
 DataStoreTask::DataStoreTask(const DataObjectId_t _id, TaskType _type, const EventCallback<EventHandler> *_callback) :
@@ -163,9 +160,6 @@ DataStoreTask::DataStoreTask(const DataObjectId_t _id, TaskType _type, const Eve
 		memcpy(id, _id, sizeof(DataObjectId_t));
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-		throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
 	}
 }
 DataStoreTask::DataStoreTask(NodeRef& _node, TaskType _type, const EventCallback<EventHandler> *_callback, bool _boolParameter) :
@@ -178,9 +172,6 @@ DataStoreTask::DataStoreTask(NodeRef& _node, TaskType _type, const EventCallback
 		type == TASK_DELETE_NODE) {
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-		throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
 	}
 }
 DataStoreTask::DataStoreTask(NodeType_t _nodeType, TaskType _type, const EventCallback<EventHandler> *_callback) :
@@ -189,9 +180,6 @@ DataStoreTask::DataStoreTask(NodeType_t _nodeType, TaskType _type, const EventCa
 	if (type == TASK_RETRIEVE_NODE_BY_TYPE) {
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-		throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
 	}
 }
 DataStoreTask::DataStoreTask(DataStoreFilterQuery *q, TaskType _type) :
@@ -200,9 +188,6 @@ DataStoreTask::DataStoreTask(DataStoreFilterQuery *q, TaskType _type) :
 	if (type == TASK_FILTER_QUERY) {
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-		throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
 	}
 }
 
@@ -212,9 +197,6 @@ DataStoreTask::DataStoreTask(DataStoreDataObjectQuery *q, TaskType _type) :
 	if (type == TASK_DATAOBJECT_QUERY) {
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-		throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
 	}
 }
 
@@ -224,9 +206,6 @@ DataStoreTask::DataStoreTask(DataStoreDataObjectForNodesQuery *q, TaskType _type
 	if (type == TASK_DATAOBJECT_FOR_NODES_QUERY) {
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-		throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
 	}
 }
 
@@ -236,9 +215,6 @@ DataStoreTask::DataStoreTask(DataStoreNodeQuery *q, TaskType _type) :
 	if (type == TASK_NODE_QUERY) {
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-		throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
 	}
 }
 
@@ -250,9 +226,6 @@ DataStoreTask::DataStoreTask(DataStoreRepositoryQuery *q, TaskType _type) :
 		type == TASK_DELETE_REPOSITORY) {
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-		throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
 	}
 }
 
@@ -262,9 +235,6 @@ DataStoreTask::DataStoreTask(const Filter& _f, TaskType _type, const EventCallba
 	if (type == TASK_ADD_FILTER) {
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-		throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
 	}
 }
 
@@ -278,17 +248,11 @@ DataStoreTask::DataStoreTask(TaskType _type, void *_data, const EventCallback<Ev
 		type == TASK_DUMP_DATASTORE) {
 			if (data != NULL) {
 				HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-				throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
 			}
 	} else if (type == TASK_DUMP_DATASTORE_TO_FILE ||
 		type == TASK_DELETE_FILTER) {
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-		throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
 	}
 }
 
@@ -298,9 +262,6 @@ DataStoreTask::DataStoreTask(const Timeval &_age, TaskType _type, const EventCal
 	if (type == TASK_AGE_DATAOBJECTS) {
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
-#if HAVE_EXCEPTIONS
-		throw DataStoreTaskException(-1, "Could not create DataStoreTask");
-#endif
 	}
 }
 

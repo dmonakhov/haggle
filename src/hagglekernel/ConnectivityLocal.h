@@ -32,7 +32,6 @@ class ConnectivityLocal;
 class ConnectivityLocalBase : public Connectivity {
     private:
         friend class ConnectivityLocal;
-	InterfaceRef rootInterface;
         ConnectivityLocalBase(ConnectivityManager *m, const string& name);
         ~ConnectivityLocalBase();
 };

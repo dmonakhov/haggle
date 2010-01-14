@@ -21,14 +21,11 @@
 #if defined(OS_WINDOWS_MOBILE)
 
 #include <haggleutils.h>
-#include <libcpphaggle/Exception.h>
 
 #include <pm.h>
 #include <Winsock2.h>
 #include <ntddndis.h>
 #include <iphlpapi.h>
-
-using namespace haggle;
 
 #define MALLOC(x) HeapAlloc(GetProcessHeap(), 0, (x))
 #define FREE(x)   HeapFree(GetProcessHeap(), 0, (x))

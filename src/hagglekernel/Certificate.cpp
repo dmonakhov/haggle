@@ -108,11 +108,7 @@ LeakMonitor(LEAK_TYPE_CERTIFICATE),
 	
 	if (!x) {
 		HAGGLE_ERR("Could not allocate X509 certificate struct\n");
-#if HAVE_EXCEPTION
-		throw MallocException(-1, "Could not allocate X509 certificate struct");
-#else
 		return;
-#endif
 	}
 	
 	X509_set_version(x, 2); 
@@ -122,11 +118,7 @@ LeakMonitor(LEAK_TYPE_CERTIFICATE),
 	if (!pubKey) {
 		X509_free(x);
 		HAGGLE_ERR("Could not allocate X509 EVP_PKEY\n");
-#if HAVE_EXCEPTION
-		throw MallocException(-1, "Could not allocate X509 EVP_PKEY");
-#else
 		return;
-#endif
 	}
 	
 	EVP_PKEY_assign_RSA(pubKey, RSAPublicKey_dup(rsaPubKey));

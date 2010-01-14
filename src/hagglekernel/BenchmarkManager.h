@@ -44,27 +44,20 @@ class BenchmarkManager : public Manager
         EventCallback<EventHandler> *queryCallback;
         NodeRefList queryNodes;
         EventType evaluateEType;
+	bool init_derived();
 public:
         BenchmarkManager(HaggleKernel *_haggle = haggleKernel, unsigned int _DataObjects_Attr = 0, unsigned int _Nodess_Attr = 0, unsigned int _Attr_Num = 0, unsigned int _DataObjects_Num = 0, unsigned int _Test_Num = 0);
-        ~BenchmarkManager();
+	~BenchmarkManager();
 
-        int handleAttributes(Event* e);
-        void onTimeout(Event* e);
-		void insertNode(Event* e);
-		void insertDataobject(Event* e);
-        NodeRef createNode(unsigned int numAttr);
-        DataObjectRef createDataObject(unsigned int numAttr);
-        void onEvaluate(Event *e);
-        void onQueryResult(Event* e);
+	int handleAttributes(Event* e);
+	void onTimeout(Event* e);
+	void insertNode(Event* e);
+	void insertDataobject(Event* e);
+	NodeRef createNode(unsigned int numAttr);
+	DataObjectRef createDataObject(unsigned int numAttr);
+	void onEvaluate(Event *e);
+	void onQueryResult(Event* e);
 	void onRetreiveNodes(Event *e);
-
-
-
-class BMException : public ManagerException
-        {
-        public:
-                BMException(const int err = 0, const char* data = "BenchmarkManager Error") : ManagerException(err, data) {}
-        };
 };
 
 #endif

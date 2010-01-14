@@ -71,6 +71,7 @@ private:
         EventType debugEType;
 #endif
 	void dumpTo(SOCKET client_sock, DataStoreDump *dump);
+	bool init_derived();
 public:
         DebugManager(HaggleKernel *_kernel = haggleKernel, bool interactive = true);
         ~DebugManager();
@@ -83,12 +84,6 @@ public:
         void onDumpDataStore(Event *e);
 	
 	void onShutdown();
-
-	class DebugException : public ManagerException
-        {
-		public:
-			DebugException(const int err = 0, const char* data = "Debug manager Error") : ManagerException(err, data) {}
-        };
 };
 
 #endif

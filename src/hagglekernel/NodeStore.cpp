@@ -17,7 +17,7 @@
 #include "NodeStore.h"
 #include "Trace.h"
 
-NodeStore::NodeStore() : mutex("NodeStore")
+NodeStore::NodeStore()
 {
 }
 
@@ -77,7 +77,7 @@ bool NodeStore::_stored(const Node &node, bool mustBeNeighbor)
 	return false;
 }
 
-bool NodeStore::_stored(const char *id, bool mustBeNeighbor)
+bool NodeStore::_stored(const NodeId_t id, bool mustBeNeighbor)
 {
 	for (NodeStore::iterator it = begin(); it != end(); it++) {
 		NodeRecord *nr = *it;
@@ -130,7 +130,7 @@ bool NodeStore::stored(const Node &node, bool mustBeNeighbor)
 	return _stored(node, mustBeNeighbor);
 }
 
-bool NodeStore::stored(const char *id, bool mustBeNeighbor)
+bool NodeStore::stored(const NodeId_t id, bool mustBeNeighbor)
 {
         Mutex::AutoLocker l(mutex);
 
@@ -221,7 +221,7 @@ NodeRef NodeStore::retrieve(const Node& node, bool mustBeNeighbor)
 	return NULL;
 }
 
-NodeRef NodeStore::retrieve(const char *id, bool mustBeNeighbor)
+NodeRef NodeStore::retrieve(const NodeId_t id, bool mustBeNeighbor)
 {
         Mutex::AutoLocker l(mutex);
 

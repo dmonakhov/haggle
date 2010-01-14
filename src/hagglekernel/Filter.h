@@ -24,7 +24,6 @@ class Filter;
 class Filters;
 
 #include <libcpphaggle/List.h>
-#include <libcpphaggle/Exception.h>
 
 #include "Debug.h"
 #include "Attribute.h"
@@ -56,12 +55,6 @@ public:
         Filter *copy() const {
                 return new Filter(*this);
         }
-
-class FilterException : public Exception
-        {
-        public:
-                FilterException(const int err = 0, const char* data = "FilterError") : Exception(err, data) {}
-        };
 };
 
 

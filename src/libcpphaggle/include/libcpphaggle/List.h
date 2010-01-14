@@ -121,7 +121,7 @@ public:
 		const_iterator& operator--() { pos = tmp; tmp = pos->prev; return *this; }
 		const_iterator operator++(int) { const_iterator it = const_iterator(pos); pos = tmp; tmp = pos->next; return it; }
 		const_iterator operator--(int) { const_iterator it = const_iterator(pos); pos = tmp; tmp = pos->prev; return it; }
-		const T& operator*() { container<T> *c = static_cast<container<T> *>(pos); return c->obj; }
+		const T& operator*() const { container<T> *c = static_cast<container<T> *>(pos); return c->obj; }
 	};
 	T& front() {
 		container<T> *c = static_cast< container<T> *>(head.next);

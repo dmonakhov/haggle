@@ -343,73 +343,7 @@ SecurityManager::SecurityManager(HaggleKernel *_haggle, const SecurityLevel_t sl
 	Manager("Security Manager", _haggle), securityLevel(slevel), etype(EVENT_TYPE_INVALID), helper(NULL), 
 	myCert(NULL), ca_issuer(CA_ISSUER_NAME), caPrivKey(NULL), caPubKey(NULL), privKey(NULL)
 {
-#define __CLASS__ SecurityManager
-	int ret;
-	
-	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_RECEIVED, onReceivedDataObject);
 
-#if HAVE_EXCEPTION
-	if (ret < 0)
-		throw SMException(ret, "Could not register event");
-#endif
-	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_SEND, onSendDataObject);
-	
-#if HAVE_EXCEPTION
-	if (ret < 0)
-		throw SMException(ret, "Could not register event");
-#endif
-	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_INCOMING, onIncomingDataObject);
-	
-#if HAVE_EXCEPTION
-	if (ret < 0)
-		throw SMException(ret, "Could not register event");
-#endif
-	
-#ifdef DEBUG
-	setEventHandler(EVENT_TYPE_DEBUG_CMD, onDebugCmdEvent);
-#if HAVE_EXCEPTION
-	if (ret < 0)
-		throw SMException(ret, "Could not register event");
-#endif
-#endif
-	
-	onRepositoryDataCallback = newEventCallback(onRepositoryData);
-
-        /* This function must be called to load crypto algorithms used
-         * for signing and verification of certificates. */
-        OpenSSL_add_all_algorithms();
-
-#if defined(DEBUG)
-	/* Load ssl error strings. Needed by ERR_error_string() */
-	ERR_load_crypto_strings();
-#endif	
-        // -- retrieve CA key from memory
-	caPrivKey = stringToRSAKey(ca_private_key, KEY_TYPE_PRIVATE);
-	
-	if (!caPrivKey) {
-		HAGGLE_ERR("Could not read CA's private key from memory\n");
-		return;
-	}
-	
-	caPubKey = stringToRSAKey(ca_public_key, KEY_TYPE_PUBLIC);
-
-	if (!caPubKey) {
-		HAGGLE_ERR("Could not read CA's public key from memory\n");
-		return;
-	}
-
-	HAGGLE_DBG("Successfully read CA's public key\n");
-
-	etype = registerEventType("SecurityTaskEvent", onSecurityTaskComplete);
-
-	HAGGLE_DBG("Security level is set to %s\n", security_level_names[securityLevel]);
-	
-	helper = new SecurityHelper(this, etype);
-
-	if (helper) {
-		HAGGLE_DBG("Starting security helper...\n");
-		helper->start();
-	}
 }
 
 SecurityManager::~SecurityManager()
@@ -438,6 +372,84 @@ SecurityManager::~SecurityManager()
 	// Release ssl error strings.
 	ERR_free_strings();
 #endif
+}
+
+bool SecurityManager::init_derived()
+{
+#define __CLASS__ SecurityManager
+	int ret;
+	
+	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_RECEIVED, onReceivedDataObject);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+
+	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_SEND, onSendDataObject);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+
+	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_INCOMING, onIncomingDataObject);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+	
+#ifdef DEBUG
+	setEventHandler(EVENT_TYPE_DEBUG_CMD, onDebugCmdEvent);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+#endif
+	
+	onRepositoryDataCallback = newEventCallback(onRepositoryData);
+
+        /* This function must be called to load crypto algorithms used
+         * for signing and verification of certificates. */
+        OpenSSL_add_all_algorithms();
+
+#if defined(DEBUG)
+	/* Load ssl error strings. Needed by ERR_error_string() */
+	ERR_load_crypto_strings();
+#endif	
+        // -- retrieve CA key from memory
+	caPrivKey = stringToRSAKey(ca_private_key, KEY_TYPE_PRIVATE);
+	
+	if (!caPrivKey) {
+		HAGGLE_ERR("Could not read CA's private key from memory\n");
+		return false;
+	}
+	
+	caPubKey = stringToRSAKey(ca_public_key, KEY_TYPE_PUBLIC);
+
+	if (!caPubKey) {
+		HAGGLE_ERR("Could not read CA's public key from memory\n");
+		return false;
+	}
+
+	HAGGLE_DBG("Successfully read CA's public key\n");
+
+	etype = registerEventType("SecurityTaskEvent", onSecurityTaskComplete);
+
+	HAGGLE_DBG("Security level is set to %s\n", security_level_names[securityLevel]);
+	
+	helper = new SecurityHelper(this, etype);
+
+	if (!helper || !helper->start()) {
+		HAGGLE_ERR("Could not create or start security helper\n");
+		return false;
+	}
+
+	HAGGLE_DBG("Initialized security manager\n");
+
+	return true;
 }
 
 void SecurityManager::onPrepareStartup()

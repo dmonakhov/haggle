@@ -184,6 +184,14 @@ public:
 	HaggleKernel(DataStore *ds = new SQLDataStore(false, DEFAULT_DATASTORE_FILEPATH), 
 		     const string storagepath = HAGGLE_DEFAULT_STORAGE_PATH);
 	~HaggleKernel();
+
+	/**
+	 The init() function should be called after the kernel has been created in order
+	 to initialize it. 
+
+	 Returns: true if the initialization was successful, or false otherwise.
+	*/
+	bool init();
 	
 	void run();
 };

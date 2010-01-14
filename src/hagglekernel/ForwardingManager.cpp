@@ -28,26 +28,77 @@ ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 	routingInfoEventType(-1),
 	forwardingModule(NULL)
 {
+}
+
+bool ForwardingManager::init_derived()
+{
+	int ret;
 #define __CLASS__ ForwardingManager
-	setEventHandler(EVENT_TYPE_NODE_UPDATED, onNodeUpdated);
-	setEventHandler(EVENT_TYPE_DATAOBJECT_NEW, onNewDataObject);
-	setEventHandler(EVENT_TYPE_DATAOBJECT_FORWARD, onDataObjectForward);
-	setEventHandler(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, onSendDataObjectResult);
-	setEventHandler(EVENT_TYPE_DATAOBJECT_SEND_FAILURE, onSendDataObjectResult);
-	setEventHandler(EVENT_TYPE_NODE_CONTACT_NEW, onNewNeighbor);
-	setEventHandler(EVENT_TYPE_NODE_CONTACT_END, onEndNeighbor);
-	setEventHandler(EVENT_TYPE_TARGET_NODES, onTargetNodes);
-	setEventHandler(EVENT_TYPE_DELEGATE_NODES, onDelegateNodes);
+
+	ret = setEventHandler(EVENT_TYPE_NODE_UPDATED, onNodeUpdated);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_NEW, onNewDataObject);
+	
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_FORWARD, onDataObjectForward);
+	
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, onSendDataObjectResult);
+	
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_SEND_FAILURE, onSendDataObjectResult);
+	
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+	ret = setEventHandler(EVENT_TYPE_NODE_CONTACT_NEW, onNewNeighbor);
+	
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+	ret = setEventHandler(EVENT_TYPE_NODE_CONTACT_END, onEndNeighbor);
+	
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+	ret = setEventHandler(EVENT_TYPE_TARGET_NODES, onTargetNodes);
+	
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+	ret = setEventHandler(EVENT_TYPE_DELEGATE_NODES, onDelegateNodes);
+	
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
 
 #if defined(DEBUG)
 	setEventHandler(EVENT_TYPE_DEBUG_CMD, onDebugCmd);
 #endif
 	moduleEventType = registerEventType(getName(), onForwardingTaskComplete);
 	
-#if HAVE_EXCEPTION
-	if (moduleEventType < 0)
-		throw ForwardingException(moduleEventType, "Could not register module event type...");
-#endif
+	if (moduleEventType < 0) {
+		HAGGLE_ERR("Could not register module event type...");
+		return false;
+	}
 	// Register filter for node descriptions
 	registerEventTypeForFilter(routingInfoEventType, "Forwarding", onRoutingInformation, "Forwarding=*");
 	
@@ -57,6 +108,13 @@ ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 	repositoryCallback = newEventCallback(onRepositoryData);
 
 	forwardingModule = new ForwarderProphet(this, moduleEventType);
+
+	if (!forwardingModule) {
+		HAGGLE_ERR("Could not create forwarding module\n");
+		return false;
+	}
+
+	return true;
 }
 
 ForwardingManager::~ForwardingManager()

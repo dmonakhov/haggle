@@ -27,16 +27,8 @@
 ProtocolRFCOMMClient::ProtocolRFCOMMClient(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, const unsigned short channel, ProtocolManager *m) :
 		ProtocolRFCOMM(_localIface, _peerIface, channel, PROT_FLAG_CLIENT, m)
 {
-	const Address *addr = peerIface->getAddressByType(AddressType_BTMAC);
-
-	if (!addr) {
-#if HAVE_EXCEPTION
-		throw ProtocolException(-1, "No Bluetooth MAC address in peer interface");
-#else
-                return;
-#endif
-        }
-	memcpy(mac, addr->getRaw(), addr->getLength());
+	if (peerIface)
+		memcpy(mac, peerIface->getIdentifier(), peerIface->getIdentifierLen());
 }
 
 ProtocolRFCOMM::ProtocolRFCOMM(SOCKET _sock, const char *_mac, const unsigned short _channel, const InterfaceRef& _localIface, const short flags, ProtocolManager *m) :
@@ -50,21 +42,26 @@ ProtocolRFCOMM::ProtocolRFCOMM(SOCKET _sock, const char *_mac, const unsigned sh
 }
 
 ProtocolRFCOMM::ProtocolRFCOMM(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, const unsigned short _channel, const short flags, ProtocolManager * m) : 
-	ProtocolSocket(PROT_TYPE_RFCOMM, "ProtocolRFCOMM", _localIface,
-		       _peerIface, flags, m), channel(_channel)
+	ProtocolSocket(PROT_TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, _peerIface, flags, m), channel(_channel)
+{	
+}
+
+ProtocolRFCOMM::~ProtocolRFCOMM()
+{
+}
+
+bool ProtocolRFCOMM::initbase()
 {
 	struct sockaddr_bt localAddr;
 
 	if (!openSocket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM, isServer())) {
-#if HAVE_EXCEPTION
-		throw SocketException(0, "Could not create RFCOMM socket");
-#else
-                return;
-#endif
+		HAGGLE_ERR("Could not create RFCOMM socket\n");
+                return false;
         }
+
 	memset(&localAddr, 0, sizeof(struct sockaddr_bt));
 	localAddr.bt_family = AF_BLUETOOTH;
-	localAddr.bt_channel = _channel & 0xff;
+	localAddr.bt_channel = channel & 0xff;
 
 #ifndef OS_WINDOWS
 	if (localIface) {
@@ -81,25 +78,25 @@ ProtocolRFCOMM::ProtocolRFCOMM(const InterfaceRef& _localIface, const InterfaceR
 		localAddr.bt_channel = channel & 0xff;
 	} else {
 		HAGGLE_DBG("Created RFCOMM client on channel=%d\n", channel);
-		return;
+		return true;
 	}
-	/* If this is a server we bing to a specific channel to listen on */
 
+	/* If this is a server we bing to a specific channel to listen on */
 	if (!bindSocket((struct sockaddr *)&localAddr, sizeof(localAddr))) {
 		closeSocket();
 #ifdef OS_WINDOWS
-		HAGGLE_DBG("Bind failed for local address WSA error=%s\n", StrError(WSAGetLastError()));
+		HAGGLE_ERR("Bind failed for local address WSA error=%s\n", StrError(WSAGetLastError()));
 #endif
-#if HAVE_EXCEPTION
-		throw BindException(0, "Could not bind local address for RFCOMM socket");
-#endif
-	} else {
-                HAGGLE_DBG("Bound RFCOMM server to channel=%d\n", channel);
-        }
-}
 
-ProtocolRFCOMM::~ProtocolRFCOMM()
-{
+		HAGGLE_ERR("Could not bind local address for RFCOMM socket\n");
+
+		return false;
+
+	}
+
+        HAGGLE_DBG("Bound RFCOMM server to channel=%d\n", channel);
+   
+	return true;
 }
 
 ProtocolEvent ProtocolRFCOMMClient::connectToPeer()
@@ -144,20 +141,31 @@ ProtocolRFCOMMClient::~ProtocolRFCOMMClient()
 	HAGGLE_DBG("Destroying %s\n", getName());
 }
 
-ProtocolRFCOMMServer::ProtocolRFCOMMServer(const InterfaceRef& localIface, ProtocolManager *m,
-					   unsigned short channel, int _backlog) :
+bool ProtocolRFCOMMClient::init()
+{
+	return initbase();
+}
+ProtocolRFCOMMServer::ProtocolRFCOMMServer(const InterfaceRef& localIface, ProtocolManager *m, unsigned short channel, int _backlog) :
 	ProtocolRFCOMM(localIface, NULL, channel, PROT_FLAG_SERVER, m), backlog(_backlog) 
 {
-	if (!setListen(backlog)) {
-#if HAVE_EXCEPTION
-		throw ListenException();
-#endif
-        }
 }
 
 ProtocolRFCOMMServer::~ProtocolRFCOMMServer()
 {
 	HAGGLE_DBG("Destroying %s\n", getName());
+}
+
+bool ProtocolRFCOMMServer::init()
+{
+	if (!initbase())
+		return false;
+	
+	if (!setListen(backlog)) {
+		closeSocket();
+		HAGGLE_ERR("Could not set socket to listening mode\n");
+		return false;
+        }
+	return true;
 }
 
 ProtocolEvent ProtocolRFCOMMServer::acceptClient()
@@ -196,7 +204,11 @@ ProtocolEvent ProtocolRFCOMMServer::acceptClient()
 							   (unsigned short) clientAddr.bt_channel,
 							   this->getLocalInterface(), pm);
 
-	p->setFlag(PROT_FLAG_CONNECTED);
+	if (!p || !p->init()) {
+		HAGGLE_ERR("Could not create new RFCOMM receiver\n");
+		CLOSE_SOCKET(clientSock);
+		return PROT_EVENT_ERROR;
+	}
 
 	p->registerWithManager();
 

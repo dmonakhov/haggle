@@ -36,19 +36,17 @@ HaggleKernel::HaggleKernel(DataStore *ds , const string _storagepath) :
 	dataStore(ds), starttime(Timeval::now()), shutdownCalled(false),
 	running(false), storagepath(_storagepath)
 {
+	
+}
+
+bool HaggleKernel::init()
+{
 	char hostname[HOSTNAME_LEN];
 
 #if defined(OS_WINDOWS_MOBILE) || defined(OS_ANDROID)
 	if (!Trace::trace.enableFileTrace())
 		HAGGLE_ERR("Could not enable file tracing\n");
 #endif
-	if (!ds) {
-#if HAVE_EXCEPTION
-		throw(Exception(0, "No data store given"));
-#else
-                return;
-#endif                
-        }
 
 #ifdef OS_WINDOWS
 	WSADATA wsaData;
@@ -59,14 +57,20 @@ HaggleKernel::HaggleKernel(DataStore *ds , const string _storagepath) :
 
 	if (iResult != 0) {
 		HAGGLE_ERR("WSAStartup failed: %d\n", iResult);
-#if HAVE_EXCEPTION
-		throw(Exception(iResult, "WSAStartup failed"));
-#else
-                return;
-#endif
+                return false;
 	}
 #endif
-	dataStore->kernel = this;
+	
+	if (dataStore) {
+		dataStore->kernel = this;
+		if (!dataStore->init()) {
+			HAGGLE_ERR("Data store could not be initialized\n");
+			return false;
+		}
+	} else {
+		HAGGLE_ERR("No data store!!!\n");
+		return false;
+	}
 
 	// The interfaces on this node will be discovered when the
 	// ConnectivityManager is started. Hence, they will not be
@@ -78,6 +82,7 @@ HaggleKernel::HaggleKernel(DataStore *ds , const string _storagepath) :
 
 	if (res != 0) {
 		HAGGLE_ERR("Could not get hostname\n");
+		return false;
 	}
 	
 	// Always zero terminate in case the hostname didn't fit
@@ -86,7 +91,14 @@ HaggleKernel::HaggleKernel(DataStore *ds , const string _storagepath) :
         HAGGLE_DBG("Hostname is %s\n", hostname);
 
 	thisNode = nodeStore.add(new Node(NODE_TYPE_THIS_NODE, string(hostname)));
+
+	if (!thisNode) {
+		HAGGLE_ERR("Could not create this node\n");
+		return false;
+	}
 	currentPolicy = NULL;
+
+	return true;
 }
 
 HaggleKernel::~HaggleKernel()
@@ -96,7 +108,8 @@ HaggleKernel::~HaggleKernel()
 	WSACleanup();
 #endif
 	// Now that it has finished processing, delete the data store:
-	delete dataStore;
+	if (dataStore)
+		delete dataStore;
 
 	HAGGLE_DBG("Done\n");
 }
@@ -307,6 +320,11 @@ bool HaggleKernel::readStartupDataObject(FILE *fp)
 			if (theDO == NULL)
 				theDO = new DataObject((InterfaceRef) NULL);
 			
+			if (!theDO) {
+				ret = false;
+				goto out;
+			}
+
 			k = theDO->putData(&(data[i]), len - i, &j);
 			
 			// Check return value:
@@ -338,6 +356,7 @@ bool HaggleKernel::readStartupDataObject(FILE *fp)
 			delete theDO;
 		}
 	}
+out:
 	free(data);
 	
 	return ret;

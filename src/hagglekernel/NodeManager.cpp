@@ -39,24 +39,95 @@ NodeManager::NodeManager(HaggleKernel * _haggle) :
 	thumbnail_size(0), thumbnail(NULL), 
 	sequence_number(0)
 {
+}
+
+NodeManager::~NodeManager()
+{
+	if (filterQueryCallback)
+		delete filterQueryCallback;
+	
+	if (onRetrieveNodeCallback)
+		delete onRetrieveNodeCallback;
+	
+	if (onRetrieveThisNodeCallback)
+		delete onRetrieveThisNodeCallback;
+	
+	if (onRetrieveNodeDescriptionCallback)
+		delete onRetrieveNodeDescriptionCallback;
+}
+
+bool NodeManager::init_derived()
+{
 #define __CLASS__ NodeManager
+	int ret;
 
 	// Register filter for node descriptions
 	registerEventTypeForFilter(nodeDescriptionEType, "NodeDescription", onReceiveNodeDescription, FILTER_NODEDESCRIPTION);
 
-	setEventHandler(EVENT_TYPE_LOCAL_INTERFACE_UP, onLocalInterfaceUp);
-	setEventHandler(EVENT_TYPE_LOCAL_INTERFACE_DOWN, onLocalInterfaceDown);
-	setEventHandler(EVENT_TYPE_NEIGHBOR_INTERFACE_UP, onNeighborInterfaceUp);
-	setEventHandler(EVENT_TYPE_NEIGHBOR_INTERFACE_DOWN, onNeighborInterfaceDown);
+	ret = setEventHandler(EVENT_TYPE_LOCAL_INTERFACE_UP, onLocalInterfaceUp);
 
-	setEventHandler(EVENT_TYPE_NODE_CONTACT_NEW, onNewNodeContact);
-	setEventHandler(EVENT_TYPE_NODE_DESCRIPTION_SEND, onSendNodeDescription);
-	
-	setEventHandler(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, onSendResult);
-	setEventHandler(EVENT_TYPE_DATAOBJECT_SEND_FAILURE, onSendResult);
-	
-	//setEventHandler(EVENT_TYPE_NEIGHBOR_INTERFACE_DOWN, onNeighborInterfaceDown);
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
 
+	ret = setEventHandler(EVENT_TYPE_LOCAL_INTERFACE_DOWN, onLocalInterfaceDown);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+
+	ret = setEventHandler(EVENT_TYPE_NEIGHBOR_INTERFACE_UP, onNeighborInterfaceUp);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+
+	ret = setEventHandler(EVENT_TYPE_NEIGHBOR_INTERFACE_DOWN, onNeighborInterfaceDown);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+
+	ret = setEventHandler(EVENT_TYPE_NODE_CONTACT_NEW, onNewNodeContact);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+
+	ret = setEventHandler(EVENT_TYPE_NODE_DESCRIPTION_SEND, onSendNodeDescription);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+	
+	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, onSendResult);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+
+	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_SEND_FAILURE, onSendResult);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+	
+	/*
+	ret = setEventHandler(EVENT_TYPE_NEIGHBOR_INTERFACE_DOWN, onNeighborInterfaceDown);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+	*/
 	filterQueryCallback = newEventCallback(onFilterQueryResult);
 
 	onRetrieveNodeCallback = newEventCallback(onRetrieveNode);
@@ -64,7 +135,6 @@ NodeManager::NodeManager(HaggleKernel * _haggle) :
 	onRetrieveNodeDescriptionCallback = newEventCallback(onRetrieveNodeDescription);
 
 	kernel->getDataStore()->retrieveNode(kernel->getThisNode(), onRetrieveThisNodeCallback);
-	
 	
 	/*
 		We only search for a thumbnail at haggle startup time, to avoid 
@@ -109,21 +179,8 @@ NodeManager::NodeManager(HaggleKernel * _haggle) :
 	// add node information to trace
 //	Event nodeInfoEvent(onRetrieveThisNodeCallback, kernel->getThisNode());
 //	LOG_ADD("%s: %s NodeManager thisNode information\n", Timeval::now().getAsString().c_str(), nodeInfoEvent.getDescription().c_str());
-}
 
-NodeManager::~NodeManager()
-{
-	if (filterQueryCallback)
-		delete filterQueryCallback;
-	
-	if (onRetrieveNodeCallback)
-		delete onRetrieveNodeCallback;
-	
-	if (onRetrieveThisNodeCallback)
-		delete onRetrieveThisNodeCallback;
-	
-	if (onRetrieveNodeDescriptionCallback)
-		delete onRetrieveNodeDescriptionCallback;
+	return true;
 }
 
 void NodeManager::onPrepareShutdown()

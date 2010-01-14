@@ -15,7 +15,7 @@
 #include "InterfaceStore.h"
 #include "Trace.h"
 
-InterfaceStore::InterfaceStore() : mutex("InterfaceStore")
+InterfaceStore::InterfaceStore()
 {
 }
 
@@ -94,7 +94,7 @@ bool InterfaceStore::stored(const InterfaceRef &iface)
 	return false;
 }
 
-bool InterfaceStore::stored(const InterfaceType_t type, const char *identifier)
+bool InterfaceStore::stored(const InterfaceType_t type, const unsigned char *identifier)
 {
         Mutex::AutoLocker l(mutex);
 
@@ -321,7 +321,7 @@ InterfaceRef InterfaceStore::retrieve(const Address &add)
 }
 
 
-InterfaceRef InterfaceStore::retrieve(const InterfaceType_t type, const char *identifier)
+InterfaceRef InterfaceStore::retrieve(const InterfaceType_t type, const unsigned char *identifier)
 {
         Mutex::AutoLocker l(mutex);
 
@@ -452,7 +452,7 @@ InterfaceStore::size_type InterfaceStore::remove(const InterfaceRef &iface, Inte
 	return removed;
 }
 
-InterfaceStore::size_type InterfaceStore::remove(const InterfaceType_t type, const char *identifier, InterfaceRefList *ifl)
+InterfaceStore::size_type InterfaceStore::remove(const InterfaceType_t type, const unsigned char *identifier, InterfaceRefList *ifl)
 {
         Mutex::AutoLocker l(mutex);
         size_type removed = 0;
@@ -533,7 +533,7 @@ InterfaceStore::size_type InterfaceStore::age(const Interface *parent, Interface
 	return removed;
 }
 
-InterfaceStore::size_type InterfaceStore::age(const InterfaceType_t type, const char *identifier, InterfaceRefList *ifl, Timeval *lifetime)
+InterfaceStore::size_type InterfaceStore::age(const InterfaceType_t type, const unsigned char *identifier, InterfaceRefList *ifl, Timeval *lifetime)
 {
         Mutex::AutoLocker l(mutex);
 	InterfaceRefList children;

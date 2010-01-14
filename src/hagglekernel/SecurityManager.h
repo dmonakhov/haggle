@@ -110,6 +110,7 @@ private:
 	void onPrepareStartup();
 	void onPrepareShutdown();
 	void onShutdown();
+	bool init_derived();
 public:
 #ifdef DEBUG
 	void printCertificates();
@@ -119,12 +120,6 @@ public:
 	SecurityLevel_t getSecurityLevel() const { return securityLevel; }
 	SecurityManager(HaggleKernel *_haggle = haggleKernel, SecurityLevel_t slevel = SECURITY_LEVEL_MEDIUM);
 	~SecurityManager();
-
-	class SMException : public ManagerException
-	{
-	public:
-		SMException(const int err = 0, const char* data = "Security manager Error") : ManagerException(err, data) {}
-	};
 };
 
 #endif

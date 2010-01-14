@@ -25,7 +25,6 @@ class Interface;
 #include <time.h>
 
 #include <libcpphaggle/Platform.h>
-#include <libcpphaggle/Exception.h>
 #include <libcpphaggle/Thread.h>
 #include <libcpphaggle/Reference.h>
 #include <haggleutils.h>
@@ -72,8 +71,8 @@ class Interface
 #endif
 {
 	union {
-		char raw[1]; // Used for generic access
-		char mac[GENERIC_MAC_LEN];
+		unsigned char raw[1]; // Used for generic access
+		unsigned char mac[GENERIC_MAC_LEN];
 		short application_port;
 		char application_local[LOCAL_PATH_MAX];
 		char media[MAX_MEDIA_PATH_LEN];
@@ -135,15 +134,15 @@ public:
 	/**
 		Gets a pointer to the beginning of the raw identifier which is unique for this interface.
 	*/
-	const char *getRawIdentifier() const { return identifier.raw; }
-	/**
+	const unsigned char *getIdentifier() const { return identifier.raw; }
+	/** 
 		Gets the length of the raw identifier which is unique for this interface.
 	*/
-	const long getIdentifierLen() const;
+	const size_t getIdentifierLen() const;
 	/**
 		Gets the identifier for this interface as a pair.
 	*/
-	const Pair<const char *, const long> getIdentifier() const { return make_pair(identifier.raw, getIdentifierLen()); }
+	const Pair<const unsigned char *, const long> getIdentifierPair() const { return make_pair(identifier.raw, getIdentifierLen()); }
 	
 	/**
 		Gets the identifier as a human readable C-string.
@@ -249,7 +248,7 @@ public:
 	/**
 		Returns true if the type and identifier match.
 	*/
-	bool equal(const InterfaceType_t type, const char *identifier) const;
+	bool equal(const InterfaceType_t type, const unsigned char *identifier) const;
 	/**
 		Equality operator.
 	*/

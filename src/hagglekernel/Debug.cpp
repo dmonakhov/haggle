@@ -58,7 +58,7 @@ const char *LeakMonitor::leaktypestr[] = {
 unsigned long LeakMonitor::numAlloc[_LEAK_TYPE_MAX] = { 0 };
 unsigned long LeakMonitor::numFree[_LEAK_TYPE_MAX] = { 0 };
 LeakMonitor::registry_t LeakMonitor::registry;
-Mutex LeakMonitor::registryMutex("LeakMonitorRegistryMutex");
+Mutex LeakMonitor::registryMutex;
 
 #ifdef LEAK_COUNT_FUNCTION_CALLS
 LeakMonitor::func_registry_t LeakMonitor::functionCalls[_LEAK_TYPE_MAX];

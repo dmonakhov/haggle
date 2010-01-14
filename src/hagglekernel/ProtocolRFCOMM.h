@@ -40,7 +40,6 @@ class ProtocolRFCOMMServer;
 #else
 
 #include <haggleutils.h>
-#include <libcpphaggle/Exception.h>
 
 #if defined(OS_LINUX)
 #include <sys/socket.h>
@@ -114,6 +113,7 @@ public:
         ProtocolRFCOMM(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, const unsigned short channel = RFCOMM_DEFAULT_CHANNEL, const short flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL);
 
         virtual ~ProtocolRFCOMM();
+	bool initbase();
 
         unsigned short getMode() {
                 return mode;
@@ -126,10 +126,11 @@ class ProtocolRFCOMMClient : public ProtocolRFCOMM
 	friend class ProtocolRFCOMMServer;
 public:
 	ProtocolRFCOMMClient(SOCKET _sock, const char *_mac, const unsigned short _channel, const InterfaceRef& _localIface, ProtocolManager *m = NULL) :
-	ProtocolRFCOMM(_sock, _mac, _channel, _localIface, PROT_FLAG_CLIENT, m) {}
+		ProtocolRFCOMM(_sock, _mac, _channel, _localIface, PROT_FLAG_CLIENT | PROT_FLAG_CONNECTED, m) {}
 	ProtocolRFCOMMClient(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, const unsigned short channel = RFCOMM_DEFAULT_CHANNEL, ProtocolManager *m = NULL);
 	~ProtocolRFCOMMClient();
 	ProtocolEvent connectToPeer();
+	bool init();
 };
 
 /** */
@@ -168,6 +169,7 @@ public:
 			     int _backlog = RFCOMM_BACKLOG_SIZE);
         ~ProtocolRFCOMMServer();
         ProtocolEvent acceptClient();
+	bool init();
 };
 
 #endif

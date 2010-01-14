@@ -33,7 +33,6 @@
 class ConnectivityBluetooth : public ConnectivityBluetoothBase
 {
 private:
-	InterfaceRef rootInterface;
 	CSdpService *sdp;
         friend void bluetoothDiscovery(ConnectivityBluetooth *conn);
         friend void serviceDiscoveryCallback(struct RemoteDevice *rd, CSdpDiscoveryRec *records, int num_records, void *data);
@@ -41,7 +40,6 @@ private:
         bool run();
         void hookCleanup();
 public:
-	virtual void handleInterfaceDown(const InterfaceRef &iface);
         ConnectivityBluetooth(ConnectivityManager *m, const InterfaceRef& iface);
         ~ConnectivityBluetooth();
 };

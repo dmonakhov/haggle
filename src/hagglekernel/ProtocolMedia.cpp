@@ -245,6 +245,14 @@ ProtocolEvent ProtocolMedia::receiveDataObject()
 
 			// create dataobject
 			DataObject *dObj = new DataObject(buf, 0, NULL);
+
+			if (!dObj) {
+				return PROT_EVENT_ERROR;
+			}
+			if (!dObj->isValid()) {
+				delete dObj;
+				return PROT_EVENT_ERROR;
+			}
 			// set remoteFilepath
 			hasFile = (dObj->getDataLen() > 0);
 			if (hasFile) {

@@ -36,7 +36,7 @@ void Connectivity::age_interfaces(const InterfaceRef &whose, Timeval *lifetime)
 	getManager()->age_interfaces(whose, lifetime);
 }
 
-InterfaceStatus_t Connectivity::have_interface(const InterfaceType_t type, const char *identifier)
+InterfaceStatus_t Connectivity::have_interface(const InterfaceType_t type, const unsigned char *identifier)
 {
 	return getManager()->have_interface(type, identifier);
 }
@@ -51,12 +51,12 @@ InterfaceStatus_t Connectivity::report_known_interface(const InterfaceRef& iface
 	return getManager()->report_known_interface(iface, isHaggle);
 }
 
-InterfaceStatus_t Connectivity::report_known_interface(const InterfaceType_t type, const char *identifier, bool isHaggle)
+InterfaceStatus_t Connectivity::report_known_interface(const InterfaceType_t type, const unsigned char *identifier, bool isHaggle)
 {
 	return getManager()->report_known_interface(type, identifier, isHaggle);
 }
 
-InterfaceStatus_t Connectivity::is_known_interface(const InterfaceType_t type, const char *identifier)
+InterfaceStatus_t Connectivity::is_known_interface(const InterfaceType_t type, const unsigned char *identifier)
 {
 	return getManager()->is_known_interface(type, identifier);
 }
@@ -81,9 +81,21 @@ void Connectivity::delete_interface(const string name)
 	getManager()->delete_interface(name);
 }
 
-void Connectivity::delete_interface(const InterfaceType_t type, const char *identifier)
+void Connectivity::delete_interface(const InterfaceType_t type, const unsigned char *identifier)
 {
 	getManager()->delete_interface(type, identifier);
+}
+
+
+bool Connectivity::handleInterfaceUp(const InterfaceRef &iface)
+{
+	return false;
+}
+
+void Connectivity::handleInterfaceDown(const InterfaceRef &iface)
+{
+	if (iface == rootInterface)
+		cancelDiscovery();
 }
 
 void Connectivity::cleanup()
@@ -94,8 +106,8 @@ void Connectivity::cleanup()
 	getKernel()->addEvent(new Event((static_cast < ConnectivityManager * >(getManager()))->deleteConnectivityEType, this));
 }
 
-Connectivity::Connectivity(ConnectivityManager * _m, const string _name) :
-	ManagerModule<ConnectivityManager>(_m, _name)
+Connectivity::Connectivity(ConnectivityManager * _m, const InterfaceRef& _iface, const string _name) :
+	ManagerModule<ConnectivityManager>(_m, _name), rootInterface(_iface)
 {
 }
 

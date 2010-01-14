@@ -53,6 +53,19 @@ DebugManager::DebugManager(HaggleKernel * _kernel, bool interactive) :
                 Manager("DebugManager", _kernel), onFindRepositoryKeyCallback(NULL), 
                 onDumpDataStoreCallback(NULL), server_sock(-1), console(INVALID_STDIN)
 {
+}
+
+DebugManager::~DebugManager()
+{
+	if (onFindRepositoryKeyCallback)
+		delete onFindRepositoryKeyCallback;
+
+        if (onDumpDataStoreCallback)
+                delete onDumpDataStoreCallback;
+}
+
+bool DebugManager::init_derived()
+{
 #define __CLASS__ DebugManager
 #if defined(DEBUG)
 	int i;
@@ -69,11 +82,8 @@ DebugManager::DebugManager(HaggleKernel * _kernel, bool interactive) :
 
 	if (server_sock == INVALID_SOCKET || !kernel->registerWatchable(server_sock, this)) {
 		CLOSE_SOCKET(server_sock);
-#if HAVE_EXCEPTION
-		throw DebugException(-1, "Could not register socket");
-#else
-		return;
-#endif
+		HAGGLE_ERR("Could not register socket\n");
+		return false;
 	}
 
 #if defined(OS_LINUX) || (defined(OS_MACOSX) && !defined(OS_MACOSX_IPHONE))
@@ -82,11 +92,8 @@ DebugManager::DebugManager(HaggleKernel * _kernel, bool interactive) :
 		
 		if (console == -1 || !kernel->registerWatchable(console, this)) {
 			HAGGLE_ERR("Unable to open STDIN!\n");
-#if HAVE_EXCEPTION
-			throw DebugException(0, strerror(errno));
-#else
-                        return;
-#endif
+			CLOSE_SOCKET(server_sock);
+                        return false;
 		}
 	}
 #elif defined(OS_WINDOWS_DESKTOP)
@@ -94,11 +101,9 @@ DebugManager::DebugManager(HaggleKernel * _kernel, bool interactive) :
 		console = GetStdHandle(STD_INPUT_HANDLE);
 
 		if (console == INVALID_HANDLE_VALUE || !kernel->registerWatchable(console, this)) {
-#if HAVE_EXCEPTION
-			throw DebugException(0, StrError(GetLastError()));
-#else
-			return;
-#endif
+			HAGGLE_ERR("Error - %s\n", StrError(GetLastError()));
+			CLOSE_SOCKET(server_sock);
+			return false;
 		}
 		// This will reset the console mode so that getchar() returns for 
 		// every character read
@@ -109,11 +114,9 @@ DebugManager::DebugManager(HaggleKernel * _kernel, bool interactive) :
 	debugEType = registerEventType("DebugManager Debug Event", onDebugReport);
 
 	if (debugEType < 0) {
-#if HAVE_EXCEPTION
-		throw DebugException(debugEType, "Could not register debug report event type...");
-#else
-		return;
-#endif
+		HAGGLE_ERR("Could not register debug report event type...\n");
+		CLOSE_SOCKET(server_sock);
+		return false;
 	}
 #if defined(OS_WINDOWS_MOBILE) || defined(OS_ANDROID) 
 	kernel->addEvent(new Event(debugEType, NULL, 60));
@@ -136,15 +139,8 @@ DebugManager::DebugManager(HaggleKernel * _kernel, bool interactive) :
 #endif
 
 	onDumpDataStoreCallback = newEventCallback(onDumpDataStore);
-}
 
-DebugManager::~DebugManager()
-{
-	if (onFindRepositoryKeyCallback)
-		delete onFindRepositoryKeyCallback;
-
-        if (onDumpDataStoreCallback)
-                delete onDumpDataStoreCallback;
+	return true;
 }
 
 void DebugManager::onFindRepositoryKey(Event *e)
@@ -165,6 +161,10 @@ void DebugManager::onFindRepositoryKey(Event *e)
 		// Empty at first:
 		dObj = new DataObject();
 		
+		if (!dObj || !dObj->isValid()) {
+			HAGGLE_ERR("Could not create data object\n");
+			return;
+		}
 		// Add log file attribute:
 		Attribute a("Log file","Trace");
 		dObj->addAttribute(a);

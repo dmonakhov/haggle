@@ -364,7 +364,7 @@ Metadata *Node::toMetadata(bool withBloomfilter) const
 
                 im->setParameter(NODE_METADATA_INTERFACE_TYPE_PARAM, (*it)->getTypeStr());
 
-                b64len = base64_encode_alloc((const char *)(*it)->getRawIdentifier(), (*it)->getIdentifierLen(), &b64str);
+                b64len = base64_encode_alloc((const char *)(*it)->getIdentifier(), (*it)->getIdentifierLen(), &b64str);
                 
                 im->setParameter(NODE_METADATA_INTERFACE_IDENTIFIER_PARAM, b64str);
                 
@@ -549,7 +549,7 @@ void Node::calcId()
 
         if (getLocalInterfaceList(iflist, false) > 0) {
                 for (InterfaceRefList::iterator it = iflist.begin(); it != iflist.end(); ++it) {
-                        SHA1_Update(&ctx, (unsigned char *)(*it)->getRawIdentifier(), (*it)->getIdentifierLen());
+                        SHA1_Update(&ctx, (unsigned char *)(*it)->getIdentifier(), (*it)->getIdentifierLen());
                         //printf("Found local interface %s\n", (*it)->getIdentifierStr());
                 }
         }

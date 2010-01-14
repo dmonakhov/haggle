@@ -30,23 +30,6 @@ Manager::Manager(const char *_name, HaggleKernel * _kernel) :
 		readyForStartup(false), readyForShutdown(false), startupComplete(false), 
 		kernel(_kernel)
 {
-#define __CLASS__ Manager
-	setEventHandler(EVENT_TYPE_PREPARE_STARTUP, _onPrepareStartup);
-	setEventHandler(EVENT_TYPE_STARTUP, _onStartup);
-	setEventHandler(EVENT_TYPE_PREPARE_SHUTDOWN, _onPrepareShutdown);
-	setEventHandler(EVENT_TYPE_SHUTDOWN, _onShutdown);
-	
-	// Register filter for node descriptions
-	registerEventTypeForFilter(configEType, "Manager Configuration Filter Event", _onConfig, FILTER_CONFIG);
-	
-	if (!kernel->registerManager(this)) {
-		HAGGLE_ERR("Could not register %s with kernel\n", name.c_str());
-#if HAVE_EXCEPTION
-		throw ManagerException(-1, "Could not register manager\n");
-#endif
-	} else {
-                registered = true;
-        }
 }
 
 Manager::~Manager()
@@ -55,6 +38,50 @@ Manager::~Manager()
 	unregisterEventTypeForFilter(configEType);
 }
 
+bool Manager::init()
+{
+#define __CLASS__ Manager
+	int ret;
+	ret = setEventHandler(EVENT_TYPE_PREPARE_STARTUP, _onPrepareStartup);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+
+	ret = setEventHandler(EVENT_TYPE_STARTUP, _onStartup);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+
+	ret = setEventHandler(EVENT_TYPE_PREPARE_SHUTDOWN, _onPrepareShutdown);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+
+	ret = setEventHandler(EVENT_TYPE_SHUTDOWN, _onShutdown);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+	
+	// Register filter for node descriptions
+	registerEventTypeForFilter(configEType, "Manager Configuration Filter Event", _onConfig, FILTER_CONFIG);
+	
+	if (!kernel->registerManager(this)) {
+		HAGGLE_ERR("Could not register %s with kernel\n", name.c_str());
+		return false;
+	} else {
+                registered = true;
+        }
+
+	return init_derived();
+}
 
 void Manager::signalIsReadyForStartup()
 {

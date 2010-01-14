@@ -31,6 +31,7 @@ class ResourceManager : public Manager
 	void onShutdown();
 	void onStartup();
 	void onCheckStatusEvent(Event *e);
+	bool init_derived();
 public:
 	ResourceManager(HaggleKernel *kernel);
 	~ResourceManager();

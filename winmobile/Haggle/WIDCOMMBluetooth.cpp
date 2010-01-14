@@ -3,7 +3,6 @@
 #if defined(WIDCOMM_BLUETOOTH)
 
 #include <msgqueue.h>
-#include <libcpphaggle/Exception.h>
 #include "Trace.h"
 
 WIDCOMMBluetooth *WIDCOMMBluetooth::stack = NULL;

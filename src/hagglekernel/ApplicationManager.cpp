@@ -54,7 +54,7 @@ class EventCriteria : public NodeStore::Criteria
 	EventType etype;
 public:
 	EventCriteria(EventType _etype) : etype(_etype) {}
-	virtual bool operator() (const NodeRef& n) const
+	bool operator() (const NodeRef& n) const
 	{
 		return (n->getType() == NODE_TYPE_APPLICATION && 
 			n->hasEventInterest(etype));
@@ -67,7 +67,7 @@ class EventCriteria2 : public NodeStore::Criteria
 	EventType etype2;
 public:
 	EventCriteria2(EventType _etype1, EventType _etype2) : etype1(_etype1), etype2(_etype2) {}
-	virtual bool operator() (const NodeRef& n1) const
+	bool operator() (const NodeRef& n1) const
 	{
 		return (n1->getType() == NODE_TYPE_APPLICATION && 
 			n1->hasEventInterest(etype1) && 
@@ -80,7 +80,7 @@ class NeighborCriteria : public NodeStore::Criteria
 	EventType etype2;
 public:
 	NeighborCriteria(EventType _etype1, EventType _etype2) : etype1(_etype1), etype2(_etype2) {}
-	virtual bool operator() (const NodeRef& n1) const
+	bool operator() (const NodeRef& n1) const
 	{
 		return (n1->getType() == NODE_TYPE_PEER && 
 			n1->isAvailable() &&
@@ -93,55 +93,62 @@ ApplicationManager::ApplicationManager(HaggleKernel * _kernel) :
 	Manager("ApplicationManager", _kernel), numClients(0), sessionid(0),
 	dataStoreFinishedProcessing(false)
 {
+}
+
+bool ApplicationManager::init_derived()
+{
 #define __CLASS__ ApplicationManager
 	int ret;
 
 	ret = setEventHandler(EVENT_TYPE_NEIGHBOR_INTERFACE_DOWN, onNeighborStatusChange);
 
-#if HAVE_EXCEPTION
-	if (ret < 0)
-		throw ApplicationException(ret, "Could not register event");
-#endif
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event\n");
+		return false;
+	}
+
 	ret = setEventHandler(EVENT_TYPE_NEIGHBOR_INTERFACE_UP, onNeighborStatusChange);
 
-#if HAVE_EXCEPTION
-	if (ret < 0)
-		throw ApplicationException(ret, "Could not register event");
-#endif
-       
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event\n");
+		return false;
+	}
+
 	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, onSendResult);
 
-#if HAVE_EXCEPTION
-	if (ret < 0)
-		throw ApplicationException(ret, "Could not register event");
-#endif
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event\n");
+		return false;
+	}
+
 	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_SEND_FAILURE, onSendResult);
 
-#if HAVE_EXCEPTION
-	if (ret < 0)
-		throw ApplicationException(ret, "Could not register event");
-#endif
-       
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event\n");
+		return false;
+	}
+
 	ret = setEventHandler(EVENT_TYPE_NODE_CONTACT_NEW, onNeighborStatusChange);
 
-#if HAVE_EXCEPTION
-	if (ret < 0)
-		throw ApplicationException(ret, "Could not register event");
-#endif
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event\n");
+		return false;
+	}
 
 	ret = setEventHandler(EVENT_TYPE_NODE_UPDATED, onNeighborStatusChange);
 
-#if HAVE_EXCEPTION
-	if (ret < 0)
-		throw ApplicationException(ret, "Could not register event");
-#endif
-        
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event\n");
+		return false;
+	}
+
 	ret = setEventHandler(EVENT_TYPE_NODE_CONTACT_END, onNeighborStatusChange);
 
-#if HAVE_EXCEPTION
-	if (ret < 0)
-		throw ApplicationException(ret, "Could not register event");
-#endif
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event\n");
+		return false;
+	}
+
         
 	onRetrieveNodeCallback = newEventCallback(onRetrieveNode);
 	onDataStoreFinishedProcessingCallback = newEventCallback(onDataStoreFinishedProcessing);
@@ -154,6 +161,8 @@ ApplicationManager::ApplicationManager(HaggleKernel * _kernel) :
          * objects from applications that contain control information.
          */
 	registerEventTypeForFilter(ipcFilterEvent, "Application API filter", onReceiveFromApplication, "HaggleIPC=*");
+
+	return true;
 }
 
 ApplicationManager::~ApplicationManager()
@@ -196,7 +205,12 @@ void ApplicationManager::onStartup()
 	fakeAppNode->addInterface(iface);
 	
 	// Create data object:
-	DataObjectRef fakeDO = new DataObject(NULL, 0);
+	DataObjectRef fakeDO = new DataObject();
+
+	if (!fakeDO || !fakeDO->isValid()) {
+		HAGGLE_ERR("Could not create data object\n");
+		return;
+	}
 	
 	fakeDO->addAttribute(HAGGLE_ATTR_CONTROL_NAME);
 	
@@ -338,7 +352,7 @@ void ApplicationManager::onPrepareShutdown()
 
 	DataObjectRef dObj = new DataObject();
 	
-	if (!dObj)
+	if (!dObj || !dObj->isValid())
 		return;
 	
 	// Tell all applications that we are shutting down.
@@ -598,7 +612,7 @@ void ApplicationManager::onNeighborStatusChange(Event *e)
 	
 	DataObjectRef dObj = new DataObject();
 	
-	if (!dObj)
+	if (!dObj || !dObj->isValid())
 		return;
 
 	Metadata *ctrl_m = addControlMetadata(CTRL_TYPE_EVENT, "All Applications", dObj->getMetadata());
@@ -663,11 +677,11 @@ void ApplicationManager::onNeighborStatusChange(Event *e)
 						// interface id
 						const char *strBase64 = mdIface->getParameter("identifier");
 						base64_decode_ctx_init(&b64_ctx);
-						char* idString = NULL;
-						base64_decode_alloc(&b64_ctx, strBase64, strlen(strBase64), &idString, &len);
+						unsigned char *identifier = NULL;
+						base64_decode_alloc(&b64_ctx, strBase64, strlen(strBase64), (char **)&identifier, &len);
 						
-                                                if (idString) {
-							InterfaceRef iface = kernel->getInterfaceStore()->retrieve(ifaceType, idString); 
+                                                if (identifier) {
+							InterfaceRef iface = kernel->getInterfaceStore()->retrieve(ifaceType, identifier); 
                                                         if (iface) {
 								if (iface->isUp()) {
                                                                         mdIface->setParameter("status", "up");
@@ -677,7 +691,7 @@ void ApplicationManager::onNeighborStatusChange(Event *e)
 							} else {
                                                                 mdIface->setParameter("status", "down");
 							}
-                                                        free(idString);
+                                                        free(identifier);
 						}
 						
 						mdIface = md->getNextMetadata();
@@ -698,7 +712,7 @@ void ApplicationManager::onNeighborStatusChange(Event *e)
 
 void ApplicationManager::onRetrieveNode(Event *e)
 {
-	if(!e || !e->hasData())
+	if (!e || !e->hasData())
 		return;
 	
 	NodeRef	appNode = e->getNode();
@@ -712,7 +726,7 @@ void ApplicationManager::onRetrieveNode(Event *e)
 	
 	DataObjectRef dObjReply = new DataObject();
 	
-	if (!dObjReply) {
+	if (!dObjReply || !dObjReply->isValid()) {
 		HAGGLE_ERR("Could not allocate data object\n");
 		return;
 	}
@@ -720,7 +734,6 @@ void ApplicationManager::onRetrieveNode(Event *e)
 	Metadata *ctrl_m = addControlMetadata(CTRL_TYPE_REGISTRATION_REPLY, appNode->getName(), dObjReply->getMetadata());
 	
 	if (!ctrl_m) {
-		
 		HAGGLE_ERR("Could not allocate control metadata\n");
 		return;
 	}
@@ -898,9 +911,9 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 						NodeRef newAppNode = new Node(NODE_TYPE_APPLICATION, (char *) NULL);
 						newAppNode->addInterface(dObj->getRemoteInterface());
 						
-						DataObjectRef dObjReply = new DataObject(NULL, 0);
+						DataObjectRef dObjReply = new DataObject();
 						
-						if (!dObjReply)
+						if (!dObjReply || !dObjReply->isValid())
 							break;
 						
 						// Create a reply saying "BUSY!"
@@ -1006,9 +1019,9 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 					HAGGLE_DBG("Request for application interests\n");
 					
 					if (appNode) {
-						DataObjectRef dObjReply = new DataObject(NULL, 0);
+						DataObjectRef dObjReply = new DataObject();
 						
-						if (!dObjReply)
+						if (!dObjReply || !dObjReply->isValid())
 							break;
 						
 						Metadata *ctrl_m = addControlMetadata(CTRL_TYPE_EVENT, name_str, dObjReply->getMetadata());

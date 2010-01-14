@@ -24,7 +24,6 @@ class DataObject;
 class DataObjectDataRetriever;
 
 #include <libcpphaggle/Reference.h>
-#include <libcpphaggle/Exception.h>
 #include <libcpphaggle/String.h>
 #include "Trace.h"
 #include <openssl/sha.h>
@@ -369,7 +368,7 @@ class DataObject
         void setDynamicDataLen(const bool _dynamicDataLen) {
                 dynamicDataLen = _dynamicDataLen;
         }
-        const bool getDynamicDataLen() const {
+        bool getDynamicDataLen() const {
                 return dynamicDataLen;
         }
         void setRxTime(const unsigned long time) {
@@ -455,12 +454,6 @@ class DataObject
 	void print(FILE *fp = stdout) const;
         friend bool operator< (const DataObject&a, const DataObject&b);
         friend bool operator==(const DataObject&a, const DataObject&b);
-
-        class DataObjectException : public Exception
-        {
-            public:
-                DataObjectException(const int err = 0, const char* data = "DOError") : Exception(err, data) {}
-        };
 };
 
 struct lt_dataobj_p {

@@ -206,76 +206,6 @@ bool ConnEthIfaceListElement::openBroadcastSocket()
 	return true;
 }
 
-ConnectivityEthernet::ConnectivityEthernet(ConnectivityManager * m, const InterfaceRef& iface) :
-	Connectivity(m, "Ethernet connectivity"), ifaceListMutex("ConnEth:IfaceListMutex"), 
-	seqno(0), beaconInterval(15)
-{
-	int on = 1;
-	struct sockaddr_in my_addr;
-
-	// Add the first interface to the broadcasting list:
-	if (!handleInterfaceUp(iface)) {
-#if HAVE_EXCEPTION
-		throw ConnectivityException(0, "Unable to open first broadcasting socket!\n");
-#else
-                HAGGLE_ERR("Could not set interface to up\n");
-                return;
-#endif	
-        }
-	// FIXME: should support IPv6 here.
-	memset(&my_addr, 0, sizeof(struct sockaddr_in));
-	// Set up local port:
-	my_addr.sin_family = AF_INET;
-	my_addr.sin_addr.s_addr = INADDR_ANY;
-	//memcpy(&my_addr.sin_addr.s_addr, iface->getIPConfig()->getIP(), sizeof(struct in_addr));
-	my_addr.sin_port = htons(HAGGLE_UDP_CONNECTIVITY_PORT);
-	
-	const Address addr((struct sockaddr *)&my_addr);
-
-	rootInterfacePtr = new Interface(IFTYPE_ETHERNET, 
-                                         // FIXME: Hotfix for hotfix: use the MAC address of the first interface, rather than a bogus MAC address.
-                                         // not good, but works for now.
-                                         iface->getRawIdentifier(), 
-                                         &addr, 
-                                         "Root ethernet connectivity interface",
-                                         IFFLAG_UP|IFFLAG_LOCAL);
-	rootInterface = rootInterfacePtr;
-	
-	// Open a UDP socket:
-	listenSock = socket(AF_INET, SOCK_DGRAM, 0);
-
-#if HAVE_EXCEPTION
-	if (listenSock == INVALID_SOCKET)
-		throw ConnectivityException(0, "Could not open socket\n");
-#endif
-	// Allow reuse of this address:
-	if (setsockopt(listenSock, SOL_SOCKET, SO_REUSEADDR, (const char *) &on, sizeof(on)) == -1) {
-		CLOSE_SOCKET(listenSock);
-#if HAVE_EXCEPTION
-		throw ConnectivityException(0, "Could not set SO_REUSEADDR socketopt\n");
-#endif
-	}
-	// Bind the socket to the address:
-	if (bind(listenSock, (struct sockaddr *) &my_addr, sizeof(my_addr)) == -1) {
-		CLOSE_SOCKET(listenSock);
-#if HAVE_EXCEPTION
-		throw ConnectivityException(0, "Could not bind socket\n");
-#endif
-	}
-}
-
-ConnectivityEthernet::~ConnectivityEthernet()
-{
-	while (!ifaceList.empty()) {
-		ConnEthIfaceListElement	*elem;
-		
-		elem = ifaceList.front();
-		ifaceList.pop_front();
-		delete elem;
-	}
-	CLOSE_SOCKET(listenSock);
-}
-
 bool ConnectivityEthernet::handleInterfaceUp(const InterfaceRef &iface)
 {
         Mutex::AutoLocker l(ifaceListMutex);
@@ -287,7 +217,7 @@ bool ConnectivityEthernet::handleInterfaceUp(const InterfaceRef &iface)
 	
 	// HOTFIX: make sure not to add the ethernet root interface to the list
 	// of scanned interfaces.
-	if (iface == rootInterface)
+	if (iface == fakeRootInterface)
 		return true;
 	
 	// Check that we don't already have this interface:
@@ -401,6 +331,85 @@ bool ConnectivityEthernet::isBeaconMine(struct haggle_beacon *b)
 	}
 	return false;
 }
+
+ConnectivityEthernet::ConnectivityEthernet(ConnectivityManager * m, const InterfaceRef& iface) :
+	Connectivity(m, iface, "Ethernet connectivity"), seqno(0), beaconInterval(15)
+{
+}
+
+ConnectivityEthernet::~ConnectivityEthernet()
+{
+	while (!ifaceList.empty()) {
+		ConnEthIfaceListElement	*elem;
+		
+		elem = ifaceList.front();
+		ifaceList.pop_front();
+		delete elem;
+	}
+	CLOSE_SOCKET(listenSock);
+}
+
+bool ConnectivityEthernet::init()
+{
+	int on = 1;
+	struct sockaddr_in my_addr;
+
+	// Add the first interface to the broadcasting list:
+	if (!handleInterfaceUp(rootInterface)) {
+                HAGGLE_ERR("Could not bring up ethernet connectivity interface\n");
+                return false;
+        }
+	// FIXME: should support IPv6 here.
+	memset(&my_addr, 0, sizeof(struct sockaddr_in));
+	// Set up local port:
+	my_addr.sin_family = AF_INET;
+	my_addr.sin_addr.s_addr = INADDR_ANY;
+	my_addr.sin_port = htons(HAGGLE_UDP_CONNECTIVITY_PORT);
+	
+	const Address addr((struct sockaddr *)&my_addr);
+
+	fakeRootInterface = new Interface(IFTYPE_ETHERNET, 
+		// FIXME: Hotfix for hotfix: use the MAC address of the first interface, 
+		// rather than a bogus MAC address. Not good, but works for now.
+		rootInterface->getIdentifier(), 
+		&addr, 
+		"Root ethernet",
+		IFFLAG_UP|IFFLAG_LOCAL);
+	
+	if (!fakeRootInterface) {
+		HAGGLE_ERR("Could not create fake root interface\n");
+		return false;
+	}
+
+	// Open a UDP socket:
+	listenSock = socket(AF_INET, SOCK_DGRAM, 0);
+
+	if (listenSock == INVALID_SOCKET) {
+		HAGGLE_ERR("Could not open socket\n");
+		return false;
+	}
+	// Allow reuse of this address:
+	if (setsockopt(listenSock, SOL_SOCKET, SO_REUSEADDR, (const char *) &on, sizeof(on)) == -1) {
+		CLOSE_SOCKET(listenSock);
+		HAGGLE_ERR("Could not set SO_REUSEADDR socketopt\n");
+		return false;
+	}
+	// Bind the socket to the address:
+	if (bind(listenSock, (struct sockaddr *) &my_addr, sizeof(my_addr)) == -1) {
+		CLOSE_SOCKET(listenSock);
+		HAGGLE_ERR("Could not bind socket\n");
+		return false;
+	}
+	/*
+		HOTFIX: report the fake root interface as being local and existing.
+		This is necessary because the interface store needs a parent interface
+		to be in the store if ageing is to work.
+	*/
+	report_interface(fakeRootInterface, NULL, new ConnectivityInterfacePolicyAgeless());
+	
+	return true;
+}
+
 // This is jitter in the range [ -1000000 : 1000000 ] microseconds.
 
 #define BEACON_JITTER ((prng_uint32() % 2000000) - 1000000)
@@ -416,13 +425,6 @@ bool ConnectivityEthernet::run()
 	struct haggle_beacon *beacon = (struct haggle_beacon *)buffer;
 	Timeval next_beacon_time = Timeval::now();
 	Timeval lifetime = -1; // The lifetime of the neighbor interface closest to death
-	
-	/*
-		HOTFIX: report the root interface as being local and existing.
-		This is necessary because the interface store needs a parent interface
-		to be in the store if ageing is to work.
-	*/
-	report_interface(rootInterfacePtr, NULL, new ConnectivityInterfacePolicyAgeless());
 	
 	socketIndex = w.add(listenSock); 
 	
@@ -488,7 +490,7 @@ bool ConnectivityEthernet::run()
 			} 
 			
 			// Age the neighbor interfaces
-			age_interfaces(rootInterface, &lifetime);
+			age_interfaces(fakeRootInterface, &lifetime);
 			
 			/*
 			if (lifetime.isValid()) {
@@ -541,7 +543,7 @@ bool ConnectivityEthernet::run()
 					
 					Interface iface(IFTYPE_ETHERNET, beacon->mac, &addrs, "Remote Ethernet", IFFLAG_UP);
 					
-					report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyTime(received_lifetime));
+					report_interface(&iface, fakeRootInterface, new ConnectivityInterfacePolicyTime(received_lifetime));
 				} else if (in_addr->sa_family == AF_INET) {	
 					Address *ipv4 = new Address(in_addr, NULL, ProtocolSpecType_TCP, TCP_DEFAULT_PORT);
 					
@@ -550,10 +552,10 @@ bool ConnectivityEthernet::run()
 					/*
 					 CM_DBG("Neighbor interface (%s) will expire in %lf seconds\n", 
 					       ipv4->getURI(), (received_lifetime - Timeval::now()).getTimeAsSecondsDouble());
-					 */
+					*/
 					
 					Interface iface(IFTYPE_ETHERNET, beacon->mac, &addrs, "Remote Ethernet", IFFLAG_UP);
-					report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyTime(received_lifetime));
+					report_interface(&iface, fakeRootInterface, new ConnectivityInterfacePolicyTime(received_lifetime));
 				}
 			} else {
 				//CM_DBG("Beacon is my own\n");

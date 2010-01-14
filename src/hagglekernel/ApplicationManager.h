@@ -115,15 +115,10 @@ class ApplicationManager : public Manager
 	void onPrepareShutdown();
 	void onShutdown();
 	void onStartup();
+	bool init_derived();
 public:
         ApplicationManager(HaggleKernel *_kernel = haggleKernel);
         ~ApplicationManager();
-
-class ApplicationException : public ManagerException
-        {
-        public:
-                ApplicationException(const int err = 0, const char* data = "Data manager Error") : ManagerException(err, data) {}
-        };
 };
 
 

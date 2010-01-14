@@ -41,49 +41,64 @@ unsigned int Test_cnt = 0;
 BenchmarkManager::BenchmarkManager(HaggleKernel * _kernel, unsigned int _DataObjects_Attr, unsigned int _Nodes_Attr, unsigned int _Attr_Num, unsigned int _DataObjects_Num, unsigned int _Test_Num) : 
 	Manager("BenchmarkManager", _kernel)
 {
-#define __CLASS__ BenchmarkManager
-	int ret;
 	DataObjects_Attr = _DataObjects_Attr;
 	Nodes_Attr = _Nodes_Attr;
 	Attr_Num = _Attr_Num;
 	DataObjects_Num = _DataObjects_Num;
 	Test_Num = _Test_Num;
+}
+
+BenchmarkManager::~BenchmarkManager()
+{
+}
+
+bool BenchmarkManager::init_derived()
+{
+#define __CLASS__ BenchmarkManager
+	int ret;
 
 	// private event: timeout
 	EventType timeoutEType = registerEventType("BenchmarkManager Timeout Event", onTimeout);
 	
-	if (timeoutEType < 0)
-		throw BMException(timeoutEType, "Could not register Timeout Event...");
+	if (timeoutEType < 0) {
+		HAGGLE_ERR("Could not register Timeout Event...\n");
+		return false;
+	}
 	kernel->addEvent(new Event(timeoutEType, NULL, 1.0));
 	
-//      ret = setEventHandler(EVENT_TYPE_DATAOBJECT_SEND,onEvaluate);
+	/*
+	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_SEND,onEvaluate);
 
-	// if (ret < 0)
-	//      throw BMException(ret, "Could not register event");
-
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event\n");
+		return false;
+	}
+	*/
 	queryCallback = newEventCallback(onQueryResult);
 
-	if (!queryCallback)
-		throw BMException(-1, "Could not create queryCallback");
+	if (!queryCallback) {
+		HAGGLE_ERR("Could not create queryCallback\n");
+		return false;
+	}
 
 	// private event: filter
 	evaluateEType = registerEventType("BenchmarkManager EvalFilter Event", onEvaluate);
 
-	if (evaluateEType < 0)
-		throw BMException(evaluateEType, "Could not register EvalFilter Event...");
+	if (evaluateEType < 0) {
+		HAGGLE_ERR("Could not register EvalFilter Event...");
+		return false;
+	}
 
 	Filter evaluateFilter(FILTER_EVALUATE, evaluateEType);
 
 	ret = kernel->getDataStore()->insertFilter(evaluateFilter);
 
-	if (ret < 0)
-		throw BMException(ret, "Could not register EvalFilter Filter...");
-}
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register EvalFilter Filter...\n");
+		return false;
+	}
 
-BenchmarkManager::~BenchmarkManager()
-{
-
-
+	return true;
 }
 
 int BenchmarkManager::handleAttributes(Event *e)
@@ -158,14 +173,14 @@ NodeRef BenchmarkManager::createNode(unsigned int numAttr)
 	macaddr[5] = (char) RANDOM_INT(255);
 	
 	Address addr(AddressType_EthMAC, (unsigned char *) macaddr);
-	InterfaceRef ifaceRef(new Interface(IFTYPE_ETHERNET, macaddr, &addr), "Benchmark Interface");
+	InterfaceRef iface = new Interface(IFTYPE_ETHERNET, macaddr, &addr);
 	sprintf(nodeid, "%ld", id);
 	sprintf(nodename, "node %ld", id);
 	
-	NodeRef node = NodeRef(new Node(NODE_TYPE_PEER, "BenchmarkNode"), "BenchmarkNode");
+	NodeRef node = new Node(NODE_TYPE_PEER, "BenchmarkNode");
 	node->setId(nodeid);
 	node->setName(nodename);
-	node->addInterface(ifaceRef);
+	node->addInterface(iface);
 
 	for (unsigned int i = 0; i < numAttr; i++) {
 		int tries = 0;
@@ -234,9 +249,9 @@ DataObjectRef BenchmarkManager::createDataObject(unsigned int numAttr)
 	
 	Address addr(AddressType_EthMAC, (unsigned char *) macaddr);
 	Address addr2(AddressType_EthMAC, (unsigned char *) macaddr2);
-	InterfaceRef localIfaceRef(new Interface(IFTYPE_ETHERNET, macaddr, &addr), "Benchmark Interface1");		
-	InterfaceRef remoteIfaceRef(new Interface(IFTYPE_ETHERNET, macaddr2, &addr2), "Benchmark Interface2");		
-	DataObjectRef dObj = DataObjectRef(new DataObject(localIfaceRef, remoteIfaceRef), "BenchmarkDataObject");
+	InterfaceRef localIface = new Interface(IFTYPE_ETHERNET, macaddr, &addr);		
+	InterfaceRef remoteIface = new Interface(IFTYPE_ETHERNET, macaddr2, &addr2);		
+	DataObjectRef dObj = new DataObject(localIface, remoteIface);
 
 	for (unsigned int i = 0; i < numAttr; i++) {
 		int tries = 0;

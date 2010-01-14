@@ -18,7 +18,6 @@
 
 #include <libcpphaggle/Platform.h>
 #include <libcpphaggle/Thread.h>
-#include <libcpphaggle/Exception.h>
 #include <haggleutils.h>
 
 #include "DebugManager.h"
@@ -420,12 +419,13 @@ int run_haggle()
 	//recreateDataStore = true;
 #endif
 	ResourceManager *rm = NULL;
+	ProtocolSocket *p = NULL;
 #ifdef OS_WINDOWS_MOBILE
 
 	// For testing we force the deletion of the data store
 	//recreateDataStore = true;
 #endif
-	int retval = -1;
+	int retval = EXIT_FAILURE;
 	  
 	if (!create_path(HAGGLE_DEFAULT_STORAGE_PATH)) {
                 HAGGLE_ERR("Could not create Haggle storage path : %s\n", HAGGLE_DEFAULT_STORAGE_PATH);
@@ -461,129 +461,155 @@ int run_haggle()
 
         kernel = new HaggleKernel(new SQLDataStore(recreateDataStore));
 
-	if (!kernel) {
-		fprintf(stderr, "Haggle startup error!\n");
+	if (!kernel || !kernel->init()) {
+		fprintf(stderr, "Kernel initialization error!\n");
 		return -1;
 	}
-
+	
 	// Build a Haggle configuration
-#if HAVE_EXCEPTION
-	try 
-#endif
-        {
-		ProtocolSocket *p = NULL;
+	am = new ApplicationManager(kernel);
 
-		am = new ApplicationManager(kernel);
+	if (!am || !am->init()) {
+		HAGGLE_ERR("Could not initialize application manager\n");
+		goto finish;
+	}
 
-		dm = new DataManager(kernel, setCreateTimeOnBloomfilterUpdate);
+	dm = new DataManager(kernel, setCreateTimeOnBloomfilterUpdate);
 
-		nm = new NodeManager(kernel);
+	if (!dm || !dm->init()) {
+		HAGGLE_ERR("Could not initialize data manager\n");
+		goto finish;
+	}
 
-		pm = new ProtocolManager(kernel);
+	nm = new NodeManager(kernel);
 
-		fm = new ForwardingManager(kernel);
-		
-		sm = new SecurityManager(kernel, securityLevel);
-		
+	if (!nm || !nm->init()) {
+		HAGGLE_ERR("Could not initialize node manager\n");
+		goto finish;
+	}
+
+	pm = new ProtocolManager(kernel);
+
+	if (!pm || !pm->init()) {
+		HAGGLE_ERR("Could not initialize protocol manager\n");
+		goto finish;
+	}
+
+	fm = new ForwardingManager(kernel);
+
+	if (!fm || !fm->init()) {
+		HAGGLE_ERR("Could not initialize forwarding manager\n");
+		goto finish;
+	}
+
+	sm = new SecurityManager(kernel, securityLevel);
+
+	if (!sm || !sm->init()) {
+		HAGGLE_ERR("Could not initialize security manager\n");
+		goto finish;
+	}
+
 #ifdef USE_UNIX_APPLICATION_SOCKET
-		p = new ProtocolLOCAL(kernel->getStoragePath() + "/" + HAGGLE_LOCAL_SOCKET, pm);
-		p->setFlag(PROT_FLAG_APPLICATION);
-		p->registerWithManager();
-#endif
-		p = new ProtocolUDP("127.0.0.1", HAGGLE_SERVICE_DEFAULT_PORT, pm);
-		p->setFlag(PROT_FLAG_APPLICATION);
-		p->registerWithManager();
-		/* Add ConnectivityManager last since it will start to
-		 * discover interfaces and generate events. At that
-		 * point the other managers should already be
-		 * running. */
+	p = new ProtocolLOCAL(kernel->getStoragePath() + "/" + HAGGLE_LOCAL_SOCKET, pm);
+	
+	if (!p || !p->init()) {
+		HAGGLE_ERR("Could not initialize LOCAL protocol\n");
+		goto finish;
+	}
+	p->setFlag(PROT_FLAG_APPLICATION);
+	p->registerWithManager();
 
-		rm = new ResourceManager(kernel);
+#endif
+	p = new ProtocolUDP("127.0.0.1", HAGGLE_SERVICE_DEFAULT_PORT, pm);
+	/* Add ConnectivityManager last since it will start to
+	* discover interfaces and generate events. At that
+	* point the other managers should already be
+	* running. */
 
-#ifdef BENCHMARK
-		if (!isBenchmarking) {
-#endif
-			cm = new ConnectivityManager(kernel);
-#ifdef BENCHMARK
-		} else {
-			if (isBenchmarking) {
-				bm = new BenchmarkManager(kernel, Benchmark_DataObjects_Attr, Benchmark_Nodes_Attr, Benchmark_Attr_Num, Benchmark_DataObjects_Num, Benchmark_Test_Num);
-			}
-		}
-#endif
-#if defined(ENABLE_DEBUG_MANAGER)
-		// It seems as if there can be only one accept() per
-		// thread... we need to make the DebugManager register
-		// protocol or something with the ProtocolTCPServer
-		// somehow
-		db = new DebugManager(kernel, runAsInteractive);
-#endif
+	if (!p || !p->init()) {
+		HAGGLE_ERR("Could not initialize UDP protocol\n");
+		goto finish;
 	}
-#if HAVE_EXCEPTION
-	catch(ProtocolSocket::SocketException & e) {
-		HAGGLE_ERR("SocketException caught : %s\n", e.getErrorMsg());
-		goto fail_exception;
-	}
-	catch(ProtocolSocket::BindException & e) {
-		HAGGLE_ERR("BindException caught : %s\n", e.getErrorMsg());
-		goto fail_exception;
-	}
-	catch(Manager::ManagerException & e) {
-		HAGGLE_ERR("Manager Exception caught : %s\n", e.getErrorMsg());
-		goto fail_exception;
-	}
-	catch(Exception & e) {
-		HAGGLE_ERR("Basic Exception : %s\n", e.getErrorMsg());
-		goto fail_exception;
-	}
-#endif
+	p->setFlag(PROT_FLAG_APPLICATION);
+	p->registerWithManager();
 
-#if HAVE_EXCEPTION
-	try 
-#endif
-        {
-		HAGGLE_DBG("Starting Haggle...\n");
-		
-#ifdef OS_WINDOWS_MOBILE
-		if (platform_type(current_platform()) == platform_windows_mobile_professional)
-			tray_notification_add(g_hInstance, kernel);
-#endif
+	rm = new ResourceManager(kernel);
 
-		kernel->run();
-		retval = EXIT_SUCCESS;
-
-		HAGGLE_DBG("Haggle finished...\n");
+	if (!rm || !rm->init()) {
+		HAGGLE_ERR("Could not initialize resource manager\n");
+		goto finish;
 	}
-#if HAVE_EXCEPTION
-	catch(Exception & e) {
-		HAGGLE_ERR("Exception caught : %s\n", e.getErrorMsg());
-	}
-	catch(...) {
-		HAGGLE_ERR("Unknown exception...\n");
-	}
-      fail_exception:
-#endif
 #ifdef BENCHMARK
 	if (!isBenchmarking) {
 #endif
-		delete cm;
+		cm = new ConnectivityManager(kernel);
+
+		if (!cm || !cm->init()) {
+			HAGGLE_ERR("Could not initialize connectivity manager\n");
+			goto finish;
+		}
+
 #ifdef BENCHMARK
 	} else {
-		if (isBenchmarking) {
-			delete bm;
+		bm = new BenchmarkManager(kernel, Benchmark_DataObjects_Attr, Benchmark_Nodes_Attr, Benchmark_Attr_Num, Benchmark_DataObjects_Num, Benchmark_Test_Num);
+
+		if (!bm || !bm->init()) {
+			HAGGLE_ERR("Could not initialize benchmark manager\n");
+			goto finish;
 		}
 	}
 #endif
-	delete sm;
-	delete fm;
-	delete pm;
-	delete nm;
-	delete dm;
-	delete am;
 #if defined(ENABLE_DEBUG_MANAGER)
-	delete db;
+	// It seems as if there can be only one accept() per
+	// thread... we need to make the DebugManager register
+	// protocol or something with the ProtocolTCPServer
+	// somehow
+	db = new DebugManager(kernel, runAsInteractive);
+
+	if (!db || !db->init()) {
+		HAGGLE_ERR("Could not initialize debug manager\n");
+		goto finish;
+	}
 #endif
-	delete rm;
+
+	HAGGLE_DBG("Starting Haggle...\n");
+
+#ifdef OS_WINDOWS_MOBILE
+	if (platform_type(current_platform()) == platform_windows_mobile_professional)
+		tray_notification_add(g_hInstance, kernel);
+#endif
+
+	kernel->run();
+	retval = EXIT_SUCCESS;
+
+	HAGGLE_DBG("Haggle finished...\n");
+
+finish:
+#ifdef BENCHMARK
+	if (bm)
+		delete bm;
+#endif
+	if (cm)
+		delete cm;
+	if (sm)
+		delete sm;
+	if (fm)
+		delete fm;
+	if (pm)	
+		delete pm;
+	if (nm)
+		delete nm;
+	if (dm)
+		delete dm;
+	if (am)
+		delete am;
+#if defined(ENABLE_DEBUG_MANAGER)
+	if (db)
+		delete db;
+#endif
+	if (rm)
+		delete rm;
+
 #ifdef OS_WINDOWS_MOBILE
 	tray_notification_remove();
 #endif
@@ -596,15 +622,14 @@ int run_haggle()
 #if defined(OS_WINDOWS)
 static void set_path(void)
 {
-	TCHAR	tstr[512];
-	char	str[512];
-	DWORD	size;
-	DWORD	i;
+	TCHAR tstr[512];
+	char str[512];
+	DWORD size;
+	DWORD i;
 	
 	size = GetModuleFileName(NULL, tstr, 512);
-	if(size != 512)
-	{
-		for(i = 0; i <= size; i++)
+	if (size != 512) {
+		for (i = 0; i <= size; i++)
 			str[i] = (char) tstr[i];
 		
 		fill_in_haggle_path(str);

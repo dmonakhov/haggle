@@ -15,7 +15,6 @@
 #include <string.h>
 
 #include <libcpphaggle/Platform.h>
-#include <libcpphaggle/Exception.h>
 #include <libcpphaggle/String.h>
 
 using namespace haggle;
@@ -49,11 +48,7 @@ LeakMonitor(LEAK_TYPE_FILTER),
 	etype(_etype)
 {
 	if (!inAttrs) {
-#if HAVE_EXCEPTION
-		throw FilterException(0, "NULL argument");
-#else
                 return;
-#endif
         }
 
 	attrs = *inAttrs;

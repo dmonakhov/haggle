@@ -105,9 +105,9 @@ class ConnectivityManager : public Manager
 
         Mutex blMutex; // Protects blacklist
         List<Interface *> blacklist; // Blacklist interfaces
-        void addToBlacklist(InterfaceType_t type, const void *identifier);
-        bool removeFromBlacklist(InterfaceType_t type, const void *identifier);
-        bool isBlacklisted(InterfaceType_t type, const void *identifier);
+        void addToBlacklist(InterfaceType_t type, const unsigned char *identifier);
+        bool removeFromBlacklist(InterfaceType_t type, const unsigned char *identifier);
+        bool isBlacklisted(InterfaceType_t type, const unsigned char *identifier);
         
 	EventType blacklistFilterEvent;
         void onBlacklistDataObject(Event *e);
@@ -121,6 +121,7 @@ class ConnectivityManager : public Manager
 
 	// This will start a new connectivity on the given Interface (must be a local interface).
 	void spawn_connectivity(const InterfaceRef& iface);
+        bool init_derived();
 protected:
 	void onConfig(DataObjectRef& dObj);
 public:	
@@ -177,7 +178,7 @@ public:
 	*/
 	InterfaceStatus_t report_known_interface(const Interface& iface, bool isHaggle = false);
 	InterfaceStatus_t report_known_interface(const InterfaceRef& iface, bool isHaggle = false);
-	InterfaceStatus_t report_known_interface(const InterfaceType_t type, const char *identifier, bool isHaggle = false);
+	InterfaceStatus_t report_known_interface(const InterfaceType_t type, const unsigned char *identifier, bool isHaggle = false);
 
 	/**
 		report_interface functions.
@@ -203,7 +204,7 @@ public:
 		@returns INTERFACE_STATUS_NONE if the interface is not in the store, otherwise
 		INTERFACE_STATUS_HAGGLE.
         */
-	InterfaceStatus_t have_interface(const InterfaceType_t type, const char *identifier);
+	InterfaceStatus_t have_interface(const InterfaceType_t type, const unsigned char *identifier);
 	 /**
         	Utility function to check whether an interface already exists in the
 		interface store or not.
@@ -223,7 +224,7 @@ public:
 		INTERFACE_STATUS_HAGGLE if the interface is known to belong to a haggle device,
 		or INTERFACE_STATUS_OTHER if it is known to be a non-Haggle device.
 	*/
-	InterfaceStatus_t is_known_interface(const InterfaceType_t type, const char *identifier);
+	InterfaceStatus_t is_known_interface(const InterfaceType_t type, const unsigned char *identifier);
 	/*
 		Check if an interface is known from before.
 
@@ -245,7 +246,7 @@ public:
 	/**
         	Utility function to delete an interface by type and identifier.
         */
-        void delete_interface(const InterfaceType_t type, const char *identifier);
+        void delete_interface(const InterfaceType_t type, const unsigned char *identifier);
 	/**
         	Utility function to delete an interface by its name
 .
@@ -262,15 +263,8 @@ public:
 
 	void onStartup();
         void onPrepareShutdown();
-        
 	ConnectivityManager(HaggleKernel *_kernel = haggleKernel);
         ~ConnectivityManager();
-class ConnectivityException : public ManagerException
-        {
-        public:
-                ConnectivityException(const int err = 0, const char* data = "Connectivity manager Error") : ManagerException(err, data) {}
-        };
-
 };
 
 #endif /* _CONNECTIVITYMANAGER_H */

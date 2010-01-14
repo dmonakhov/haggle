@@ -19,9 +19,8 @@
 
 #include "ConnectivityBluetooth.h"
 
-ConnectivityBluetooth::ConnectivityBluetooth(ConnectivityManager *m, const InterfaceRef& _iface) :
-	ConnectivityBluetoothBase(m, "Bluetooth connectivity"),
-	rootInterface(_iface)
+ConnectivityBluetooth::ConnectivityBluetooth(ConnectivityManager *m, const InterfaceRef& iface) :
+	ConnectivityBluetoothBase(m, iface, "Bluetooth connectivity")
 {
 	LOG_ADD("%s: Bluetooth connectivity starting. Scan time: %ld +- %ld seconds\n",
 		Timeval::now().getAsString().c_str(),
@@ -35,16 +34,9 @@ ConnectivityBluetooth::~ConnectivityBluetooth()
 		Timeval::now().getAsString().c_str());
 }
 
-void ConnectivityBluetooth::handleInterfaceDown(const InterfaceRef &iface)
+ConnectivityBluetoothBase::ConnectivityBluetoothBase(ConnectivityManager *m, const InterfaceRef& iface, const string name) :
+	Connectivity(m, iface, name)
 {
-	if (iface == rootInterface)
-		cancelDiscovery();
-}
-
-ConnectivityBluetoothBase::ConnectivityBluetoothBase(ConnectivityManager *m, const string name) :
-	Connectivity(m, name)
-{
-
 }
 
 ConnectivityBluetoothBase::~ConnectivityBluetoothBase()
@@ -52,7 +44,7 @@ ConnectivityBluetoothBase::~ConnectivityBluetoothBase()
 
 }
 
-Mutex ConnectivityBluetoothBase::sdpListMutex("SDP list mutex");
+Mutex ConnectivityBluetoothBase::sdpListMutex;
 InterfaceRefList ConnectivityBluetoothBase::sdpWhiteList;
 InterfaceRefList ConnectivityBluetoothBase::sdpBlackList;
 bool ConnectivityBluetoothBase::ignoreNonListedInterfaces = false;
@@ -77,7 +69,7 @@ int ConnectivityBluetoothBase::classifyAddress(const Interface &iface)
 	return BLUETOOTH_ADDRESS_IS_UNKNOWN;
 }
 
-int ConnectivityBluetoothBase::classifyAddress(const InterfaceType_t type, const char *identifier)
+int ConnectivityBluetoothBase::classifyAddress(const InterfaceType_t type, const unsigned char *identifier)
 {
 	Interface iface(type, identifier);
 	

@@ -15,7 +15,6 @@
 #include "Trace.h"
 #include <libcpphaggle/Thread.h>
 #include <libcpphaggle/Timeval.h>
-#include <libcpphaggle/Exception.h>
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -43,6 +42,7 @@ int Trace::write(const TraceType_t _type, const char *func, const char *fmt, ...
 {
         Mutex::AutoLocker l(m);
 	char buf[TRACE_BUFLEN];
+	char thread_id[20];
 	va_list args;
 	int len;
 	Timeval t = Timeval::now() - startTime;
@@ -76,7 +76,11 @@ int Trace::write(const TraceType_t _type, const char *func, const char *fmt, ...
 	
 	va_start(args, fmt);
 
-	Thread::selfGetNum(&thrNum);
+	if (Thread::selfGetNum(&thrNum)) {
+		snprintf(thread_id, 20, "%lu", thrNum);
+	} else {
+		snprintf(thread_id, 20, "0");
+	}
 
 #ifdef WINCE
 	len = _vsnprintf(buf, TRACE_BUFLEN, fmt, args);
@@ -84,12 +88,12 @@ int Trace::write(const TraceType_t _type, const char *func, const char *fmt, ...
 	len = vsnprintf(buf, TRACE_BUFLEN, fmt, args);
 #endif
 	va_end(args);
-	
+
 	if (stream)
-		fprintf(stream, "%.3lf:[%lu]{%s}:%s", t.getTimeAsSecondsDouble(), thrNum, func, buf);
+		fprintf(stream, "%.3lf:[%s]{%s}:%s", t.getTimeAsSecondsDouble(), thread_id, func, buf);
 
 	if (traceFile)
-		fprintf(traceFile, "%.3lf:[%lu]{%s}:%s", t.getTimeAsSecondsDouble(), thrNum, func, buf);
+		fprintf(traceFile, "%.3lf:[%s]{%s}:%s", t.getTimeAsSecondsDouble(), thread_id, func, buf);
 
 	return len;
 }

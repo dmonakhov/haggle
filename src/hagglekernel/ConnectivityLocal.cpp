@@ -33,7 +33,7 @@
 #include "Interface.h"
 
 
-ConnectivityLocal::ConnectivityLocal(ConnectivityManager * m) : 
+ConnectivityLocal::ConnectivityLocal(ConnectivityManager *m) : 
                 ConnectivityLocalBase(m, "Local connectivity")
 {
 #if defined(ENABLE_ETHERNET)
@@ -46,8 +46,7 @@ ConnectivityLocal::~ConnectivityLocal()
 }
 
 ConnectivityLocalBase::ConnectivityLocalBase(ConnectivityManager * m, const string& name) :  
-                Connectivity(m, name),
-                rootInterface(NULL)
+                Connectivity(m, NULL, name)
 {
 }
 

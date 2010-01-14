@@ -31,7 +31,6 @@ class DataStoreTask;
 class DataStore;
 
 #include <libcpphaggle/Timeval.h>
-#include <libcpphaggle/Exception.h>
 #include <libcpphaggle/List.h>
 #include <libcpphaggle/Thread.h>
 
@@ -321,11 +320,6 @@ public:
 	// getKey() is overridden from the HeapItem class and decides how the task
 	// is sorted in the task queue.
 	double getKey() const { return (double)priority; }
-	class DataStoreTaskException : public Exception
-	{
-	public:
-		DataStoreTaskException(const int err = 0, const char* data = "DataStoreTask Error") : Exception(err, data) {}
-	};
 };
 
 
@@ -383,6 +377,15 @@ public:
 		{}
         virtual ~DataStore();
 
+	/**
+	  The init() function should be called after the DataStore has been
+	  created in order to initialize it before startup.
+	  Should be overridden by derived classes.
+
+	  Returns: true if the initialization was successful, or false otherwise.
+	*/
+	virtual bool init() { return true; }
+
 	// These functions provide the interface to interact with the
 	// DataStore. They wrap the functions in the derived class and
 	// provides thread locking. They interact with the data store
@@ -429,12 +432,6 @@ public:
 	int insertRepository(RepositoryEntryRef re);
 	int readRepository(RepositoryEntryRef re, EventCallback < EventHandler > *callback);
 	int deleteRepository(RepositoryEntryRef re);
-	
-	class DSException : public Exception
-        {
-        public:
-                DSException(const int err = 0, const char *msg = "DSError", ...) : Exception(err, msg) {}
-        };
 };
 
 #endif /* _DATASTORE_H */

@@ -27,60 +27,19 @@
 #define SOCKADDR_SIZE sizeof(struct sockaddr_in)
 #endif
 
-void inline ProtocolUDP::init(const struct sockaddr *saddr, socklen_t addrlen)
+bool ProtocolUDP::init()
 {	
 	int optval = 1;
-
-	if (!openSocket(AF_INET, SOCK_DGRAM, 0, true)) {
-#if HAVE_EXCEPTION
-		throw SocketException(-1, "Could not open UDP socket");
-#else
-                return;
-#endif
-	}
-
-	if (!setSocketOption(SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval))) {
-		closeSocket();
-#if HAVE_EXCEPTION
-		throw SocketException(-1, "setsockopt SO_REUSEADDR failed");
-#else
-                return;
-#endif
-	}
-	
-	if (!setSocketOption(SOL_SOCKET, SO_BROADCAST, &optval, sizeof(optval))) {
-		closeSocket();
-#if HAVE_EXCEPTION
-		throw SocketException(-1, "setsockopt SO_BROADCAST failed");
-#else
-                return;
-#endif
-	}
-	
-	if (!bindSocket(saddr, addrlen)) {
-		closeSocket();
-#if HAVE_EXCEPTION
-		throw BindException(-1, "binding UDP socket failed");
-#endif
-	}
-}
-
-ProtocolUDP::ProtocolUDP(const InterfaceRef& _localIface, unsigned short _port, ProtocolManager * m) :
-	ProtocolSocket(PROT_TYPE_UDP, "ProtocolUDP", _localIface, NULL, 
-		       PROT_FLAG_SERVER | PROT_FLAG_CLIENT, m), port(_port)
-{
-        char buf[SOCKADDR_SIZE];
+	char buf[SOCKADDR_SIZE];
         struct sockaddr *sa = (struct sockaddr *)buf;
-	socklen_t len;
+	socklen_t sa_len;
 	Address *addr = NULL;
 	
 	if (!localIface) {
-#if HAVE_EXCEPTION
-		throw ProtocolSocket::SocketException(-1, "Could not create UDP socket, no interface");
-#else
-                return;
-#endif
+		HAGGLE_ERR("Could not create UDP socket, no local interface\n");
+                return false;
 	}
+
 #if defined(ENABLE_IPv6)
 	addr = localIface->getAddressByType(AddressType_IPv6);
 #endif
@@ -89,16 +48,42 @@ ProtocolUDP::ProtocolUDP(const InterfaceRef& _localIface, unsigned short _port, 
 		addr = localIface->getAddressByType(AddressType_IPv4);
 	
 	if (!addr) {
-#if HAVE_EXCEPTION
-		throw ProtocolSocket::SocketException(-1, "Could not create UDP socket, no IP address");
-#else
-                return;
-#endif
+		HAGGLE_ERR("Could not create UDP socket, no IP address\n");
+                return false;
         }
 	
-	len = addr->fillInSockaddr(sa);
+	sa_len = addr->fillInSockaddr(sa);
+
+	if (!openSocket(AF_INET, SOCK_DGRAM, 0, true)) {
+		HAGGLE_ERR("Could not open UDP socket\n");
+                return false;
+	}
+
+	if (!setSocketOption(SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval))) {
+		closeSocket();
+		HAGGLE_ERR("setsockopt SO_REUSEADDR failed\n");
+                return false;
+	}
 	
-	init(sa, len);
+	if (!setSocketOption(SOL_SOCKET, SO_BROADCAST, &optval, sizeof(optval))) {
+		closeSocket();
+		HAGGLE_ERR("setsockopt SO_BROADCAST failed\n");
+                return false;
+	}
+	
+	if (!bindSocket(sa, sa_len)) {
+		closeSocket();
+		HAGGLE_ERR("bind failed\n");
+		return false;
+	}
+
+	return true;
+}
+
+ProtocolUDP::ProtocolUDP(const InterfaceRef& _localIface, unsigned short _port, ProtocolManager * m) :
+	ProtocolSocket(PROT_TYPE_UDP, "ProtocolUDP", _localIface, NULL, 
+		       PROT_FLAG_SERVER | PROT_FLAG_CLIENT, m), port(_port)
+{
 }
 
 ProtocolUDP::ProtocolUDP(const char *ipaddr, unsigned short _port, ProtocolManager * m) : 
@@ -120,10 +105,6 @@ ProtocolUDP::ProtocolUDP(const char *ipaddr, unsigned short _port, ProtocolManag
 		ProtocolSpecType_UDP, port);
 	
 	localIface = new Interface(IFTYPE_APPLICATION_PORT, NULL, &address, "Loopback", IFFLAG_UP);
-
-	len = address.fillInSockaddr(sa);
-	
-	init(sa, len);
 }
 
 ProtocolUDP::~ProtocolUDP()
@@ -246,19 +227,20 @@ ProtocolEvent ProtocolUDP::receiveDataObject()
         delete addr;
 
         dObj = new DataObject(buffer, len, localIface, peerIface);
-        // Haggle doesn't own files that applications have put in:
-        dObj->setOwnsFile(false);
-        // We must release the peer interface reference after
-        // the data object is created as the next incoming
-        // data might be from another peer
-        peerIface = NULL;
 
-        if (!dObj) {
+	if (!dObj || !dObj->isValid()) {
                 HAGGLE_DBG("%s:%lu Could not create data object\n", getName(), getId());
 		return PROT_EVENT_ERROR;
 	}
 
+        // Haggle doesn't own files that applications have put in:
+        dObj->setOwnsFile(false);
 	dObj->setReceiveTime(Timeval::now());
+
+        // We must release the peer interface reference after
+        // the data object is created as the next incoming
+        // data might be from another peer
+        peerIface = NULL;
 
 	if (getKernel()->getThisNode()->getBloomfilter()->has(dObj)) {
 		HAGGLE_DBG("Data object [%s] from interface %s:%u has already been received, ignoring.\n", 

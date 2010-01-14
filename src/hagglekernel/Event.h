@@ -30,7 +30,6 @@ typedef int EventType;
 
 #include <libcpphaggle/Heap.h>
 #include <libcpphaggle/Timeval.h>
-#include <libcpphaggle/Exception.h>
 
 #include "DataObject.h"
 #include "Interface.h"
@@ -232,7 +231,7 @@ public:
                 return new EventCallback<T>(*this);
         }
         const EventCallback<T>& operator=(const EventCallback<T> &) {
-                throw Exception(-1, "Copy assignment not implemented for EventCallback");
+                HAGGLE_ERR("Copy assignment not implemented for EventCallback");
         }
         void operator()(Event* e) const {
                 (obj->*func)(e);
@@ -497,11 +496,6 @@ public:
                         return;
                 (*callback)(this);
         }
-	class EventException : public Exception
-        {
-	public:
-                EventException(const int err = 0, const char* data = "Event Error") : Exception(err, data) {}
-        };
 };
 
 

@@ -73,6 +73,7 @@ class ForwardingManager : public Manager
 		take responsibility for releasing it.
 	*/
 	void setForwardingModule(Forwarder *forw);
+	bool init_derived();
 public:
 	ForwardingManager(HaggleKernel *_kernel = haggleKernel);
 	~ForwardingManager();
@@ -108,12 +109,6 @@ public:
 		that.
 	*/
 	void sendMetric(void);
-	
-	class ForwardingException : public ManagerException
-        {
-        public:
-                ForwardingException(const int err = 0, const char* data = "Forwarding manager Error") : ManagerException(err, data) {}
-        };
 };
 
 #endif /* _FORWARDINGMANAGER_H */

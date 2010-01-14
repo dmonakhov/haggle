@@ -785,25 +785,16 @@ DataObject *SQLDataStore::createDataObject(sqlite3_stmt * stmt)
 {
 	DataObject *dObj = NULL;
 
-#if HAVE_EXCEPTION
-	try 
-#endif
-        {
-		dObj = new DataObject(sqlite3_column_text(stmt, table_dataobjects_xmlhdr), 
+	dObj = new DataObject(sqlite3_column_text(stmt, table_dataobjects_xmlhdr), 
 					sqlite3_column_bytes(stmt, table_dataobjects_xmlhdr), NULL);
 
-	} 
+	if (!dObj)
+		return NULL;
 
-#if HAVE_EXCEPTION
-        catch(DataObject::DataObjectException & e) {
-		HAGGLE_DBG(
-			"Could not create data object : %s\n", e.getErrorMsg());
-		HAGGLE_DBG(
-			"Bad xml:\n%s\n", 
-			sqlite3_column_text(stmt, table_dataobjects_id));
+	if (!dObj->isValid()) {
+		delete dObj;
 		return NULL;
 	}
-#endif
 	dObj->setOwnsFile(false);
 	dObj->setFilePath((const char *) sqlite3_column_text(stmt, table_dataobjects_filepath));
 	dObj->setFileName((const char *) sqlite3_column_text(stmt, table_dataobjects_filename));
@@ -843,20 +834,14 @@ NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 	node = kernel->getNodeStore()->retrieve((char *)sqlite3_column_blob(in_stmt, table_nodes_id));
 
 	if (!node) {
-#if HAVE_EXCEPTION
-		try 
-#endif
-		{
-			node = new Node((NodeType_t)sqlite3_column_int(in_stmt, table_nodes_type), 
-				(char *)sqlite3_column_blob(in_stmt, table_nodes_id), 
-				(char *)sqlite3_column_text(in_stmt, table_nodes_name));
-		} 
-#if HAVE_EXCEPTION
-		catch (Node::NodeException &e) {
-			HAGGLE_ERR("Could not create node from data store information: %s\n", e.getErrorMsg());
-			return node;
+		node = new Node((NodeType_t)sqlite3_column_int(in_stmt, table_nodes_type), 
+			(char *)sqlite3_column_blob(in_stmt, table_nodes_id), 
+			(char *)sqlite3_column_text(in_stmt, table_nodes_name));
+
+		if (!node) {
+			HAGGLE_ERR("Could not create node from data store information\n");
+			return NULL;
 		}
-#endif
 	}
 	// Set matching limit and threshold:
 	node->setMaxDataObjectsInMatch((unsigned int)sqlite3_column_int(in_stmt, table_nodes_resolution_max_matching_dataobjects));
@@ -913,7 +898,7 @@ NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 
 	while ((ret = sqlite3_step(stmt)) != SQLITE_DONE) {
 		if (ret == SQLITE_ROW) {
-			const char *identifier = (const char *)sqlite3_column_blob(stmt, table_interfaces_mac);
+			const unsigned char *identifier = (const unsigned char *)sqlite3_column_blob(stmt, table_interfaces_mac);
 			InterfaceType_t type = (InterfaceType_t) sqlite3_column_int(stmt, table_interfaces_type);
 
 			
@@ -1095,7 +1080,7 @@ Interface *SQLDataStore::getInterfaceFromRowId(const sqlite_int64 ifaceRowId)
 			num_match++;
 
 			if (num_match == 1) {
-				const char *identifier = (const char *)sqlite3_column_blob(stmt, table_interfaces_mac);
+				const unsigned char *identifier = (const unsigned char *)sqlite3_column_blob(stmt, table_interfaces_mac);
 				InterfaceType_t type = (InterfaceType_t) sqlite3_column_int(stmt, table_interfaces_type);
 
 				iface = new Interface(type, identifier);
@@ -1259,8 +1244,17 @@ int SQLDataStore::setViewLimitedNodeAttributes(sqlite_int64 node_rowid) {
 /* SQLDataStore                                              */
 /* ========================================================= */
 
-SQLDataStore::SQLDataStore(const bool recreate, const string filepath, const string name) : 
-	DataStore(name)
+SQLDataStore::SQLDataStore(const bool _recreate, const string _filepath, const string name) : 
+	DataStore(name), db(NULL), recreate(_recreate), filepath(_filepath)
+{
+}
+
+SQLDataStore::~SQLDataStore()
+{
+	sqlite3_close(db);
+}
+
+bool SQLDataStore::init()
 {
 	int ret = 0;
 	sqlite3_stmt *stmt;
@@ -1268,12 +1262,8 @@ SQLDataStore::SQLDataStore(const bool recreate, const string filepath, const str
 	int num_tables = 0;
 
 	if (filepath.empty()) {
-		printf("Bad data store filepath %s\n", filepath.c_str());
-#if HAVE_EXCEPTION
-		throw SQLException(0, "Bad database filepath\n");
-#else
-                return;
-#endif
+		HAGGLE_ERR("Bad database filepath %s\n", filepath.c_str());
+                return false;
 	}
 	
 	FILE *fp = NULL;
@@ -1288,11 +1278,7 @@ SQLDataStore::SQLDataStore(const bool recreate, const string filepath, const str
 		// Create path. 
 		if (!create_path(path.c_str())) {
 			HAGGLE_ERR("Could not create directory path \'%s\'\n", path.c_str());
-#if HAVE_EXCEPTION
-			throw SQLException(0, "Could not create directory path\n");
-#else
-                        return;
-#endif
+                        return false;
 		}
 	} else {
 		fclose(fp);
@@ -1322,43 +1308,29 @@ SQLDataStore::SQLDataStore(const bool recreate, const string filepath, const str
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Can't open database file %s: %s\n", file.c_str(), sqlite3_errmsg(db));
 		sqlite3_close(db);
-#if HAVE_EXCEPTION
-		throw SQLException(ret, "Can't open database\n");
-#else
-                return;
-#endif
+                return false;
 	}
 	
-#ifdef OS_WINDOWS_MOBILE
-	//sqlite3_config(SQLITE_CONFIG_HEAP, membuffer, MEMBUF_SIZE, 8);
-	//sqlite3_soft_heap_limit(202500);
-#endif
 	// First check if the tables already exist
 	ret = sqlite3_prepare(db, "SELECT name FROM sqlite_master where name='" TABLE_DATAOBJECTS "';\0", -1, &stmt, &tail);
 
 	if (ret != SQLITE_OK) {
-		fprintf(stderr, "SQLite command compilation failed: %s\n", sqlite3_errmsg(db));
+		HAGGLE_ERR("SQLite command compilation failed: %s\n", sqlite3_errmsg(db));
 		sqlite3_finalize(stmt);
 		sqlite3_close(db);
-#if HAVE_EXCEPTION
-		throw SQLException(ret, "Can't open table\n");
-#else
-                return;
-#endif
+                return false;
 	}
 
-	while (1) {
+	while (true) {
 		ret = sqlite3_step(stmt);
 
 		if (ret == SQLITE_ERROR) {
 			fprintf(stderr, "Could not create table error: %s\n", sqlite3_errmsg(db));
 			sqlite3_finalize(stmt);
 			sqlite3_close(db);
-#if HAVE_EXCEPTION
-			throw SQLException(ret, "Could not create table.\n");
-#else
-                        return;
-#endif
+
+			HAGGLE_ERR("Could not create table.\n");
+                        return false;
 		} else if (ret == SQLITE_ROW) {
 			num_tables++;
                 } else if (ret == SQLITE_DONE) {
@@ -1366,20 +1338,20 @@ SQLDataStore::SQLDataStore(const bool recreate, const string filepath, const str
                 }
 	}
 	if (num_tables > 0) {
-		printf("Database and tables already exist...\n");
+		HAGGLE_DBG("Database and tables already exist...\n");
 		sqlite3_finalize(stmt);
 		cleanupDataStore();
-		return;
+		return true;
 	}
 	sqlite3_finalize(stmt);
+
 	// Ok, no tables exist, we need to create them
-	createTables();
-}
+	if (createTables() < 0) {
+		HAGGLE_ERR("Could not create tables\n");
+		return false;
+	}
 
-
-SQLDataStore::~SQLDataStore()
-{
-	sqlite3_close(db);
+	return true;
 }
 
 int SQLDataStore::createTables()
@@ -1392,13 +1364,9 @@ int SQLDataStore::createTables()
 		ret = sqlQuery(tbl_cmds[i]);
 
 		if (ret == SQLITE_ERROR) {
-			fprintf(stderr, "Could not create table error: %s\n", sqlite3_errmsg(db));
+			HAGGLE_ERR("Could not create table error: %s\n", sqlite3_errmsg(db));
 			sqlite3_close(db);
-#if HAVE_EXCEPTION
-			throw SQLException(ret, "Could not create table.\n");
-#else
                         return -1;
-#endif
 		}
 		i++;
 	}
@@ -1592,7 +1560,7 @@ sqlite_int64 SQLDataStore::getInterfaceRowId(const InterfaceRef& iface)
 		return -1;
 	}
 
-	ret = sqlite3_bind_blob(stmt, 1, iface->getRawIdentifier(), iface->getIdentifierLen(), SQLITE_TRANSIENT);
+	ret = sqlite3_bind_blob(stmt, 1, iface->getIdentifier(), iface->getIdentifierLen(), SQLITE_TRANSIENT);
 
 	if (ret != SQLITE_OK) {
 		HAGGLE_DBG("SQLite could not bind blob!\n");
@@ -2114,7 +2082,7 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 			goto out_insertNode_err;
 		}
 
-		ret = sqlite3_bind_blob(stmt, 1, iface->getRawIdentifier(), iface->getIdentifierLen(), SQLITE_TRANSIENT);
+		ret = sqlite3_bind_blob(stmt, 1, iface->getIdentifier(), iface->getIdentifierLen(), SQLITE_TRANSIENT);
 
 		if (ret != SQLITE_OK) {
 			HAGGLE_DBG("SQLite could not bind interface identifier blob!\n");
@@ -3341,13 +3309,13 @@ static void table_dataobjects_print(sqlite3 *db)
 	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
 		/*
 		 char idstr[MAX_DATAOBJECT_ID_STR_LEN];
-		 const char *id = (const char *)sqlite3_column_blob(stmt, table_dataobjects_id);
+		 const unsigned char *id = (const unsigned char *)sqlite3_column_blob(stmt, table_dataobjects_id);
 		 int len = 0;
 		 
 		 memset(idstr, '\0', MAX_DATAOBJECT_ID_STR_LEN);
 		 
 		 for (int i = 0; i < DATAOBJECT_ID_LEN; i++) {
-		 len += sprintf(idstr + len, "%02x", id[i] & 0xff);
+			len += sprintf(idstr + len, "%02x", id[i] & 0xff);
 		 }
 		 */
 		sqlite_int64 rowid = sqlite3_column_int64(stmt, table_dataobjects_rowid);

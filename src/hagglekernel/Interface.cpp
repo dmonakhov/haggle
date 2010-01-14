@@ -87,7 +87,8 @@ Interface::Interface(InterfaceType_t _type, const void *identifier,
 #ifdef DEBUG_LEAKS
 LeakMonitor(LEAK_TYPE_INTERFACE),
 #endif
-type(_type), name(_name), flags(_flags & (IFFLAG_ALL ^ IFFLAG_STORED)), identifierIsValid(false), identifierString("Undefined")
+	type(_type), name(_name), flags(_flags & (IFFLAG_ALL ^ IFFLAG_STORED)), 
+	identifierIsValid(false), identifierString("Undefined")
 {
 	if (identifier) {
 		identifierIsValid = true;
@@ -143,7 +144,7 @@ InterfaceType_t Interface::strToType(const char *str)
 	return IFTYPE_UNDEF;
 }
 
-const long Interface::getIdentifierLen() const
+const size_t Interface::getIdentifierLen() const
 {
 	if (!identifierIsValid)
 		return -1;
@@ -303,7 +304,7 @@ bool Interface::isSnooped() const
 	return (flags & IFFLAG_SNOOPED) != 0;
 }
 
-bool Interface::equal(const InterfaceType_t type, const char *identifier) const
+bool Interface::equal(const InterfaceType_t type, const unsigned char *identifier) const
 {
 	if (!identifierIsValid || type != this->type)
 		return false;
@@ -315,7 +316,7 @@ bool Interface::equal(const InterfaceType_t type, const char *identifier) const
 				return true;
 			break;
 		case IFTYPE_APPLICATION_LOCAL:
-			if (strcmp(this->identifier.application_local, identifier) == 0)
+			if (strcmp(this->identifier.application_local, (const char *)identifier) == 0)
 				return true;
 			break;
 		case IFTYPE_BLUETOOTH:

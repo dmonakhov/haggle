@@ -3,7 +3,6 @@
 #include "MetadataParser.h"
 #include "Trace.h"
 #include <libcpphaggle/Pair.h>
-#include <libcpphaggle/Exception.h>
 
 unsigned int MetadataParser::num = 0;
 MetadataParser::registry_t MetadataParser::registry;
@@ -15,11 +14,8 @@ MetadataParser::MetadataParser(const string _parsekey) : parsekey(_parsekey)
 	ret = registry.insert(make_pair(parsekey, this));
 	
 	if (!ret.second) {
-#if HAVE_EXCEPTION
-	 	throw Exception(-1, "Parser with given name already registered");
-#else
                 HAGGLE_ERR("Parser with given name '%s' already registered", parsekey.c_str());
-#endif
+		return;
 	}
 
         HAGGLE_DBG("Registered metadata parser with key \'%s\'\n", parsekey.c_str()); 

@@ -109,7 +109,7 @@ UUExperimentSetup::UUExperimentSetup()
 
 	CloseHandle(hConnMgrReady);
 #endif
-	struct interface_config *ic = get_interface_config(ethIface->getRawIdentifier());
+	struct interface_config *ic = get_interface_config(ethIface->getIdentifier());
 
 	if (!ic) {
 		fprintf(stderr, "Could not find matching configuration for interface %s\n", 

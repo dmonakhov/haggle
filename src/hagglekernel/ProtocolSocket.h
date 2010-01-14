@@ -26,7 +26,6 @@ class ProtocolSocket;
 #include <libcpphaggle/Platform.h>
 #include <libcpphaggle/String.h>
 #include <libcpphaggle/Timeval.h>
-#include <libcpphaggle/Exception.h>
 
 #include "Protocol.h"
 #include "ManagerModule.h"
@@ -90,42 +89,6 @@ class ProtocolSocket : public Protocol
 
 	virtual ~ProtocolSocket();
 	bool hasWatchable(const Watchable &wbl);
-
-	class ConnectException : public ProtocolException
-	{
-            public:
-		ConnectException(const int err = 0, const char* data = "Connect Error") : ProtocolException(err, data) {}
-	};
-	class ListenException : public ProtocolException
-	{
-            public:
-		ListenException(const int err = 0, const char* data = "Listen Error") : ProtocolException(err, data) {}
-	};
-	class AcceptException : public ProtocolException
-	{
-            public:
-		AcceptException(const int err = 0, const char* data = "Accept Error") : ProtocolException(err, data) {}
-	};
-	class SendException : public ProtocolException
-	{
-            public:
-		SendException(const int err = 0, const char* data = "Send Error") : ProtocolException(err, data) {}
-	};
-	class ReceiveException : public ProtocolException
-	{
-            public:
-		ReceiveException(const int err = 0, const char* data = "Receive Error") : ProtocolException(err, data) {}
-	};
-	class SocketException : public ProtocolException
-	{
-            public:
-		SocketException(const int err = 0, const char* data = "Socket Error") : ProtocolException(err, data) {}
-	};
-	class BindException : public ProtocolException
-	{
-            public:
-		BindException(const int err = 0, const char* data = "Bind Error") : ProtocolException(err, data) {}
-	};
 };
 
 #endif /* _PROTOCOL_H */

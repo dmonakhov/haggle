@@ -58,36 +58,36 @@ class ConnectivityBluetoothBase;
 
 class ConnectivityBluetoothBase : public Connectivity {
 private:
-    static Mutex sdpListMutex;
+	static Mutex sdpListMutex;
 	static InterfaceRefList sdpWhiteList;
 	static InterfaceRefList sdpBlackList;
 	static bool ignoreNonListedInterfaces;
 public:
 	/**
-		FIXME: I couldn't come up with a better name for this function. It 
-		should be renamed.
-		
-		This function returns one of the three return values above, depending on
-		certain things:
-			BLUETOOTH_ADDRESS_IS_HAGGLE_NODE:
-				This is returned if the address is whitelisted.
-			BLUETOOTH_ADDRESS_IS_NOT_HAGGLE_NODE:
-				This is returned if the address is blacklisted, or if it is not
-				whitelisted, and ignoreNonListedInterfaces is true.
-			BLUETOOTH_ADDRESS_IS_UNKNOWN:
-				This is returned if the address is neither whitelisted or 
-				blacklisted, and ignoreNonListedInterfaces is false.
+	FIXME: I couldn't come up with a better name for this function. It 
+	should be renamed.
+
+	This function returns one of the three return values above, depending on
+	certain things:
+	BLUETOOTH_ADDRESS_IS_HAGGLE_NODE:
+	This is returned if the address is whitelisted.
+	BLUETOOTH_ADDRESS_IS_NOT_HAGGLE_NODE:
+	This is returned if the address is blacklisted, or if it is not
+	whitelisted, and ignoreNonListedInterfaces is true.
+	BLUETOOTH_ADDRESS_IS_UNKNOWN:
+	This is returned if the address is neither whitelisted or 
+	blacklisted, and ignoreNonListedInterfaces is false.
 	*/
 	static int classifyAddress(const Interface &iface);
 	/**
-		See the other version of this function.
+	See the other version of this function.
 	*/
-	static int classifyAddress(const InterfaceType_t type, const char *identifier);
-	
-    static void updateSDPLists(Metadata *md);
-    static void clearSDPLists();
+	static int classifyAddress(const InterfaceType_t type, const unsigned char *identifier);
 
-	ConnectivityBluetoothBase(ConnectivityManager *m, const string name = "Unnamed bluetooth connectivity");
+	static void updateSDPLists(Metadata *md);
+	static void clearSDPLists();
+
+	ConnectivityBluetoothBase(ConnectivityManager *m, const InterfaceRef& iface, const string name = "Unnamed bluetooth connectivity");
 	~ConnectivityBluetoothBase();
 };
 

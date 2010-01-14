@@ -122,34 +122,42 @@ void DataHelper::cleanup()
 DataManager::DataManager(HaggleKernel * _kernel, const bool _setCreateTimeOnBloomfilterUpdate) : 
 	Manager("DataManager", _kernel), localBF((float) 0.01, MAX_RECV_DATAOBJECTS, true),
 	setCreateTimeOnBloomfilterUpdate(_setCreateTimeOnBloomfilterUpdate)
+{	
+	if (setCreateTimeOnBloomfilterUpdate) {
+		HAGGLE_DBG("Will set create time in node description when updating bloomfilter\n");
+	}
+}
+
+bool DataManager::init_derived()
 {
 #define __CLASS__ DataManager
 	int ret;
 
 	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_VERIFIED, onVerifiedDataObject);
 
-#if HAVE_EXCEPTION
-	if (ret < 0)
-		throw DMException(ret, "Could not register event");
-#endif
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event\n");
+		return false;
+	}
+
 	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_DELETED, onDeletedDataObject);
 
-#if HAVE_EXCEPTION
-	if (ret < 0)
-		throw DMException(ret, "Could not register event");
-#endif
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event\n");
+		return false;
+	}
 	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_INCOMING, onIncomingDataObject);
 
-#if HAVE_EXCEPTION
-	if (ret < 0)
-		throw DMException(ret, "Could not register event");
-#endif
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event\n");
+		return false;
+	}
 	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, onSendResult);
 
-#if HAVE_EXCEPTION
-	if (ret < 0)
-		throw DMException(ret, "Could not register event");
-#endif
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event\n");
+		return false;
+	}
 	onInsertedDataObjectCallback = newEventCallback(onInsertedDataObject);
 	onAgedDataObjectsCallback = newEventCallback(onAgedDataObjects);
 
@@ -169,18 +177,18 @@ DataManager::DataManager(HaggleKernel * _kernel, const bool _setCreateTimeOnBloo
 
 	helper = new DataHelper(this, dataTaskEvent);
 	
+	if (!helper) {
+		HAGGLE_ERR("Could not create data manager helper\n");
+		return false;
+	}
 	onGetLocalBFCallback = newEventCallback(onGetLocalBF);
 	RepositoryEntryRef lbf = new RepositoryEntry("DataManager", "Local Bloomfilter");
 	kernel->getDataStore()->readRepository(lbf, onGetLocalBFCallback);
 	
-	if (helper) {
-		HAGGLE_DBG("Starting data helper...\n");
-		helper->start();
-	}
-	
-	if (setCreateTimeOnBloomfilterUpdate) {
-		HAGGLE_DBG("Will set create time in node description when updating bloomfilter\n");
-	}
+	HAGGLE_DBG("Starting data helper...\n");
+	helper->start();
+
+	return true;
 }
 
 DataManager::~DataManager()

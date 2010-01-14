@@ -18,20 +18,26 @@
 ResourceMonitor::ResourceMonitor(ResourceManager *resMan) : 
 	ManagerModule<ResourceManager>(resMan, "ResourceMonitor")
 {
+}
+
+ResourceMonitor::~ResourceMonitor()
+{
+	CloseMsgQueue(hMsgQ);
+}
+
+bool ResourceMonitor::init()
+{
 	MSGQUEUEOPTIONS mqOpts = { sizeof(MSGQUEUEOPTIONS), MSGQUEUE_NOPRECOMMIT, 0,
 		sizeof(POWER_BROADCAST_POWER_INFO), TRUE };
 
 	hMsgQ = CreateMsgQueue(NULL, &mqOpts);
 
 	if (!hMsgQ) {
-		throw ModuleException(-1, "Could not create Resource manager");
+		HAGGLE_ERR("Could not create message queue\n");
+		return false;
 	}
-}
 
-
-ResourceMonitor::~ResourceMonitor()
-{
-	CloseMsgQueue(hMsgQ);
+	return true;
 }
 
 unsigned char ResourceMonitor::getBatteryLifePercent() const 

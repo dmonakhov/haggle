@@ -27,7 +27,6 @@ class ProtocolTCPServer;
 
 
 #include <libcpphaggle/Platform.h>
-#include <libcpphaggle/Exception.h>
 
 #include "ProtocolSocket.h"
 
@@ -41,6 +40,7 @@ class ProtocolTCP : public ProtocolSocket
 {
         friend class ProtocolTCPServer;
         friend class ProtocolTCPClient;
+	unsigned short localport;
         ProtocolTCP(SOCKET sock, const struct sockaddr *addr, const InterfaceRef& _localIface,
                     const short flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL);
 public:
@@ -49,32 +49,9 @@ public:
                     const short flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL);
         virtual ~ProtocolTCP() = 0;
 
-        void setPeerInterface(const Address *addr = NULL);
-class ConnectException : public ProtocolException
-        {
-        public:
-                ConnectException(const int err = 0, const char* data = "ConnectError") : ProtocolException(err, data) {}
-        };
-class ListenException : public ProtocolException
-        {
-        public:
-                ListenException(const int err = 0, const char* data = "ListenError") : ProtocolException(err, data) {}
-        };
-class AcceptException : public ProtocolException
-        {
-        public:
-                AcceptException(const int err = 0, const char* data = "AcceptError") : ProtocolException(err, data) {}
-        };
-class SendException : public ProtocolException
-        {
-        public:
-                SendException(const int err = 0, const char* data = "Send Error") : ProtocolException(err, data) {}
-        };
-class ReceiveException : public ProtocolException
-        {
-        public:
-                ReceiveException(const int err = 0, const char* data = "Receive Error") : ProtocolException(err, data) {}
-        };
+	bool initbase();
+
+	void setPeerInterface(const Address *addr = NULL);
 };
 
 /** */
@@ -83,12 +60,12 @@ class ProtocolTCPClient : public ProtocolTCP
         friend class ProtocolTCPServer;
 public:
         ProtocolTCPClient(SOCKET sock, const struct sockaddr *addr, const InterfaceRef& _localIface, ProtocolManager *m = NULL) : 
-		ProtocolTCP(sock, addr, _localIface, PROT_FLAG_CLIENT, m) {}
+		ProtocolTCP(sock, addr, _localIface, PROT_FLAG_CLIENT | PROT_FLAG_CONNECTED, m) {}
         ProtocolTCPClient(const InterfaceRef& _localIface, const InterfaceRef& _peerIface,
                           const unsigned short _port = TCP_DEFAULT_PORT, ProtocolManager *m = NULL) :
                         ProtocolTCP(_localIface, _peerIface, _port, PROT_FLAG_CLIENT, m) {}
         ProtocolEvent connectToPeer();
-
+	bool init();
 };
 
 /** */
@@ -125,6 +102,7 @@ public:
                           const unsigned short _port = TCP_DEFAULT_PORT, int _backlog = TCP_BACKLOG_SIZE);
         ~ProtocolTCPServer();
         ProtocolEvent acceptClient();
+	bool init();
 };
 
 #endif /* _PROTOCOLTCP_H */

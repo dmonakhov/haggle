@@ -97,18 +97,11 @@ private:
         Protocol *getServerProtocol(const ProtType_t type, const InterfaceRef& iface);
 	
         void onShutdown();
+	bool init_derived();
 public:
         ProtocolManager(HaggleKernel *_kernel = haggleKernel);
         ~ProtocolManager();
-        //int newProtocol(ProtocolType type);
         void onWatchableEvent(const Watchable& wbl);
-
-class ProtocolManagerException : public ManagerException
-        {
-        public:
-                ProtocolManagerException(const int err = 0, const char* data = "Protocol Manger Error") :
-                                ManagerException(err, data) {}
-        };
 };
 
 #endif /* _PROTOCOLMANAGER_H */

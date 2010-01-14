@@ -24,7 +24,6 @@ class Manager;
 
 #include <libcpphaggle/Platform.h>
 #include <libcpphaggle/String.h>
-#include <libcpphaggle/Exception.h>
 #include <libcpphaggle/Watch.h>
 
 #include "Event.h"
@@ -126,11 +125,27 @@ protected:
 	virtual void onConfig(DataObjectRef& dObj) { }
 
 	bool unregisterWithKernel();
-	bool registerWithKernel();
+	bool registerWithKernel(); 
+	/**
+	  This function should be overridden in those managers that need to do 
+	  initializations after object construction. It is called automatically
+	  by init().
+	  
+	  Returns: true if the initialization is successful, or false otherwise.
+	*/
+	virtual bool init_derived() { return true; }
 public:
         Manager(const char *_name, HaggleKernel *_kernel = haggleKernel);
         ~Manager();
-        
+       
+	/**
+	  The init() function should be called after the manager has been 
+	  created in order to initialize it.
+
+	  Returns: true if the initialization is successful, or false otherwise.
+	*/
+	bool init();
+
         const char *getName() const {
                 return name.c_str();
         }
@@ -144,11 +159,6 @@ public:
 	bool isReadyForStartup();
 	bool isReadyForShutdown();
 	ManagerState_t getState() const { return state; }
-	class ManagerException : public Exception
-        {
-        public:
-                ManagerException(const int err = 0, const char* data = "ManagerError") : Exception(err, data) {}
-        };
 };
 
 #endif /* _MANAGER_H */

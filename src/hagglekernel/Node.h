@@ -321,13 +321,6 @@ public:
         // friend bool operator<(const Node &n1, const Node &n2);
         friend bool operator==(const Node &n1, const Node &n2);
         friend bool operator!=(const Node &n1, const Node &n2);
-
-	class NodeException : public Exception
-	{
-	public:
-		NodeException(const int err = 0, const char* data = "Node Error") : Exception(err, data) {}
-	};
-
 };
 
 #endif /* _NODE_H */

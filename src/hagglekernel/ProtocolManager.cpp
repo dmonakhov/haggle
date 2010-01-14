@@ -33,24 +33,7 @@
 
 ProtocolManager::ProtocolManager(HaggleKernel * _kernel) :
 	Manager("ProtocolManager", _kernel)
-{
-#define __CLASS__ ProtocolManager
-
-	setEventHandler(EVENT_TYPE_DATAOBJECT_SEND, onSendDataObject);
-
-	setEventHandler(EVENT_TYPE_LOCAL_INTERFACE_UP, onLocalInterfaceUp);
-
-	setEventHandler(EVENT_TYPE_LOCAL_INTERFACE_DOWN, onLocalInterfaceDown);
-
-	delete_protocol_event = registerEventType("ProtocolManager protocol deletion event", onDeleteProtocolEvent);
-
-	add_protocol_event = registerEventType("ProtocolManager protocol addition event", onAddProtocolEvent);
-	
-	send_data_object_actual_event = registerEventType("ProtocolManager send data object actual event", onSendDataObjectActual);
-#ifdef DEBUG
-	setEventHandler(EVENT_TYPE_DEBUG_CMD, onDebugCmdEvent);
-#endif
-	
+{	
 }
 
 ProtocolManager::~ProtocolManager()
@@ -60,6 +43,48 @@ ProtocolManager::~ProtocolManager()
 		protocol_registry.erase(p->getId());
 		delete p;
 	}
+}
+
+bool ProtocolManager::init_derived()
+{
+	int ret;
+#define __CLASS__ ProtocolManager
+
+	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_SEND, onSendDataObject);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+
+	ret = setEventHandler(EVENT_TYPE_LOCAL_INTERFACE_UP, onLocalInterfaceUp);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+
+	ret = setEventHandler(EVENT_TYPE_LOCAL_INTERFACE_DOWN, onLocalInterfaceDown);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+
+	delete_protocol_event = registerEventType("ProtocolManager protocol deletion event", onDeleteProtocolEvent);
+
+	add_protocol_event = registerEventType("ProtocolManager protocol addition event", onAddProtocolEvent);
+	
+	send_data_object_actual_event = registerEventType("ProtocolManager send data object actual event", onSendDataObjectActual);
+#ifdef DEBUG
+	ret = setEventHandler(EVENT_TYPE_DEBUG_CMD, onDebugCmdEvent);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+#endif
+	return true;
 }
 
 #ifdef DEBUG
@@ -262,8 +287,14 @@ Protocol *ProtocolManager::getSenderProtocol(const ProtType_t type, const Interf
 		}
 		// Were we successful?
 		if (p != NULL) {
-			// Put it in the list
-			registerProtocol(p);
+			if (p->init()) {
+				// Put it in the list
+				registerProtocol(p);
+			} else {
+				HAGGLE_ERR("Could not initialize protocol %s\n", p->getName());
+				delete p;
+				p = NULL;
+			}
 		}
 	}
 	// Return any found or created protocol:
@@ -314,7 +345,13 @@ Protocol *ProtocolManager::getReceiverProtocol(const ProtType_t type, const Inte
 			break;
 		}
 		if (p != NULL) {
-			registerProtocol(p);
+			if (p->init()) {
+				registerProtocol(p);
+			} else {
+				HAGGLE_ERR("Could not initialize protocol %s\n", p->getName());
+				delete p;
+				p = NULL;
+			}
 		}
 	}
 
@@ -361,7 +398,13 @@ Protocol *ProtocolManager::getServerProtocol(const ProtType_t type, const Interf
 			break;
 		}
 		if (p != NULL) {
-			registerProtocol(p);
+			if (p->init()) {
+				registerProtocol(p);
+			} else {
+				HAGGLE_ERR("Could not initialize protocol %s\n", p->getName());
+				delete p;
+				p = NULL;
+			}
 		}
 	}
 

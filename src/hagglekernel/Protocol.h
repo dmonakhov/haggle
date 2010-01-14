@@ -25,7 +25,6 @@ typedef unsigned short ProtType_t;
 
 #include <libcpphaggle/Platform.h>
 #include <libcpphaggle/Timeval.h>
-#include <libcpphaggle/Exception.h>
 #include <libcpphaggle/Watch.h>
 
 #include "ProtocolManager.h"
@@ -349,8 +348,9 @@ protected:
          */
         const string ctrlmsgToStr(struct ctrlmsg *m) const;
 public:	
+	
         /**
-           Constructor. May throw an exception to show it was unable to create.
+           Constructor.
         */
         Protocol(const ProtType_t _type,
                  const string _name,
@@ -359,7 +359,7 @@ public:
                  const int _flags,
                  ProtocolManager *_m);
         /**
-           Constructor. Will throw an exception to show it was unable to create.
+           Constructor.
         */
         Protocol(const Protocol &);
        
@@ -501,7 +501,7 @@ public:
            has to be overridden by a child class to return true iff that child
            class is to be treated as a server class.
         */
-        virtual const bool isServer() const 
+        virtual bool isServer() const 
 	{
                 return (flags & PROT_FLAG_SERVER) ? true : false;
         }
@@ -509,7 +509,7 @@ public:
         /**
            Returns true if the protocol acts as a client.
         */
-        virtual const bool isClient() const 
+        virtual bool isClient() const 
 	{
                 return (flags & PROT_FLAG_CLIENT) ? true : false;
         }
@@ -522,7 +522,7 @@ public:
         /**
            Returns true if the protocol is connected to another peer.
         */
-        virtual const bool isConnected() const 
+        virtual bool isConnected() const 
 	{
                 return (flags & PROT_FLAG_CONNECTED) ? true : false;
         }
@@ -549,11 +549,11 @@ public:
            Returns true if the protocol has completed sending and
            reeciving all pending data objects.
         */
-        virtual const bool isDone() const 
+        virtual bool isDone() const 
 	{
                 return (mode == PROT_MODE_DONE) ? true : false;
         }
-        virtual const bool isGarbage() const 
+        virtual bool isGarbage() const 
 	{
                 return (mode == PROT_MODE_GARBAGE) ? true : false;
         }
@@ -598,14 +598,6 @@ public:
 	// Unregister this protocol with the Protocol manager
 	void registerWithManager();
 	void unregisterWithManager();
-
-        // Exceptions used in the constructor
-	class ProtocolException : public Exception
-        {
-        public:
-                ProtocolException(const int err = 0, const char* data = "Protocol Error") :
-			Exception(err, data) {}
-        };
 };
 
 #endif

@@ -26,8 +26,6 @@
 
 class ProtocolMedia;
 
-#include <libcpphaggle/Exception.h>
-
 #include "Protocol.h"
 
 
