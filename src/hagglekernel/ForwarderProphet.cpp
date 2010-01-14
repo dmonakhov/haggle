@@ -284,7 +284,7 @@ void ForwarderProphet::_generateTargetsFor(const NodeRef &neighbor)
 				// Yes: insert this node into the list of targets for this 
 				// delegate forwarder.
 				
-				NodeRef target = new Node(id_number_to_nodeid[it->first].c_str(), NODE_TYPE_PEER, "PRoPHET target node");
+				NodeRef target = new Node(NODE_TYPE_PEER, id_number_to_nodeid[it->first].c_str(), "PRoPHET target node");
                                 
 				if (target) {
 					lst.push_back(target);

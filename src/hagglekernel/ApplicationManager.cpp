@@ -585,8 +585,8 @@ void ApplicationManager::onApplicationFilterMatchEvent(Event *e)
 				metadata once the data object is transformed
 				to wire format.
 				*/
-				dObjSend->setIsForLocalApp();
-#ifdef DEBUG
+				dObjSend->setIsForLocalApp();				
+#if 0
 				unsigned char *raw;
 				size_t len;
 
@@ -814,8 +814,8 @@ Metadata *ApplicationManager::addControlMetadata(const control_type_t type, cons
 
 void ApplicationManager::onReceiveFromApplication(Event *e)
 {
-	char id[NODE_ID_LEN];
-	size_t decodelen = NODE_ID_LEN;
+	NodeId_t id;
+	size_t decodelen = sizeof(NodeId_t);
 	struct base64_decode_context ctx;
 	const Attribute *ctrlAttr;
 	/*
@@ -868,7 +868,7 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 			return;
 		}
 		base64_decode_ctx_init(&ctx);
-		base64_decode(&ctx, id_str, strlen(id_str), id, &decodelen);
+		base64_decode(&ctx, id_str, strlen(id_str), (char *)id, &decodelen);
 
 		// Check if the node is in the node store. The result will be a null-node 
 		// in case the application is not registered.
@@ -1026,13 +1026,17 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 						
 						Metadata *ctrl_m = addControlMetadata(CTRL_TYPE_EVENT, name_str, dObjReply->getMetadata());
 												
-						if (!ctrl_m) 
+						if (!ctrl_m) {
+							HAGGLE_ERR("Could not add control metadata\n");
 							break;
+						}
 
 						Metadata *event_m = ctrl_m->addMetadata(DATAOBJECT_METADATA_APPLICATION_CONTROL_EVENT);
 						
-						if (!event_m)
+						if (!event_m) {
+							HAGGLE_ERR("Could not add event metadata\n");
 							break;
+						}
 						
 						event_m->setParameter(DATAOBJECT_METADATA_APPLICATION_CONTROL_EVENT_TYPE_PARAM, intToStr(LIBHAGGLE_EVENT_INTEREST_LIST));
 				
@@ -1053,7 +1057,11 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 						}
 						appNode.unlock();
 						
+						HAGGLE_DBG("Sending application interests\n");
+						
 						sendToApplication(dObjReply, appNode);
+					} else {
+						HAGGLE_ERR("No application node\n");
 					}
 					break;
 				case CTRL_TYPE_REGISTER_EVENT_INTEREST:

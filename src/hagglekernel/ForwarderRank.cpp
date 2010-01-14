@@ -85,7 +85,7 @@ void ForwarderRank::generateDelegatesFor(const DataObjectRef &dObj, const NodeRe
 
 	for (Map<String, long >::iterator it = ranks.begin(); it != ranks.end(); it++) {
 		if (it->second > myRank) {
-			NodeRef new_node = new Node(it->first.c_str(), NODE_TYPE_PEER, "Rank delegate node");
+			NodeRef new_node = new Node(NODE_TYPE_PEER, it->first.c_str(), "Rank delegate node");
 			delegateList.add(new_node);
 		}
 	}

@@ -25,7 +25,6 @@
  */
 class ConnectivityMedia : public Connectivity
 {
-	InterfaceRef rootInterface;
 	void findRemoteInterfaces(char *path);
 	void hookStopOrCancel();
 	void hookCleanup();

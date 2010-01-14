@@ -90,10 +90,7 @@ ProtocolUDP::ProtocolUDP(const char *ipaddr, unsigned short _port, ProtocolManag
 	ProtocolSocket(PROT_TYPE_UDP, "ProtocolUDP", NULL, NULL, 
 		       PROT_FLAG_SERVER | PROT_FLAG_CLIENT, m), port(_port)
 {
-	struct in_addr addr;   
-        char buf[SOCKADDR_SIZE];
-        struct sockaddr *sa = (struct sockaddr *)buf;
-	socklen_t len = 0;
+	struct in_addr addr;
 
 #ifdef OS_WINDOWS
 	unsigned long tmp_addr = inet_addr(ipaddr);

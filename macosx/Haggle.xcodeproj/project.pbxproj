@@ -1426,6 +1426,7 @@
 					"-DDEBUG",
 					"-DDEBUG_LEAKS",
 					"-DENABLE_ETHERNET",
+					"-DENABLE_BLUETOOTH",
 				);
 				OTHER_CPLUSPLUSFLAGS = (
 					"-g",
@@ -1433,6 +1434,7 @@
 					"-DDEBUG",
 					"-DDEBUG_LEAKS",
 					"-DENABLE_ETHERNET",
+					"-DENABLE_BLUETOOTH",
 				);
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = Haggle;

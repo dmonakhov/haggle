@@ -251,7 +251,7 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 	// This isn't being used:
 	int num_found = 0;
         int dd, dev_id, ret, i;
-	Address *addr;
+	const Address *addr;
         InterfaceStatus_t status;
 	
 	addr = conn->rootInterface->getAddressByType(AddressType_BTMAC);
@@ -284,7 +284,7 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
         
 	for (i = 0; i < ret; i++) {
                 bool report_interface = false;
-		char macaddr[BT_ALEN];
+		unsigned char macaddr[BT_ALEN];
 		int channel = 0;
                 char remote_name[256];
                 
@@ -298,41 +298,38 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 
 		Address addy(AddressType_BTMAC, (unsigned char *) macaddr);
 		
-        status = conn->is_known_interface(IFTYPE_BLUETOOTH, macaddr);
+                status = conn->is_known_interface(IFTYPE_BLUETOOTH, macaddr);
         
-        if (status == INTERFACE_STATUS_HAGGLE) {
-            report_interface = true;
-        } else if (status == INTERFACE_STATUS_UNKNOWN) {
-            switch(ConnectivityBluetoothBase::classifyAddress(IFTYPE_BLUETOOTH, macaddr))
-            {
-                case BLUETOOTH_ADDRESS_IS_UNKNOWN:
-                    channel = find_haggle_service(ii[i].bdaddr);
-                    
-                    if (channel > 0) {
+                if (status == INTERFACE_STATUS_HAGGLE) {
                         report_interface = true;
-                        conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, true);
-                    } else if (channel == 0) {
-                        conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, false);
-                    }
-                break;
+                } else if (status == INTERFACE_STATUS_UNKNOWN) {
+                        switch(ConnectivityBluetoothBase::classifyAddress(IFTYPE_BLUETOOTH, macaddr)) {
+                        case BLUETOOTH_ADDRESS_IS_UNKNOWN:
+                                channel = find_haggle_service(ii[i].bdaddr);
                     
-                case BLUETOOTH_ADDRESS_IS_HAGGLE_NODE:
-                    report_interface = true;
-                    conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, true);
-                break;
+                                if (channel > 0) {
+                                        report_interface = true;
+                                        conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, true);
+                                } else if (channel == 0) {
+                                        conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, false);
+                                }
+                                break;
                     
-                case BLUETOOTH_ADDRESS_IS_NOT_HAGGLE_NODE:
-                    conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, false);
-                break;
-            }
-        }
-        
+                        case BLUETOOTH_ADDRESS_IS_HAGGLE_NODE:
+                                report_interface = true;
+                                conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, true);
+                                break;
+                    
+                        case BLUETOOTH_ADDRESS_IS_NOT_HAGGLE_NODE:
+                                conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, false);
+                                break;
+                        }
+                }
         
 		if (report_interface) {
                         Interface iface(IFTYPE_BLUETOOTH, macaddr, &addy, remote_name, IFFLAG_UP);
 
                         CM_DBG("Found Haggle device [%s - %s]\n", addy.getAddrStr(), remote_name);
-
 			conn->report_interface(&iface, conn->rootInterface, new ConnectivityInterfacePolicyTTL(2));
 			num_found++;
 		} else {
@@ -365,13 +362,7 @@ void ConnectivityBluetooth::cancelDiscovery(void)
 
 bool ConnectivityBluetooth::run()
 {
-	Address *addr = rootInterface->getAddressByType(AddressType_BTMAC);
-	
-	if (addr) {
-		CM_DBG("Bluetooth connectivity detector started for %s\n", addr->getAddrStr());
-	} else {
-		CM_DBG("Bluetooth connectivity detector started for interface withouth Bluetooth MAC address!\n");
-	}
+        CM_DBG("Bluetooth connectivity detector started for %s\n", rootInterface->getIdentifierStr());
 
 	session = sdp_connect(0, &bdaddr_local, SDP_RETRY_IF_BUSY);
 

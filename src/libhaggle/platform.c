@@ -260,13 +260,13 @@ const char *platform_get_path(path_type_t type, const char *append)
                         wintype = CSIDL_PROGRAM_FILES;
                         break;
                 case PLATFORM_PATH_PRIVATE:
-					wintype = CSIDL_APPDATA;
-					break;
-				case PLATFORM_PATH_DATA:
+			wintype = CSIDL_APPDATA;
+			break;
+		case PLATFORM_PATH_DATA:
                         wintype = CSIDL_APPDATA;
-						fill_in_default_path();
-						len = strlen(path);
-						goto path_valid;
+			fill_in_default_path();
+			len = strlen(path);
+			goto path_valid;
                         break;
                 case PLATFORM_PATH_TEMP:
                         wintype = CSIDL_APPDATA;
@@ -274,18 +274,18 @@ const char *platform_get_path(path_type_t type, const char *append)
                 default:
                         return NULL;
         }
-
+	
 	if (!SHGetSpecialFolderPath(NULL, login1, wintype, FALSE)) {
 		return NULL;
 	}
 	for (len = 0; login1[len] != 0; len++)
 		path[len] = (char) login1[len];
-
+	
 path_valid:
         if (type == PLATFORM_PATH_PROGRAM || 
-		type == PLATFORM_PATH_PRIVATE || 
-		type == PLATFORM_PATH_DATA || 
-		type == PLATFORM_PATH_TEMP) {
+	    type == PLATFORM_PATH_PRIVATE || 
+	    type == PLATFORM_PATH_DATA || 
+	    type == PLATFORM_PATH_TEMP) {
                 if (len + strlen(DEFAULT_STORAGE_PATH_POSTFIX) > MAX_PATH_LEN)
                         return NULL;
                 len += snprintf(path + len, MAX_PATH_LEN - len, "%s", DEFAULT_STORAGE_PATH_POSTFIX);

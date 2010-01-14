@@ -376,12 +376,21 @@ void eventLoop() {
 int onInterests(haggle_event_t *e, void* nix)
 {
 	if (haggle_attributelist_get_attribute_by_name(e->interests, APP_NAME) != NULL) {
+		list_t *pos;
 		// We already have some interests, so we don't create any new ones.
 		
 		// In the future, we might want to delete the old interests, and
 		// create new ones... depending on the circumstances.
 		// If so, that code would fit here. 
-	} else {
+		
+		list_for_each(pos, &e->interests->attributes) {
+			struct attribute *attr = (struct attribute *)pos;
+			printf("interest: %s=%s:%lu\n", 
+			       haggle_attribute_get_name(attr), 
+			       haggle_attribute_get_value(attr), 
+			       haggle_attribute_get_weight(attr));
+		}
+	} else {		
 		// No old interests: Create new interests.
 		if (gridSize > 0) {
 			createInterestGrid();

@@ -386,7 +386,7 @@ int main(int argc, char *argv[])
 			// New data object:
 			dObj = 
 				haggle_dataobject_new_from_raw(
-					modified_do, 
+					(unsigned char *)modified_do, 
 					strlen(modified_do));
 			
 			// Publish:

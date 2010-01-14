@@ -67,9 +67,9 @@ const char *Node::typestr[] = {
 	NULL
 };
 
-inline bool Node::init_node(const char *_id)
+inline bool Node::init_node(const unsigned char *_id)
 {
-	memset(id, 0, NODE_ID_LEN);
+	memset(id, 0, sizeof(NodeId_t));
 	memset(idStr, 0, MAX_NODE_ID_STR_LEN);
 	
 	if (!doBF) {
@@ -179,7 +179,7 @@ inline bool Node::init_node(const char *_id)
 		}
 		strncpy(idStr, "[Unknown id]", MAX_NODE_ID_STR_LEN);
 	} else if (_id) {
-		memcpy(id, _id, NODE_ID_LEN);
+		memcpy(id, _id, sizeof(NodeId_t));
 		calcIdStr();
 	} else if (!createdFromNodeDescription) {
 		HAGGLE_ERR("Created node without node ID.\n");
@@ -217,7 +217,7 @@ Node::Node(const NodeType_t _type, const string& _name) :
 	init_node(NULL);
 }
 
-Node::Node(const NodeType_t _type, const char *_id, const string& _name) : 
+Node::Node(const NodeType_t _type, const NodeId_t _id, const string& _name) : 
 #ifdef DEBUG_LEAKS
                 LeakMonitor(LEAK_TYPE_NODE),
 #endif
@@ -230,7 +230,7 @@ Node::Node(const NodeType_t _type, const char *_id, const string& _name) :
 	init_node(_id);
 }
 
-Node::Node(const char *_idStr, const NodeType_t _type, const string& _name) : 
+Node::Node(const NodeType_t _type, const char *_idStr, const string& _name) : 
 #ifdef DEBUG_LEAKS
                 LeakMonitor(LEAK_TYPE_NODE),
 #endif
@@ -240,7 +240,7 @@ Node::Node(const char *_idStr, const NodeType_t _type, const string& _name) :
                 filterEventId(-1), matchThreshold(NODE_DEFAULT_MATCH_THRESHOLD),
 		numberOfDataObjectsPerMatch(NODE_DEFAULT_DATAOBJECTS_PER_MATCH)
 {
-	char iD[NODE_ID_LEN];
+	NodeId_t iD;
 	long i;
 	
 	for (i = 0; i < NODE_ID_LEN; i++) {

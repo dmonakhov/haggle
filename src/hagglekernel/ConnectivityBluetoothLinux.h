@@ -35,7 +35,6 @@
 class ConnectivityBluetooth : public ConnectivityBluetoothBase
 {
 private:
-	InterfaceRef rootInterface;
         uint32_t service;
 	sdp_session_t *session;
         bool run();
@@ -54,7 +53,6 @@ public:
 	   The reason for this is explained in haggle trac system, ticket #98.
 	*/
 	virtual void cancelDiscovery(void);
-	virtual void handleInterfaceDown(const InterfaceRef &iface);
         ConnectivityBluetooth(ConnectivityManager *m, const InterfaceRef& _iface);
         ~ConnectivityBluetooth();
 };

@@ -218,7 +218,7 @@ static int findHaggleService(BTH_ADDR * pb)
 	return found;
 }
 
-static void btAddr2Mac(unsigned __int64 btAddr, char *mac)
+static void btAddr2Mac(unsigned __int64 btAddr, unsigned char *mac)
 {
 	for (int i = (BT_ALEN - 1); i >= 0; i--) {
 		mac[i] = (UINT8) ((unsigned __int64) 0xff & btAddr);
@@ -268,7 +268,7 @@ void bluetoothDiscovery(InterfaceRef& iface, ConnectivityBluetooth *conn)
 		pwsaResults->dwSize = sizeof(WSAQUERYSET);
 		pwsaResults->dwNameSpace = NS_BTH;
 		pwsaResults->lpBlob = NULL;
-		char macaddr[BT_ALEN];
+		unsigned char macaddr[BT_ALEN];
 
 		if (WSALookupServiceNext(hScan, LUP_RETURN_NAME | LUP_RETURN_ADDR | LUP_RETURN_BLOB, &dwSize, pwsaResults) != ERROR_SUCCESS) {
 			CM_DBG("Found %d Haggle devices\n", count);

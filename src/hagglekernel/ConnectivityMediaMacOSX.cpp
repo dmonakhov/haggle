@@ -39,8 +39,7 @@
 #define deviceName "roh-mb"
 
 ConnectivityMedia::ConnectivityMedia(ConnectivityManager * m, const InterfaceRef& iface) : 
-	Connectivity(m, "Media connectivity"),
-	rootInterface(iface)
+	Connectivity(m, iface, "Media connectivity"),
 {
 }
 

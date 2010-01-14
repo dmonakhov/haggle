@@ -187,15 +187,15 @@ class Node
 	bool stored;
         bool createdFromNodeDescription;
 	long filterEventId;
-	inline bool init_node(const char *_id);
+	inline bool init_node(const NodeId_t _id);
 	
 	unsigned long matchThreshold;
 	unsigned long numberOfDataObjectsPerMatch;
 public:
         Node(const NodeType_t _type, const DataObjectRef& dObj);
-        Node(const NodeType_t _type, const char *_id, const string &name = "Unnamed node");
+        Node(const NodeType_t _type, const NodeId_t _id, const string &name = "Unnamed node");
         // Does the same as the above one, except that this takes an id string.
-        Node(const char *_idStr, const NodeType_t _type, const string &name = "Unnamed node");
+        Node(const NodeType_t _type, const char *_idStr, const string &name = "Unnamed node");
         Node(const NodeType_t _type, const string &name = "Unnamed node");
         Node(const Node &n); // Copy constructor
         const Node& operator=(const Node &); // Not defined

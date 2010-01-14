@@ -34,7 +34,6 @@
 */
 class ConnectivityBluetooth : public ConnectivityBluetoothBase
 {
-	InterfaceRef rootInterface;
         BluetoothSDPServiceRecordHandle	mServerHandle;
 	IOBluetoothDeviceInquiryRef inqRef;
 	bool isInquiring;
@@ -55,7 +54,6 @@ class ConnectivityBluetooth : public ConnectivityBluetoothBase
 						       IOReturn error, Boolean aborted);
 	friend bool bluetoothDiscovery(const InterfaceRef iface, ConnectivityBluetooth *conn);
 public:
-	virtual void handleInterfaceDown(const InterfaceRef &iface);
         ConnectivityBluetooth(ConnectivityManager *m, const InterfaceRef& _iface);
         ~ConnectivityBluetooth();
 };

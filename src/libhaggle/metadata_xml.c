@@ -147,7 +147,7 @@ metadata_t *metadata_xml_new_from_xml(const char *raw, size_t len)
 }
 
 
-ssize_t metadata_xml_get_raw(metadata_t *m, char *buf, size_t len)
+ssize_t metadata_xml_get_raw(metadata_t *m, unsigned char *buf, size_t len)
 {
 	int xmlLen;
 	xmlChar *xml;
@@ -180,7 +180,7 @@ ssize_t metadata_xml_get_raw(metadata_t *m, char *buf, size_t len)
 	return xmlLen;
 }
 
-int metadata_xml_get_raw_alloc(metadata_t *m, char **buf, size_t *len)
+int metadata_xml_get_raw_alloc(metadata_t *m, unsigned char **buf, size_t *len)
 {
         int count;
         xmlDocPtr doc;

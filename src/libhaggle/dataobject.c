@@ -40,8 +40,8 @@ struct dataobject {
 	char *hash_str;
 	char *thumbnail_str;
 	struct attributelist *al;
-	char *raw; // The raw metadata as a string
-	int raw_len; // The raw metadata length
+	unsigned char *raw; // The raw metadata as a string
+	size_t raw_len; // The raw metadata length
         metadata_t *m; // The parsed metadata
 #ifdef DEBUG
         unsigned long num;
@@ -163,7 +163,7 @@ struct dataobject *haggle_dataobject_new()
 	return haggle_dataobject_new_from_raw(NULL, 0);
 }
 
-struct dataobject *haggle_dataobject_new_from_raw(const char *raw, const size_t len)
+struct dataobject *haggle_dataobject_new_from_raw(const unsigned char *raw, const size_t len)
 {
 	struct dataobject *dobj;
         const char *persistent;
@@ -676,7 +676,7 @@ metadata_t *haggle_dataobject_to_metadata(struct dataobject *dobj)
         return dobj->m;
 }
 
-char *haggle_dataobject_get_raw(struct dataobject *dobj)
+unsigned char *haggle_dataobject_get_raw(struct dataobject *dobj)
 {
         metadata_t *m;
 
@@ -691,15 +691,15 @@ char *haggle_dataobject_get_raw(struct dataobject *dobj)
 	if (dobj->raw)
 		free(dobj->raw);
 
-        metadata_get_raw_alloc(m, &dobj->raw, (size_t *)&dobj->raw_len);
+        metadata_get_raw_alloc(m, &dobj->raw, &dobj->raw_len);
 
-	if (dobj->raw_len <= 0)
+	if (dobj->raw_len == 0)
                 return NULL;
         
 	return dobj->raw;
 }
 
-int haggle_dataobject_get_raw_alloc(struct dataobject *dobj, char **buf, size_t *len)
+int haggle_dataobject_get_raw_alloc(struct dataobject *dobj, unsigned char **buf, size_t *len)
 {
         metadata_t *m;
         int ret;
@@ -1183,7 +1183,7 @@ int haggle_dataobject_add_metadata(struct dataobject *dobj, metadata_t *m)
 
 int haggle_dataobject_print(FILE *fp, struct dataobject *dobj)
 {
-	char *raw;
+	unsigned char *raw;
 	size_t len;
 	int ret;
 	
@@ -1195,7 +1195,7 @@ int haggle_dataobject_print(FILE *fp, struct dataobject *dobj)
 	if (ret != HAGGLE_NO_ERROR)
 		return ret;
 	
-	ret = fprintf(fp, "%s\n", raw);
+	ret = fprintf(fp, "%s\n", (char *)raw);
 	
 	free(raw);
 	

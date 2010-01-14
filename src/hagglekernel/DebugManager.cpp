@@ -49,9 +49,9 @@ SOCKET openSocket(int port);
 
 #define ADD_LOG_FILE_TO_DATASTORE 0
 
-DebugManager::DebugManager(HaggleKernel * _kernel, bool interactive) : 
+DebugManager::DebugManager(HaggleKernel * _kernel, bool _interactive) : 
                 Manager("DebugManager", _kernel), onFindRepositoryKeyCallback(NULL), 
-                onDumpDataStoreCallback(NULL), server_sock(-1), console(INVALID_STDIN)
+                onDumpDataStoreCallback(NULL), server_sock(-1), interactive(_interactive), console(INVALID_STDIN)
 {
 }
 

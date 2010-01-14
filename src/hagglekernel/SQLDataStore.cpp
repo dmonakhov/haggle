@@ -831,11 +831,11 @@ NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 		return node;
 
 	// First try to retrieve the node from the node store
-	node = kernel->getNodeStore()->retrieve((char *)sqlite3_column_blob(in_stmt, table_nodes_id));
+	node = kernel->getNodeStore()->retrieve((unsigned char *)sqlite3_column_blob(in_stmt, table_nodes_id));
 
 	if (!node) {
 		node = new Node((NodeType_t)sqlite3_column_int(in_stmt, table_nodes_type), 
-			(char *)sqlite3_column_blob(in_stmt, table_nodes_id), 
+			(unsigned char *)sqlite3_column_blob(in_stmt, table_nodes_id), 
 			(char *)sqlite3_column_text(in_stmt, table_nodes_name));
 
 		if (!node) {
@@ -2141,10 +2141,8 @@ int SQLDataStore::_deleteDataObject(const DataObjectId_t &id, bool shouldReportR
 		if (dObj) {
 			kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_DELETED, dObj));
 		} else {
-			HAGGLE_ERR(
-				"Tried to report removal of a data object that "
-				"isn't in the data store. (id=%s)\n",
-				idStr);
+			HAGGLE_ERR("Tried to report removal of a data object that "
+				"isn't in the data store. (id=%s)\n", idStr);
 			// there should not be a data object to delete, so done.
 			return -1;
 		}

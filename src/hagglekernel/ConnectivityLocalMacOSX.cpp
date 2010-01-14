@@ -176,7 +176,7 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 	}
 	Address addr(addressStr);
 	{
-	const char *rawaddr = addr.getRaw();
+	const unsigned char *rawaddr = addr.getRaw();
 	macaddr[0] = rawaddr[0];
 	macaddr[1] = rawaddr[1];
 	macaddr[2] = rawaddr[2];
