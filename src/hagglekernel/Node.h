@@ -193,10 +193,10 @@ class Node
 	unsigned long numberOfDataObjectsPerMatch;
 public:
         Node(const NodeType_t _type, const DataObjectRef& dObj);
-        Node(const NodeType_t _type, const NodeId_t _id, const string &name = "Unnamed node");
+        Node(const NodeType_t _type, const NodeId_t _id, const string name = "Unnamed node");
         // Does the same as the above one, except that this takes an id string.
-        Node(const NodeType_t _type, const char *_idStr, const string &name = "Unnamed node");
-        Node(const NodeType_t _type, const string &name = "Unnamed node");
+        Node(const NodeType_t _type = NODE_TYPE_UNDEF, const char *_idStr = NULL, const string name = "Unnamed node");
+        //Node(const NodeType_t _type = NODE_TYPE_UNDEF, const string name = "Unnamed node");
         Node(const Node &n); // Copy constructor
         const Node& operator=(const Node &); // Not defined
 
@@ -207,7 +207,7 @@ public:
         const NodeType_t getType() const;
 	const char *getTypeStr() const { return typestr[type]; }
         const unsigned char *getId() const;
-        void setId(char *_id);
+	void setId(const NodeId_t _id);
         const char *getIdStr() const;
 	const unsigned long getNum() const { return num; }
 	bool isStored() const { return stored; }

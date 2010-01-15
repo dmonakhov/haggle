@@ -189,7 +189,7 @@ void ApplicationManager::onStartup()
 	
 	// We need a fake application node, for the protocol to be selected 
 	// properly
-	NodeRef fakeAppNode = new Node(NODE_TYPE_APPLICATION, "Startup application node");
+	NodeRef fakeAppNode = new Node(NODE_TYPE_APPLICATION, (char *)NULL, "Startup application node");
 	
 	// Set up the address to the application:
 	Address addr("udp://127.0.0.1:8788");
@@ -908,7 +908,7 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 						// Create a temporary application node to serve as target for the 
 						// return value, since the data object most likely came from a 
 						// different interface than the application is registered on.
-						NodeRef newAppNode = new Node(NODE_TYPE_APPLICATION, (char *) NULL);
+						NodeRef newAppNode = new Node(NODE_TYPE_APPLICATION, appNode->getId(), appNode->getName());
 						newAppNode->addInterface(dObj->getRemoteInterface());
 						
 						DataObjectRef dObjReply = new DataObject();

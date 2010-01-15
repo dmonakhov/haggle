@@ -58,9 +58,9 @@ private:
 	EventCallback<EventHandler> *onDumpDataStoreCallback;
         SOCKET server_sock;
 	List<SOCKET> client_sockets;
+	bool interactive;
 #if defined(OS_LINUX) || defined(OS_MACOSX)
 #define INVALID_STDIN -1
-	bool interactive;
 	int console;
 	//struct termios org_opts, new_opts;
 #elif defined(OS_WINDOWS)

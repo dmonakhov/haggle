@@ -384,7 +384,7 @@ bool ForwardingManager::shouldForward(const DataObjectRef& dObj, const NodeRef& 
         NodeRef nodeInStore;
         
 	if (dObj->isNodeDescription()) {
-		NodeRef descNode = NodeRef(new Node(NODE_TYPE_PEER, dObj));
+		NodeRef descNode = new Node(NODE_TYPE_PEER, dObj);
 		
 		if (descNode) {
 			if (descNode == node) {

@@ -177,9 +177,7 @@ NodeRef BenchmarkManager::createNode(unsigned int numAttr)
 	sprintf(nodeid, "%ld", id);
 	sprintf(nodename, "node %ld", id);
 	
-	NodeRef node = new Node(NODE_TYPE_PEER, "BenchmarkNode");
-	node->setId(nodeid);
-	node->setName(nodename);
+	NodeRef node = new Node(NODE_TYPE_PEER, nodeid, nodename);
 	node->addInterface(iface);
 
 	for (unsigned int i = 0; i < numAttr; i++) {

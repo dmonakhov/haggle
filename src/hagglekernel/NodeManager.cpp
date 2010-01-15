@@ -322,7 +322,7 @@ void NodeManager::onNeighborInterfaceUp(Event *e)
 
 		// Create new node
 		// It will have uninitilized state
-		neigh = new Node(NODE_TYPE_UNDEF);
+		neigh = new Node();
 
 		// Add this interface to it
 		neigh->addInterface(e->getInterface());

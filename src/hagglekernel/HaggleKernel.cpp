@@ -90,7 +90,7 @@ bool HaggleKernel::init()
         
         HAGGLE_DBG("Hostname is %s\n", hostname);
 
-	thisNode = nodeStore.add(new Node(NODE_TYPE_THIS_NODE, string(hostname)));
+	thisNode = nodeStore.add(new Node(NODE_TYPE_THIS_NODE, (char*)NULL, hostname));
 
 	if (!thisNode) {
 		HAGGLE_ERR("Could not create this node\n");
