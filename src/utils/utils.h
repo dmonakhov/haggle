@@ -80,7 +80,7 @@ typedef unsigned long usecs_t;
 
 double absolute_time_double(double _offset);
 char *ip_to_str(struct in_addr addr);
-char *eth_to_str(char *addr);
+char *eth_to_str(unsigned char *addr);
 void swap_6bytes(void* to, const void *from);
 void buf2str(const char* buf, char* str, int len);
 void str2buf(const char* str, char* buf, int len);

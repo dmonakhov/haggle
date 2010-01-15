@@ -585,7 +585,7 @@ char *ip_to_str(struct in_addr addr)
 }
 
 
-char *eth_to_str(char *addr)
+char *eth_to_str(unsigned char *addr)
 {
 	static char buf[30];
 

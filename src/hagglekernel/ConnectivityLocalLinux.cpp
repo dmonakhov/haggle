@@ -86,7 +86,7 @@ struct if_info {
 	bool isUp;
 	bool isWireless;
 	char ifname[256];
-	char mac[ETH_ALEN];
+	unsigned char mac[ETH_ALEN];
 	struct in_addr ip;
 	struct in_addr broadcast;
 	struct sockaddr_in ipaddr;
