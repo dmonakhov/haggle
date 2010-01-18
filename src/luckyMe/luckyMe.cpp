@@ -78,7 +78,7 @@ static HANDLE luckyme_thread_handle = NULL;
 static HANDLE haggle_start_thread_handle = NULL;
 static HANDLE test_loop_event = NULL;
 static bool test_is_running = false;
-bool calledHaggleShutdown = false;
+bool called_haggle_shutdown = false;
 
 #else
 #define NOTIFY()
@@ -349,7 +349,7 @@ int onNeighborUpdate(haggle_event_t *e, void* nix)
 		numberOfNeighbors = new_number_of_neighbors;
 		neighborName = newNeighborName;
 	} else {
-		neighborName = newNeighborName;
+		neighborName = newNeighborName;≤≤
 		numberOfNeighbors = new_number_of_neighbors;
 	}
 
@@ -382,7 +382,7 @@ int onShutdown(haggle_event_t *e, void* nix)
 
 	LIBHAGGLE_DBG("Got shutdown event\n");
 
-	if (hh && calledHaggleShutdown) {
+	if (hh && called_haggle_shutdown) {
 		if (haggle_event_loop_is_running(hh)) {
 			LIBHAGGLE_DBG("Stopping event loop\n");
 			haggle_event_loop_stop(hh);
@@ -654,7 +654,7 @@ bool isHaggleRunning()
 	return (haggle_daemon_pid(NULL) == HAGGLE_DAEMON_RUNNING);
 }
 
-int isLuckyMeRunning(void)
+int is_luckyme_running(void)
 {
 	if (luckyme_thread_handle != NULL && hh && haggle_event_loop_is_running(hh))
 		return 1;
@@ -662,14 +662,14 @@ int isLuckyMeRunning(void)
 	return 0;
 }
 
-int isTestRunning()
+int is_test_running()
 {
 	return test_is_running ? 1 : 0;
 }
 
 unsigned int getNumberOfDOsReceived(void)
 {
-	if (!isLuckyMeRunning())
+	if (!is_luckyme_running())
 		return 0;
 
 	return numberOfDOsReceived;
@@ -677,7 +677,7 @@ unsigned int getNumberOfDOsReceived(void)
 
 unsigned int getNumberOfDOsCreated(void)
 {
-	if (!isLuckyMeRunning())
+	if (!is_luckyme_running())
 		return 0;
 
 	return numberOfDOsCreated;
@@ -685,7 +685,7 @@ unsigned int getNumberOfDOsCreated(void)
 
 unsigned int getNumberOfNeighbors(void)
 {
-	if (!isLuckyMeRunning())
+	if (!is_luckyme_running())
 		return 0;
 
 	return numberOfNeighbors;
@@ -725,7 +725,7 @@ int stopHaggle(void)
 
 int startLuckyMe(void)
 {
-	if (isLuckyMeRunning())
+	if (is_luckyme_running())
 		return 0;
 
 	luckyme_thread_handle = CreateThread(NULL, 0, luckyme_thread, (void *)NULL, 0, 0);
@@ -739,7 +739,7 @@ int startLuckyMe(void)
 
 int stopLuckyMe(int stopAlsoHaggle)
 {
-	if (isLuckyMeRunning()) {
+	if (is_luckyme_running()) {
 
 		StopNow = true;
 
@@ -747,7 +747,7 @@ int stopLuckyMe(int stopAlsoHaggle)
 			return -1;
 
 		if (isHaggleRunning() && stopAlsoHaggle) {
-			calledHaggleShutdown = true;
+			called_haggle_shutdown = true;
 			stopHaggle();
 		}
 
@@ -853,7 +853,7 @@ int luckyme_thread()
 	testLoop();
 	
 	// Join with libhaggle thread
-	if (isHaggleRunning() && calledHaggleShutdown) {
+	if (isHaggleRunning() && called_haggle_shutdown) {
 		// if we called shutdown, wait to free the haggle handle until
 		// we get the shutdown callback
 		LIBHAGGLE_DBG("Deferring event loop stop and freeing of Haggle handle until shutdown event\n");

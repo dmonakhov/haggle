@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		423AD9EA0EE8165A00ED758E /* luckyMe.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 423AD9CF0EE80E3F00ED758E /* luckyMe.cpp */; };
 		423AD9FD0EE8193100ED758E /* liblibhaggle.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D3CAD56B0E23E40E00E9B3D9 /* liblibhaggle.a */; };
 		423ADA110EE81C4E00ED758E /* libxml2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D3CAD5850E23E61000E9B3D9 /* libxml2.dylib */; };
 		423ADA120EE81C5800ED758E /* libpthread.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D3CAD5870E23E63800E9B3D9 /* libpthread.dylib */; };
@@ -163,6 +162,8 @@
 		D3F44FC70E83F350005981E6 /* Timeval.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D3F44FB90E83F350005981E6 /* Timeval.cpp */; };
 		D3F44FCB0E83F350005981E6 /* Watch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D3F44FBD0E83F350005981E6 /* Watch.cpp */; };
 		D3F44FD30E83F497005981E6 /* libcpphaggle.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D3F44FAD0E83F2BF005981E6 /* libcpphaggle.a */; };
+		D3F8B0611104A11D00999BF2 /* luckyme.c in Sources */ = {isa = PBXBuildFile; fileRef = D3F8B0601104A11D00999BF2 /* luckyme.c */; };
+		D3F8B0DB1104D23500999BF2 /* libhaggleutils.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D3CAD5590E23E37B00E9B3D9 /* libhaggleutils.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -428,6 +429,8 @@
 		D3F44FB70E83F350005981E6 /* Thread.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Thread.cpp; path = ../src/libcpphaggle/Thread.cpp; sourceTree = SOURCE_ROOT; };
 		D3F44FB90E83F350005981E6 /* Timeval.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Timeval.cpp; path = ../src/libcpphaggle/Timeval.cpp; sourceTree = SOURCE_ROOT; };
 		D3F44FBD0E83F350005981E6 /* Watch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Watch.cpp; path = ../src/libcpphaggle/Watch.cpp; sourceTree = SOURCE_ROOT; };
+		D3F8B05F1104A11D00999BF2 /* luckyme.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luckyme.h; sourceTree = "<group>"; };
+		D3F8B0601104A11D00999BF2 /* luckyme.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = luckyme.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -438,6 +441,7 @@
 				423AD9FD0EE8193100ED758E /* liblibhaggle.a in Frameworks */,
 				423ADA120EE81C5800ED758E /* libpthread.dylib in Frameworks */,
 				423ADA110EE81C4E00ED758E /* libxml2.dylib in Frameworks */,
+				D3F8B0DB1104D23500999BF2 /* libhaggleutils.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -594,6 +598,8 @@
 			isa = PBXGroup;
 			children = (
 				423AD9CF0EE80E3F00ED758E /* luckyMe.cpp */,
+				D3F8B05F1104A11D00999BF2 /* luckyme.h */,
+				D3F8B0601104A11D00999BF2 /* luckyme.c */,
 			);
 			name = luckyMe;
 			path = ../src/luckyMe;
@@ -1212,7 +1218,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				423AD9EA0EE8165A00ED758E /* luckyMe.cpp in Sources */,
+				D3F8B0611104A11D00999BF2 /* luckyme.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

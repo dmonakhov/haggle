@@ -1,5 +1,5 @@
 bin_PROGRAMS=luckyMe
-luckyMe_SOURCES=luckyMe.cpp
+luckyMe_SOURCES=luckyme.c
 
 CPPFLAGS +=-I$(top_builddir)/src/libhaggle/include 
 CPPFLAGS +=-I$(top_builddir)/src/utils 
