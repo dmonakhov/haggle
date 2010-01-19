@@ -193,6 +193,9 @@ bool SecurityHelper::signDataObject(DataObjectRef& dObj, RSA *key)
 	
 	dObj->setSignature(getManager()->getKernel()->getThisNode()->getIdStr(), signature, siglen);
 	
+	// Assume that our own signature is valid
+	dObj->setSignatureStatus(DATAOBJECT_SIGNATURE_VALID);
+	
 	// Do not free the allocated signature as it is now owned by the data object...
 	
 	return true;

@@ -288,6 +288,7 @@ void DataManager::onVerifiedDataObject(Event *e)
 	if (dObj->shouldVerifySignature() && !dObj->hasValidSignature()) {
 		// This data object had a bad signature, we should remove
 		// it from the bloomfilter
+		HAGGLE_DBG("Data object [%s] had bad signature, removing from bloomfilter\n", dObj->getIdStr());
 		localBF.remove(dObj);
 		kernel->getThisNode()->setBloomfilter(localBF, setCreateTimeOnBloomfilterUpdate);
 		return;

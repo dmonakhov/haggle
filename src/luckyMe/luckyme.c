@@ -801,15 +801,12 @@ int luckyme_run()
 	if (haggle_daemon_pid(NULL) == HAGGLE_DAEMON_RUNNING && called_haggle_shutdown) {
 		// if we called shutdown, wait to free the haggle handle until
 		// we get the shutdown callback
-		LIBHAGGLE_DBG("Deferring event loop stop and freeing of Haggle handle until shutdown event\n");
+		LIBHAGGLE_DBG("Deferring event loop stop until shutdown event\n");
 	} else {
 		if (haggle_event_loop_is_running(hh)) {
 			LIBHAGGLE_DBG("Stopping event loop\n");
 			haggle_event_loop_stop(hh);
 		}
-		
-		LIBHAGGLE_DBG("Freeing Haggle handle\n");
-		haggle_handle_free(hh);
 	}
 	
 	return 0;
