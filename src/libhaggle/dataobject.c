@@ -139,17 +139,14 @@ unsigned short haggle_dataobject_unset_flags(struct dataobject *dobj, unsigned s
 
 int haggle_dataobject_set_createtime(struct dataobject *dobj, const struct timeval *createtime)
 {
-	if(dobj == NULL)
+	struct timeval now;
+
+	if (!dobj)
 		return HAGGLE_PARAM_ERROR;
 
-	if (createtime == NULL) {
-#if defined(OS_LINUX) || defined(OS_MACOSX)
-		struct timeval now;
+	if (!createtime) {
 		gettimeofday(&now, NULL);
 		createtime = &now;
-#else
-		return HAGGLE_PARAM_ERROR;
-#endif
 	}
 	
 	dobj->createtime.tv_sec = createtime->tv_sec;

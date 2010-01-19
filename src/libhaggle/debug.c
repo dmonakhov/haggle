@@ -19,7 +19,7 @@
 #define LIBHAGGLE_INTERNAL
 #include <libhaggle/haggle.h>
 
-#if defined(WINCE)
+#if defined(WINCE2)
 FILE *tr_out = NULL;
 FILE *tr_err = NULL;
 #else
@@ -36,7 +36,7 @@ void set_trace_level(int level)
 
 int libhaggle_debug_init()
 {
-#ifdef WINCE
+#ifdef WINCE2
 	const char *path = platform_get_path(PLATFORM_PATH_DATA, "/libhaggle.txt");
 
 	if (!path || tr_out || tr_err)
@@ -52,7 +52,7 @@ int libhaggle_debug_init()
 
 void libhaggle_debug_fini()
 {
-#ifdef WINCE
+#ifdef WINCE2
 	if (tr_out)
 		fclose(tr_out);
 #endif

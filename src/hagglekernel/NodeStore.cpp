@@ -495,7 +495,7 @@ void NodeStore::print()
                 printf("Node: %d type=\'%s\' name=\'%s\' - %s stored=%s\n", 
                        n++, nr->node->getTypeStr(),
                        nr->node->getName().c_str(),
-                       (nr->node->isAvailable() && (nr->node->getType() == NODE_TYPE_PEER || nr->node->getType() == NODE_TYPE_UNDEF)) ? "Neighbor" : "Not confirmed neighbor",
+                       (nr->node->isAvailable() && (nr->node->getType() == NODE_TYPE_PEER || nr->node->getType() == NODE_TYPE_UNDEF)) ? "Neighbor" : "Unconfirmed neighbor",
                        nr->node->isStored() ? "Yes" : "No");
                 printf("id=%s\n", nr->node->getIdStr());
                 printf("");

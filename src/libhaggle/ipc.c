@@ -67,9 +67,11 @@ typedef pthread_attr_t thread_handle_attr_t;
 #include "sha1.h"
 #include "base64.h"
 
-#define BUFLEN 50000 /* What would be a suitable max size */
+#define DATA_BUFLEN 10000 /* What would be a suitable max size */
 #define ID_LEN SHA1_DIGEST_LENGTH
 #define ID_BASE64_LEN ((((ID_LEN) + 2) / 3) * 4 + 1)
+
+static unsigned char databuffer[DATA_BUFLEN];
 
 struct handler_data {
 	void *arg;
@@ -528,7 +530,10 @@ static int spawn_daemon_internal(const char *daemonpath)
 	time_left = 60;
 	tv.tv_sec = 1;
 	tv.tv_usec = 0;
+	ret = HAGGLE_ERROR;
 	
+	LIBHAGGLE_DBG("Waiting for Haggle to start...\n");
+
 	do {
 		FD_ZERO(&readfds);
 		FD_SET(sock, &readfds);
@@ -538,11 +543,14 @@ static int spawn_daemon_internal(const char *daemonpath)
 		status = select(maxfd + 1, &readfds, NULL, NULL, &tv);
 
 		if (status < 0) {
+			LIBHAGGLE_DBG("Socket error while waiting for Haggle to start\n");
 			ret = HAGGLE_SOCKET_ERROR;
 			haggle_set_socket_error();
 		} else if (ret == 0) {
 			// Timeout!
 			
+			LIBHAGGLE_DBG("Timeout while waiting for Haggle to start\n");
+
 			// FIXME: call a callback function to provide feedback.
 			time_left--;
 			tv.tv_sec = 1;
@@ -552,9 +560,10 @@ static int spawn_daemon_internal(const char *daemonpath)
 		} else if (FD_ISSET(sock, &readfds)) {
 			// FIXME: should probably check that the message is a correct data 
 			// object first...
+			LIBHAGGLE_DBG("Haggle signals it is running\n");
 			ret = HAGGLE_NO_ERROR;
 		}
-	} while(ret == HAGGLE_ERROR);
+	} while (ret == HAGGLE_ERROR);
 	
 fail_start:
 	CLOSE_SOCKET(sock);
@@ -822,9 +831,7 @@ int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ig
 	 */	
 	m = haggle_dataobject_get_metadata(dobj_reply, DATAOBJECT_METADATA_APPLICATION);
 
-	printf("Print dobj\n");
 	haggle_dataobject_print(stdout, dobj_reply);
-	printf("Printing done\n");
 		
 	if (!m) {
 		haggle_dataobject_free(dobj_reply);
@@ -1234,7 +1241,6 @@ int haggle_ipc_send_dataobject(struct haggle_handle *hh, haggle_dobj_t *dobj,
 		struct sockaddr_in peer_addr;
 		socklen_t addrlen = sizeof(peer_addr);
                 fd_set readfds;
-		unsigned char buffer[BUFLEN];
 
 		if (msecs_timeout == IO_REPLY_BLOCK) {
 			/* We block indefinately */
@@ -1267,7 +1273,7 @@ int haggle_ipc_send_dataobject(struct haggle_handle *hh, haggle_dobj_t *dobj,
 			return HAGGLE_TIMEOUT_ERROR;
 		} 
                              
-                ret = recvfrom(hh->sock, buffer, BUFLEN, 0, (struct sockaddr *)&peer_addr, &addrlen);
+                ret = recvfrom(hh->sock, databuffer, DATA_BUFLEN, 0, (struct sockaddr *)&peer_addr, &addrlen);
                 
                 if (ret == SOCKET_ERROR) {
                         LIBHAGGLE_DBG("Receive error = %d\n", ret);
@@ -1275,9 +1281,9 @@ int haggle_ipc_send_dataobject(struct haggle_handle *hh, haggle_dobj_t *dobj,
                         return HAGGLE_SOCKET_ERROR;
                 }
 		
-		printf("Received raw data on socket: %s\n", (char *)buffer);
+		printf("Received raw data on socket: %s\n", (char *)databuffer);
                
-                dobj_recv = haggle_dataobject_new_from_raw(buffer, ret);
+                dobj_recv = haggle_dataobject_new_from_raw(databuffer, ret);
                 
                 if (dobj_recv == NULL) {
                         dobj_reply = NULL;
@@ -1389,6 +1395,11 @@ int haggle_event_loop_stop(haggle_handle_t hh)
 	return HAGGLE_NO_ERROR;
 }
 
+/*
+ handle_event:
+ Returns less than 1 on error, or 0 or 1 on success.
+ If the return value is -1 or 0 the data object should be freed, if the value is 1 or greater it should not be freed.
+*/
 static int handle_event(struct haggle_handle *hh, haggle_event_type_t type, struct dataobject *dobj, metadata_t *event_m)
 {
 	haggle_event_t e;
@@ -1396,10 +1407,11 @@ static int handle_event(struct haggle_handle *hh, haggle_event_type_t type, stru
 	
 	LIBHAGGLE_DBG("Handling event type %u\n", type);
 
-	if (!hh->handlers[type].handler) {
-		haggle_dataobject_free(dobj);
+	if (!event_m)
+		return -1;
+
+	if (!hh->handlers[type].handler)
 		return 0;
-	}
 	
 	e.type = type;
 	
@@ -1424,19 +1436,14 @@ static int handle_event(struct haggle_handle *hh, haggle_event_type_t type, stru
 				if (ret != 1 && e.interests)
 					haggle_attributelist_free(e.interests);
                                 
+				ret = 0;
 			} else {
 				ret = -1;
 			}
-			haggle_dataobject_free(dobj);
 			break;
 		case LIBHAGGLE_EVENT_NEW_DATAOBJECT:
 			e.dobj = dobj;
-			
 			ret = hh->handlers[type].handler(&e, hh->handlers[type].arg);
-			
-			if (ret != 1 && e.dobj)
-				haggle_dataobject_free(dobj);
-                        
 			break;
 		case LIBHAGGLE_EVENT_NEIGHBOR_UPDATE:
 			e.neighbors = haggle_nodelist_new_from_metadata(event_m);
@@ -1447,19 +1454,20 @@ static int handle_event(struct haggle_handle *hh, haggle_event_type_t type, stru
 				
 				if (ret != 1 && e.neighbors)
 					haggle_nodelist_free(e.neighbors);
+
+				ret = 0;
 			} else {
 				ret = -1;
 			}
-			haggle_dataobject_free(dobj);
 			break;
 		case LIBHAGGLE_EVENT_SHUTDOWN:
 			// TODO: Reason not implemented yet.
 			e.shutdown_reason = 0;
-			ret = hh->handlers[type].handler(&e, hh->handlers[type].arg);
-			haggle_dataobject_free(dobj);
+			hh->handlers[type].handler(&e, hh->handlers[type].arg);
+			
+			ret = 0;
 			break;
 		default:
-			haggle_dataobject_free(dobj);
 			break;
 	}
 		
@@ -1469,13 +1477,14 @@ static int handle_event(struct haggle_handle *hh, haggle_event_type_t type, stru
 start_ret_t haggle_event_loop(void *arg)
 {
 	struct haggle_handle *hh = (struct haggle_handle *)arg;
-	unsigned char buffer[BUFLEN];
+	unsigned char eventbuffer[DATA_BUFLEN];
 	int ret;
 
 	hh->event_loop_running = 1;
 
-        if (hh->start)
+	if (hh->start) {
                 hh->start(hh->arg);
+	}
 
 	while (hh->event_loop_running) {
 		struct dataobject *dobj;
@@ -1485,7 +1494,7 @@ start_ret_t haggle_event_loop(void *arg)
 		
 		LIBHAGGLE_DBG("Event loop running, waiting for data object...\n");
 
-		memset(buffer, 0, BUFLEN);
+		memset(eventbuffer, 0, DATA_BUFLEN);
        
 		ret = wait_for_event(hh, NULL);
 
@@ -1503,21 +1512,21 @@ start_ret_t haggle_event_loop(void *arg)
 			break;
                 } else if (ret == EVENT_LOOP_SOCKET_READABLE)  {
                        
-                        ret = recv(hh->sock, buffer, BUFLEN, 0);
+                        ret = recv(hh->sock, eventbuffer, DATA_BUFLEN, 0);
                         
                         if (ret == SOCKET_ERROR) {
                                 LIBHAGGLE_ERR("Haggle event loop recv() error!\n");
                                 continue;
                         }
                         
-                        dobj = haggle_dataobject_new_from_raw(buffer, ret);
+                        dobj = haggle_dataobject_new_from_raw(eventbuffer, ret);
                         
                         if (!dobj) {
                                 LIBHAGGLE_ERR("Haggle event loop ERROR: could not create data object\n");
                                 continue;
                         }
                        
-			LIBHAGGLE_DBG("Received data object\n%s\n", (char *)buffer);
+			LIBHAGGLE_DBG("Received data object\n%s\n", (char *)eventbuffer);
 			
 			app_m = haggle_dataobject_get_metadata(dobj, DATAOBJECT_METADATA_APPLICATION);
 			
@@ -1566,7 +1575,9 @@ start_ret_t haggle_event_loop(void *arg)
                                                
                         event_type = atoi(event_type_str);
                         			
-			handle_event(hh, event_type, dobj, event_m);
+			if (handle_event(hh, event_type, dobj, event_m) <= 0) {
+				haggle_dataobject_free(dobj);
+			}
                 }
 	}
 	
@@ -1595,11 +1606,10 @@ int haggle_event_loop_run(haggle_handle_t hh)
 	if (hh->num_handlers == 0)
 		return HAGGLE_EVENT_HANDLER_ERROR;
 
-	hh->event_loop_running = 1;
+	if (hh->event_loop_running)
+		return HAGGLE_EVENT_LOOP_ERROR;
 
 	haggle_event_loop(hh);
-
-	hh->event_loop_running = 0;
 
 	return HAGGLE_NO_ERROR;
 }

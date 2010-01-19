@@ -554,6 +554,10 @@ void ApplicationManager::onApplicationFilterMatchEvent(Event *e)
 		for (DataObjectRefList::iterator it = dObjs.begin(); it != dObjs.end(); it++) {
 			DataObjectRef& dObj = *it;
 
+			// Do not give node descriptions to applications.
+			if (dObj->isNodeDescription())
+				continue;
+
 			// Have we already sent this data object to this app?
 			if (app->getBloomfilter()->has(dObj)) {
 				// Yep. Don't resend.

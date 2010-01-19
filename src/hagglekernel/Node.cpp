@@ -623,7 +623,7 @@ void Node::printInterfaces() const
 		iface.lock();
 		const Addresses *addrs = iface->getAddresses();
 
-		printf("%d : %s %s\n", n++, iface->getIdentifierStr(), iface->isUp() ? "up" : "down");
+		printf("%d : %s %s %s\n", n++, iface->getIdentifierStr(), iface->getTypeStr(), iface->isUp() ? "up" : "down");
 		
 		for (Addresses::const_iterator itt = addrs->begin(); itt != addrs->end(); itt++) {
 			const Address *addr = *itt;

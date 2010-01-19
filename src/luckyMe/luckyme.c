@@ -60,13 +60,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../utils/utils.h"
-
-
 unsigned long grid_size = 0;
-char *filename = NULL;
+char *filename = "\\luckyMeData.jpg";
 char *single_source_name = NULL;
-unsigned long create_data_interval = 10;
+unsigned long create_data_interval = 120;
 unsigned long attribute_pool_size = 100;
 unsigned long num_dataobject_attributes = 3;
 unsigned long variance_interest_attributes = 2;
@@ -145,11 +142,13 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 
 int luckyme_test_start()
 {
+	DWORD ret;
 	test_is_running = 1;
 	num_dobj_received = 0;
 	
 	LIBHAGGLE_DBG("Checking test_loop_event\n");
-	DWORD ret = WaitForSingleObject(test_loop_event, 0);
+
+	ret = WaitForSingleObject(test_loop_event, 0);
 	
 	switch (ret) {
 		case WAIT_TIMEOUT:
@@ -166,9 +165,10 @@ int luckyme_test_start()
 
 int luckyme_test_stop()
 {
+	DWORD ret;
 	test_is_running = 0;
 	
-	DWORD ret = WaitForSingleObject(test_loop_event, 0);
+	ret = WaitForSingleObject(test_loop_event, 0);
 	
 	switch (ret) {
 		case WAIT_TIMEOUT:
@@ -205,15 +205,15 @@ unsigned long luckyme_get_num_dataobjects_created(void)
 	return num_dobj_created;
 }
 
-unsigned int luckyme_get_num_neighbors(void)
+unsigned long luckyme_get_num_neighbors(void)
 {
 	return num_neighbors;
 }
 
 char *luckyme_get_neighbor(unsigned int i)
 {
-	if (i0 < num_neighbors) {
-		return neighbor[i];
+	if (i < num_neighbors) {
+		return neighbors[i];
 	}
 	return NULL;
 }
@@ -239,7 +239,7 @@ int luckyme_haggle_stop(void)
 
 int luckyme_start(void)
 {
-	if (is_luckyme_running())
+	if (luckyme_is_running())
 		return 0;
 	
 	luckyme_thread_handle = CreateThread(NULL, 0, luckyme_run, (void *)NULL, 0, 0);
@@ -253,28 +253,26 @@ int luckyme_start(void)
 
 int luckyme_stop(int stop_haggle)
 {
-	if (is_luckyme_running()) {
-		
+	if (luckyme_is_running()) {
+		DWORD ret;
+
 		stop_now = 1;
 		
-		if (luckyme_stop_test() < 0)
+		if (luckyme_test_stop() < 0)
 			return -1;
 		
 		if (haggle_daemon_pid(NULL) == HAGGLE_DAEMON_RUNNING && stop_haggle) {
-			called_haggle_shutdown = true;
-			stopHaggle();
+			called_haggle_shutdown = 1;
+			luckyme_haggle_stop();
 		}
 		
-		DWORD ret = WaitForSingleObject(luckyme_thread_handle, INFINITE);
+		ret = WaitForSingleObject(luckyme_thread_handle, INFINITE);
 		
 		if (ret == WAIT_OBJECT_0) {
 			/* Is this really necessary here or will the handle be closed by the event loop? */
 			CloseHandle(luckyme_thread_handle);
-			sprintf(debugString, "LuckyMe stopped successfully\n");
 		} else if (ret == WAIT_FAILED) {
-			sprintf(debugString, "Could not stop test... wait FAILED\n");
 		} else if (ret == WAIT_TIMEOUT) {
-			sprintf(debugString, "Could not stop test... wait TIMEOUT\n");
 		} else {
 			// Should not happen
 		}
@@ -303,13 +301,12 @@ int create_interest_binomial()
 {
 	int i = 0;
 	struct attributelist *al;	
-	const unsigned long luck = random() % attribute_pool_size;
-	unsigned long weight = 0;
+	const unsigned long luck = prng_uint32() % attribute_pool_size;
 	// use binomial distribution to approximate normal distribution (sum of weights = 100)
 	// mean = np = luck, variance = np(1-p) = LUCK_INTERESTS
 	double p = 0.5;
-	int n = 4 * sqrt((double)variance_interest_attributes);
-	unsigned long u = n * p;
+	unsigned long n = (unsigned long)(4 * sqrt((double)variance_interest_attributes));
+	unsigned long u = (unsigned long)(n * p);
 	
 	LIBHAGGLE_DBG("create interest (luck=%ld)\n", luck);
 	// printf("binomial distribution  n=%u, p=%f\n", n, p);
@@ -319,10 +316,9 @@ int create_interest_binomial()
 	if (!al)
 		return -1;
 	
-	
-	for (i = 0; i <= n; i++) {
+	for (i = 0; (unsigned long)i <= n; i++) {
 		unsigned long interest = (luck + i - u + attribute_pool_size) % attribute_pool_size;
-		weight = 100 * fac(n)/(fac(n-i)*fac(i))*pow(p,i)*pow(1-p,n-i);
+		unsigned long weight = (unsigned long)(100 * fac(n)/(fac(n-i)*fac(i))*pow(p,i)*pow(1-p,n-i));
 		if (weight > 0) {
 			struct attribute *attr = haggle_attribute_new_weighted(APP_NAME, ulong_to_str(interest), weight);
 			haggle_attributelist_add_attribute(al, attr);
@@ -334,7 +330,7 @@ int create_interest_binomial()
 	
 	haggle_attributelist_free(al);
 	
-	return i + 1;
+	return (i + 1);
 }
 
 
@@ -346,8 +342,8 @@ int create_interest_grid()
 {
 	int i = 0;
 	struct attributelist *al;
-	static const int num_interests = 2;
-	unsigned int interests[num_interests];
+#define NUM_INTERESTS (2)
+	unsigned int interests[NUM_INTERESTS];
 	
 	interests[0] = node_number / grid_size;
 	interests[1] = (node_number % grid_size) + grid_size;
@@ -359,7 +355,7 @@ int create_interest_grid()
 	if (!al)
 		return -1;
 	
-	for (i = 0; i < num_interests; i++) {
+	for (i = 0; i < NUM_INTERESTS; i++) {
 		struct attribute *attr = haggle_attribute_new_weighted(APP_NAME, ulong_to_str(interests[i]), 1);
 		haggle_attributelist_add_attribute(al, attr);
 		LIBHAGGLE_DBG("   %s=%s:%lu\n", haggle_attribute_get_name(attr), haggle_attribute_get_value(attr), haggle_attribute_get_weight(attr));
@@ -387,6 +383,9 @@ int create_dataobject_random()
 	
 	if (filename) {
 		dobj = haggle_dataobject_new_from_file(filename);
+		
+		if (!dobj)
+			dobj = haggle_dataobject_new();
 	} else {
 		dobj = haggle_dataobject_new();
 	}
@@ -398,7 +397,7 @@ int create_dataobject_random()
 	
 	// todo: get unique attributes
 	for (i = 0; i < num_dataobject_attributes; i++) {
-		unsigned long value = random() % attribute_pool_size;
+		unsigned long value = prng_uint32() % attribute_pool_size;
 		haggle_dataobject_add_attribute(dobj, APP_NAME, ulong_to_str(value));
 		printf("   %s=%s\n", APP_NAME, ulong_to_str(value));
 	}
@@ -419,18 +418,19 @@ int create_dataobject_random()
  */
 int create_dataobject_grid() 
 {
-	unsigned int max_dataobject_number = (1 << (2*grid_size));
-	
+	struct dataobject *dobj = NULL;
+	unsigned int max_dataobject_number = (1 << (2*grid_size));	
 	int i = 0;
 	
 	if (num_dobj_created > max_dataobject_number-1) {
 		//shutdown(0);
 	}
 	
-	struct dataobject *dobj = 0;
-	
 	if (filename) {
 		dobj = haggle_dataobject_new_from_file(filename);
+
+		if (!dobj)
+			dobj = haggle_dataobject_new();
 	} else {
 		dobj = haggle_dataobject_new();
 	}
@@ -468,37 +468,47 @@ int on_dataobject(haggle_event_t *e, void* nix)
 	return 0;
 }
 
-
-int on_neighbor_update(haggle_event_t *e, void* nix)
+static void neighbor_list_clear()
 {
-	haggle_nodelist_t *nl = e->neighbors;
 	unsigned long i;
-	
+
 	if (num_neighbors) {
 		for (i = 0; i < num_neighbors; i++) {
 			free(neighbors[i]);
 		}
 		free(neighbors);
 	}
+	num_neighbors = 0;
+	neighbors = NULL;
+}
+
+int on_neighbor_update(haggle_event_t *e, void* nix)
+{
+	haggle_nodelist_t *nl = e->neighbors;
+	unsigned long i;
+	
+	neighbor_list_clear();
 	
 	num_neighbors = haggle_nodelist_size(nl);
+
+	LIBHAGGLE_DBG("number of neighbors is %lu\n", num_neighbors);
 	
 	if (num_neighbors > 0) {
-		neighbors = (char **) malloc(sizeof(char *)*num_neighbors);
+		neighbors = (char **)malloc(sizeof(char *) * num_neighbors);
 		
-		if (neighbors == NULL) {
+		if (!neighbors) {
 			num_neighbors = 0;
 		} else {
-			for (i = 0; i < num_neighbors; i++) {
-				haggle_node_t *n;
-				const char *nodestr;
-				n = haggle_nodelist_get_node_n(nl, i);
-				nodestr = haggle_node_get_name(n);
-				neighbors[i] = (char *)malloc(sizeof(char) * (strlen(nodestr)+1));
+			list_t *pos;
+			i = 0;
+			list_for_each(pos, &nl->nodes) {
+				haggle_node_t *n = (haggle_node_t *)pos;
+				neighbors[i] = (char *)malloc(strlen(haggle_node_get_name(n)) + 1);
 				
 				if (neighbors[i]) {
-					strcpy(neighbors[i], nodestr);
+					strcpy(neighbors[i], haggle_node_get_name(n));
 				}
+				i++;
 			}
 		}
 	} 
@@ -513,7 +523,6 @@ int on_neighbor_update(haggle_event_t *e, void* nix)
 int on_shutdown(haggle_event_t *e, void* nix)
 {
 #if defined(OS_WINDOWS_MOBILE)
-	//haggle_is_shuttingdown = 1;
 	
 	LIBHAGGLE_DBG("Got shutdown event\n");
 	
@@ -658,6 +667,7 @@ void test_loop() {
 			case WAIT_FAILED:
 				stop_now = 1;
 				result = -1;
+				LIBHAGGLE_DBG("Wait failed!!\n");
 				break;
 			case WAIT_TIMEOUT:
 				result = 0;
@@ -689,17 +699,22 @@ void test_loop() {
 					create_dataobject_random();
 				}
 #if defined(OS_WINDOWS_MOBILE)
-				event_callback(EVENT_TYPE_DATA_OBJECT_GENERATED);
+				if (callback)
+					callback(EVENT_TYPE_DATA_OBJECT_GENERATED);
 #endif
 			}
 		}
 	}
+	LIBHAGGLE_DBG("test loop done!\n");
 }
 
 
 void on_event_loop_start(void *arg)
 {	
-	// retreive interests:
+	haggle_handle_t hh = (haggle_handle_t)arg;
+
+	prng_init();
+	/* retreive interests: */
 	if (haggle_ipc_get_application_interests_async(hh) != HAGGLE_NO_ERROR) {
 		LIBHAGGLE_DBG("Could not request interests\n");
 	}
@@ -707,6 +722,8 @@ void on_event_loop_start(void *arg)
 
 void on_event_loop_stop(void *arg)
 {
+	haggle_handle_t hh = (haggle_handle_t)arg;
+
 	if (hh) {
 		LIBHAGGLE_DBG("Freeing Haggle handle\n");
 		haggle_handle_free(hh);
@@ -714,25 +731,17 @@ void on_event_loop_stop(void *arg)
 	}
 	
 	// Clean up neighbor list
-	if (neighbors != NULL) {
-		unsigned long i;
-		for (i = 0; i < num_neighbors; i++)
-			free(neighbors[i]);
-		free(neighbors);
-	}
-	num_neighbors = 0;
-	neighbors = NULL;
-	
-	
+	neighbor_list_clear();
 }
 
 #if defined(OS_WINDOWS)
-DWORD WINAPI luckyme_run(void *)
+DWORD WINAPI luckyme_run(void *arg)
 #else
 int luckyme_run()
 #endif
 {
 	int ret = 0;
+	unsigned int retry = 3;
 	
 	attribute_pool_size = 1;
 	num_dataobject_attributes = 1;
@@ -749,15 +758,13 @@ int luckyme_run()
 	gethostname(hostname, 128);
 	node_number = atoi(&(hostname[5]));
 	
-	// register with haggle
-	unsigned int retry = 3;
-	
 	do {
 		ret = haggle_handle_get(APP_NAME, &hh);
 		
 		// Busy?
 		if (ret == HAGGLE_BUSY_ERROR) {
 			// Unregister and try again.
+			LIBHAGGLE_DBG("Application is already registered.\n");
 			haggle_unregister(APP_NAME);
 		}
 		retry--;
@@ -767,18 +774,14 @@ int luckyme_run()
 	} while (ret != HAGGLE_NO_ERROR && retry >= 0);
 	
 	if (ret != HAGGLE_NO_ERROR || hh == NULL) {
-		//printf("could not obtain Haggle handle\n");
-#ifdef OS_WINDOWS_MOBILE
-		termCode = ret;
-#endif
 		goto out_error;
 	}
 	haggle_event_loop_register_callbacks(hh, on_event_loop_start, on_event_loop_stop, hh);
 	
 	// register callback for new data objects
+	haggle_ipc_register_event_interest(hh, LIBHAGGLE_EVENT_SHUTDOWN, on_shutdown);
 	haggle_ipc_register_event_interest(hh, LIBHAGGLE_EVENT_NEIGHBOR_UPDATE, on_neighbor_update);
 	haggle_ipc_register_event_interest(hh, LIBHAGGLE_EVENT_NEW_DATAOBJECT, on_dataobject);
-	haggle_ipc_register_event_interest(hh, LIBHAGGLE_EVENT_SHUTDOWN, on_shutdown);
 	haggle_ipc_register_event_interest(hh, LIBHAGGLE_EVENT_INTEREST_LIST, on_interests);
 	
 	if (haggle_event_loop_run_async(hh) != HAGGLE_NO_ERROR)
@@ -826,5 +829,12 @@ int main(int argc, char **argv)
 	
 	return luckyme_run();
 }
-
+#elif defined(OS_WINDOWS_MOBILE) && defined(CONSOLE)
+int wmain()
+{
+	test_is_running = 1;
+	test_loop_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+	luckyme_run(NULL);
+	CloseHandle(test_loop_event);
+}
 #endif

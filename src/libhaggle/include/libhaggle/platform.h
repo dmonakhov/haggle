@@ -15,6 +15,8 @@
 #ifndef _LIBHAGGLE_PLATFORM_H // To avoid conflicts with Platform.h (C++)
 #define _LIBHAGGLE_PLATFORM_H
 
+#include "exports.h"
+
 /* Detect platform: */
 
 /* Mac OS X platform forced? */
@@ -163,6 +165,8 @@ typedef DWORD pid_t;
 
 char *strtok_r(char *s, const char *delim, char **last);
 
+HAGGLE_API int gettimeofday(struct timeval *tv, void *tz);
+
 // 'printf' length modifier for size_t on windows
 #define SIZE_T_LMOD "I"
 
@@ -204,7 +208,7 @@ char *strtok_r(char *s, const char *delim, char **last);
 
 typedef enum path_type {
         PLATFORM_PATH_PROGRAM,
-		PLATFORM_PATH_PRIVATE,
+	PLATFORM_PATH_PRIVATE,
         PLATFORM_PATH_DATA,
         PLATFORM_PATH_TEMP,
 } path_type_t;
@@ -212,5 +216,26 @@ typedef enum path_type {
 const char *platform_get_path(path_type_t type, const char *append);
 
 #endif /* LIBHAGGLE_INTERNAL */
+
+/*
+	Pseudo-random number generation library
+*/
+
+/*
+	Initializes the PRNG library. Needs to be done at least once before the
+	other functions are executed. There's no harm in calling this function more
+	than once.
+*/
+HAGGLE_API void prng_init(void);
+
+/*
+	Returns an 8-bit random number.
+*/
+HAGGLE_API unsigned char prng_uint8(void);
+
+/*
+	Returns a 32-bit random number.
+*/
+HAGGLE_API unsigned long prng_uint32(void);
 
 #endif /* _LIBHAGGLE_PLATFORM_H */

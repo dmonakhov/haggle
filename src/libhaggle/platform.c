@@ -148,6 +148,185 @@ wchar_t *strtowstr_alloc(const char *str)
 
 #endif /* OS_WINDOWS */
 
+#if defined(WIN32) || defined(WINCE)
+#define OS_WINDOWS
+#endif
+
+#include <time.h>
+
+#if defined(OS_MACOSX) || defined(OS_LINUX)
+#include <stdlib.h>
+#endif
+
+void prng_init(void)
+{
+#if defined(OS_MACOSX)
+	// No need for initialization
+#elif defined(OS_LINUX)
+	srandom(time(NULL));
+#elif defined(OS_WINDOWS)
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	srand(tv.tv_usec);
+#endif
+}
+
+unsigned char prng_uint8(void)
+{
+	return
+#if defined(OS_MACOSX)
+		arc4random() & 0xFF;
+#elif defined(OS_LINUX)
+		random() & 0xFF;
+#elif defined(OS_WINDOWS)
+		rand() & 0xFF;
+#endif
+}
+
+unsigned long prng_uint32(void)
+{
+	return
+#if defined(OS_MACOSX)
+		// arc4random() returns a 32-bit random number:
+		arc4random();
+#elif defined(OS_LINUX)
+		// random() returns a 31-bit random number:
+		(((unsigned long)(random() & 0xFFFF)) << 16) |
+		(((unsigned long)(random() & 0xFFFF)) << 0);
+#elif defined(OS_WINDOWS)
+		// rand() returns a 15-bit random number:
+		(((unsigned long) (rand() & 0xFF)) << 24) |
+		(((unsigned long) (rand() & 0xFFF)) << 12) |
+		(((unsigned long) (rand() & 0xFFF)) << 0);
+#endif
+}
+
+#if defined(OS_WINDOWS)
+/* A wrapper for gettimeofday so that it can be used on Windows platforms. */
+int gettimeofday(struct timeval *tv, void *tz)
+{
+#ifdef WINCE
+	DWORD tickcount, tickcount_diff; // In milliseconds
+	/* In Windows CE, GetSystemTime() returns a time accurate only to the second.
+	For higher performance timers we need to use something better. */
+	
+	// This holds the base time, i.e. the estimated time of boot. This value plus
+	// the value the high-performance timer/GetTickCount() provides gives us the
+	// right time.
+	static struct timeval base_time = { 0, 0};
+	static DWORD base_tickcount = 0;
+
+	if (!tv) 
+		return (-1);
+
+	/* The hardware does not implement a high performance timer.
+	Note, the tick counter will wrap around after 49.7 days. 
+	GetTickCount() returns number of milliseconds since device start. 
+	*/
+	tickcount = GetTickCount();
+	
+	// Should we determine the base time?
+	if (base_tickcount == 0) {
+		FILETIME  ft;
+		SYSTEMTIME st;
+		LARGE_INTEGER date, adjust;
+		
+		// Save tickcount
+		base_tickcount = tickcount;
+
+		// Find the system time:
+		GetSystemTime(&st);
+		// Convert it into "file time":
+		SystemTimeToFileTime(&st, &ft);
+		
+		date.HighPart = ft.dwHighDateTime;
+		date.LowPart = ft.dwLowDateTime;
+
+		// 11644473600000 is the timestamp of January 1, 1601 (UTC), when
+		// FILETIME started.
+		// 100-nanoseconds = milliseconds * 10000
+		adjust.QuadPart = 11644473600000 * 10000;
+
+		// removes the diff between 1970 and 1601
+		date.QuadPart -= adjust.QuadPart;
+
+		// converts back from 100-nanoseconds to seconds and microseconds
+		base_time.tv_sec =  (long)(date.QuadPart / 10000000);
+		adjust.QuadPart = base_time.tv_sec;
+
+		 // convert seconds to 100-nanoseconds
+		adjust.QuadPart *= 10000000;
+
+		// Remove the whole seconds
+		date.QuadPart -= adjust.QuadPart;
+
+		// Convert the remaining 100-nanoseconds to microseconds
+		date.QuadPart /= 10;
+
+		base_time.tv_usec = (long)date.QuadPart;
+		
+		printf("base_time: sec:%ld usec:%ld\n", base_time.tv_sec, base_time.tv_usec);
+		printf("base_tickcount: %lu\n", tickcount);
+	}
+
+	tickcount_diff = tickcount - base_tickcount;
+	tv->tv_sec = base_time.tv_sec;
+	tv->tv_usec = base_time.tv_usec;
+	
+	// Add tickcount to seconds
+	while (tickcount_diff >= 1000) {
+		tv->tv_sec++;
+		tickcount_diff -= 1000;
+	}
+
+	// Add remainding milliseconds to the microseconds part
+	tv->tv_usec += (tickcount_diff * 1000);
+
+	// If the milliseconds part is larger then 1 sec, adjust
+	while (tv->tv_usec >= 1000000) {
+		tv->tv_sec++;
+		tv->tv_usec -= 1000000;
+	}
+#else
+	FILETIME  ft;
+	SYSTEMTIME st;
+	LARGE_INTEGER date, adjust;
+
+	if (!tv) 
+		return (-1);
+
+	GetSystemTime(&st);
+	SystemTimeToFileTime(&st, &ft);
+
+	date.HighPart = ft.dwHighDateTime;
+	date.LowPart = ft.dwLowDateTime;
+
+	// 11644473600000 is the timestamp of January 1, 1601 (UTC), when
+	// FILETIME started.
+	// 100-nanoseconds = milliseconds * 10000
+	adjust.QuadPart = 11644473600000 * 10000;
+
+	// removes the diff between 1970 and 1601
+	date.QuadPart -= adjust.QuadPart;
+
+	// converts back from 100-nanoseconds to seconds and microseconds
+	base_time.tv_sec =  (long)(date.QuadPart / 10000000);
+	adjust.QuadPart = base_time.tv_sec;
+
+	// convert seconds to 100-nanoseconds
+	adjust.QuadPart *= 10000000;
+
+	// Remove the whole seconds
+	date.QuadPart -= adjust.QuadPart;
+
+	// Convert the remaining 100-nanoseconds to microseconds
+	date.QuadPart /= 10;
+
+	base_time.tv_usec = (long)date.QuadPart;		
+#endif
+	return 0;
+}
+#endif
 
 /*
 	Define default path delimiters for each platform

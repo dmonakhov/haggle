@@ -10,10 +10,15 @@
 // that uses this DLL. This way any other project whose source files include this file see 
 // LUCKYME_API functions as being imported from a DLL, whereas this DLL sees symbols
 // defined with this macro as being exported.
+
+#if defined(CONSOLE)
+#define LUCKYME_API 
+#else
 #ifdef LUCKYME_EXPORTS
 #define LUCKYME_API __declspec(dllexport)
 #else
 #define LUCKYME_API __declspec(dllimport)
+#endif
 #endif
 
 LUCKYME_API int luckyme_test_start(void);
