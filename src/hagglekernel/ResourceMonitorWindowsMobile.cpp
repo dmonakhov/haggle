@@ -176,12 +176,17 @@ bool ResourceMonitor::run()
 						break;
 					case ERROR_PIPE_NOT_CONNECTED:
 						HAGGLE_ERR("Error: Pipe not connected...\n");
+						cancel();
 						break;
 					case ERROR_TIMEOUT:
 						HAGGLE_ERR("Error: Timeout...\n");
 						break;
+					case ERROR_INVALID_HANDLE:
+						HAGGLE_ERR("Error: invalid handle\n");
+						cancel();
 					default:
 						HAGGLE_ERR("Unknown ReadMsgQueue error=%d\n", GetLastError());
+						cancel();
 						break;
 
 				}

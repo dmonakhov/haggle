@@ -2110,6 +2110,8 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 	if (callback)
 		kernel->addEvent(new Event(callback, node));
 	
+	HAGGLE_DBG("Node %s inserted successfully\n", node->getName().c_str());
+
 	return 1;
 	
 out_insertNode_err:
@@ -2427,6 +2429,11 @@ out_insertDataObject_err:
 int SQLDataStore::_retrieveNode(NodeRef& refNode, const EventCallback<EventHandler> *callback, bool forceCallback)
 {
 	NodeRef node;
+
+	if (!callback) {
+		HAGGLE_ERR("No callback specified\n");
+		return -1;
+	}
 	
 	HAGGLE_DBG("Retrieve Node %s\n", refNode->getName().c_str());
 	
@@ -2435,7 +2442,9 @@ int SQLDataStore::_retrieveNode(NodeRef& refNode, const EventCallback<EventHandl
 	node = getNodeFromRowId(node_rowid);
 	
 	if (!node) {
+		HAGGLE_DBG("No node %s in data store\n", refNode->getName().c_str());
 		if (forceCallback) {
+			HAGGLE_DBG("Forcing callback\n");
 			kernel->addEvent(new Event(callback, refNode));
 			return 1;
 		} else {
@@ -2460,6 +2469,9 @@ int SQLDataStore::_retrieveNode(NodeRef& refNode, const EventCallback<EventHandl
 		refNode.unlock();
 	}
 	
+	
+	HAGGLE_DBG("Node %s retrieved successfully\n", refNode->getName().c_str());
+
 	kernel->addEvent(new Event(callback, node));
 
 	return 1;

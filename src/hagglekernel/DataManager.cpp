@@ -280,11 +280,18 @@ void DataManager::onVerifiedDataObject(Event *e)
 		HAGGLE_DBG("Verified data object event without data object!\n");
 		return;
 	}
-	HAGGLE_DBG("%s Received DataObject\n", getName());
+	HAGGLE_DBG("%s Received data object [%s]\n", getName(), dObj->getIdStr());
 
 #ifdef DEBUG
 	dObj->print();
 #endif
+	if (dObj->shouldVerifySignature() && !dObj->hasValidSignature()) {
+		// This data object had a bad signature, we should remove
+		// it from the bloomfilter
+		localBF.remove(dObj);
+		kernel->getThisNode()->setBloomfilter(localBF, setCreateTimeOnBloomfilterUpdate);
+		return;
+	}
 
 	if (dObj->getDataState() == DataObject::DATA_STATE_VERIFIED_BAD) {
 		HAGGLE_ERR("Data in data object flagged as bad! -- discarding\n");
@@ -310,6 +317,14 @@ void DataManager::onSendResult(Event *e)
 	DataObjectRef& dObj = e->getDataObject();
 	NodeRef& node = e->getNode();
 
+	if (!dObj) {
+		HAGGLE_ERR("No data object in send result\n");	
+		return;
+	}
+	if (!node) {
+		HAGGLE_ERR("No node in send result\n");	
+		return;
+	}
 	if (e->getType() == EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL) {
 		// Add data object to node's bloomfilter.
 		node->getBloomfilter()->add(dObj);
@@ -364,7 +379,7 @@ void DataManager::onIncomingDataObject(Event *e)
 
 void DataManager::handleVerifiedDataObject(DataObjectRef& dObj)
 {
-	// insert into database (including filering)
+	// insert into database (including filtering)
 	if (dObj->isPersistent()) {
 		kernel->getDataStore()->insertDataObject(dObj, onInsertedDataObjectCallback);
 	} else {

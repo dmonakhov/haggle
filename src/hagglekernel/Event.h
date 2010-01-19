@@ -129,8 +129,9 @@ typedef int EventType;
 	
 	EVENT_TYPE_DATAOBJECT_VERIFIED:
 	This event is sent by the security manager in response to an 
-	EVENT_TYPE_DATAOBJECT_RECEIVED event, if the data object passed 
-	verification.
+	EVENT_TYPE_DATAOBJECT_RECEIVED event, no matter whether the data object
+	passed verification or not. The result of the verification is specified
+	in the data object.
 	
 	EVENT_TYPE_DATAOBJECT_RECEIVED:
 	This event is sent by the protocol manager when a data object has been 

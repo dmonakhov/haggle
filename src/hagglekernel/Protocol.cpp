@@ -982,12 +982,18 @@ bool Protocol::run()
 	setMode(PROT_MODE_IDLE);
 	int numerr = 0;
 	Queue *q = getQueue();
+	NodeRef peerNode;
 
 	if (!q) {
 		HAGGLE_ERR("Could not get a Queue for protocol %s\n", getName());
 		setMode(PROT_MODE_DONE);
 		return false;
 	}
+	
+	// Cache the peer node here. If the node goes away, it may be taken out of the
+	// node store before the protocol quits, and then we cannot retrieve it for the
+	// send result event.
+	peerNode = getManager()->getKernel()->getNodeStore()->retrieve(peerIface);
 
 	while (!isDone() && !shouldExit()) {
 
@@ -997,6 +1003,11 @@ bool Protocol::run()
 				// The connected flag should probably be set in connectToPeer,
 				// but set it here for safety
 				HAGGLE_DBG("%s successfully connected\n", getName());
+
+				if (!peerNode) {
+					// Just in case we didn't have the node in the store before.
+					peerNode = getManager()->getKernel()->getNodeStore()->retrieve(peerIface);
+				}
 			} else {
 				numConnectTry++;
 				HAGGLE_DBG("%s connection failure %d/%d\n", 
@@ -1040,19 +1051,19 @@ bool Protocol::run()
 				if (!dObj) {
 					// Something is wrong here. TODO: better error handling than continue?
 					HAGGLE_ERR("%s No data object in queue despite indicated. Something is WRONG!\n", 
-						   getName(), (peerIface ? peerIface->getIdentifierStr() : "n/a"));
+						   getName(), (peerNode ? peerNode->getName().c_str() : "n/a"));
 					
 					break;
 				}
 				HAGGLE_DBG("%s Data object retrieved from queue, sending to [%s]\n", 
-					   getName(), (peerIface ? peerIface->getIdentifierStr() : "n/a"));
+					   getName(), (peerNode ? peerNode->getName().c_str() : "n/a"));
 				
 				pEvent = sendDataObjectNow(dObj);
 				
 				if (pEvent == PROT_EVENT_SUCCESS || pEvent == PROT_EVENT_REJECT) {
 					// Treat reject as SUCCESS, since it probably means the peer already has the
 					// data object and we should therefore not try to send it again.
-					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, dObj, getManager()->getKernel()->getNodeStore()->retrieve(peerIface), (pEvent == PROT_EVENT_REJECT)?1:0));
+					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, dObj, peerNode, (pEvent == PROT_EVENT_REJECT)?1:0));
 				} else {
 					// Send success/fail event with this data object
 					switch (pEvent) {
@@ -1066,7 +1077,7 @@ bool Protocol::run()
 							// the same way as if the peer closed the connection.
 						case PROT_EVENT_PEER_CLOSED:
 							HAGGLE_DBG("%s Peer [%s] closed its end of the connection...\n", 
-									   getName(), (peerIface ? peerIface->getIdentifierStr() : "n/a"));
+								getName(), (peerNode ? peerNode->getName().c_str() : "n/a"));
 							q->close();
 							setMode(PROT_MODE_DONE);
 							closeConnection();
@@ -1083,23 +1094,23 @@ bool Protocol::run()
 							q->close();
 							setMode(PROT_MODE_DONE);
 					}
-					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_FAILURE, dObj, getManager()->getKernel()->getNodeStore()->retrieve(peerIface)));
+					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_FAILURE, dObj, peerNode));
 				}
 				break;
 			case PROT_EVENT_INCOMING_DATA:
 				// Data object to receive:
-				HAGGLE_DBG("%s Incoming data object from [%s]\n", getName(), (peerIface ? peerIface->getIdentifierStr() : "n/a"));
+				HAGGLE_DBG("%s Incoming data object from [%s]\n", getName(), (peerNode ? peerNode->getName().c_str() : "n/a"));
 				
 				pEvent = receiveDataObject();	
 
 				switch (pEvent) {
 					case PROT_EVENT_SUCCESS:
 						HAGGLE_DBG("%s Data object successfully received from [%s]\n", 
-							getName(), (peerIface ? peerIface->getIdentifierStr() : "n/a"));
+							getName(), (peerNode ? peerNode->getName().c_str() : "n/a"));
 						break;
 					case PROT_EVENT_PEER_CLOSED:
 						HAGGLE_DBG("%s Peer [%s] closed its end of the connection...\n", 
-							getName(), (peerIface ? peerIface->getIdentifierStr() : "n/a"));
+							getName(), (peerNode ? peerNode->getName().c_str() : "n/a"));
 						q->close();
 						setMode(PROT_MODE_DONE);
 						closeConnection();

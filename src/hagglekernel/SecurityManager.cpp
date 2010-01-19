@@ -631,10 +631,10 @@ void SecurityManager::onSecurityTaskComplete(Event *e)
 		case SECURITY_TASK_VERIFY_DATAOBJECT:
 			if (task->dObj->hasValidSignature()) {
 				HAGGLE_DBG("DataObject %s has a valid signature!\n", task->dObj->getIdStr());
-				kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_VERIFIED, task->dObj));
 			} else {
 				HAGGLE_DBG("DataObject %s has an unverifiable signature!\n", task->dObj->getIdStr());
 			}
+			kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_VERIFIED, task->dObj));
 			break;
                 case SECURITY_TASK_SIGN_DATAOBJECT:
                         break;

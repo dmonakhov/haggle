@@ -368,7 +368,10 @@ Protocol *ProtocolManager::getServerProtocol(const ProtType_t type, const Interf
 	for (; it != protocol_registry.end(); it++) {
 		p = (*it).second;
 
-		if (p->isServer() && type == p->getType() && p->isForInterface(iface))
+		// Assume that we are only looking for a specific type of server
+		// protocol, i.e., there is only one server for multiple interfaces
+		// of the same type
+		if (p->isServer() && type == p->getType())
 			break;
 		
 		p = NULL;
@@ -387,10 +390,11 @@ Protocol *ProtocolManager::getServerProtocol(const ProtType_t type, const Interf
                                 
 #if defined(ENABLE_MEDIA)
 			case PROT_TYPE_MEDIA:
-                                //if (!strstr(iface->getMacAddrStr(), "00:00:00:00")) {
-                                //						// mac address is 0: dummy interface (for unmount) > no protocol needed
-//						p = new ProtocolMediaServer(iface, this);
-                                //					}
+				/*
+                                if (!strstr(iface->getMacAddrStr(), "00:00:00:00")) {				
+						p = new ProtocolMediaServer(iface, this);
+        			}
+				*/
 				break;
 #endif
 		default:

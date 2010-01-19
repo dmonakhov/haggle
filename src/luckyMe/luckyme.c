@@ -537,8 +537,9 @@ int on_shutdown(haggle_event_t *e, void* nix)
 		callback(EVENT_TYPE_SHUTDOWN);
 	
 #else
+	ssize_t ret;
 	stop_now = 1;
-	write(test_loop_event[1], "x", 1);
+	ret = write(test_loop_event[1], "x", 1);
 #endif
 	return 0;
 }
@@ -748,7 +749,12 @@ int luckyme_run()
 	variance_interest_attributes = 0;
 
 #if defined(OS_UNIX)
-	pipe(test_loop_event);
+	ret = pipe(test_loop_event);
+
+	if (ret == -1) {
+		LIBHAGGLE_ERR("Could not open pipe\n");
+		return -1;
+	}
 #endif
 	// reset random number generator
 	prng_init();
@@ -818,8 +824,9 @@ out_error:
 #if defined(OS_UNIX)
 void signal_handler()
 {
+	ssize_t ret;
 	stop_now = 1;
-	write(test_loop_event[1], "x", 1);
+	ret = write(test_loop_event[1], "x", 1);
 }
 
 int main(int argc, char **argv)
