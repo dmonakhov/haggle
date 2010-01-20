@@ -183,6 +183,8 @@ class Runnable;
 	execution.
 */
 
+#define MAIN_THREAD_NAME "MainThread:0"
+
 // Actual thread class that takes an object with the Runnable interface
 class Thread 
 {
@@ -192,6 +194,7 @@ class Thread
 	friend class Mutex;
 	friend class RecursiveMutex;
 private:
+        Thread();
         Thread(Runnable *r);
         ~Thread();
 	// Static members
@@ -201,17 +204,18 @@ private:
         static Mutex registryMutex;
         static bool registryAdd(Thread *thr);
         static Thread *registryRemove(const ThreadId& id);
-
+	static Thread mainthread; // This is a thread object that represent the "main thread" in the registry
 	// Non static members
         unsigned long num;
 	Timeval starttime;
+	char *name;
 
 	thread_handle_t thrHandle;
         thread_attr_t attr;
         ThreadId id;
         Runnable *runObj;
 
-        volatile u_int8_t state;
+        u_int8_t state;
 
         Mutex mutex; 
 	Signal exitSignal;
@@ -255,6 +259,11 @@ public:
         static ThreadId selfGetId();
 	static bool selfGetNum(unsigned long *num);
 	static bool selfIsRegistered();
+
+	/**
+		Return the name of the "current" thread if it is in the registry, otherwise
+		return NULL;
+	*/
 	static const char *selfGetName();
 	static Signal *selfGetExitSignal();
 

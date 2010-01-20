@@ -798,7 +798,7 @@ DataObject *SQLDataStore::createDataObject(sqlite3_stmt * stmt)
 	dObj->setOwnsFile(false);
 	dObj->setFilePath((const char *) sqlite3_column_text(stmt, table_dataobjects_filepath));
 	dObj->setFileName((const char *) sqlite3_column_text(stmt, table_dataobjects_filename));
-	dObj->setSignatureStatus((DataObjectSignatureStatus_t)sqlite3_column_int64(stmt, table_dataobjects_signature_status));
+	dObj->setSignatureStatus((DataObject::SignatureStatus_t)sqlite3_column_int64(stmt, table_dataobjects_signature_status));
 	dObj->setSignee(String(((const char *) sqlite3_column_text(stmt, table_dataobjects_signee))));
 	sqlite_int64 millisecs = sqlite3_column_int64(stmt, table_dataobjects_receivetime);
 	

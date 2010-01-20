@@ -319,6 +319,13 @@ void ConnectivityManager::onDeleteConnectivity(Event *e)
 	Mutex::AutoLocker l(connMutex);
 	Connectivity *conn = (static_cast <Connectivity *>(e->getData()));
 
+	if (!conn) {
+		HAGGLE_ERR("Connectivity was NULL\n");	
+		return;
+	}
+
+	CM_DBG("Deleting connectivity %s\n", conn->getName());
+
 	// Take the connectivity out of the connectivity list
 	conn_registry.remove(conn);
 
@@ -337,7 +344,6 @@ void ConnectivityManager::onDeleteConnectivity(Event *e)
 		}
 	}
 }
-
 
 void ConnectivityManager::spawn_connectivity(const InterfaceRef& iface)
 {

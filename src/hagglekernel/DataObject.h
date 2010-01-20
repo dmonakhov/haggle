@@ -103,7 +103,7 @@ typedef ReferenceList<DataObject> DataObjectRefList;
 */
 #define isValidConfigDataObject(dObj) \
 	(!(dObj)->isPersistent() || (false &&                  \
-	 ((dObj)->getSignatureStatus() == DATAOBJECT_SIGNATURE_VALID) && \
+	 ((dObj)->getSignatureStatus() == DataObject::SIGNATURE_VALID) && \
          ((dObj)->getSignee() == getKernel()->getThisNode()->getIdStr())))
 
 /** 
@@ -151,12 +151,6 @@ typedef Reference<DataObjectDataRetriever> DataObjectDataRetrieverRef;
 // Define type for Data Object Identifiers
 typedef unsigned char DataObjectId_t[DATAOBJECT_ID_LEN];
 
-typedef enum {
-	DATAOBJECT_SIGNATURE_MISSING,
-	DATAOBJECT_SIGNATURE_UNVERIFIED,
-	DATAOBJECT_SIGNATURE_VALID,
-	DATAOBJECT_SIGNATURE_INVALID,
-} DataObjectSignatureStatus_t;
 
 /** */
 #if OMNETPP
@@ -178,9 +172,15 @@ class DataObject
 		DATA_STATE_VERIFIED_OK,
 		DATA_STATE_VERIFIED_BAD,
 	} DataState_t;
+	typedef enum {
+		SIGNATURE_MISSING,
+		SIGNATURE_UNVERIFIED,
+		SIGNATURE_VALID,
+		SIGNATURE_INVALID,
+	} SignatureStatus_t;
     private:
 	friend class DataObjectDataRetrieverImplementation;
-	DataObjectSignatureStatus_t signatureStatus;
+	SignatureStatus_t signatureStatus;
 	string signee;
 	unsigned char *signature;
 	size_t signature_len;
@@ -289,13 +289,13 @@ class DataObject
 	DataState_t getDataState() const { return dataState; }
         bool dataIsVerifiable() const { return hasDataHash; }
 
-	DataObjectSignatureStatus_t getSignatureStatus() const { return signatureStatus; }
-	void setSignatureStatus(DataObjectSignatureStatus_t s) { signatureStatus = s; }
+	SignatureStatus_t getSignatureStatus() const { return signatureStatus; }
+	void setSignatureStatus(const SignatureStatus_t s) { signatureStatus = s; }
 	const string &getSignee() const { return signee; }
 	void setSignee(const string s) { signee = s; }
-	bool hasValidSignature() const { return signatureStatus == DATAOBJECT_SIGNATURE_VALID; }
-	bool shouldVerifySignature() const { return signatureStatus == DATAOBJECT_SIGNATURE_UNVERIFIED; }
-	bool isSigned() const { return signatureStatus != DATAOBJECT_SIGNATURE_MISSING; }
+	bool hasValidSignature() const { return signatureStatus == SIGNATURE_VALID; }
+	bool signatureIsUnverified() const { return signatureStatus == SIGNATURE_UNVERIFIED; }
+	bool isSigned() const { return signatureStatus != SIGNATURE_MISSING; }
 	const unsigned char *getSignature() const;
 	size_t getSignatureLength() const { return signature_len; }
 	void setSignature(const string signee, unsigned char *sig, size_t siglen);

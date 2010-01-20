@@ -194,7 +194,7 @@ bool SecurityHelper::signDataObject(DataObjectRef& dObj, RSA *key)
 	dObj->setSignature(getManager()->getKernel()->getThisNode()->getIdStr(), signature, siglen);
 	
 	// Assume that our own signature is valid
-	dObj->setSignatureStatus(DATAOBJECT_SIGNATURE_VALID);
+	dObj->setSignatureStatus(DataObject::SIGNATURE_VALID);
 	
 	// Do not free the allocated signature as it is now owned by the data object...
 	
@@ -222,12 +222,12 @@ bool SecurityHelper::verifyDataObject(DataObjectRef& dObj, CertificateRef& cert)
 			HAGGLE_DBG("Signature is invalid:\n%s\n", raw);
 			free(raw);
 		}
-		dObj->setSignatureStatus(DATAOBJECT_SIGNATURE_INVALID);
+		dObj->setSignatureStatus(DataObject::SIGNATURE_INVALID);
 		return false;
 	}
 	
 	HAGGLE_DBG("Signature is valid\n");
-	dObj->setSignatureStatus(DATAOBJECT_SIGNATURE_VALID);
+	dObj->setSignatureStatus(DataObject::SIGNATURE_VALID);
 	
 	return true;
 }
@@ -632,12 +632,24 @@ void SecurityManager::onSecurityTaskComplete(Event *e)
 			*/ 
 			break;
 		case SECURITY_TASK_VERIFY_DATAOBJECT:
+			/*
+			  NOTE:
+			  Here is the possibility to generate a EVENT_TYPE_DATAOBJECT_VERIFIED
+			  event even if the data object had a bad signature. In that case, the
+			  Data manager will remove the data object from the bloomfilter so that
+			  it can be received again (hopefully with a valid signature the next time).
+			  However, this means that also the data object with the bad signature
+			  can be received once more, in worst case in a never ending circle.
+
+			  Perhaps the best solution is to hash both the data object ID and the 
+			  signature (if available) into a node's bloomfilter?
+			*/
 			if (task->dObj->hasValidSignature()) {
 				HAGGLE_DBG("DataObject %s has a valid signature!\n", task->dObj->getIdStr());
+				kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_VERIFIED, task->dObj));
 			} else {
 				HAGGLE_DBG("DataObject %s has an unverifiable signature!\n", task->dObj->getIdStr());
 			}
-			kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_VERIFIED, task->dObj));
 			break;
                 case SECURITY_TASK_SIGN_DATAOBJECT:
                         break;
@@ -647,19 +659,21 @@ void SecurityManager::onSecurityTaskComplete(Event *e)
 
 void SecurityManager::onReceivedDataObject(Event *e)
 {
-	DataObjectRef dObj;
-	
 	if (!e || !e->hasData())
 		return;
 	
-	dObj = e->getDataObject();
+	DataObjectRef& dObj = e->getDataObject();
 	
-	if (dObj->isDuplicate())
+	if (!dObj)
 		return;
 
+	if (dObj->isDuplicate()) {
+		HAGGLE_DBG("Data object [%s] is a duplicate, ignoring\n", dObj->getIdStr());		
+		return;
+	}
 	// Check if the data object's signature should be verified. Otherwise, generate the 
 	// verified event immediately.
-	if (dObj->shouldVerifySignature() && 
+	if (dObj->signatureIsUnverified() && 
 	    ((dObj->isNodeDescription() && securityLevel > SECURITY_LEVEL_LOW) || 
 	     (securityLevel > SECURITY_LEVEL_MEDIUM))) {
 		helper->addTask(new SecurityTask(SECURITY_TASK_VERIFY_DATAOBJECT, dObj));

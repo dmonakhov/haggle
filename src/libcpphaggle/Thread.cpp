@@ -35,6 +35,7 @@ namespace haggle {
 // Static variables
 unsigned long Thread::totNum = 0;
 Thread::thread_registry_t Thread::registry;
+Thread Thread::mainthread;
 Mutex Thread::registryMutex("Thread registry mutex");
 
 int cancel_other(Thread *thr);
@@ -145,7 +146,6 @@ void Thread::registryPrint()
 	Mutex::AutoLocker l(registryMutex);
 	
 	printf("==== Thread registry ====\n");
-	printf("Thread [0] - Main thread (not in registry) sysid=%lu Runtime: since start\n", (unsigned long)Thread::selfGetId().id);
 	
 	for (thread_registry_t::iterator it = registry.begin(); it != registry.end(); it++) {
 		Thread *thr = (*it).second;
@@ -173,8 +173,8 @@ start_ret_t start_thread(void *arg)
 void Thread::runloop()
 {
 	id.setToCurrentThread();
-	
-	TRACE_DBG("Starting thread %s\n", getName());
+
+	TRACE_DBG("Starting thread %s\n", name);
 	
 	if (!Thread::registryAdd(this)) {
 		TRACE_ERR("Could not add thread %s to registry\n", getName());
@@ -248,18 +248,12 @@ const char *Thread::selfGetName()
 {
 	Mutex::AutoLocker l(registryMutex);
 
-	static string name;
-	
-	name.clear();
-		
 	Thread *thr = _selfGet();
 	
 	if (thr)
-		name = thr->getName();	
-	else 
-		name = "Unregistered thread";
-		
-	return name.c_str();
+		return thr->getName();	
+	
+	return NULL;
 }
 
 bool Thread::selfIsRegistered()
@@ -284,69 +278,77 @@ Signal *Thread::selfGetExitSignal()
 	return NULL;
 }
 
+// Constructor for static Thread object (main thread) in thread class
+Thread::Thread() : 
+	num(totNum++), starttime(Timeval::now()), name(NULL), runObj(NULL), state(THREAD_STATE_STOPPED)
+{
+	id.setToCurrentThread();
+	size_t len = strlen(MAIN_THREAD_NAME) + 1;
+	name = (char *)malloc(len);
+
+	if (name)
+		snprintf(name, len, MAIN_THREAD_NAME);
+
+	registry.insert(make_pair(id, this));
+}
+
 Thread::Thread(Runnable *r) : 
-	num(++totNum), starttime(Timeval::now()), runObj(r), state(THREAD_STATE_STOPPED)
+	num(totNum++), starttime(Timeval::now()), name(NULL), runObj(r), state(THREAD_STATE_STOPPED)
 {
 	int ret = 0;
 
-#if HAVE_EXCEPTION
-	if (!r)
-                throw ThreadException("No runnable!");
-#endif
-	
-#if HAVE_EXCEPTION
-	if (runObj->thr)
-		throw ThreadException("Runnable is already associated with a thread");
-#endif
+	if (!runObj)
+		return;
+
+	if (runObj->isRunning()) {
+		// Runobject is already associated with a thread and is running
+		runObj = NULL;
+		return;
+	} 
 
 	runObj->thr = this;
 
 #if defined(HAVE_PTHREADS)
 	// Defaults to joinable
 	ret = pthread_attr_init(&attr);
-	pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_JOINABLE);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 #endif
-            
-#if HAVE_EXCEPTION
-	if (ret != 0)
-		throw ThreadException("Thread creation error!");
-#endif
+
+	// Allocate name string, add room for thread number and null-char
+	size_t len = strlen(runObj->getName()) + 20 + 1;
+	name = (char *)malloc(len);
+
+	if (name)
+		snprintf(name, len, "%s:%lu", runObj->getName(), num);
 }
 
 Thread::~Thread()
 {
-	/*
-	  If the thread is running, we must stop it (cancel, then
-	  join) before we delete the thread object.
-	 */
-	stop();
+	if (strcmp(name, MAIN_THREAD_NAME) == 0) {
+		registryRemove(id);
+	} else {
+		/*
+		If the thread is running, we must stop it (cancel, then
+		join) before we delete the thread object.
+		*/
+		stop();
 
 #ifdef OS_WINDOWS
-	CloseHandle(thrHandle);
+		if (thrHandle)
+			CloseHandle(thrHandle);
 #else
-	pthread_attr_destroy(&attr);
+		pthread_attr_destroy(&attr);
 #endif
-	runObj->thr = NULL;
+		if (runObj)
+			runObj->thr = NULL;
+	}
+	if (name)
+		free(name);
 }
 
 const char *Thread::getName() const
 {
-	static string name;
-	char str[10];
-	
-	name.clear();
-
-	if (runObj) {
-		name = string(runObj->getName());
-	} else {
-		name = "Unknown Runnable";
-	}
-	name.append("[Thread:");
-
-	snprintf(str, 10, "%lu]", num);
-	name.append(str);
-
-	return name.c_str();
+	return name;
 }
 
 thread_handle_t Thread::selfGetHandle()
@@ -413,6 +415,9 @@ int Thread::start()
 	if (state != THREAD_STATE_STOPPED) {
 		return -1;
 	}
+
+	if (!runObj)
+		return -1;
 
 	state = THREAD_STATE_RUNNING;
 
@@ -637,9 +642,6 @@ Runnable::~Runnable()
 					// Some error that indicates something bad... throw an exception to point this out.
 					// This should never happen... if it does, we need to fix the problem or handle it properly.
 					TRACE_ERR("Thread join failed for runnable %s!, error=%d\n", name.c_str(), ret);
-#if HAVE_EXCEPTION
-					throw Thread::ThreadException("Could not join thread!!!", ret);
-#endif
 				}
 			}
 		} 

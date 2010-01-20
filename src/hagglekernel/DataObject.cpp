@@ -100,7 +100,7 @@ DataObject::DataObject(InterfaceRef _localIface, InterfaceRef _remoteIface, cons
 #ifdef DEBUG_LEAKS
                 LeakMonitor(LEAK_TYPE_DATAOBJECT),
 #endif
-                signatureStatus(DATAOBJECT_SIGNATURE_MISSING),
+                signatureStatus(DataObject::SIGNATURE_MISSING),
                 signee(""), signature(NULL), signature_len(0), num(totNum++), 
                 metadata(NULL), filename(""), filepath(""), isForLocalApp(false), 
                 ownsFile(true), storagepath(_storagepath),
@@ -117,7 +117,7 @@ DataObject::DataObject(const unsigned char *raw, const unsigned long len, Interf
 #ifdef DEBUG_LEAKS
                 LeakMonitor(LEAK_TYPE_DATAOBJECT),
 #endif 
-                signatureStatus(DATAOBJECT_SIGNATURE_MISSING),
+                signatureStatus(DataObject::SIGNATURE_MISSING),
                 signee(""), signature(NULL), signature_len(0), num(totNum++),
                 metadata(NULL), filename(""), filepath(""), isForLocalApp(false), 
                 ownsFile(true), storagepath(_storagepath),
@@ -246,7 +246,7 @@ void DataObject::setSignature(const string signee, unsigned char *sig, size_t si
 	this->signee = signee;
 	signature = sig;
 	signature_len = siglen;
-	signatureStatus = DATAOBJECT_SIGNATURE_UNVERIFIED;
+	signatureStatus = DataObject::SIGNATURE_UNVERIFIED;
 	
 	HAGGLE_DBG("Set signature on data object, siglen=%lu\n", siglen);
 }
@@ -937,7 +937,7 @@ int DataObject::parseMetadata()
 		}
 		signee = sm->getParameter(DATAOBJECT_METADATA_SIGNATURE_SIGNEE_PARAM);
 		base64_decode_alloc(&ctx, sm->getContent().c_str(), sm->getContent().length(), (char **)&signature, &signature_len);
-		signatureStatus = DATAOBJECT_SIGNATURE_UNVERIFIED;
+		signatureStatus = DataObject::SIGNATURE_UNVERIFIED;
 	}
 	
         // Parse the "Data" tag if it exists

@@ -79,7 +79,7 @@ int Trace::write(const TraceType_t _type, const char *func, const char *fmt, ...
 	if (Thread::selfGetNum(&thrNum)) {
 		snprintf(thread_id, 20, "%lu", thrNum);
 	} else {
-		snprintf(thread_id, 20, "0");
+		snprintf(thread_id, 20, "-");
 	}
 
 #ifdef WINCE

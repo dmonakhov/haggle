@@ -91,6 +91,7 @@ static callback_function_t callback = NULL;
 static HANDLE luckyme_thread_handle = NULL;
 static HANDLE haggle_start_thread_handle = NULL;
 static HANDLE test_loop_event = NULL;
+static HANDLE luckyme_start_event = NULL;
 static int test_is_running = 0;
 
 #else
@@ -128,6 +129,7 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 	switch (ul_reason_for_call) {
 		case DLL_PROCESS_ATTACH:
 			test_loop_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+			luckyme_start_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 			break;
 		case DLL_THREAD_ATTACH:
 			break;
@@ -135,6 +137,7 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 			break;
 		case DLL_PROCESS_DETACH:
 			CloseHandle(test_loop_event);
+			CloseHandle(luckyme_start_event);
 			break;
 	}
 	return TRUE;
@@ -231,7 +234,11 @@ int luckyme_haggle_start(void)
 int luckyme_haggle_stop(void)
 {
 	if (haggle_daemon_pid(NULL) == HAGGLE_DAEMON_RUNNING) {
+		if (!hh)
+			return -1;
+
 		haggle_ipc_shutdown(hh);
+
 		return 1;
 	}
 	return 0;
@@ -239,6 +246,8 @@ int luckyme_haggle_stop(void)
 
 int luckyme_start(void)
 {
+	DWORD ret;
+
 	if (luckyme_is_running())
 		return 0;
 	
@@ -248,11 +257,28 @@ int luckyme_start(void)
 		LIBHAGGLE_ERR("Could not start luckyme thread\n");
 		return -1;
 	}
+
+	ret = WaitForSingleObject(luckyme_start_event, 30000);
+	
+	switch (ret) {
+		case WAIT_TIMEOUT:
+			LIBHAGGLE_ERR("Timeout while waiting for luckyme thread to start\n");
+			return -1;
+			break;
+		case WAIT_FAILED:
+			LIBHAGGLE_ERR("Wait error while waiting for luckyme thread to start\n");
+			return -1;
+			break;
+		case WAIT_OBJECT_0:
+			break;
+	}
 	return 1;
 }
 
 int luckyme_stop(int stop_haggle)
 {
+	int retval = 0;
+
 	if (luckyme_is_running()) {
 		DWORD ret;
 
@@ -263,21 +289,34 @@ int luckyme_stop(int stop_haggle)
 		
 		if (haggle_daemon_pid(NULL) == HAGGLE_DAEMON_RUNNING && stop_haggle) {
 			called_haggle_shutdown = 1;
-			luckyme_haggle_stop();
+			if (luckyme_haggle_stop())
+				retval++;
 		}
-		
-		ret = WaitForSingleObject(luckyme_thread_handle, INFINITE);
-		
-		if (ret == WAIT_OBJECT_0) {
-			/* Is this really necessary here or will the handle be closed by the event loop? */
-			CloseHandle(luckyme_thread_handle);
-		} else if (ret == WAIT_FAILED) {
-		} else if (ret == WAIT_TIMEOUT) {
+
+		/* 
+		  Check again if test is running since Haggle shutdown event
+		  could have shut us down.
+		  */
+		if (luckyme_is_running()) {
+			// Wait for 10 seconds
+			ret = WaitForSingleObject(luckyme_thread_handle, 10000);
+
+			if (ret == WAIT_OBJECT_0) {
+				/* Is this really necessary here or will the handle be closed by the event loop? */
+				CloseHandle(luckyme_thread_handle);
+				retval++;
+			} else if (ret == WAIT_FAILED) {
+			} else if (ret == WAIT_TIMEOUT) {
+				LIBHAGGLE_DBG("Wait timeout when stopping test...\n");
+				return -1;
+			} else {
+				// Should not happen
+			}
 		} else {
-			// Should not happen
+			retval++;
 		}
 	}
-	return 0;
+	return retval;
 }
 
 int set_callback(callback_function_t _callback)
@@ -650,13 +689,15 @@ static void parse_commandline(int argc, char **argv)
 void test_loop() {
 	int result = 0;
 		
+#if defined(OS_WINDOWS_MOBILE)
+	// Signal that we are running
+	SetEvent(luckyme_start_event);
+#endif
 	while (!stop_now) {
 #if defined(OS_WINDOWS)
 		DWORD timeout = test_is_running ? create_data_interval * 1000 : INFINITE;
 		
 		DWORD ret = WaitForSingleObject(test_loop_event, timeout);
-		
-		ResetEvent(test_loop_event);
 		
 		switch (ret) {
 			case WAIT_OBJECT_0:

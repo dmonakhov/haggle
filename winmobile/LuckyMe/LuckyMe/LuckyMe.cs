@@ -175,7 +175,10 @@ namespace LuckyGUI
                                         Debug.WriteLine("startTest: Haggle deamon is not running");
                                         return false;
                                 }
+                                // Let Haggle do its thing for a while before we try to connect
+                                Thread.Sleep(2000);
                         }
+
 
                         // Start LuckyMe thread
                         if (!LuckyMeLib.isLuckyMeRunning())
@@ -186,15 +189,22 @@ namespace LuckyGUI
                                 {
                                         Debug.WriteLine("Error: Could not start LuckyMe!");
                                         setTestStage(TestStage.NOT_RUNNING);
-                                        LuckyMeLib.stopHaggle();
                                         return false;
                                 }
 
+                                // Check again that LuckyMe and the Haggle event loop is running
+                                if (!LuckyMeLib.isLuckyMeRunning())
+                                {
+                                        Debug.WriteLine("Error: LuckyMe not running after start!");
+                                        setTestStage(TestStage.NOT_RUNNING);
+                                        return false;
+                                }
                         }
                         else
                         {
                                 Debug.WriteLine("LuckyMe already running");
                         }
+
                         if (!LuckyMeLib.isTestRunning())
                         {
                                 Debug.WriteLine("Starting LuckyMe test loop");
@@ -270,35 +280,64 @@ namespace LuckyGUI
 
                         setTestStage(TestStage.STOPPING);
 
-                        if (LuckyMeLib.isHaggleRunning())
+                        if (LuckyMeLib.isLuckyMeRunning())
                         {
-                                int res = LuckyMeLib.stopLuckyMe(1);
-
-                                Debug.WriteLine("stopLuckyMe() returned " + res);
-
-                                if (res < 0)
+                                if (LuckyMeLib.isHaggleRunning())
                                 {
-                                        Debug.WriteLine("stopTest(): stopLuckyMe failed");
+                                        int res = LuckyMeLib.stopLuckyMe(1);
 
-                                        if (LuckyMeLib.isTestRunning())
+                                        Debug.WriteLine("stopLuckyMe() returned " + res);
+
+                                        if (res < 0)
                                         {
-                                                setTestStage(TestStage.RUNNING);
-                                        }
-                                        else
-                                        {
-                                                setTestStage(TestStage.STOPPING);
+                                                Debug.WriteLine("stopTest(): stopLuckyMe failed");
+
+                                                if (LuckyMeLib.isTestRunning())
+                                                {
+                                                        setTestStage(TestStage.RUNNING);
+                                                }
+                                                else
+                                                {
+                                                        // Set not running although test stop failed
+                                                        setTestStage(TestStage.NOT_RUNNING);
+                                                        return true;
+                                                }
+
+                                                return false;
                                         }
 
-                                        return false;
+                                        setTestStage(TestStage.STOPPING);
+
                                 }
-                                setTestStage(TestStage.STOPPING);
+                                else
+                                {
+                                        Debug.WriteLine("stopTest(): Haggle was not running");
+                                        int res = LuckyMeLib.stopLuckyMe(0);
+                                        // Haggle was not running so we cannot expect a shutdown callback
+                                        // -> set NOT_RUNNING immediately
+                                        setTestStage(TestStage.NOT_RUNNING);
+                                }
                         }
                         else
                         {
-                                Debug.WriteLine("stopTest(): Haggle was not running");
-                                int res = LuckyMeLib.stopLuckyMe(0);
-                                // Haggle was not running so we cannot expect a shutdown callback
-                                // -> set NOT_RUNNING immediately
+                                if (LuckyMeLib.isHaggleRunning())
+                                {
+                                        int res = LuckyMeLib.stopHaggle();
+
+                                        if (res == 1)
+                                        {
+                                                Debug.WriteLine("stopTest(): Haggle stopped");
+                                        }
+                                        else if (res == -1)
+                                        {
+                                                Debug.WriteLine("stopTest(): Could not stop Haggle, no Haggle handle");
+                                        }
+                                        else
+                                        {
+                                                Debug.WriteLine("stopTest(): Could not stop Haggle, not running");
+                                        }
+                                }
+
                                 setTestStage(TestStage.NOT_RUNNING);
                         }
                         return retval;

@@ -19,7 +19,7 @@
 #define LIBHAGGLE_INTERNAL
 #include <libhaggle/haggle.h>
 
-#if defined(WINCE2)
+#if defined(WINCE)
 FILE *tr_out = NULL;
 FILE *tr_err = NULL;
 #else
@@ -52,7 +52,7 @@ int libhaggle_debug_init()
 
 void libhaggle_debug_fini()
 {
-#ifdef WINCE2
+#ifdef WINCE
 	if (tr_out)
 		fclose(tr_out);
 #endif

@@ -285,7 +285,7 @@ void DataManager::onVerifiedDataObject(Event *e)
 #ifdef DEBUG
 	dObj->print();
 #endif
-	if (dObj->shouldVerifySignature() && !dObj->hasValidSignature()) {
+	if (dObj->getSignatureStatus() == DataObject::SIGNATURE_INVALID) {
 		// This data object had a bad signature, we should remove
 		// it from the bloomfilter
 		HAGGLE_DBG("Data object [%s] had bad signature, removing from bloomfilter\n", dObj->getIdStr());
