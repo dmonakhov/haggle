@@ -251,6 +251,11 @@ int luckyme_start(void)
 	if (luckyme_is_running())
 		return 0;
 	
+	/* Set values we use on Windows mobile */
+	attribute_pool_size = 1;
+	num_dataobject_attributes = 1;
+	variance_interest_attributes = 0;
+		
 	luckyme_thread_handle = CreateThread(NULL, 0, luckyme_run, (void *)NULL, 0, 0);
 	
 	if (luckyme_thread_handle == NULL) {
@@ -785,10 +790,6 @@ int luckyme_run()
 	int ret = 0;
 	unsigned int retry = 3;
 	
-	attribute_pool_size = 1;
-	num_dataobject_attributes = 1;
-	variance_interest_attributes = 0;
-
 #if defined(OS_UNIX)
 	ret = pipe(test_loop_event);
 
