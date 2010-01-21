@@ -35,12 +35,11 @@ class ProtocolUDP : public ProtocolSocket
         ProtocolEvent sendData(const void *buf, size_t buflen, const int flags, size_t *bytes);
 	ProtocolEvent receiveData(void *buf, size_t buflen, struct sockaddr *peer_addr, const int flags, size_t *bytes);
 	ProtocolEvent receiveDataObject();
-	void inline init(const struct sockaddr *saddr, socklen_t addrlen);
+	bool init_derived();
 public:
 	ProtocolUDP(const InterfaceRef& _localIface = NULL, unsigned short _port = HAGGLE_SERVICE_DEFAULT_PORT, ProtocolManager *m = NULL);
 	ProtocolUDP(const char *localIP, unsigned short _port = HAGGLE_SERVICE_DEFAULT_PORT, ProtocolManager *m = NULL);
 	~ProtocolUDP();
-	bool init();
 	bool isForInterface(const InterfaceRef& iface);
 	bool isSender();
 	bool isReceiver();

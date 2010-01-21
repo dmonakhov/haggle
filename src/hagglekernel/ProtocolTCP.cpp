@@ -178,7 +178,7 @@ void ProtocolTCP::setPeerInterface(const Address *addr)
 	peerIface = pIface;
 }
 
-bool ProtocolTCPClient::init()
+bool ProtocolTCPClient::init_derived()
 {
 	if (!peerIface) {
 		HAGGLE_ERR("Client has no peer interface\n");
@@ -249,7 +249,7 @@ ProtocolTCPServer::~ProtocolTCPServer()
 }
 
 
-bool ProtocolTCPServer::init()
+bool ProtocolTCPServer::init_derived()
 {
 	if (!initbase())
 		return false;

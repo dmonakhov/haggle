@@ -141,10 +141,11 @@ ProtocolRFCOMMClient::~ProtocolRFCOMMClient()
 	HAGGLE_DBG("Destroying %s\n", getName());
 }
 
-bool ProtocolRFCOMMClient::init()
+bool ProtocolRFCOMMClient::init_derived()
 {
 	return initbase();
 }
+
 ProtocolRFCOMMServer::ProtocolRFCOMMServer(const InterfaceRef& localIface, ProtocolManager *m, unsigned short channel, int _backlog) :
 	ProtocolRFCOMM(localIface, NULL, channel, PROT_FLAG_SERVER, m), backlog(_backlog) 
 {
@@ -155,7 +156,7 @@ ProtocolRFCOMMServer::~ProtocolRFCOMMServer()
 	HAGGLE_DBG("Destroying %s\n", getName());
 }
 
-bool ProtocolRFCOMMServer::init()
+bool ProtocolRFCOMMServer::init_derived()
 {
 	if (!initbase())
 		return false;

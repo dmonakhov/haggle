@@ -67,7 +67,9 @@ typedef pthread_attr_t thread_handle_attr_t;
 #include "sha1.h"
 #include "base64.h"
 
-#define DATA_BUFLEN 10000 /* What would be a suitable max size */
+#define DATA_BUFLEN (10000) /* What would be a suitable max size */
+#define EVENT_BUFLEN (40000)
+
 #define ID_LEN SHA1_DIGEST_LENGTH
 #define ID_BASE64_LEN ((((ID_LEN) + 2) / 3) * 4 + 1)
 
@@ -1477,7 +1479,7 @@ static int handle_event(struct haggle_handle *hh, haggle_event_type_t type, stru
 start_ret_t haggle_event_loop(void *arg)
 {
 	struct haggle_handle *hh = (struct haggle_handle *)arg;
-	unsigned char eventbuffer[DATA_BUFLEN];
+	unsigned char eventbuffer[EVENT_BUFLEN];
 	int ret;
 
 	hh->event_loop_running = 1;
@@ -1494,7 +1496,7 @@ start_ret_t haggle_event_loop(void *arg)
 		
 		LIBHAGGLE_DBG("Event loop running, waiting for data object...\n");
 
-		memset(eventbuffer, 0, DATA_BUFLEN);
+		memset(eventbuffer, 0, EVENT_BUFLEN);
        
 		ret = wait_for_event(hh, NULL);
 
@@ -1512,7 +1514,7 @@ start_ret_t haggle_event_loop(void *arg)
 			break;
                 } else if (ret == EVENT_LOOP_SOCKET_READABLE)  {
                        
-                        ret = recv(hh->sock, eventbuffer, DATA_BUFLEN, 0);
+                        ret = recv(hh->sock, eventbuffer, EVENT_BUFLEN, 0);
                         
                         if (ret == SOCKET_ERROR) {
                                 LIBHAGGLE_ERR("Haggle event loop recv() error!\n");

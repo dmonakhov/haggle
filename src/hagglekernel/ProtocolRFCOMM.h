@@ -108,12 +108,12 @@ class ProtocolRFCOMM : public ProtocolSocket
 protected:
         char mac[BT_ALEN];  // The Bluetooth byteswapped mac address
         unsigned short channel;
+	bool initbase();
         ProtocolRFCOMM(SOCKET _sock, const char *_mac, const unsigned short _channel, const InterfaceRef& _localIface, const short flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL);
 public:
         ProtocolRFCOMM(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, const unsigned short channel = RFCOMM_DEFAULT_CHANNEL, const short flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL);
 
         virtual ~ProtocolRFCOMM();
-	bool initbase();
 
         unsigned short getMode() {
                 return mode;
@@ -124,13 +124,13 @@ public:
 class ProtocolRFCOMMClient : public ProtocolRFCOMM
 {
 	friend class ProtocolRFCOMMServer;
+	bool init_derived();
 public:
 	ProtocolRFCOMMClient(SOCKET _sock, const char *_mac, const unsigned short _channel, const InterfaceRef& _localIface, ProtocolManager *m = NULL) :
 		ProtocolRFCOMM(_sock, _mac, _channel, _localIface, PROT_FLAG_CLIENT | PROT_FLAG_CONNECTED, m) {}
 	ProtocolRFCOMMClient(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, const unsigned short channel = RFCOMM_DEFAULT_CHANNEL, ProtocolManager *m = NULL);
 	~ProtocolRFCOMMClient();
 	ProtocolEvent connectToPeer();
-	bool init();
 };
 
 /** */
@@ -163,13 +163,13 @@ class ProtocolRFCOMMServer : public ProtocolRFCOMM
 {
 	friend class ProtocolRFCOMM;
         int backlog;
+	bool init_derived();
 public:
         ProtocolRFCOMMServer(const InterfaceRef& localIface = NULL, ProtocolManager *m = NULL,
                              unsigned short channel = RFCOMM_DEFAULT_CHANNEL, 
 			     int _backlog = RFCOMM_BACKLOG_SIZE);
         ~ProtocolRFCOMMServer();
         ProtocolEvent acceptClient();
-	bool init();
 };
 
 #endif

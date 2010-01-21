@@ -41,6 +41,7 @@ class ProtocolTCP : public ProtocolSocket
         friend class ProtocolTCPServer;
         friend class ProtocolTCPClient;
 	unsigned short localport;
+	bool initbase();
         ProtocolTCP(SOCKET sock, const struct sockaddr *addr, const InterfaceRef& _localIface,
                     const short flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL);
 public:
@@ -49,8 +50,6 @@ public:
                     const short flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL);
         virtual ~ProtocolTCP() = 0;
 
-	bool initbase();
-
 	void setPeerInterface(const Address *addr = NULL);
 };
 
@@ -58,15 +57,15 @@ public:
 class ProtocolTCPClient : public ProtocolTCP
 {
         friend class ProtocolTCPServer;
+	bool init_derived();
 public:
         ProtocolTCPClient(SOCKET sock, const struct sockaddr *addr, const InterfaceRef& _localIface, ProtocolManager *m = NULL) : 
 		ProtocolTCP(sock, addr, _localIface, PROT_FLAG_CLIENT | PROT_FLAG_CONNECTED, m) {}
         ProtocolTCPClient(const InterfaceRef& _localIface, const InterfaceRef& _peerIface,
                           const unsigned short _port = TCP_DEFAULT_PORT, ProtocolManager *m = NULL) :
                         ProtocolTCP(_localIface, _peerIface, _port, PROT_FLAG_CLIENT, m) {}
-        ProtocolEvent connectToPeer();
-	bool init();
-};
+        ProtocolEvent connectToPeer();};
+
 
 /** */
 class ProtocolTCPSender : public ProtocolTCPClient
@@ -97,12 +96,12 @@ class ProtocolTCPServer : public ProtocolTCP
 {
         friend class ProtocolTCP;
         int backlog;
+	bool init_derived();
 public:
         ProtocolTCPServer(const InterfaceRef& _localIface = NULL, ProtocolManager *m = NULL,
                           const unsigned short _port = TCP_DEFAULT_PORT, int _backlog = TCP_BACKLOG_SIZE);
         ~ProtocolTCPServer();
         ProtocolEvent acceptClient();
-	bool init();
 };
 
 #endif /* _PROTOCOLTCP_H */

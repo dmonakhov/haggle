@@ -65,11 +65,29 @@ static inline char *create_name(const char *name, const unsigned long id, const 
 	return tmpStr;
 }
 
-Protocol::Protocol(const ProtType_t _type, const string _name, const InterfaceRef& _localIface, const InterfaceRef& _peerIface, const int _flags, ProtocolManager *_m) : 
+Protocol::Protocol(const ProtType_t _type, const string _name, const InterfaceRef& _localIface, 
+		   const InterfaceRef& _peerIface, const int _flags, ProtocolManager *_m, size_t _bufferSize) : 
 	ManagerModule<ProtocolManager>(_m, create_name(_name.c_str(), num + 1,  _flags)),
 	isRegistered(false), type(_type), id(num++), error(PROT_ERROR_UNKNOWN), flags(_flags), 
-	mode(PROT_MODE_IDLE), localIface(_localIface), peerIface(_peerIface), bufferDataLen(0)
+	mode(PROT_MODE_IDLE), localIface(_localIface), peerIface(_peerIface), buffer(NULL),
+	bufferSize(_bufferSize), bufferDataLen(0)
 {
+	HAGGLE_DBG("%s Buffer size is %lu\n", getName(), bufferSize);
+}
+
+bool Protocol::init()
+{
+	if (buffer)
+		return false;
+	
+	buffer = new unsigned char[bufferSize];
+
+	if (!buffer) {
+		HAGGLE_ERR("Could not allocate buffer of size %lu\n", bufferSize);
+		return false;
+	}
+	
+	return init_derived();
 }
 
 Protocol::~Protocol()
@@ -77,6 +95,7 @@ Protocol::~Protocol()
 	if (isRegistered) {
 		HAGGLE_ERR("ERROR: deleting still registered protocol %s\n", getName());
 	}
+	
 	HAGGLE_DBG("%s destroyed\n", getName());
 	
 	// If there is anything in the queue, these should be data objects, and if 
@@ -116,6 +135,9 @@ Protocol::~Protocol()
 		if (qe)
 			delete qe;
 	}
+	
+	if (buffer)
+		delete[] buffer;
 }
 
 bool Protocol::hasIncomingData()
@@ -466,7 +488,7 @@ ProtocolEvent Protocol::getData(size_t *bytesRead)
                 
                 if (pEvent == PROT_EVENT_INCOMING_DATA) {
                         
-                        readLen = PROTOCOL_BUFSIZE - bufferDataLen;
+                        readLen = bufferSize - bufferDataLen;
                         
                         pEvent = receiveData(buffer, readLen, 0, bytesRead);
                         
@@ -844,7 +866,7 @@ ProtocolEvent Protocol::sendDataObjectNow(const DataObjectRef& dObj)
 	// Repeat until the data object is completely sent:
 	do {
 		// Get the data:
-		len = retriever->retrieve(buffer, PROTOCOL_BUFSIZE, !hasSentHeader);
+		len = retriever->retrieve(buffer, bufferSize, !hasSentHeader);
 		
 		if (len < 0) {
 			HAGGLE_ERR("Could not retrieve data from data object\n");

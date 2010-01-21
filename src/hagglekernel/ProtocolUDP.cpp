@@ -27,7 +27,9 @@
 #define SOCKADDR_SIZE sizeof(struct sockaddr_in)
 #endif
 
-bool ProtocolUDP::init()
+#define PROTOCOL_UDP_BUFSIZE (30000)
+
+bool ProtocolUDP::init_derived()
 {	
 	int optval = 1;
 	char buf[SOCKADDR_SIZE];
@@ -82,13 +84,13 @@ bool ProtocolUDP::init()
 
 ProtocolUDP::ProtocolUDP(const InterfaceRef& _localIface, unsigned short _port, ProtocolManager * m) :
 	ProtocolSocket(PROT_TYPE_UDP, "ProtocolUDP", _localIface, NULL, 
-		       PROT_FLAG_SERVER | PROT_FLAG_CLIENT, m), port(_port)
+		       PROT_FLAG_SERVER | PROT_FLAG_CLIENT, m, -1, PROTOCOL_UDP_BUFSIZE), port(_port)
 {
 }
 
 ProtocolUDP::ProtocolUDP(const char *ipaddr, unsigned short _port, ProtocolManager * m) : 
 	ProtocolSocket(PROT_TYPE_UDP, "ProtocolUDP", NULL, NULL, 
-		       PROT_FLAG_SERVER | PROT_FLAG_CLIENT, m), port(_port)
+		       PROT_FLAG_SERVER | PROT_FLAG_CLIENT, m, -1, PROTOCOL_UDP_BUFSIZE), port(_port)
 {
 	struct in_addr addr;
 
@@ -185,9 +187,9 @@ ProtocolEvent ProtocolUDP::receiveDataObject()
 	struct sockaddr_in *sa = NULL;
 
 #ifdef OS_WINDOWS
-	pEvent = receiveData(buffer, PROTOCOL_BUFSIZE, peer_addr, 0, &len);
+	pEvent = receiveData(buffer, bufferSize, peer_addr, 0, &len);
 #else
-	pEvent = receiveData(buffer, PROTOCOL_BUFSIZE, peer_addr, MSG_DONTWAIT, &len);
+	pEvent = receiveData(buffer, bufferSize, peer_addr, MSG_DONTWAIT, &len);
 #endif
 
 	if (pEvent != PROT_EVENT_SUCCESS)

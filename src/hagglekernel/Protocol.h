@@ -137,7 +137,7 @@ typedef enum {
 // TODO: What is a good buffer size here?
 // If we have a large buffer, we will waste a lot of memory when there are
 // many protocols running. A small buffer may be inefficient.
-#define PROTOCOL_BUFSIZE (4096) /* A socket does not seem to be able to handle larger buffers than 50000 bytes by default. */
+#define PROTOCOL_BUFSIZE (4096) 
 
 /**
 	Protocol class
@@ -227,8 +227,10 @@ protected:
         InterfaceRef peerIface; // Interface of the remote peer that we communicate with
 
         // Buffer for reading incoming data
-        unsigned char buffer[PROTOCOL_BUFSIZE];
+        unsigned char *buffer;
 
+	// The buffer size
+	size_t bufferSize;
         // The amount of data read into the buffer
         size_t bufferDataLen;
 
@@ -347,6 +349,12 @@ protected:
            Convert control message to human readable format.
          */
         const string ctrlmsgToStr(struct ctrlmsg *m) const;
+	
+	/**
+	 Initialization function that may be overridden by derived class. It is 
+	 automatically called by init().
+	 */
+	virtual bool init_derived() { return true; }	
 public:	
 	
         /**
@@ -357,7 +365,8 @@ public:
                  const InterfaceRef& _localIface,
                  const InterfaceRef& _peerIface,
                  const int _flags,
-                 ProtocolManager *_m);
+                 ProtocolManager *_m,
+		 size_t _bufferSize = PROTOCOL_BUFSIZE);
         /**
            Constructor.
         */
@@ -369,6 +378,11 @@ public:
         */
         ~Protocol();
 	
+	/**
+	   Initialization
+	 */
+	bool init();
+		
 	/**
 	Overridden from class Manager. Returns the Protocol name with its id appended.
 	*/

@@ -85,7 +85,8 @@ class ProtocolSocket : public Protocol
 
     public:
 	ProtocolSocket(const ProtType_t _type, const char *_name, InterfaceRef _localIface = NULL,
-                       InterfaceRef _peerIface = NULL, const int _flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL, SOCKET _sock = -1);
+                       InterfaceRef _peerIface = NULL, const int _flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL, 
+		       SOCKET _sock = -1, size_t bufferSize = PROTOCOL_BUFSIZE);
 
 	virtual ~ProtocolSocket();
 	bool hasWatchable(const Watchable &wbl);

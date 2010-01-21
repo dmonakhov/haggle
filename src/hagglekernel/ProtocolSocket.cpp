@@ -19,8 +19,9 @@
 
 #define MAX(a,b) (a > b ? a : b)
 
-ProtocolSocket::ProtocolSocket(const ProtType_t _type, const char *_name, InterfaceRef _localIface, InterfaceRef _peerIface, const int _flags, ProtocolManager * m, SOCKET _sock) : 
-	Protocol(_type, _name, _localIface, _peerIface, _flags, m), 
+ProtocolSocket::ProtocolSocket(const ProtType_t _type, const char *_name, InterfaceRef _localIface, 
+			       InterfaceRef _peerIface, const int _flags, ProtocolManager * m, SOCKET _sock, size_t bufferSize) : 
+	Protocol(_type, _name, _localIface, _peerIface, _flags, m, bufferSize), 
         sock(_sock), socketIsRegistered(false), nonblock(false)
 {
 	if (sock != INVALID_SOCKET) {
