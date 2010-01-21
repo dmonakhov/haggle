@@ -1053,7 +1053,7 @@ static int haggle_ipc_add_or_remove_interests(haggle_handle_t hh, interest_op_t 
 			metadata_set_parameter(interest, DATAOBJECT_METADATA_APPLICATION_CONTROL_INTEREST_WEIGHT_PARAM, weight);
 		}
 		
-		printf("Adding attribute %s:%s:%lu\n", haggle_attribute_get_name(a), haggle_attribute_get_value(a), haggle_attribute_get_weight(a));
+		/* printf("Adding attribute %s:%s:%lu\n", haggle_attribute_get_name(a), haggle_attribute_get_value(a), haggle_attribute_get_weight(a)); */
 	}
 	
 	ret = haggle_ipc_send_dataobject(hh, dobj, NULL, IO_NO_REPLY);

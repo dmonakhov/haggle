@@ -848,7 +848,7 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 			return;
 		}
 
-		dObj->print();
+		//dObj->print();
 
 		ctrlAttr = dObj->getAttribute(HAGGLE_ATTR_CONTROL_NAME);
 
@@ -904,10 +904,10 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 			
 			switch (ctrl_name_to_type(type_str)) {
 				case CTRL_TYPE_REGISTRATION_REQUEST:
-					HAGGLE_DBG("Received registration request from Application %s\n", name_str);
+					HAGGLE_DBG("Received registration request from Application \'%s\'\n", name_str);
 					
 					if (appNode) {
-						HAGGLE_DBG("Application %s is already registered\n", name_str);
+						HAGGLE_DBG("Application \'%s\' is already registered\n", name_str);
 						
 						// Create a temporary application node to serve as target for the 
 						// return value, since the data object most likely came from a 
@@ -928,7 +928,7 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 							sendToApplication(dObjReply, newAppNode);
 						}
 					} else {
-						HAGGLE_DBG("app name=%s\n", name_str);
+						HAGGLE_DBG("app name=\'%s\'\n", name_str);
 						
 						appNode = new Node(NODE_TYPE_APPLICATION, id, name_str);
 						
@@ -942,14 +942,14 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 					if (!appNode)
 						break;
 					
-					HAGGLE_DBG("Application %s wants to deregister\n", appNode->getName().c_str());
+					HAGGLE_DBG("Application \'%s\' wants to deregister\n", appNode->getName().c_str());
 					deRegisterApplication(appNode);
 					break;
 				case CTRL_TYPE_SHUTDOWN:
 					if (!appNode)
 						break;
 
-					HAGGLE_DBG("Application %s wants to shutdown\n", appNode->getName().c_str());
+					HAGGLE_DBG("Application \'%s\' wants to shutdown\n", appNode->getName().c_str());
 					kernel->shutdown();
 					break;
 				case CTRL_TYPE_REGISTER_INTEREST:
@@ -970,13 +970,13 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 								
 								if (kernel->getThisNode()->addAttribute(interest_name_str, interest->getContent(), weight)) {
 									numattrsThisNode++;
-									HAGGLE_DBG("Application %s adds interest %s:%s:%lu to thisNode\n", 
+									HAGGLE_DBG("Application \'%s\' adds interest %s:%s:%lu to thisNode\n", 
 										   appNode->getName().c_str(), interest_name_str, 
 										   interest->getContent().c_str(), weight);
 								}
 								if (appNode->addAttribute(interest_name_str, interest->getContent(), weight)) {
 									numattrs++;
-									HAGGLE_DBG("Application %s adds interest %s:%s:%lu\n", 
+									HAGGLE_DBG("Application \'%s\' adds interest %s:%s:%lu\n", 
 										   appNode->getName().c_str(), interest_name_str, 
 										   interest->getContent().c_str(), weight);
 								}
@@ -999,24 +999,38 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 						Metadata *interest = mc->getMetadata(DATAOBJECT_METADATA_APPLICATION_CONTROL_INTEREST);
 						
 						while (interest) {
-							const char *interest_name_str = interest->getParameter(DATAOBJECT_METADATA_APPLICATION_CONTROL_EVENT_TYPE_PARAM);
+							const char *interest_name_str = interest->getParameter(DATAOBJECT_METADATA_APPLICATION_CONTROL_INTEREST_NAME_PARAM);
 							
 							if (interest_name_str) {
-								if (appNode->removeAttribute(interest_name_str, interest->getContent()))
+								if (appNode->removeAttribute(interest_name_str, interest->getContent())) {
 									numattrs++;
-								
-								HAGGLE_DBG("Application %s removes interest %s:%s\n", 
-									   appNode->getName().c_str(), interest_name_str, interest->getContent().c_str());
+									HAGGLE_DBG("Application \'%s\' removes interest %s:%s\n", 
+										   appNode->getName().c_str(), interest_name_str, interest->getContent().c_str());
+								} else {
+									HAGGLE_ERR("Could not remove interest %s=%s\n", name_str, interest->getContent().c_str());
+								}
 							}
 							interest = mc->getNextMetadata();
 						}
 						if (numattrs) {
 							updateApplicationInterests(appNode);
 							
+							// FIXME:
+							// Insert updated node into node store. This is necessary because
+							// the next call to update the node description will retrieve all
+							// application nodes from the data store and recompile the node
+							// description from their interests. Therefore, the updated app node
+							// has to be inserted first. This is not very efficient, as we should
+							// keep the current node in memory and only insert it when the application
+							// deregisters.
+							kernel->getDataStore()->insertNode(appNode);
+							
 							// Update the node description and send it to all 
 							// neighbors.
 							kernel->getDataStore()->retrieveNodeByType(NODE_TYPE_APPLICATION, onRetrieveAppNodesCallback);
 						}
+					} else {
+						HAGGLE_ERR("No application node \'%s\' for request to remove interests\n", name_str);
 					}
 					break;
 				case CTRL_TYPE_GET_INTERESTS:
