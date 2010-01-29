@@ -19,6 +19,12 @@
 
 #define MAX(a,b) (a > b ? a : b)
 
+#if defined(ENABLE_IPv6)
+#define SOCKADDR_SIZE sizeof(struct sockaddr_in6)
+#else
+#define SOCKADDR_SIZE sizeof(struct sockaddr_in)
+#endif
+
 ProtocolSocket::ProtocolSocket(const ProtType_t _type, const char *_name, InterfaceRef _localIface, 
 			       InterfaceRef _peerIface, const int _flags, ProtocolManager * m, SOCKET _sock, size_t bufferSize) : 
 	Protocol(_type, _name, _localIface, _peerIface, _flags, m, bufferSize), 
@@ -57,7 +63,6 @@ ProtocolSocket::~ProtocolSocket()
 	if (sock != INVALID_SOCKET)
 		closeSocket();
 }
-
 
 bool ProtocolSocket::openSocket(int domain, int type, int protocol, bool registersock, bool nonblock)
 {
@@ -242,6 +247,42 @@ ssize_t ProtocolSocket::recvFrom(void *buf, size_t len, int flags, struct sockad
 		HAGGLE_ERR("%s: recvfrom failed : %s\n", getName(), STRERROR(ERRNO));
 	}
 	return ret;
+}
+
+InterfaceRef ProtocolSocket::resolvePeerInterface(const Address& addr)
+{
+	int res;
+        InterfaceRef pIface = getKernel()->getInterfaceStore()->retrieve(addr);
+
+	if (pIface) {
+		HAGGLE_DBG("Peer interface is [%s]\n", pIface->getIdentifierStr());
+	} else if (addr.getType() == AddressType_IPv4 
+#if defined(ENABLE_IPv6)
+		|| addr.getType() == AddressType_IPv6
+#endif
+		) {
+                char buf[SOCKADDR_SIZE];
+                unsigned char mac[6];
+                struct sockaddr *peer_addr = (struct sockaddr *)buf;
+                addr.fillInSockaddr(peer_addr);
+                
+                HAGGLE_DBG("trying to figure out peer mac for IP %s on interface %s\n", addr.getAddrStr(), localIface->getName());
+
+                res = get_peer_mac_address(peer_addr, localIface->getName(), mac, 6);
+
+		if (res < 0) {
+			HAGGLE_ERR("Error when retreiving mac address for peer %s, error=%d\n", addr.getAddrStr(), res);
+		} else if (res == 0) {
+			HAGGLE_ERR("No corresponding mac address for peer %s\n", addr.getAddrStr());
+		} else {
+			Address addr2(AddressType_EthMAC, mac);
+			pIface = new Interface(localIface->getType(), mac, &addr, "TCP peer", IFFLAG_UP);
+			pIface->addAddress(&addr2);
+			HAGGLE_DBG("Peer interface is [%s]\n", pIface->getIdentifierStr());
+		}
+	}
+
+	return pIface;
 }
 
 bool ProtocolSocket::registerSocket()

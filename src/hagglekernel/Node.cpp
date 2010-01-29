@@ -277,6 +277,8 @@ Node::Node(const Node& n) :
 	doBF(new Bloomfilter(*n.doBF)), 
 	stored(n.stored), createdFromNodeDescription(n.createdFromNodeDescription),
 	filterEventId(n.filterEventId),
+	eventInterests(n.eventInterests),
+	eventid(n.eventid),
 	matchThreshold(n.matchThreshold),
 	numberOfDataObjectsPerMatch(n.numberOfDataObjectsPerMatch)
 {
@@ -299,6 +301,38 @@ Node::~Node()
 	}
 	if (doBF)
 		delete doBF;
+}
+
+
+Node& Node::operator=(const Node &node)
+{
+	if (this == &node)
+		return *this;
+
+	type = node.type;
+	num = node.num;
+	name = node.name;
+	nodeDescExch = node.nodeDescExch;
+	
+	if (this->doBF)
+		delete this->doBF;
+
+	this->doBF = new Bloomfilter(*node.doBF);
+	stored = node.stored;
+	interfaces = node.interfaces;
+	createdFromNodeDescription = node.createdFromNodeDescription;
+	filterEventId = node.filterEventId;
+	eventInterests = node.eventInterests;
+	eventid = node.eventid;
+	matchThreshold = node.matchThreshold;
+	numberOfDataObjectsPerMatch = node.numberOfDataObjectsPerMatch;
+	memcpy(id, node.id, NODE_ID_LEN);
+	strncpy(idStr, node.idStr, MAX_NODE_ID_STR_LEN);
+	
+	if (node.dObj)
+		dObj = node.dObj->copy();
+
+	return *this;
 }
 
 const NodeType_t Node::getType() const

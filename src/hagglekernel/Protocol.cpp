@@ -69,8 +69,8 @@ Protocol::Protocol(const ProtType_t _type, const string _name, const InterfaceRe
 		   const InterfaceRef& _peerIface, const int _flags, ProtocolManager *_m, size_t _bufferSize) : 
 	ManagerModule<ProtocolManager>(_m, create_name(_name.c_str(), num + 1,  _flags)),
 	isRegistered(false), type(_type), id(num++), error(PROT_ERROR_UNKNOWN), flags(_flags), 
-	mode(PROT_MODE_IDLE), localIface(_localIface), peerIface(_peerIface), buffer(NULL),
-	bufferSize(_bufferSize), bufferDataLen(0)
+	mode(PROT_MODE_IDLE), localIface(_localIface), peerIface(_peerIface), peerNode(NULL),
+	buffer(NULL), bufferSize(_bufferSize), bufferDataLen(0)
 {
 	HAGGLE_DBG("%s Buffer size is %lu\n", getName(), bufferSize);
 }
@@ -87,6 +87,29 @@ bool Protocol::init()
 		return false;
 	}
 	
+	// Cache the peer node here. If the node goes away, it may be taken out of the
+	// node store before the protocol quits, and then we cannot retrieve it for the
+	// send result event.
+	if (!isServer() && isClient()) {
+		if (!peerIface) {
+			HAGGLE_ERR("ERROR: No peer interface for protocol %s!\n", getName());
+			return false;
+		}
+
+		// Try to figure out the peer node. This might fail in case this 
+		// is an incoming connection that we didn't initiate ourselves,
+		// i.e., there is no peer node in the node store yet.
+		peerNode = getManager()->getKernel()->getNodeStore()->retrieve(peerIface);
+
+		if (!peerNode) {
+			// Set a temporary peer node. It will be updated by the protocol manager
+			// when it received a node updated event once the node description
+			// has been received.
+			peerNode = new Node(NODE_TYPE_UNDEF, (char *)NULL, "Peer node");
+			peerNode->addInterface(peerIface);
+		}
+	}
+
 	return init_derived();
 }
 
@@ -101,9 +124,6 @@ Protocol::~Protocol()
 	// If there is anything in the queue, these should be data objects, and if 
 	// they are here, they have not been sent. So send an
 	// EVENT_TYPE_DATAOBJECT_SEND_FAILURE for each of them:
-	
-	// Find the target (always the same):
-	NodeRef target = getKernel()->getNodeStore()->retrieve(peerIface);
 	
 	// No need to do getQueue() more than once:
 	Queue *q = getQueue();
@@ -127,7 +147,7 @@ Protocol::~Protocol()
 				if (dObj) {
 					// Tell the rest of haggle that this data object was not 
 					// sent:
-					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_FAILURE, dObj, target));
+					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_FAILURE, dObj, peerNode));
 				}
 				break;
 		}
@@ -1004,18 +1024,12 @@ bool Protocol::run()
 	setMode(PROT_MODE_IDLE);
 	int numerr = 0;
 	Queue *q = getQueue();
-	NodeRef peerNode;
 
 	if (!q) {
 		HAGGLE_ERR("Could not get a Queue for protocol %s\n", getName());
 		setMode(PROT_MODE_DONE);
 		return false;
 	}
-	
-	// Cache the peer node here. If the node goes away, it may be taken out of the
-	// node store before the protocol quits, and then we cannot retrieve it for the
-	// send result event.
-	peerNode = getManager()->getKernel()->getNodeStore()->retrieve(peerIface);
 
 	while (!isDone() && !shouldExit()) {
 
@@ -1025,11 +1039,6 @@ bool Protocol::run()
 				// The connected flag should probably be set in connectToPeer,
 				// but set it here for safety
 				HAGGLE_DBG("%s successfully connected\n", getName());
-
-				if (!peerNode) {
-					// Just in case we didn't have the node in the store before.
-					peerNode = getManager()->getKernel()->getNodeStore()->retrieve(peerIface);
-				}
 			} else {
 				numConnectTry++;
 				HAGGLE_DBG("%s connection failure %d/%d\n", 
@@ -1183,6 +1192,7 @@ bool Protocol::run()
 	}
       done:
 	HAGGLE_DBG("%s client DONE!\n", getName());
+
 	if (isConnected())
 		closeConnection();
 

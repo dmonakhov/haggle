@@ -18,6 +18,7 @@
 #include <stdlib.h>
 
 #include <libcpphaggle/String.h>
+#include <utils.h>
 #include "Address.h"
 #include "Debug.h"
 #include "Trace.h"
@@ -895,3 +896,4 @@ char *strdup(const char *src)
 	return retval;
 }
 #endif
+

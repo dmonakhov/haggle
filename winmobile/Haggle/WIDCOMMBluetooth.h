@@ -24,7 +24,9 @@
 
 	Author: Erik Nordström
 */
-#if defined(WIDCOMM_BLUETOOTH)
+#include <libcpphaggle/Platform.h>
+
+#if defined(WIDCOMM_BLUETOOTH) && defined(ENABLE_BLUETOOTH)
 
 #include <windows.h>
 #include <BtSdkCE.h> // Includes everything neeeded from the WIDCOMM SDK
@@ -167,6 +169,6 @@ public:
 	static void cleanup();
 };
 
-#endif /* WIDCOMM_BLUETOOTH */
+#endif /* WIDCOMM_BLUETOOTH && ENABLE_BLUETOOTH */
 
 #endif /* WIDCOMM_BLUETOOTH_H */

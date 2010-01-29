@@ -92,7 +92,7 @@ class Node
 	/**
 		The type of the node.
 	*/
-        const NodeType_t type;
+        NodeType_t type;
 	/**
 		A unique node ID, which is a SHA1 hash.
 	*/
@@ -198,7 +198,7 @@ public:
         Node(const NodeType_t _type = NODE_TYPE_UNDEF, const char *_idStr = NULL, const string name = "Unnamed node");
         //Node(const NodeType_t _type = NODE_TYPE_UNDEF, const string name = "Unnamed node");
         Node(const Node &n); // Copy constructor
-        const Node& operator=(const Node &); // Not defined
+        Node& operator=(const Node &);
 
         ~Node();
 	Node *copy() { return new Node(*this); }

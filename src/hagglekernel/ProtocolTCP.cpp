@@ -27,36 +27,14 @@
 #define SOCKADDR_SIZE sizeof(struct sockaddr_in)
 #endif
 
-ProtocolTCP::ProtocolTCP(SOCKET _sock, const struct sockaddr *peer_addr, const InterfaceRef& _localIface, const short flags, ProtocolManager * m) :
-	ProtocolSocket(PROT_TYPE_TCP, "ProtocolTCP", _localIface, NULL, flags, m, _sock), localport(0)
+ProtocolTCP::ProtocolTCP(SOCKET _sock, const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
+			 const unsigned short _port, const short flags, ProtocolManager * m) :
+	ProtocolSocket(PROT_TYPE_TCP, "ProtocolTCP", _localIface, _peerIface, flags, m, _sock), localport(_port)
 {
-	unsigned char *rawaddr = NULL;
-	socklen_t addrlen = 0;
-	AddressType_t atype = AddressType_EthMAC;
-
-#if defined(ENABLE_IPv6)
-	if (peer_addr->sa_family == AF_INET6) {
-		struct sockaddr_in6 *saddr_in6 = (struct sockaddr_in6 *)peer_addr;
-		addrlen = sizeof(struct sockaddr_in6);
-		atype = AddressType_IPv6;
-		rawaddr = (unsigned char *)&saddr_in6->sin6_addr;
-		localport = ntohs(saddr_in6->sin6_port);
-	}
-#endif
-	if (peer_addr->sa_family == AF_INET) {
-		struct sockaddr_in *saddr_in = (struct sockaddr_in *)peer_addr;
-		addrlen = sizeof(struct sockaddr_in);
-		atype = AddressType_IPv4;
-		rawaddr = (unsigned char *)&saddr_in->sin_addr;
-		localport = ntohs(saddr_in->sin_port);
-	}
-
-	Address addr(atype, rawaddr, NULL, ProtocolSpecType_TCP, localport);
-
-	setPeerInterface(&addr);
 }
 
-ProtocolTCP::ProtocolTCP(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, const unsigned short _port, const short flags, ProtocolManager * m) : 
+ProtocolTCP::ProtocolTCP(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
+			 const unsigned short _port, const short flags, ProtocolManager * m) : 
 	ProtocolSocket(PROT_TYPE_TCP, "ProtocolTCP", _localIface, _peerIface, flags, m), localport(_port)
 {
 }
@@ -140,42 +118,6 @@ bool ProtocolTCP::initbase()
         }
 
 	return true;
-}
-
-void ProtocolTCP::setPeerInterface(const Address *addr)
-{
-	int res;
-        InterfaceRef pIface = NULL;
-	
-        if (!addr)
-                return;
-
-        pIface = getKernel()->getInterfaceStore()->retrieve(*addr);
-
-	if (pIface) {
-		HAGGLE_DBG("Peer interface is [%s]\n", pIface->getIdentifierStr());
-	} else {
-                char buf[SOCKADDR_SIZE];
-                unsigned char mac[6];
-                struct sockaddr *peer_addr = (struct sockaddr *)buf;
-                addr->fillInSockaddr(peer_addr);
-                
-                HAGGLE_DBG("trying to figure out peer mac for IP %s on interface %s\n", addr->getAddrStr(), localIface->getName());
-
-                res = get_peer_mac_address(peer_addr, localIface->getName(), mac, 6);
-
-		if (res < 0) {
-			HAGGLE_ERR("Error when retreiving mac address for peer %s, error=%d\n", addr->getAddrStr(), res);
-		} else if (res == 0) {
-			HAGGLE_ERR("No corresponding mac address for peer %s\n", addr->getAddrStr());
-		} else {
-			Address addr2(AddressType_EthMAC, mac);
-			pIface = new Interface(localIface->getType(), mac, addr, "TCP peer", IFFLAG_UP);
-			pIface->addAddress(&addr2);
-			HAGGLE_DBG("Peer interface is [%s]\n", pIface->getIdentifierStr());
-		}
-	}
-	peerIface = pIface;
 }
 
 bool ProtocolTCPClient::init_derived()
@@ -267,6 +209,10 @@ ProtocolEvent ProtocolTCPServer::acceptClient()
 	socklen_t len;
 	SOCKET clientsock;
 	ProtocolTCPClient *p = NULL;
+	unsigned char *rawaddr = NULL;
+	socklen_t addrlen = 0;
+	AddressType_t atype = AddressType_EthMAC;
+	unsigned short port;
 
 	HAGGLE_DBG("In TCPServer receive\n");
 
@@ -288,7 +234,30 @@ ProtocolEvent ProtocolTCPServer::acceptClient()
 		return PROT_EVENT_ERROR;
 	}
 	
-        p = new ProtocolTCPReceiver(clientsock, (struct sockaddr *)peer_addr, this->getLocalInterface(), getManager());
+
+#if defined(ENABLE_IPv6)
+	if (peer_addr->sa_family == AF_INET6) {
+		struct sockaddr_in6 *saddr_in6 = (struct sockaddr_in6 *)peer_addr;
+		addrlen = sizeof(struct sockaddr_in6);
+		atype = AddressType_IPv6;
+		rawaddr = (unsigned char *)&saddr_in6->sin6_addr;
+		port = ntohs(saddr_in6->sin6_port);
+	} else
+#endif
+	if (peer_addr->sa_family == AF_INET) {
+		struct sockaddr_in *saddr_in = (struct sockaddr_in *)peer_addr;
+		addrlen = sizeof(struct sockaddr_in);
+		atype = AddressType_IPv4;
+		rawaddr = (unsigned char *)&saddr_in->sin_addr;
+		port = ntohs(saddr_in->sin_port);
+	} else {
+		HAGGLE_ERR("ERROR: no matching address for incoming client\n");
+		return PROT_EVENT_ERROR;
+	}
+
+	Address addr(atype, rawaddr, NULL, ProtocolSpecType_TCP, port);
+
+        p = new ProtocolTCPReceiver(clientsock, localIface, resolvePeerInterface(addr), port, getManager());
 
 	if (!p || !p->init()) {
 		HAGGLE_DBG("Unable to create new TCP client on socket %d\n", clientsock);

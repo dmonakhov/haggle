@@ -324,6 +324,11 @@ class Reference {
 	*/
 	const T *getObj() const { return refCount->obj; }
 	/**
+	   This function accesses the referenced object directly. USE WITH CARE,
+	   for example, by locking the reference while accessing the object.
+	*/
+	T *getObj() { return refCount->obj; }
+	/**
            This function will return a heap-allocated copy of this reference.
 	*/
 	Reference<T> *copy() { return new Reference<T>(*this); }

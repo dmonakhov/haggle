@@ -42,15 +42,13 @@ class ProtocolTCP : public ProtocolSocket
         friend class ProtocolTCPClient;
 	unsigned short localport;
 	bool initbase();
-        ProtocolTCP(SOCKET sock, const struct sockaddr *addr, const InterfaceRef& _localIface,
-                    const short flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL);
+        ProtocolTCP(SOCKET sock, const InterfaceRef& _localIface, const InterfaceRef& _peerIface,
+		const unsigned short _port, const short flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL);
 public:
         ProtocolTCP(const InterfaceRef& _localIface, const InterfaceRef& _peerIface,
                     const unsigned short _port = TCP_DEFAULT_PORT,
                     const short flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL);
         virtual ~ProtocolTCP() = 0;
-
-	void setPeerInterface(const Address *addr = NULL);
 };
 
 /** */
@@ -59,11 +57,11 @@ class ProtocolTCPClient : public ProtocolTCP
         friend class ProtocolTCPServer;
 	bool init_derived();
 public:
-        ProtocolTCPClient(SOCKET sock, const struct sockaddr *addr, const InterfaceRef& _localIface, ProtocolManager *m = NULL) : 
-		ProtocolTCP(sock, addr, _localIface, PROT_FLAG_CLIENT | PROT_FLAG_CONNECTED, m) {}
+        ProtocolTCPClient(SOCKET sock, const InterfaceRef& _localIface, const InterfaceRef& _peerIface, const unsigned short _port, ProtocolManager *m = NULL) : 
+		ProtocolTCP(sock, _localIface, _peerIface, _port, PROT_FLAG_CLIENT | PROT_FLAG_CONNECTED, m) {}
         ProtocolTCPClient(const InterfaceRef& _localIface, const InterfaceRef& _peerIface,
                           const unsigned short _port = TCP_DEFAULT_PORT, ProtocolManager *m = NULL) :
-                        ProtocolTCP(_localIface, _peerIface, _port, PROT_FLAG_CLIENT, m) {}
+                ProtocolTCP(_localIface, _peerIface, _port, PROT_FLAG_CLIENT, m) {}
         ProtocolEvent connectToPeer();};
 
 
@@ -84,10 +82,11 @@ class ProtocolTCPReceiver : public ProtocolTCPClient
 {
 public:
 	ProtocolTCPReceiver(SOCKET sock, 
-		const struct sockaddr *addr, 
-		const InterfaceRef& _localIface, 
+		const InterfaceRef& _localIface,
+		const InterfaceRef& _peerIface,
+		const unsigned short _port,
 		ProtocolManager *m = NULL) : 
-	ProtocolTCPClient(sock, addr, _localIface, m) {}
+	ProtocolTCPClient(sock, _localIface, _peerIface, _port, m) {}
 	bool isReceiver() { return true; }
 };
 

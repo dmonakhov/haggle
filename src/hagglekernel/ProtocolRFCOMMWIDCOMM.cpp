@@ -142,15 +142,11 @@ bool ProtocolRFCOMM::initbase()
 	return true;
 }
 
-ProtocolRFCOMM::ProtocolRFCOMM(RFCOMMConnection *_rfCommConn, const unsigned char *mac, const unsigned short _channel,
-			       const InterfaceRef& _localIface, const short flags, ProtocolManager *m) :
-	Protocol(PROT_TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, NULL, flags, m), rfCommConn(_rfCommConn), 
+ProtocolRFCOMM::ProtocolRFCOMM(RFCOMMConnection *_rfCommConn, const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
+			       const unsigned short _channel, const short flags, ProtocolManager *m) :
+	Protocol(PROT_TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, peerIface, flags, m), rfCommConn(_rfCommConn), 
 		channel(_channel), autoAssignScn(true)
 {
-	Address addr(AddressType_BTMAC, mac);
-
-	peerIface = new Interface(IFTYPE_BLUETOOTH, mac, &addr, "Peer Bluetooth", IFFLAG_UP);
-
 	rfCommConn->setProtocol(this);
 }
 
@@ -240,9 +236,9 @@ void ProtocolRFCOMM::removeConnection(const RFCOMMConnection *c)
 #define DATA_BUFFER_EMPTY(p) ((p)->db_head == (p)->db_tail)
 #define DATA_BUFFER_SPACE(p) (((p)->db_head >= (p)->db_tail) ? (RFCOMM_DATA_BUFFER_SIZE - ((p)->db_head - (p)->db_tail)) : ((p)->db_tail  - (p)->db_head))
 
-ProtocolRFCOMMClient::ProtocolRFCOMMClient(RFCOMMConnection *rfCommConn, BD_ADDR bdaddr, const unsigned short _channel, 
-					   const InterfaceRef& _localIface, ProtocolManager *m) :
-	ProtocolRFCOMM(rfCommConn, bdaddr, _channel, _localIface, PROT_FLAG_CLIENT | PROT_FLAG_CONNECTED, m), 
+ProtocolRFCOMMClient::ProtocolRFCOMMClient(RFCOMMConnection *rfCommConn, const InterfaceRef& _localIface, 
+		const InterfaceRef& _peerIface, const unsigned short _channel, ProtocolManager *m) :
+	ProtocolRFCOMM(rfCommConn, _localIface, _peerIface, _channel, PROT_FLAG_CLIENT | PROT_FLAG_CONNECTED, m), 
 			hReadQ(NULL), hWriteQ(NULL), blockingTimeout(INFINITE), db_head(0), db_tail(0)
 {
 }
@@ -263,7 +259,7 @@ ProtocolRFCOMMClient::~ProtocolRFCOMMClient()
 		CloseMsgQueue(hWriteQ);
 }
 
-bool ProtocolRFCOMMClient::init()
+bool ProtocolRFCOMMClient::init_derived()
 {
 	MSGQUEUEOPTIONS mqOpts = { sizeof(MSGQUEUEOPTIONS), MSGQUEUE_NOPRECOMMIT, 0, 
 			sizeof(struct QMsg), FALSE };
@@ -523,7 +519,7 @@ ProtocolEvent ProtocolRFCOMMClient::receiveData(void *buf, size_t len, const int
 		return PROT_EVENT_ERROR;
 	}
 
-	//HAGGLE_DBG("Got message saying that there is %lu bytes data to read\n", msg.len);
+	HAGGLE_DBG("Got message saying that there is %lu bytes data to read\n", msg.len);
 
 	if (msg.len > len) {
 		*bytes = len;
@@ -543,7 +539,7 @@ ProtocolEvent ProtocolRFCOMMClient::receiveData(void *buf, size_t len, const int
 		if (res == FALSE) {
 			HAGGLE_ERR("Could not write data msg to message queue\n");
 		} else {
-			//HAGGLE_DBG("Signaled to queue that there is still %lu bytes data to read\n", msg.len);
+			HAGGLE_DBG("Signaled to queue that there is still %lu bytes data to read\n", msg.len);
 		}
 	}
 
@@ -551,7 +547,7 @@ ProtocolEvent ProtocolRFCOMMClient::receiveData(void *buf, size_t len, const int
 		HAGGLE_ERR("Error: received 0 bytes\n");	
 		return PROT_EVENT_ERROR;
 	}
-	//HAGGLE_DBG("Successfully read %lu bytes data\n", *bytes);
+	HAGGLE_DBG("Successfully read %lu bytes data\n", *bytes);
 
 	return PROT_EVENT_SUCCESS;
 }
@@ -668,7 +664,7 @@ ProtocolRFCOMMServer::~ProtocolRFCOMMServer()
 }
 
 
-bool ProtocolRFCOMMServer::init()
+bool ProtocolRFCOMMServer::init_derived()
 {
 	if (!initbase())
 		return false;
@@ -754,19 +750,22 @@ ProtocolEvent ProtocolRFCOMMServer::acceptClient()
 
 	RFCOMMConnection *c = getFirstUnassignedConnection();
 	
-	if (!c || !c->getProtocol() || !c->getProtocol()->isClient())
+	if (!c || !c->getProtocol() || !c->getProtocol()->isClient()) {
+		HAGGLE_ERR("No valid unassigned connection\n");
 		return PROT_EVENT_ERROR;
+	}
 
 	c->setAssigned();
 
 	ProtocolRFCOMMClient *p = static_cast<ProtocolRFCOMMClient *>(c->getProtocol());
 
 	if (!p || !p->init()) {
+		HAGGLE_ERR("Could not initialize protocol %s.\n", p->getName());
 		return PROT_EVENT_ERROR;
 	}
 
 	HAGGLE_DBG("Accepted client %s, starting client thread\n", 
-			p->getPeerInterface()->getAddressByType(AddressType_BTMAC)->getAddrStr());
+		p->getPeerInterface()->getIdentifierStr());
 	
 	p->registerWithManager();
 
@@ -813,10 +812,19 @@ void ProtocolRFCOMMServer::OnEventReceived(UINT32 event_code)
 
 			mutex.unlock();
 
+			Address addr(AddressType_BTMAC, remote_addr);
+
+			InterfaceRef peerIface = new Interface(IFTYPE_BLUETOOTH, remote_addr, &addr, "Peer Bluetooth", IFFLAG_UP);
+	
+			if (!peerIface) {
+				HAGGLE_ERR("Could not create new peer interface!!!\n");
+				return;
+			}
+
 			// Create a client immediately and associate with connection, but
 			// do not start it until acceptClient() is called.
-			ProtocolRFCOMMReceiver *p = new ProtocolRFCOMMReceiver(client_rfCommConn, remote_addr, 
-				(unsigned short)channel, this->getLocalInterface(), getManager());
+			ProtocolRFCOMMReceiver *p = new ProtocolRFCOMMReceiver(client_rfCommConn, 
+				this->getLocalInterface(), peerIface, (unsigned short)channel, getManager());
 
 			if (!p || !p->init()) {
 				HAGGLE_ERR("Could not create new protocol receiver!!!\n");

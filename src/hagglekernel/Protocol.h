@@ -151,6 +151,7 @@ typedef enum {
 */
 class Protocol : public ManagerModule<ProtocolManager>
 {
+	friend class ProtocolManager;
         /**
            This is used to track IDs.
         */
@@ -225,6 +226,8 @@ protected:
         ProtocolMode mode;
         InterfaceRef localIface;  // Our local interface this protocol uses to communicate
         InterfaceRef peerIface; // Interface of the remote peer that we communicate with
+
+	NodeRef peerNode; // The node matching the peer interface
 
         // Buffer for reading incoming data
         unsigned char *buffer;
@@ -354,7 +357,8 @@ protected:
 	 Initialization function that may be overridden by derived class. It is 
 	 automatically called by init().
 	 */
-	virtual bool init_derived() { return true; }	
+	virtual bool init_derived() { return true; }
+	void setPeerNode(NodeRef& node) { peerNode = node; }
 public:	
 	
         /**

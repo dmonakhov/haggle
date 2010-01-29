@@ -34,6 +34,7 @@ class ProtocolSocket;
 
 #define DEFAULT_SOCKET_BACKLOG 10
 
+
 using namespace haggle;
 
 /** */
@@ -73,6 +74,7 @@ class ProtocolSocket : public Protocol
 	ssize_t recvFrom(void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);
 
 	bool socketIsOpen() const { return (sock != INVALID_SOCKET); }
+	InterfaceRef resolvePeerInterface(const Address& addr);
         
 	/**
            Functions that are overridden from class Protocol.

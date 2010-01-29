@@ -1,6 +1,6 @@
 #include "WIDCOMMBluetooth.h"
 
-#if defined(WIDCOMM_BLUETOOTH)
+#if defined(WIDCOMM_BLUETOOTH) && defined(ENABLE_BLUETOOTH)
 
 #include <msgqueue.h>
 #include "Trace.h"
@@ -411,4 +411,4 @@ int BthSetMode(DWORD dwMode)
 	return -1;
 }
 
-#endif /* WIDCOMM_BLUETOOTH */
+#endif /* WIDCOMM_BLUETOOTH && ENABLE_BLUETOOTH */

@@ -71,6 +71,7 @@ private:
 #ifdef DEBUG
 	void onDebugCmdEvent(Event *e);
 #endif
+	void onNodeUpdated(Event *e);
         /**
         	Returns the client sender protocol for the given remote interface.
         	

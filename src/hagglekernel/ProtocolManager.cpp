@@ -71,6 +71,13 @@ bool ProtocolManager::init_derived()
 		return false;
 	}
 
+	ret = setEventHandler(EVENT_TYPE_NODE_UPDATED, onNodeUpdated);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+
 	delete_protocol_event = registerEventType("ProtocolManager protocol deletion event", onDeleteProtocolEvent);
 
 	add_protocol_event = registerEventType("ProtocolManager protocol addition event", onAddProtocolEvent);
@@ -132,7 +139,40 @@ bool ProtocolManager::registerProtocol(Protocol *p)
 	return true;
 }
 
-void ProtocolManager::onDeleteProtocolEvent(Event * e)
+void ProtocolManager::onNodeUpdated(Event *e)
+{
+	if (!e)
+		return;
+
+	NodeRef& node = e->getNode();
+	NodeRefList& nl = e->getNodeList();
+
+	if (!node)
+		return;
+
+	// Check if there are any protocols that are associated with the updated nodes.
+	for (NodeRefList::iterator it = nl.begin(); it != nl.end(); it++) {
+		NodeRef& old_node = *it;
+		old_node.lock();
+
+		for (InterfaceRefList::const_iterator it2 = old_node->getInterfaces()->begin(); 
+			it2 != old_node->getInterfaces()->end(); it2++) {
+				const InterfaceRef& iface = *it2;
+
+				for (protocol_registry_t::iterator it3 = protocol_registry.begin(); it3 != protocol_registry.end(); it3++) {
+					Protocol *p = (*it3).second;
+
+					if (p->isForInterface(iface)) {
+						HAGGLE_DBG("Setting peer node %s on protocol %s\n", node->getName().c_str(), p->getName());
+						p->setPeerNode(node);
+					}
+				}
+		}
+		old_node.unlock();
+	}
+}
+
+void ProtocolManager::onDeleteProtocolEvent(Event *e)
 {
 	Protocol *p;
 
