@@ -276,9 +276,9 @@ Node::Node(const Node& n) :
 	dObj(NULL), interfaces(n.interfaces), 
 	doBF(new Bloomfilter(*n.doBF)), 
 	stored(n.stored), createdFromNodeDescription(n.createdFromNodeDescription),
-	filterEventId(n.filterEventId),
 	eventInterests(n.eventInterests),
 	eventid(n.eventid),
+	filterEventId(n.filterEventId),
 	matchThreshold(n.matchThreshold),
 	numberOfDataObjectsPerMatch(n.numberOfDataObjectsPerMatch)
 {

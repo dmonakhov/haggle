@@ -77,9 +77,10 @@ Protocol::Protocol(const ProtType_t _type, const string _name, const InterfaceRe
 
 bool Protocol::init()
 {
-	if (buffer)
+	if (buffer) {
+		HAGGLE_ERR("Initializing already initialized protocol\n");
 		return false;
-	
+	}
 	buffer = new unsigned char[bufferSize];
 
 	if (!buffer) {
@@ -121,6 +122,9 @@ Protocol::~Protocol()
 	
 	HAGGLE_DBG("%s destroyed\n", getName());
 	
+	if (buffer)
+		delete[] buffer;
+
 	// If there is anything in the queue, these should be data objects, and if 
 	// they are here, they have not been sent. So send an
 	// EVENT_TYPE_DATAOBJECT_SEND_FAILURE for each of them:
@@ -128,11 +132,8 @@ Protocol::~Protocol()
 	// No need to do getQueue() more than once:
 	Queue *q = getQueue();
 	
-	if (!q)
-		return;
-
 	// With all the data objects in the queue:
-	while (!q->empty()) {
+	while (q && !q->empty()) {
 		QueueElement *qe = NULL;
 		DataObjectRef dObj;
 		
@@ -155,9 +156,6 @@ Protocol::~Protocol()
 		if (qe)
 			delete qe;
 	}
-	
-	if (buffer)
-		delete[] buffer;
 }
 
 bool Protocol::hasIncomingData()

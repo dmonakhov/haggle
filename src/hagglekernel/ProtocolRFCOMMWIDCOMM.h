@@ -43,7 +43,7 @@ class RFCOMMConnection : public CRfCommPort {
 	bool connected, assigned;
 	BD_ADDR remote_addr;
 public:
-	void setProtocol(ProtocolRFCOMM *_p) { printf("setting new protocol\n"); p = _p; }
+	void setProtocol(ProtocolRFCOMM *_p) { p = _p; }
 	ProtocolRFCOMM *getProtocol() { return p; }
 	RFCOMMConnection(ProtocolRFCOMM *_p = NULL);
 	~RFCOMMConnection();
@@ -152,8 +152,8 @@ class ProtocolRFCOMMReceiver : public ProtocolRFCOMMClient
 {
 	friend class ProtocolRFCOMMServer;
 	ProtocolRFCOMMReceiver(RFCOMMConnection *rfCommConn, const InterfaceRef& _localIface, 
-		const InterfaceRef& _peerIface, const unsigned short _channel,
-		ProtocolManager *m = NULL) : ProtocolRFCOMMClient(rfCommConn, _localIface, _peerIface, _channel, m) {}	
+		const InterfaceRef& _peerIface, const unsigned short _channel, ProtocolManager *m = NULL) : 
+		ProtocolRFCOMMClient(rfCommConn, _localIface, _peerIface, _channel, m) {}	
 public:
 	bool isReceiver() { return true; }
 };

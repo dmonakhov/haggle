@@ -114,9 +114,10 @@ bool ProtocolRFCOMM::initbase()
 	GUID guid;
 	UINT8 scn = autoAssignScn ? 0 : channel & 0xff;
 
-	if (!rfCommConn)
+	if (!rfCommConn) {
+		HAGGLE_ERR("No valid RFCOMM connection\n");
 		return false;
-
+	}
 	convertUUIDBytesToGUID((char *)uuid, &guid);
 
 	if (!rfCommIf.AssignScnValue(&guid, scn)) {
@@ -144,7 +145,7 @@ bool ProtocolRFCOMM::initbase()
 
 ProtocolRFCOMM::ProtocolRFCOMM(RFCOMMConnection *_rfCommConn, const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
 			       const unsigned short _channel, const short flags, ProtocolManager *m) :
-	Protocol(PROT_TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, peerIface, flags, m), rfCommConn(_rfCommConn), 
+	Protocol(PROT_TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, _peerIface, flags, m), rfCommConn(_rfCommConn), 
 		channel(_channel), autoAssignScn(true)
 {
 	rfCommConn->setProtocol(this);
@@ -269,9 +270,10 @@ bool ProtocolRFCOMMClient::init_derived()
 		return false;
 	}
 
-	if (!initbase())
+	if (!initbase()) {
+		HAGGLE_ERR("Initialization of base protocol class failed\n");
 		return false;
-
+	}
 	hWriteQ = CreateMsgQueue(NULL, &mqOpts);
 
 	if (!hWriteQ) {
@@ -519,7 +521,7 @@ ProtocolEvent ProtocolRFCOMMClient::receiveData(void *buf, size_t len, const int
 		return PROT_EVENT_ERROR;
 	}
 
-	HAGGLE_DBG("Got message saying that there is %lu bytes data to read\n", msg.len);
+	//HAGGLE_DBG("Got message saying that there is %lu bytes data to read\n", msg.len);
 
 	if (msg.len > len) {
 		*bytes = len;
@@ -539,7 +541,7 @@ ProtocolEvent ProtocolRFCOMMClient::receiveData(void *buf, size_t len, const int
 		if (res == FALSE) {
 			HAGGLE_ERR("Could not write data msg to message queue\n");
 		} else {
-			HAGGLE_DBG("Signaled to queue that there is still %lu bytes data to read\n", msg.len);
+			//HAGGLE_DBG("Signaled to queue that there is still %lu bytes data to read\n", msg.len);
 		}
 	}
 
@@ -547,7 +549,7 @@ ProtocolEvent ProtocolRFCOMMClient::receiveData(void *buf, size_t len, const int
 		HAGGLE_ERR("Error: received 0 bytes\n");	
 		return PROT_EVENT_ERROR;
 	}
-	HAGGLE_DBG("Successfully read %lu bytes data\n", *bytes);
+	//HAGGLE_DBG("Successfully read %lu bytes data\n", *bytes);
 
 	return PROT_EVENT_SUCCESS;
 }
@@ -570,6 +572,9 @@ ProtocolEvent ProtocolRFCOMMClient::sendData(const void *buf, size_t len, const 
 
 	*bytes = (size_t)bytes_written;
 	
+	if (*bytes == 0)
+		return PROT_EVENT_ERROR;
+
 	return PROT_EVENT_SUCCESS;
 }
 
@@ -759,8 +764,8 @@ ProtocolEvent ProtocolRFCOMMServer::acceptClient()
 
 	ProtocolRFCOMMClient *p = static_cast<ProtocolRFCOMMClient *>(c->getProtocol());
 
-	if (!p || !p->init()) {
-		HAGGLE_ERR("Could not initialize protocol %s.\n", p->getName());
+	if (!p) {
+		HAGGLE_ERR("Bad protocol\n");
 		return PROT_EVENT_ERROR;
 	}
 
@@ -814,9 +819,9 @@ void ProtocolRFCOMMServer::OnEventReceived(UINT32 event_code)
 
 			Address addr(AddressType_BTMAC, remote_addr);
 
-			InterfaceRef peerIface = new Interface(IFTYPE_BLUETOOTH, remote_addr, &addr, "Peer Bluetooth", IFFLAG_UP);
+			InterfaceRef iface = new Interface(IFTYPE_BLUETOOTH, remote_addr, &addr, "Peer Bluetooth", IFFLAG_UP);
 	
-			if (!peerIface) {
+			if (!iface) {
 				HAGGLE_ERR("Could not create new peer interface!!!\n");
 				return;
 			}
@@ -824,10 +829,14 @@ void ProtocolRFCOMMServer::OnEventReceived(UINT32 event_code)
 			// Create a client immediately and associate with connection, but
 			// do not start it until acceptClient() is called.
 			ProtocolRFCOMMReceiver *p = new ProtocolRFCOMMReceiver(client_rfCommConn, 
-				this->getLocalInterface(), peerIface, (unsigned short)channel, getManager());
+				this->getLocalInterface(), iface, (unsigned short)channel, getManager());
 
 			if (!p || !p->init()) {
 				HAGGLE_ERR("Could not create new protocol receiver!!!\n");
+
+				if (p)
+					delete p;
+
 				return;
 			}	
 

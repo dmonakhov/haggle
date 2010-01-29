@@ -262,6 +262,10 @@ ProtocolEvent ProtocolTCPServer::acceptClient()
 	if (!p || !p->init()) {
 		HAGGLE_DBG("Unable to create new TCP client on socket %d\n", clientsock);
 		CLOSE_SOCKET(clientsock);
+
+		if (p)
+			delete p;
+
 		return PROT_EVENT_ERROR;
 	}
 
