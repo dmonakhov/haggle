@@ -86,7 +86,7 @@ bool DebugManager::init_derived()
 		return false;
 	}
 
-#if defined(OS_LINUX) || (defined(OS_MACOSX) && !defined(OS_MACOSX_IPHONE))
+#if (defined(OS_LINUX) && !defined(OS_ANDROID)) || (defined(OS_MACOSX) && !defined(OS_MACOSX_IPHONE))
 	if (interactive) {
 		console = open("/dev/stdin", O_RDONLY);
 		

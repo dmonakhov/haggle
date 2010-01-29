@@ -54,6 +54,11 @@ bool ProtocolRFCOMM::initbase()
 {
 	struct sockaddr_bt localAddr;
 
+        if (isConnected()) {
+                // Nothing to do
+                return true;
+        }
+
 	if (!openSocket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM, isServer())) {
 		HAGGLE_ERR("Could not create RFCOMM socket\n");
                 return false;
@@ -76,26 +81,25 @@ bool ProtocolRFCOMM::initbase()
 
 	if (isServer()) {
 		localAddr.bt_channel = channel & 0xff;
+   
+             	/* If this is a server we bing to a specific channel to listen on */
+                if (!bindSocket((struct sockaddr *)&localAddr, sizeof(localAddr))) {
+                        closeSocket();
+#ifdef OS_WINDOWS
+                        HAGGLE_ERR("Bind failed for local address WSA error=%s\n", StrError(WSAGetLastError()));
+#endif
+                        
+                        HAGGLE_ERR("Could not bind local address for RFCOMM socket\n");
+                        
+                        return false;
+                }
+
+                HAGGLE_DBG("Bound RFCOMM server to channel=%d\n", channel);
+   
 	} else {
 		HAGGLE_DBG("Created RFCOMM client on channel=%d\n", channel);
-		return true;
 	}
 
-	/* If this is a server we bing to a specific channel to listen on */
-	if (!bindSocket((struct sockaddr *)&localAddr, sizeof(localAddr))) {
-		closeSocket();
-#ifdef OS_WINDOWS
-		HAGGLE_ERR("Bind failed for local address WSA error=%s\n", StrError(WSAGetLastError()));
-#endif
-
-		HAGGLE_ERR("Could not bind local address for RFCOMM socket\n");
-
-		return false;
-
-	}
-
-        HAGGLE_DBG("Bound RFCOMM server to channel=%d\n", channel);
-   
 	return true;
 }
 
@@ -208,6 +212,10 @@ ProtocolEvent ProtocolRFCOMMServer::acceptClient()
 	if (!p || !p->init()) {
 		HAGGLE_ERR("Could not create new RFCOMM receiver\n");
 		CLOSE_SOCKET(clientSock);
+                
+                if (p)
+                        delete p;
+
 		return PROT_EVENT_ERROR;
 	}
 

@@ -815,11 +815,10 @@ int luckyme_run()
 			LIBHAGGLE_DBG("Application is already registered.\n");
 			haggle_unregister(APP_NAME);
 		}
-		retry--;
 #ifdef OS_WINDOWS_MOBILE
 		Sleep(5000);
 #endif
-	} while (ret != HAGGLE_NO_ERROR && retry >= 0);
+	} while (ret != HAGGLE_NO_ERROR && retry-- != 0);
 	
 	if (ret != HAGGLE_NO_ERROR || hh == NULL) {
 		goto out_error;

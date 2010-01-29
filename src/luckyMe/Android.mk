@@ -10,7 +10,7 @@ ifneq ($(TARGET_SIMULATOR),true)
 # LuckyMe
 #
 LOCAL_SRC_FILES := \
-	luckyMe.cpp 
+	luckyme.c 
 
 LOCAL_C_INCLUDES += \
         $(LOCAL_PATH)/../utils \
