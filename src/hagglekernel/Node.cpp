@@ -197,32 +197,19 @@ Node::Node(const NodeType_t _type, const DataObjectRef& dObj) :
 #endif
 	type(_type), num(totNum++), name("Unnamed node"), nodeDescExch(false), 
 	dObj(dObj ? dObj : DataObjectRef(new DataObject())), 
-	doBF(NULL), stored(false), createdFromNodeDescription(dObj ? true : false), 
+	doBF(NULL), eventid(-1), stored(false), createdFromNodeDescription(dObj ? true : false), 
 	filterEventId(-1), matchThreshold(NODE_DEFAULT_MATCH_THRESHOLD), 
 	numberOfDataObjectsPerMatch(NODE_DEFAULT_DATAOBJECTS_PER_MATCH)
 {
 	init_node(NULL);
 }
-/*
-Node::Node(const NodeType_t _type, const string _name) : 
-#ifdef DEBUG_LEAKS
-	LeakMonitor(LEAK_TYPE_NODE),
-#endif
-	type(_type), num(totNum++), name(_name), nodeDescExch(false), 
-	dObj(DataObjectRef(new DataObject())), doBF(NULL), stored(false), 
-	createdFromNodeDescription(false), filterEventId(-1),
-	matchThreshold(NODE_DEFAULT_MATCH_THRESHOLD), 
-	numberOfDataObjectsPerMatch(NODE_DEFAULT_DATAOBJECTS_PER_MATCH)
-{
-	init_node(NULL);
-}
-*/
+
 Node::Node(const NodeType_t _type, const NodeId_t _id, const string _name) : 
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_NODE),
 #endif
 	type(_type), num(totNum++), name(_name), nodeDescExch(false), 
-	dObj(DataObjectRef(new DataObject())), doBF(NULL), 
+	dObj(DataObjectRef(new DataObject())), doBF(NULL), eventid(-1),
 	stored(false), createdFromNodeDescription(false),
 	filterEventId(-1), matchThreshold(NODE_DEFAULT_MATCH_THRESHOLD), 
 	numberOfDataObjectsPerMatch(NODE_DEFAULT_DATAOBJECTS_PER_MATCH)
@@ -236,7 +223,7 @@ Node::Node(const NodeType_t _type, const char *_idStr, const string _name) :
 #endif
 	type(_type), num(totNum++), name(_name), nodeDescExch(false), 
 	dObj(DataObjectRef(new DataObject())), doBF(NULL), 
-	stored(false), createdFromNodeDescription(false),
+	eventid(-1), stored(false), createdFromNodeDescription(false),
 	filterEventId(-1), matchThreshold(NODE_DEFAULT_MATCH_THRESHOLD),
 	numberOfDataObjectsPerMatch(NODE_DEFAULT_DATAOBJECTS_PER_MATCH)
 {
@@ -275,9 +262,10 @@ Node::Node(const Node& n) :
 	nodeDescExch(n.nodeDescExch), 
 	dObj(NULL), interfaces(n.interfaces), 
 	doBF(new Bloomfilter(*n.doBF)), 
-	stored(n.stored), createdFromNodeDescription(n.createdFromNodeDescription),
 	eventInterests(n.eventInterests),
 	eventid(n.eventid),
+	stored(n.stored), 
+        createdFromNodeDescription(n.createdFromNodeDescription),
 	filterEventId(n.filterEventId),
 	matchThreshold(n.matchThreshold),
 	numberOfDataObjectsPerMatch(n.numberOfDataObjectsPerMatch)
@@ -314,10 +302,10 @@ Node& Node::operator=(const Node &node)
 	name = node.name;
 	nodeDescExch = node.nodeDescExch;
 	
-	if (this->doBF)
-		delete this->doBF;
+	if (doBF)
+		delete doBF;
 
-	this->doBF = new Bloomfilter(*node.doBF);
+	doBF = new Bloomfilter(*node.doBF);
 	stored = node.stored;
 	interfaces = node.interfaces;
 	createdFromNodeDescription = node.createdFromNodeDescription;
