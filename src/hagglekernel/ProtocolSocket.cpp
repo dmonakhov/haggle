@@ -479,7 +479,7 @@ ProtocolEvent ProtocolSocket::waitForEvent(DataObjectRef &dObj, Timeval *timeout
 }
 
 #if defined(OS_LINUX) || defined (OS_MACOSX)
-ProtocolError Protocol::getProtocolError()
+ProtocolError ProtocolSocket::getProtocolError()
 {
 	switch (errno) {
 	case EAGAIN:
@@ -519,7 +519,7 @@ ProtocolError Protocol::getProtocolError()
 
 	return error;
 }
-const char *Protocol::getProtocolErrorStr()
+const char *ProtocolSocket::getProtocolErrorStr()
 {
 	// We could append the system error string from strerror
 	//return (error < _PROT_ERROR_MAX && error > _PROT_ERROR_MIN) ? errorStr[error] : "Bad error";
