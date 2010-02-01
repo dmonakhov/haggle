@@ -144,7 +144,7 @@ InterfaceType_t Interface::strToType(const char *str)
 	return IFTYPE_UNDEF;
 }
 
-const size_t Interface::getIdentifierLen() const
+size_t Interface::getIdentifierLen() const
 {
 	if (!identifierIsValid)
 		return -1;

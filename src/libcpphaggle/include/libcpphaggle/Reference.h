@@ -282,7 +282,7 @@ class Reference {
 	/**
            Returns the identifying integer associated with this object.
 	*/
-	const unsigned long getId() const { return refCount->identifier; }
+	unsigned long getId() const { return refCount->identifier; }
 	
 	/**
            Constructor.

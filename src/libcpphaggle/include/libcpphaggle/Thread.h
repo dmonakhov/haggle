@@ -271,8 +271,8 @@ public:
 	static void registryPrint();
 #endif
         bool isSelf() const;
-        const thread_handle_t getHandle() const;
-        const unsigned long getNum() const;
+        thread_handle_t getHandle() const;
+        unsigned long getNum() const;
 	const char *getName() const;
 	/**
 	   This function checks whether the thread is running or not.

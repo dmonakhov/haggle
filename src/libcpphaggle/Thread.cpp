@@ -375,12 +375,12 @@ bool Thread::isSelf() const
 	return (selfGetId() == id);
 }
 	
-const thread_handle_t Thread::getHandle() const 
+thread_handle_t Thread::getHandle() const 
 {
 	return thrHandle;
 }
 
-const unsigned long Thread::getNum() const 
+unsigned long Thread::getNum() const 
 {
 	return num;
 }

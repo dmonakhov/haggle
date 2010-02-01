@@ -118,7 +118,7 @@ public:
 	DebugCmd(DebugCmdType_t _type, string _msg = "No message");
 	virtual ~DebugCmd();
 	const char *getMsg() const { return msg.c_str(); } 
-	const DebugCmdType_t getType() const { return type; }
+	DebugCmdType_t getType() const { return type; }
 };
 
 typedef haggle::Reference<DebugCmd> DebugCmdRef;

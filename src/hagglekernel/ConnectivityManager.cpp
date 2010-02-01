@@ -130,6 +130,7 @@ void ConnectivityManager::onPrepareShutdown()
 			// Tell connectivity to cancel all activity:
 			CM_DBG("Telling %s to cancel\n", (*it)->getName());
 			(*it)->cancelDiscovery();
+			CM_DBG("%s cancelled\n", (*it)->getName());
 			n++;
 		}
 	}
@@ -550,7 +551,7 @@ void ConnectivityManager::onReceivedDataObject(Event *e)
 			   remoteIface->getIdentifierStr());
 
 		// Check whether this interface is already registered or not
-		if (!have_interface(remoteIface->getType(), remoteIface->getIdentifier())) {
+		if (!have_interface(remoteIface)) {
 			remoteIface->setFlag(IFFLAG_SNOOPED);
 			if (remoteIface->getType() == IFTYPE_BLUETOOTH)
 				report_interface(remoteIface, localIface, new ConnectivityInterfacePolicyTTL(2));
@@ -565,6 +566,7 @@ void ConnectivityManager::onReceivedDataObject(Event *e)
 			}
 			report_known_interface(remoteIface, true);
 		}
+		HAGGLE_DBG("Reporting done\n");
 	}
 }
 
@@ -670,15 +672,21 @@ void ConnectivityManager::delete_interface(const string name)
 	}
 }
 
+InterfaceStatus_t ConnectivityManager::have_interface(const InterfaceType_t type, const unsigned char *identifier)
+{
+	return kernel->getInterfaceStore()->stored(type, identifier) ? INTERFACE_STATUS_HAGGLE : INTERFACE_STATUS_NONE;
+}
+
 InterfaceStatus_t ConnectivityManager::have_interface(const Interface *iface)
 {
 	return kernel->getInterfaceStore()->stored(*iface) ? INTERFACE_STATUS_HAGGLE : INTERFACE_STATUS_NONE;
 }
 
-InterfaceStatus_t ConnectivityManager::have_interface(const InterfaceType_t type, const unsigned char *identifier)
+InterfaceStatus_t ConnectivityManager::have_interface(const InterfaceRef& iface)
 {
-	return kernel->getInterfaceStore()->stored(type, identifier) ? INTERFACE_STATUS_HAGGLE : INTERFACE_STATUS_NONE;
+	return kernel->getInterfaceStore()->stored(iface) ? INTERFACE_STATUS_HAGGLE : INTERFACE_STATUS_NONE;
 }
+
 
 /*
 	The known interface cache is used to, e.g., avoid excessive SDP lookups with Bluetooth

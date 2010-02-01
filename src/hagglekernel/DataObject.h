@@ -307,7 +307,7 @@ class DataObject
 	const char *getIdStr() const {
 		return idStr;
 	}
-	const unsigned int getNum() const {
+	unsigned int getNum() const {
 		return num;
 	}
 	bool hasCreateTime() const { return has_CreateTime; }
@@ -356,7 +356,7 @@ class DataObject
         void setFilePath(const string fp);
         void setIsForLocalApp(const bool val = true);
 
-        const size_t getDataLen() const {
+        size_t getDataLen() const {
                 return dataLen;
         }
         void setOwnsFile(bool owns) {
@@ -374,7 +374,7 @@ class DataObject
         void setRxTime(const unsigned long time) {
                 rxTime = time;
         }
-        const unsigned long getRxTime() const {
+        unsigned long getRxTime() const {
                 return rxTime;
         }
         bool isPersistent() const {

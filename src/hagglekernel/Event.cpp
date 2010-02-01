@@ -57,23 +57,23 @@ int Event::num_event_types = MAX_NUM_PUBLIC_EVENT_TYPES;
 // This will store the callback functions for registered private events
 EventCallback < EventHandler > *Event::privCallbacks[MAX_NUM_PRIVATE_EVENT_TYPES];
 
-Event::Event(EventType _type, const DataObjectRef& _dObjRef, double _delay) : 
+Event::Event(EventType _type, const DataObjectRef& _dObj, double _delay) : 
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_EVENT),
 #endif
 	HeapItem(),
 	type(_type),
 	timeout(absolute_time_double(_delay)), 
-	dObjRef(_dObjRef),
+	dObj(_dObj),
 	data(NULL),
-	doesHaveData(_dObjRef),
+	doesHaveData(_dObj),
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
 		HAGGLE_ERR("ERROR: trying to allocate an invalid event type!\n");
                 return;
 	}
-	if (dObjRef) {
+	if (dObj) {
 		if (EVENT_TYPE_PRIVATE(type) || 
 		    type == EVENT_TYPE_DATAOBJECT_RECEIVED || 
 		    type == EVENT_TYPE_DATAOBJECT_VERIFIED || 
@@ -84,10 +84,10 @@ Event::Event(EventType _type, const DataObjectRef& _dObjRef, double _delay) :
 			// object, but to do that, we need to add it to the data object 
 			// list (because the recipient of the event can't know how the 
 			// event was created).
-			dObjs.push_back(dObjRef);
-			// Clear the dObjRef, so this event looks just like if it was 
+			dObjs.push_back(dObj);
+			// Clear the dObj, so this event looks just like if it was 
 			// created with the (..., DataObjectRefList, ...) constructor
-			dObjRef = NULL;
+			dObj = NULL;
 		} else {
 			HAGGLE_ERR("ERROR: Event type %s does not accept a data object as data!\n",
 				eventNames[type]);
@@ -95,23 +95,23 @@ Event::Event(EventType _type, const DataObjectRef& _dObjRef, double _delay) :
 	}
 }
 
-Event::Event(EventType _type, const InterfaceRef& _ifaceRef, double _delay) : 
+Event::Event(EventType _type, const InterfaceRef& _iface, double _delay) : 
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_EVENT),
 #endif
 	HeapItem(),
 	type(_type),
 	timeout(absolute_time_double(_delay)), 
-	ifaceRef(_ifaceRef),
+	iface(_iface),
 	data(NULL),
-	doesHaveData(_ifaceRef),
+	doesHaveData(_iface),
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
                 return;
         }
 
-	if (ifaceRef) {
+	if (iface) {
 		if (EVENT_TYPE_PRIVATE(type) || 
 		    type == EVENT_TYPE_LOCAL_INTERFACE_UP || 
 		    type == EVENT_TYPE_LOCAL_INTERFACE_DOWN || 
@@ -124,22 +124,22 @@ Event::Event(EventType _type, const InterfaceRef& _ifaceRef, double _delay) :
 	}
 }
 
-Event::Event(EventType _type, const NodeRef& _nodeRef, double _delay) : 
+Event::Event(EventType _type, const NodeRef& _node, double _delay) : 
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_EVENT),
 #endif
 	HeapItem(),
 	type(_type),
 	timeout(absolute_time_double(_delay)), 
-	nodeRef(_nodeRef),
+	node(_node),
 	data(NULL),
-	doesHaveData(_nodeRef),
+	doesHaveData(_node),
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
                 return;
         }
-	if (nodeRef) {
+	if (node) {
 		if (EVENT_TYPE_PRIVATE(type) || 
 		    type == EVENT_TYPE_NODE_CONTACT_NEW || 
 		    type == EVENT_TYPE_NODE_CONTACT_END) {
@@ -149,23 +149,23 @@ Event::Event(EventType _type, const NodeRef& _nodeRef, double _delay) :
 		}
 	}
 }
-Event::Event(EventType _type, const PolicyRef& _policyRef, double _delay) : 
+Event::Event(EventType _type, const PolicyRef& _policy, double _delay) : 
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_EVENT),
 #endif
 	HeapItem(),
 	type(_type),
 	timeout(absolute_time_double(_delay)), 
-	policyRef(_policyRef),
+	policy(_policy),
 	data(NULL),
-	doesHaveData(_policyRef),
+	doesHaveData(_policy),
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
                 return;
         }
 
-	if (policyRef) {
+	if (policy) {
 		if (EVENT_TYPE_PRIVATE(type) || 
 		    type == EVENT_TYPE_RESOURCE_POLICY_NEW) {
 		} else {
@@ -175,17 +175,17 @@ Event::Event(EventType _type, const PolicyRef& _policyRef, double _delay) :
 	}
 }
 
-Event::Event(EventType _type, const DataObjectRef&  _dObjRef, const NodeRef& _nodeRef, unsigned long _flags, double _delay) :
+Event::Event(EventType _type, const DataObjectRef&  _dObj, const NodeRef& _node, unsigned long _flags, double _delay) :
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_EVENT),
 #endif
 	HeapItem(),
 	type(_type),
 	timeout(absolute_time_double(_delay)), 
-	dObjRef(_dObjRef),
-	nodeRef(_nodeRef),
+	dObj(_dObj),
+	node(_node),
 	data(NULL),
-	doesHaveData(_dObjRef && _nodeRef),
+	doesHaveData(_dObj && _node),
 	flags(_flags)
 {
 	if (!EVENT_TYPE(type)) {
@@ -194,18 +194,19 @@ Event::Event(EventType _type, const DataObjectRef&  _dObjRef, const NodeRef& _no
 	if (doesHaveData) {
 		if (EVENT_TYPE_PRIVATE(type) || 
 		    type == EVENT_TYPE_DATAOBJECT_FORWARD || 
+		    type == EVENT_TYPE_DATAOBJECT_INCOMING || 
+		    type == EVENT_TYPE_DATAOBJECT_RECEIVED || 
 		    type == EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL || 
 		    type == EVENT_TYPE_DATAOBJECT_SEND_FAILURE) {
 			
-		} else if (
-			type == EVENT_TYPE_DATAOBJECT_SEND){
+		} else if (type == EVENT_TYPE_DATAOBJECT_SEND){
 			// For simplicity's sake, we allow a send with just a target node,
 			// but to do that, we need to add it to the node list (because the
 			// Recipient of the event can't know how the event was created).
-			nodes.push_front(nodeRef);
-			// Clear the nodeRef, so this event looks just like if it was 
+			nodes.push_front(node);
+			// Clear the node, so this event looks just like if it was 
 			// created with the (..., DataObject, NodeRefList, ...) constructor
-			nodeRef = NULL;
+			node = NULL;
 		} else {
 			HAGGLE_ERR("ERROR: Event type %s does not accept a data object and a node as data!\n",
 				eventNames[type]);
@@ -215,23 +216,23 @@ Event::Event(EventType _type, const DataObjectRef&  _dObjRef, const NodeRef& _no
 
 #ifdef DEBUG
 
-Event::Event(const DebugCmdRef& _dbgCmdRef, double _delay) :
+Event::Event(const DebugCmdRef& _dbgCmd, double _delay) :
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_EVENT),
 #endif 
 	HeapItem(),
 	type(EVENT_TYPE_DEBUG_CMD),
 	timeout(absolute_time_double(_delay)), 
-	dbgCmdRef(_dbgCmdRef),
+	dbgCmd(_dbgCmd),
 	data(NULL),
-	doesHaveData(_dbgCmdRef),
+	doesHaveData(_dbgCmd),
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
                 return;
         }
 
-	if (dbgCmdRef) {
+	if (dbgCmd) {
 		if (EVENT_TYPE_PRIVATE(type) || 
 		    type == EVENT_TYPE_DEBUG_CMD) {
 		} else {
@@ -242,23 +243,23 @@ Event::Event(const DebugCmdRef& _dbgCmdRef, double _delay) :
         
 #endif /* DEBUG */
 
-Event::Event(EventType _type, const NodeRef& _nodeRef, const NodeRefList& _nodes, double _delay) : 
+Event::Event(EventType _type, const NodeRef& _node, const NodeRefList& _nodes, double _delay) : 
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_EVENT),
 #endif
 	HeapItem(),
 	type(_type),
 	timeout(absolute_time_double(_delay)), 
-	nodeRef(_nodeRef),
+	node(_node),
 	nodes(_nodes),
 	data(NULL),
-	doesHaveData(_nodeRef),
+	doesHaveData(_node),
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
                 return;
         }
-	if (nodeRef && !(nodes.empty())) {
+	if (node && !(nodes.empty())) {
 		if (EVENT_TYPE_PRIVATE(type) || 
 		    type == EVENT_TYPE_TARGET_NODES || 
 		    type == EVENT_TYPE_NODE_UPDATED) {
@@ -269,23 +270,23 @@ Event::Event(EventType _type, const NodeRef& _nodeRef, const NodeRefList& _nodes
 	}
 }
 
-Event::Event(EventType _type, const DataObjectRef& _dObjRef, const NodeRefList& _nodes, double _delay) : 
+Event::Event(EventType _type, const DataObjectRef& _dObj, const NodeRefList& _nodes, double _delay) : 
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_EVENT),
 #endif
 	HeapItem(),
 	type(_type),
 	timeout(absolute_time_double(_delay)), 
-	dObjRef(_dObjRef),
+	dObj(_dObj),
 	nodes(_nodes),
 	data(NULL),
-	doesHaveData(_dObjRef && !(_nodes.empty())),
+	doesHaveData(_dObj && !(_nodes.empty())),
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
                 return;
         }
-	if (dObjRef && !(nodes.empty())) {
+	if (dObj && !(nodes.empty())) {
 		if (EVENT_TYPE_PRIVATE(type) ||
 			type == EVENT_TYPE_DATAOBJECT_SEND) {
 		} else {
@@ -295,24 +296,24 @@ Event::Event(EventType _type, const DataObjectRef& _dObjRef, const NodeRefList& 
 	}
 }
 
-Event::Event(EventType _type, const DataObjectRef& _dObjRef, const NodeRef& _nodeRef, const NodeRefList& _nodes, double _delay) : 
+Event::Event(EventType _type, const DataObjectRef& _dObj, const NodeRef& _node, const NodeRefList& _nodes, double _delay) : 
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_EVENT),
 #endif
 	HeapItem(),
 	type(_type),
 	timeout(absolute_time_double(_delay)), 
-	dObjRef(_dObjRef),
-	nodeRef(_nodeRef),
+	dObj(_dObj),
+	node(_node),
 	nodes(_nodes),
 	data(NULL),
-	doesHaveData(_dObjRef && !(_nodes.empty())),
+	doesHaveData(_dObj && !(_nodes.empty())),
 	flags(0)
 {
 	if (!EVENT_TYPE(type)) {
                 return;
         }
-	if (dObjRef && !(nodes.empty())) {
+	if (dObj && !(nodes.empty())) {
 		if (EVENT_TYPE_PRIVATE(type) || 
 		    type == EVENT_TYPE_DELEGATE_NODES) {
 		} else {
@@ -338,7 +339,7 @@ Event::Event(EventType _type, const DataObjectRefList& _dObjs, double _delay) :
 		HAGGLE_ERR("ERROR: trying to allocate an invalid event type!\n");
                 return;
 	}
-	if (dObjRef) {
+	if (dObj) {
 		if (EVENT_TYPE_PRIVATE(type) || 
 		    type == EVENT_TYPE_DATAOBJECT_DELETED) {
 		} else {
@@ -460,7 +461,7 @@ Event::Event(const EventCallback < EventHandler > *_callback, void *_data, doubl
 }
 
 
-Event::Event(const EventCallback<EventHandler> *_callback, const DataObjectRef&  _dObjRef, double _delay) :
+Event::Event(const EventCallback<EventHandler> *_callback, const DataObjectRef&  _dObj, double _delay) :
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_EVENT),
 #endif 
@@ -468,14 +469,14 @@ Event::Event(const EventCallback<EventHandler> *_callback, const DataObjectRef& 
 	type(EVENT_TYPE_CALLBACK), 
 	timeout(absolute_time_double(_delay)), 
 	callback(_callback), 
-	dObjRef(_dObjRef),
+	dObj(_dObj),
 	data(NULL),
-	doesHaveData(_dObjRef ? true : false),
+	doesHaveData(_dObj ? true : false),
 	flags(0)
 {
 }
 
-Event::Event(const EventCallback<EventHandler> *_callback, const InterfaceRef& _ifaceRef, double _delay) :
+Event::Event(const EventCallback<EventHandler> *_callback, const InterfaceRef& _iface, double _delay) :
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_EVENT),
 #endif 
@@ -483,14 +484,14 @@ Event::Event(const EventCallback<EventHandler> *_callback, const InterfaceRef& _
 	type(EVENT_TYPE_CALLBACK), 
 	timeout(absolute_time_double(_delay)), 
 	callback(_callback), 
-	ifaceRef(_ifaceRef),
+	iface(_iface),
 	data(NULL),
-	doesHaveData(_ifaceRef ? true : false),
+	doesHaveData(_iface ? true : false),
 	flags(0)
 {
 }
 
-Event::Event(const EventCallback<EventHandler> *_callback, const NodeRef& _nodeRef, double _delay) :
+Event::Event(const EventCallback<EventHandler> *_callback, const NodeRef& _node, double _delay) :
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_EVENT),
 #endif 
@@ -498,14 +499,14 @@ Event::Event(const EventCallback<EventHandler> *_callback, const NodeRef& _nodeR
 	type(EVENT_TYPE_CALLBACK), 
 	timeout(absolute_time_double(_delay)),
 	callback(_callback), 
-	nodeRef(_nodeRef),
+	node(_node),
 	data(NULL),
-	doesHaveData(_nodeRef ? true : false),
+	doesHaveData(_node ? true : false),
 	flags(0)
 {
 }
 
-Event::Event(const EventCallback<EventHandler> *_callback, const PolicyRef& _policyRef, double _delay) :
+Event::Event(const EventCallback<EventHandler> *_callback, const PolicyRef& _policy, double _delay) :
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_EVENT),
 #endif 
@@ -513,9 +514,9 @@ Event::Event(const EventCallback<EventHandler> *_callback, const PolicyRef& _pol
 	type(EVENT_TYPE_CALLBACK), 
 	timeout(absolute_time_double(_delay)), 
 	callback(_callback), 
-	policyRef(_policyRef),
+	policy(_policy),
 	data(NULL),
-	doesHaveData(_policyRef ? true : false),
+	doesHaveData(_policy ? true : false),
 	flags(0)
 {
 }
@@ -537,7 +538,7 @@ Event::Event(const EventCallback<EventHandler> *_callback, const DataObjectRefLi
 }
 
 #ifdef DEBUG
-Event::Event(const EventCallback<EventHandler> *_callback, const DebugCmdRef& _dbgCmdRef, double _delay) :
+Event::Event(const EventCallback<EventHandler> *_callback, const DebugCmdRef& _dbgCmd, double _delay) :
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_EVENT),
 #endif 
@@ -545,9 +546,9 @@ Event::Event(const EventCallback<EventHandler> *_callback, const DebugCmdRef& _d
 	type(EVENT_TYPE_CALLBACK), 
 	timeout(absolute_time_double(_delay)), 
 	callback(_callback), 
-	dbgCmdRef(_dbgCmdRef),
+	dbgCmd(_dbgCmd),
 	data(NULL),
-	doesHaveData(_dbgCmdRef ? true : false),
+	doesHaveData(_dbgCmd ? true : false),
 	flags(0)
 {
 }
@@ -565,8 +566,10 @@ string Event::getDescription(void)
 	string description = "";
 	// Fallback: no data object => set the id to "-"
 	string dObjIdStr = "-";
+	string dObjIdListStr = "-";
 	// Fallback: no node => set the id to "-"
 	string nodeIdStr = "-";
+	string nodeIdListStr = "-";
 	// Fallback: no interface => set the id to "-"
 	string ifaceStr = "-";
 	// Fallback: no policy => set the id to "-"
@@ -581,31 +584,46 @@ string Event::getDescription(void)
 	string flagsStr = "";
 	
 	// If there is a data object:
-	if (dObjRef) {
+	if (dObj) {
 		// Report this as the data object's id str + it's number:
-		snprintf(tmp, 64, " %s-%u", dObjRef->getIdStr(), dObjRef->getNum());
+		snprintf(tmp, 64, " %s-%u", dObj->getIdStr(), dObj->getNum());
 		dObjIdStr = tmp;
 	}
 	
+	if (dObjs.size())
+		dObjIdListStr = "";
+
 	for (DataObjectRefList::iterator it = dObjs.begin(); it != dObjs.end(); it++) {
-		snprintf(tmp, 64, " %s-%u", (*it)->getIdStr(), (*it)->getNum());
-		dObjIdStr += tmp;
+		snprintf(tmp, 64, "%s-%u ", (*it)->getIdStr(), (*it)->getNum());
+		dObjIdListStr += tmp;
 	}
 
 	// If there is a node:
-	if (nodeRef) {
+	if (node) {
+		nodeIdStr = node->getTypeStr();
+		nodeIdStr.append(":");
 		// Report the node's id str:
-		nodeIdStr = nodeRef->getIdStr();
+		nodeIdStr.append(node->getIdStr());
 	}
 	
+	if (nodes.size())
+		nodeIdListStr = "";
+
+	for (NodeRefList::iterator it = nodes.begin(); it != nodes.end(); it++) {
+		nodeIdListStr.append((*it)->getTypeStr());
+		nodeIdListStr.append(":");
+		nodeIdListStr.append((*it)->getIdStr());
+		nodeIdListStr.append(" ");
+	}
+
 	// If there is an interface:
-	if (ifaceRef) {
+	if (iface) {
 		// Report the interface's id str:
-		ifaceStr = ifaceRef->getIdentifierStr();
+		ifaceStr = iface->getIdentifierStr();
 	}
 	
 	// If there is a policy:
-	if (policyRef) {
+	if (policy) {
 		// Report that there is (there is no way of identifying policies):
 		policyStr = "+";
 	}
@@ -627,7 +645,7 @@ string Event::getDescription(void)
 	// Set up the flags field:
 	// Note: for now, only the lowest bit is ever set, so this "loop" only goes
 	// around once. If more flag bits are ever used, please adjust this loop.
-	for (int i = 0; i < 1; i++) {
+	for (unsigned int i = 0; i < 1; i++) {
 		if ((flags >> i) & 1)
 			flagsStr = "1" + flagsStr;
 		else
@@ -635,11 +653,15 @@ string Event::getDescription(void)
 	}
 	
 	// Start with the event number:
-	description  = eventTypeStr + '\t';
-	// Then the DO id:
+	description = eventTypeStr + '\t';
+	// Then the data object id:
 	description += dObjIdStr + '\t';
+	// Then the data objec id list 
+	description += dObjIdListStr + '\t';
 	// Then the node id:
 	description += nodeIdStr + '\t';
+	// Then the node id list
+	description += nodeIdListStr + '\t';
 	// Then the interface id:
 	description += ifaceStr + '\t';
 	// Then the policy id:

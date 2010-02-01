@@ -40,7 +40,17 @@ struct QMsg {
 // There should be only one instance of rfCommIf per Bluetooth interface
 CRfCommIf ProtocolRFCOMM::rfCommIf;
 
-RFCOMMConnection::RFCOMMConnection(ProtocolRFCOMM *_p) : p(_p), connected(false), assigned(false)
+ProtocolError ProtocolRFCOMM::getProtocolError()
+{
+	return protocol_error;
+}
+	
+const char *ProtocolRFCOMM::getProtocolErrorStr()
+{
+	return protocolErrorToStr(protocol_error);
+}
+
+RFCOMMConnection::RFCOMMConnection(ProtocolRFCOMM *_p) : p(_p), connected(false), assigned(false), has_remote_addr(false)
 {
 	HAGGLE_DBG("New RFCOMMConnection for protocol %s\n", p ? p->getName() : "Unknown");
 }
@@ -77,6 +87,7 @@ bool RFCOMMConnection::connect(unsigned short channel, const unsigned char *addr
 		return false;
 
 	memcpy(remote_addr, addr, sizeof(BD_ADDR));
+	has_remote_addr = true;
 
 	CRfCommPort::PORT_RETURN_CODE ret = OpenClient((UINT8)channel&0xff, remote_addr);
 
@@ -90,6 +101,9 @@ bool RFCOMMConnection::connect(unsigned short channel, const unsigned char *addr
 
 bool RFCOMMConnection::isConnected()
 {
+	if (!has_remote_addr)
+		return false;
+
 	// Call the WIDCOMM API, and save the result for internal use in this class
 	if (IsConnected(&remote_addr) == TRUE)
 		connected = true;
@@ -145,8 +159,8 @@ bool ProtocolRFCOMM::initbase()
 
 ProtocolRFCOMM::ProtocolRFCOMM(RFCOMMConnection *_rfCommConn, const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
 			       const unsigned short _channel, const short flags, ProtocolManager *m) :
-	Protocol(PROT_TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, _peerIface, flags, m), rfCommConn(_rfCommConn), 
-		channel(_channel), autoAssignScn(true)
+	Protocol(PROT_TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, _peerIface, flags, m), 
+		protocol_error(PROT_ERROR_UNKNOWN), rfCommConn(_rfCommConn), channel(_channel), autoAssignScn(true)
 {
 	rfCommConn->setProtocol(this);
 }
@@ -154,7 +168,7 @@ ProtocolRFCOMM::ProtocolRFCOMM(RFCOMMConnection *_rfCommConn, const InterfaceRef
 ProtocolRFCOMM::ProtocolRFCOMM(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
 			       const unsigned short _channel, const short flags, ProtocolManager * m) : 
 	Protocol(PROT_TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, _peerIface, flags, m), 
-		rfCommConn(NULL), channel(_channel), autoAssignScn(false)
+		protocol_error(PROT_ERROR_UNKNOWN), rfCommConn(NULL), channel(_channel), autoAssignScn(false)
 {
 	rfCommConn = new RFCOMMConnection(this);
 }
@@ -427,13 +441,17 @@ ProtocolEvent ProtocolRFCOMMClient::connectToPeer()
 {
 	Address	*addr;
 	
-	if (!peerIface)
+	if (!peerIface) {
+		protocol_error = PROT_ERROR_UNKNOWN;
 		return PROT_EVENT_ERROR;
+	}
 
 	addr = peerIface->getAddressByType(AddressType_BTMAC);
 
-	if (!addr)
+	if (!addr) {
+		protocol_error = PROT_ERROR_UNKNOWN;
 		return PROT_EVENT_ERROR;
+	}
 
 	if (!rfCommConn->connect(channel, addr->getRaw())) {
 		HAGGLE_DBG("%s Connection failed to [%s] channel=%u\n", 
@@ -453,12 +471,14 @@ ProtocolEvent ProtocolRFCOMMClient::connectToPeer()
 		}
 
 		HAGGLE_ERR("Could not read msg queue for connection result\n");
+		protocol_error = PROT_ERROR_BAD_HANDLE;
 		return PROT_EVENT_ERROR;
 	}
 
 	if (msg.type != QMSG_TYPE_CONNECTION_SUCCESS) {
 		HAGGLE_ERR("Expected event %u (CONNECTION_SUCCESS) on msg queue, but got %u\n", 
 			QMSG_TYPE_CONNECTION_SUCCESS, msg.type);
+		protocol_error = PROT_ERROR_UNKNOWN;
 		return PROT_EVENT_ERROR;
 	}
 
@@ -503,6 +523,9 @@ ProtocolEvent ProtocolRFCOMMClient::receiveData(void *buf, size_t len, const int
 			HAGGLE_ERR("message queue ERROR_PIPE_NOT_CONNECTED\n");
 			return PROT_EVENT_PEER_CLOSED;
 		}
+
+		protocol_error = PROT_ERROR_BAD_HANDLE;
+
 		return PROT_EVENT_ERROR;
 	} 
 
@@ -518,6 +541,7 @@ ProtocolEvent ProtocolRFCOMMClient::receiveData(void *buf, size_t len, const int
 		return PROT_EVENT_PEER_CLOSED;
 	} else if (msg.type != QMSG_TYPE_DATA) {
 		HAGGLE_ERR("WARNING: Unknown Queue message type\n");
+		protocol_error = PROT_ERROR_UNKNOWN;
 		return PROT_EVENT_ERROR;
 	}
 
@@ -546,7 +570,8 @@ ProtocolEvent ProtocolRFCOMMClient::receiveData(void *buf, size_t len, const int
 	}
 
 	if (*bytes == 0) {
-		HAGGLE_ERR("Error: received 0 bytes\n");	
+		HAGGLE_ERR("Error: received 0 bytes\n");
+		protocol_error = PROT_ERROR_WOULD_BLOCK;
 		return PROT_EVENT_ERROR;
 	}
 	//HAGGLE_DBG("Successfully read %lu bytes data\n", *bytes);
@@ -565,15 +590,20 @@ ProtocolEvent ProtocolRFCOMMClient::sendData(const void *buf, size_t len, const 
 
 	if (ret == CRfCommPort::PEER_CONNECTION_FAILED)
 		return PROT_EVENT_PEER_CLOSED;
-	else if (ret != CRfCommPort::SUCCESS)
+	else if (ret != CRfCommPort::SUCCESS) {
+		// Set an error that would make some sense
+		protocol_error = PROT_ERROR_BAD_HANDLE;
 		return PROT_EVENT_ERROR;
+	}
 
 	//HAGGLE_DBG("Wrote %u bytes data out of %lu requested\n", bytes_written, len);
 
 	*bytes = (size_t)bytes_written;
 	
-	if (*bytes == 0)
+	if (*bytes == 0) {
+		protocol_error = PROT_ERROR_WOULD_BLOCK;
 		return PROT_EVENT_ERROR;
+	}
 
 	return PROT_EVENT_SUCCESS;
 }
@@ -598,13 +628,16 @@ ProtocolEvent ProtocolRFCOMMClient::waitForEvent(Timeval *timeout, bool writeeve
 
 	if (ret == Watch::TIMEOUT) {
 		return PROT_EVENT_TIMEOUT;
-	} else if (ret == Watch::FAILED)
+	} else if (ret == Watch::FAILED) {
+		protocol_error = PROT_ERROR_BAD_HANDLE;
 		return PROT_EVENT_ERROR;
-	else if (ret == Watch::ABANDONED)
+	} else if (ret == Watch::ABANDONED)
 		return PROT_EVENT_SHOULD_EXIT;
 
 	if (w.isReadable(index))
 		return PROT_EVENT_INCOMING_DATA;
+	
+	protocol_error = PROT_ERROR_UNKNOWN;
 
 	return PROT_EVENT_ERROR;
 }
@@ -614,8 +647,10 @@ ProtocolEvent ProtocolRFCOMMClient::waitForEvent(DataObjectRef &dObj, Timeval *t
 	QueueElement *qe = NULL;
 	Queue *q = getQueue();
 	
-	if (!q)
+	if (!q) {
+		protocol_error = PROT_ERROR_INVALID_ARGUMENT;
 		return PROT_EVENT_ERROR;
+	}
 
 	if (writeevent)
 		timeout = NULL;
@@ -642,6 +677,8 @@ ProtocolEvent ProtocolRFCOMMClient::waitForEvent(DataObjectRef &dObj, Timeval *t
 	default:
 		break;
 	}
+
+	protocol_error = PROT_ERROR_UNKNOWN;
 
 	return PROT_EVENT_ERROR;
 }
@@ -750,6 +787,7 @@ ProtocolEvent ProtocolRFCOMMServer::acceptClient()
 {
 	if (getMode() != PROT_MODE_LISTENING) {
 		HAGGLE_ERR("%s: cannot accept connection on non-listening protocol\n", getName());
+		protocol_error = PROT_ERROR_CONNECTION_REFUSED;
 		return PROT_EVENT_ERROR;
 	}
 
@@ -757,6 +795,7 @@ ProtocolEvent ProtocolRFCOMMServer::acceptClient()
 	
 	if (!c || !c->getProtocol() || !c->getProtocol()->isClient()) {
 		HAGGLE_ERR("No valid unassigned connection\n");
+		protocol_error = PROT_ERROR_UNKNOWN;
 		return PROT_EVENT_ERROR;
 	}
 
@@ -766,6 +805,7 @@ ProtocolEvent ProtocolRFCOMMServer::acceptClient()
 
 	if (!p) {
 		HAGGLE_ERR("Bad protocol\n");
+		protocol_error = PROT_ERROR_UNKNOWN;
 		return PROT_EVENT_ERROR;
 	}
 

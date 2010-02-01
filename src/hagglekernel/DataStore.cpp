@@ -637,6 +637,7 @@ bool DataStore::run()
 				// yep.
 				mutex.unlock();
 				// Done:
+				HAGGLE_DBG("DataStore exits due to exit condition and empty queue\n");
 				return false;
 			}
 			cond.wait(&mutex);
@@ -723,6 +724,7 @@ bool DataStore::run()
 		case TASK_EXIT:
 			// Do not execute anymore tasks after this one.
 			delete task;
+			HAGGLE_DBG("DataStore exits due to exit task\n");
 			return false;
 		default:
 			HAGGLE_DBG("Undefined data store task\n");
@@ -730,6 +732,7 @@ bool DataStore::run()
 		}
 		delete task;
 	}
+	HAGGLE_DBG("DataStore exits\n");
 	return false;
 }
 

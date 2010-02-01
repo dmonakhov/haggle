@@ -40,7 +40,7 @@ class ProtocolRFCOMM;
 */
 class RFCOMMConnection : public CRfCommPort {
 	ProtocolRFCOMM *p;
-	bool connected, assigned;
+	bool connected, assigned, has_remote_addr;
 	BD_ADDR remote_addr;
 public:
 	void setProtocol(ProtocolRFCOMM *_p) { p = _p; }
@@ -62,6 +62,7 @@ class ProtocolRFCOMM : public Protocol
 	friend class RFCOMMConnection;
 	static List<const RFCOMMConnection *> connectionList;
 protected:
+	ProtocolError protocol_error;
 	static CRfCommIf rfCommIf;
 	RFCOMMConnection *rfCommConn;
         unsigned short channel;
@@ -78,6 +79,9 @@ protected:
 
 	virtual void OnDataReceived(void *p_data, UINT16 len) { printf("OnDataReceived() %u bytes for base class\n", len); }
 	virtual void OnEventReceived(UINT32 event_code) { printf("OnEventReceived() for base class\n"); }
+
+	ProtocolError getProtocolError();
+	const char *getProtocolErrorStr();
 
         ProtocolRFCOMM(RFCOMMConnection *rfCommConn, const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
 		const unsigned short _channel, const short flags = PROT_FLAG_CLIENT, 

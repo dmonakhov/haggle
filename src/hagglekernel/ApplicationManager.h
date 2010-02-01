@@ -57,7 +57,7 @@ public:
         const NodeRef getNode() const {
                 return app;
         }
-        const int getId() const {
+        int getId() const {
                 return id;
         }
 

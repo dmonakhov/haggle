@@ -127,12 +127,12 @@ const struct timeval *Timeval::getTimevalStruct() const
 	return &t; 
 }
 	
-const long Timeval::getSeconds() const 
+long Timeval::getSeconds() const 
 { 
 	return t.tv_sec;
 }	
 	
-const long Timeval::getMicroSeconds() const 
+long Timeval::getMicroSeconds() const 
 { 
 	return t.tv_usec; 
 }	
@@ -152,7 +152,7 @@ double Timeval::getTimeAsMilliSecondsDouble() const
 	return ((double)t.tv_sec * 1000 + (double)t.tv_usec / 1000);	
 }
 
-const string Timeval::getAsString() const
+string Timeval::getAsString() const
 {
 	char buf[20];
 

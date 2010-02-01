@@ -323,7 +323,7 @@ Node& Node::operator=(const Node &node)
 	return *this;
 }
 
-const NodeType_t Node::getType() const
+NodeType_t Node::getType() const
 {
 	return type;
 }

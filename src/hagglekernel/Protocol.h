@@ -152,6 +152,7 @@ typedef enum {
 class Protocol : public ManagerModule<ProtocolManager>
 {
 	friend class ProtocolManager;
+	static const char *protocol_error_str[];	
         /**
            This is used to track IDs.
         */
@@ -189,7 +190,7 @@ class Protocol : public ManagerModule<ProtocolManager>
                 u_int32_t type;
                 DataObjectId_t dobj_id;
         } ctrlmsg_t;
-protected:	
+protected:
 	/**
 	   True if the Protocol is registered with the Protocol manager.
 	*/
@@ -298,6 +299,7 @@ protected:
 
         virtual ProtocolError getProtocolError();
         virtual const char *getProtocolErrorStr();
+	const char *protocolErrorToStr(const ProtocolError e) const;
         virtual void closeConnection();
 	
         // Thread entry and exit
@@ -428,12 +430,12 @@ public:
         /**
            Returns the unique ID of this protocol.
         */
-        const unsigned long getId(void) const;
+        unsigned long getId(void) const;
 
         /**
            Returns the type of protocol.
         */
-        const ProtType_t getType(void) const;
+        ProtType_t getType(void) const;
 
         /**
            Returns true iff this interface is associated with this protocol.
@@ -558,7 +560,7 @@ public:
 	{
                 flags = flags & ~(flag);
         }
-        const int getFlags() const 
+        int getFlags() const 
 	{
                 return flags;
         }
@@ -577,7 +579,7 @@ public:
         }
 
         // Mode functions
-        const ProtocolMode getMode() const 
+        ProtocolMode getMode() const 
 	{
                 return mode;
         }

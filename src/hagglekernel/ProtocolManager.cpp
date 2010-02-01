@@ -281,7 +281,7 @@ Protocol *ProtocolManager::getSenderProtocol(const ProtType_t type, const Interf
 		p = (*it).second;
 
 		// Is this protocol the one we're interested in?
-		if (p->isSender() && type == p->getType() && p->isForInterface(peerIface)) {
+		if (p->isSender() && type == p->getType() && p->isForInterface(peerIface) && !p->isGarbage() && !p->isDone()) {
 			break;
 		}
 		
@@ -351,7 +351,7 @@ Protocol *ProtocolManager::getReceiverProtocol(const ProtType_t type, const Inte
 	for (; it != protocol_registry.end(); it++) {
 		p = (*it).second;
 
-		if (p->isReceiver() && type == p->getType() && p->isForInterface(iface)) {
+		if (p->isReceiver() && type == p->getType() && p->isForInterface(iface) && !p->isGarbage() && !p->isDone()) {
 			if (type == PROT_TYPE_UDP || type == PROT_TYPE_LOCAL)
 				break;
 			else if (p->isConnected())

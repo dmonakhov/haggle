@@ -70,11 +70,11 @@ public:
 	/* 
 	   Returns the "seconds" part of the Timeval.
 	 */
-	const long getSeconds() const;	
+	long getSeconds() const;	
 	/* 
 	   Returns the "micro seconds" part of the Timeval. (Note that this it not the time in micro seconds).
 	 */
-	const long getMicroSeconds() const;	
+	long getMicroSeconds() const;	
 	/* 
 	   Returns the total time in milli seconds as a 64-bit integer.
 	 */
@@ -92,7 +92,7 @@ public:
 	/*
 	  Get Timeval as a string we can print.
 	 */
-	const string getAsString() const;
+	string getAsString() const;
 
 	// Operators
 	friend bool operator<(const Timeval& t1, const Timeval& t2);

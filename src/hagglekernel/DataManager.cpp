@@ -326,10 +326,18 @@ void DataManager::onSendResult(Event *e)
 		HAGGLE_ERR("No node in send result\n");	
 		return;
 	}
+
+	if (node->getType() == NODE_TYPE_UNDEF) {
+		HAGGLE_DBG("Node \'%s\' is undefined, no reason to add data object [%s] to its bloomfilter...\n", 
+			node->getName().c_str(), dObj->getIdStr());
+		return;
+	}
+
 	if (e->getType() == EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL) {
 		// Add data object to node's bloomfilter.
+		HAGGLE_DBG("Adding data object [%s] to node \'%s\''s bloomfilter\n", dObj->getIdStr(), node->getName().c_str());
 		node->getBloomfilter()->add(dObj);
-	} 
+	}
 }
 
 void DataManager::onIncomingDataObject(Event *e)
@@ -370,11 +378,15 @@ void DataManager::onIncomingDataObject(Event *e)
 	// the same object is received at nearly the same time from multiple neighbors
 	if (dObj->isPersistent()) {
 		if (localBF.has(dObj)) {
+			HAGGLE_DBG("Data object [%s] already in our bloomfilter, marking as duplicate...\n", dObj->getIdStr());
 			dObj->setDuplicate();
 		} else {
+			HAGGLE_DBG("Adding data object [%s] to our bloomfilter\n", dObj->getIdStr());
 			localBF.add(dObj);
 			kernel->getThisNode()->setBloomfilter(localBF, setCreateTimeOnBloomfilterUpdate);
 		}
+	} else {
+		HAGGLE_DBG("Data object [%s] is not persistent, hence not adding to bloomfilter\n", dObj->getIdStr());
 	}
 }
 

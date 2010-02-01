@@ -46,7 +46,7 @@ public:
         Filter(const Attribute &attr, const long _etype = -1);
         Filter(const Filter &f);
         ~Filter();
-        const long getEventType() const {
+        long getEventType() const {
                 return etype;
         }
         const Attributes *getAttributes() const {

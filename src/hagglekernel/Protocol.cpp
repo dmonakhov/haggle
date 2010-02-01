@@ -39,7 +39,7 @@
 */
 unsigned int Protocol::num = 0;
 
-const char *Protocol::typestr[] ={
+const char *Protocol::typestr[] = {
 	"LOCAL",
 	"UDP",
 	"TCP",
@@ -53,6 +53,21 @@ const char *Protocol::typestr[] ={
 #if defined(ENABLE_MEDIA)
 	"MEDIA",
 #endif
+	NULL
+};
+
+const char *Protocol::protocol_error_str[] = {
+        "PROT_ERROR_WOULD_BLOCK",
+        "PROT_ERROR_BAD_HANDLE",
+        "PROT_ERROR_CONNECTION_REFUSED",
+        "PROT_ERROR_INTERRUPTED",
+        "PROT_ERROR_INVALID_ARGUMENT",
+        "PROT_ERROR_NO_MEMORY",
+        "PROT_ERROR_NOT_CONNECTED",
+        "PROT_ERROR_CONNECTION_RESET",
+        "PROT_ERROR_NOT_A_SOCKET",
+        "PROT_ERROR_NO_STORAGE_SPACE",
+        "PROT_ERROR_UNKNOWN",
 	NULL
 };
 
@@ -220,12 +235,12 @@ bool Protocol::isForInterface(const InterfaceRef& the_iface)
 	return false;
 }
 
-const unsigned long Protocol::getId() const 
+unsigned long Protocol::getId() const 
 {
 	return id;
 } 
 
-const ProtType_t Protocol::getType() const 
+ProtType_t Protocol::getType() const 
 {
 	return type;
 } 
@@ -257,57 +272,21 @@ void Protocol::handleWatchableEvent(const Watchable &wbl)
 {
 }
 
-
-// Function to translate platform specific errors into something more
-// useful
-
-#if defined(OS_LINUX) || defined (OS_MACOSX)
 ProtocolError Protocol::getProtocolError()
 {
-	switch (errno) {
-	case EAGAIN:
-		error = PROT_ERROR_WOULD_BLOCK;
-		break;
-	case EBADF:
-		error = PROT_ERROR_BAD_HANDLE;
-		break;
-	case ECONNREFUSED:
-		error = PROT_ERROR_CONNECTION_REFUSED;
-		break;
-	case EINTR:
-		error = PROT_ERROR_INTERRUPTED;
-		break;
-	case EINVAL:
-		error = PROT_ERROR_INVALID_ARGUMENT;
-		break;
-	case ENOMEM:
-		error = PROT_ERROR_NO_MEMORY;
-		break;
-	case ENOTCONN:
-		error = PROT_ERROR_NOT_CONNECTED;
-		break;
-	case ECONNRESET:
-		error = PROT_ERROR_CONNECTION_RESET;
-		break;
-	case ENOTSOCK:
-		error = PROT_ERROR_NOT_A_SOCKET;
-		break;
-	case ENOSPC:
-		error = PROT_ERROR_NO_STORAGE_SPACE;
-		break;
-	default:
-		error = PROT_ERROR_UNKNOWN;
-		break;
-	}
-
-	return error;
+	return PROT_ERROR_UNKNOWN;
 }
+
 const char *Protocol::getProtocolErrorStr()
 {
-	// We could append the system error string from strerror
-	//return (error < _PROT_ERROR_MAX && error > _PROT_ERROR_MIN) ? errorStr[error] : "Bad error";
-	return strerror(errno);
+	static const char *unknownErrStr = "Unknown error";
+
+	return unknownErrStr;
 }
+
+#if defined(OS_LINUX) || defined (OS_MACOSX)
+// Function to translate platform specific errors into something more
+// useful
 int Protocol::getFileError()
 {
 	return getProtocolError();
@@ -361,80 +340,12 @@ const char *Protocol::getFileErrorStr()
 	return errStr;
 	//return (error < _PROT_ERROR_MAX && error > _PROT_ERROR_MIN) ? errorStr[error] : "Bad error";
 }
-
-ProtocolError Protocol::getProtocolError()
-{
-	// TODO: How can we differ between WSAGetLastError() and GetLastError()?
-
-	switch (WSAGetLastError()) {
-	case WSAEWOULDBLOCK:
-	case WSAEINPROGRESS:
-		error = PROT_ERROR_WOULD_BLOCK;
-		break;
-	case WSA_INVALID_HANDLE:
-	case WSAEBADF:
-		error = PROT_ERROR_BAD_HANDLE;
-		break;
-	case WSAECONNREFUSED:
-		error = PROT_ERROR_CONNECTION_REFUSED;
-		break;
-	case WSAEINTR:
-		error = PROT_ERROR_INTERRUPTED;
-		break;
-	case WSAEINVAL:
-		error = PROT_ERROR_INVALID_ARGUMENT;
-		break;
-	case WSA_NOT_ENOUGH_MEMORY:
-		error = PROT_ERROR_NO_MEMORY;
-		break;
-	case WSAENOTCONN:
-		error = PROT_ERROR_NOT_CONNECTED;
-		break;
-	case WSAECONNRESET:
-		error = PROT_ERROR_CONNECTION_RESET;
-		break;
-	case WSAENOTSOCK:
-		error = PROT_ERROR_NOT_A_SOCKET;
-		break;
-	default:
-		error = PROT_ERROR_UNKNOWN;
-		break;
-	}
-
-	return error;
-}
-
-const char *Protocol::getProtocolErrorStr()
-{
-	static char *errStr = NULL;
-	static const char *unknownErrStr = "Unknown error";
-	LPVOID lpMsgBuf;
-
-	DWORD len = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-				  NULL,
-				  WSAGetLastError(),
-				  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-				  (LPTSTR) & lpMsgBuf,
-				  0,
-				  NULL);
-	if (len) {
-		if (errStr && (strlen(errStr) < len)) {
-			delete [] errStr;
-			errStr = NULL;
-		}
-		if (errStr == NULL)
-			errStr = new char[len + 1];
-
-		sprintf(errStr, "%s", reinterpret_cast < TCHAR * >(lpMsgBuf));
-		LocalFree(lpMsgBuf);
-
-		return errStr;
-	} 
-
-	return unknownErrStr;
-}
 #endif
 
+const char *Protocol::protocolErrorToStr(const ProtocolError e) const
+{
+	return protocol_error_str[e];
+}
 
 #if defined(OS_WINDOWS_XP) && !defined(DEBUG)
 // This is here to avoid a warning with catching the exception in the function below.
@@ -476,7 +387,20 @@ bool Protocol::sendDataObject(const DataObjectRef& dObj, const NodeRef& peer, co
 		HAGGLE_DBG("Send DataObject on garbage protocol %s, trying to recycle?\n", getName());
 		return false;
 	}
+
+	if (!peer) {
+		HAGGLE_ERR("Target node is NULL\n");
+		return false;
+	}
 	
+	if (!peerNode || (peerNode->getType() == NODE_TYPE_UNDEF && peer->getType() != NODE_TYPE_UNDEF)) {
+		HAGGLE_DBG("Setting peer node to %s, which was previously undefined\n", peer->getName().c_str());
+		peerNode = peer;
+	} else if (peerNode != peer) {
+		HAGGLE_ERR("Target node %s does not match peer %s in protocol\n", peer->getName().c_str(), peerNode->getName().c_str());
+		return false;
+	}
+
 	// We do not have to care about the interface here since we assume the protocol
 	// is already connected to a peer interface.
 	QueueElement *qe = new QueueElement(dObj, peer, iface);
@@ -507,6 +431,12 @@ ProtocolEvent Protocol::getData(size_t *bytesRead)
                 if (pEvent == PROT_EVENT_INCOMING_DATA) {
                         
                         readLen = bufferSize - bufferDataLen;
+
+			if (readLen <= 0) {
+				HAGGLE_ERR("Read buffer is full!\n");
+				*bytesRead = 0;
+				return PROT_EVENT_ERROR;
+			}
                         
                         pEvent = receiveData(buffer, readLen, 0, bytesRead);
                         
@@ -628,9 +558,12 @@ ProtocolEvent Protocol::sendControlMessage(struct ctrlmsg *m)
 	size_t bytesRead;
 	Timeval waitTimeout = PROTOCOL_RECVSEND_TIMEOUT; // FIXME: Set suitable timeout
 
+	HAGGLE_DBG("%s Waiting for writable event\n", getName());
 	pEvent = waitForEvent(&waitTimeout, true);
 	
 	if (pEvent == PROT_EVENT_WRITEABLE) {
+		HAGGLE_DBG("%s sending control message %s\n", getName(), ctrlmsgToStr(m).c_str());
+
 		pEvent = sendData(m, sizeof(struct ctrlmsg), 0, &bytesRead);
 		
 		if (pEvent == PROT_EVENT_SUCCESS) {
@@ -648,6 +581,7 @@ ProtocolEvent Protocol::sendControlMessage(struct ctrlmsg *m)
 				default:
 					break;
 			}
+			HAGGLE_ERR("Could not send control message '%s': error %s\n", getProtocolErrorStr());
 		}
 	} else if (pEvent == PROT_EVENT_TIMEOUT) {
 		HAGGLE_DBG("Protocol timed out while waiting to send control message '%s'\n", ctrlmsgToStr(m).c_str());
@@ -794,39 +728,68 @@ ProtocolEvent Protocol::receiveDataObject()
 				md = dObj->getMetadata();
 				// Send "Incoming data object event."
 				if (md) {
+					
+					HAGGLE_DBG("%s: Metadata header received [BytesPut=%lu totBytesPut=%lu totBytesRead=%lu bytesRemaining=%lu]\n", 
+						getName(), bytesPut, totBytesPut, totBytesRead, bytesRemaining);
                                         // Save the data object ID in the control message header.
                                         memcpy(m.dobj_id, dObj->getId(), DATAOBJECT_ID_LEN);
 
-					// FIXME: check if we want to stop receiving data objects 
-					// from this neighbor
-					if (false) {
-						// FIXME: disconnect from the neighbor and shut down
-						// the protocol.
-					}
+					HAGGLE_DBG("%s Incoming data object [%s] from peer %s\n", 
+						getName(), dObj->getIdStr(), 
+						(peerNode ? peerNode->getName().c_str() : (peerIface ? peerIface->getIdentifierStr() : "unknown")));
+
 					// Check if we already have this data object (FIXME: or are 
 					// otherwise not willing to accept it).
 					if (getKernel()->getThisNode()->getBloomfilter()->has(dObj)) {
 						// Reject the data object:
                                                 m.type = CTRLMSG_TYPE_REJECT;
                                                 HAGGLE_DBG("Sending REJECT control message to peer %s\n", 
-                                                           peerIface ? peerIface->getIdentifierStr() : "unknown");
+                                                           (peerNode ? peerNode->getName().c_str() : (peerIface ? peerIface->getIdentifierStr() : "unknown")));
+
 						pEvent = sendControlMessage(&m);
+
                                                 HAGGLE_DBG("%s receive DONE after rejecting data object\n", getName());
+
+						if (pEvent == PROT_EVENT_SUCCESS) {
+							LOG_ADD("%s: %s %s %s\n", 
+								Timeval::now().getAsString().c_str(), ctrlmsgToStr(&m).c_str(), 
+								(peerNode ? peerNode->getName().c_str() : "n/a"), dObj->getIdStr());
+						}
                                                 return pEvent;
 					} else {
                                                 m.type = CTRLMSG_TYPE_ACCEPT;
 						// Tell the other side to continue sending the data object:
                                                 
+						/*
+						  We add the data object to the bloomfilter of this node here, although it is really
+						  the data manager that maintains the bloomfilter of "this node" in the INCOMING event. 
+						  However, if many nodes try to send us the same data object at the same time, we
+						  cannot afford to wait for the data manager to add the object to the bloomfilter. If we wait,
+						  we will ACCEPT many duplicates of the same data object in other protocol threads. 
+						  
+						  The reason for not adding the data objects to the bloomfilter only at this location is that
+						  the data manager maintains a counting version of the bloomfilter for this node, and that
+						  version will eventually be updated in the incoming event, and replace "this node"'s bloomfilter.
+						*/
+						getKernel()->getThisNode()->getBloomfilter()->add(dObj);
+
                                                 HAGGLE_DBG("Sending ACCEPT control message to peer %s\n", 
-                                                           peerIface ? peerIface->getIdentifierStr() : "unknown");
+                                                           (peerNode ? peerNode->getName().c_str() : (peerIface ? peerIface->getIdentifierStr() : "unknown")));
+
                                                 pEvent = sendControlMessage(&m);
+
+						if (pEvent == PROT_EVENT_SUCCESS) {
+							LOG_ADD("%s: %s %s %s\n", 
+								Timeval::now().getAsString().c_str(), ctrlmsgToStr(&m).c_str(), 
+								(peerNode ? peerNode->getName().c_str() : "n/a"), dObj->getIdStr());
+						}
 					}
 					
-					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_INCOMING, dObj));
-
-					HAGGLE_DBG("%s: Metadata header received [BytesPut=%lu totBytesPut=%lu totBytesRead=%lu bytesRemaining=%lu]\n", getName(), bytesPut, totBytesPut, totBytesRead, bytesRemaining);
+					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_INCOMING, dObj, peerNode));
 				}
 			}				
+		} else {
+			HAGGLE_DBG("No data to put into data object!\n");
 		}
 		//HAGGLE_DBG("bytesRead=%lu bytesRemaining=%lu\n", bytesRead, bytesRemaining);
 	} while (bytesRemaining && pEvent == PROT_EVENT_SUCCESS);
@@ -856,7 +819,7 @@ ProtocolEvent Protocol::receiveDataObject()
 	HAGGLE_DBG("Received data object [%s] from interface %s\n", 
 		dObj->getIdStr(), peerIface ? peerIface->getIdentifierStr() : "undefined");
 
-	getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_RECEIVED, dObj));
+	getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_RECEIVED, dObj, peerNode));
        
 	return pEvent;
 }
@@ -1029,22 +992,26 @@ bool Protocol::run()
 		return false;
 	}
 
+	HAGGLE_DBG("Running protocol %s\n", getName());
+
 	while (!isDone() && !shouldExit()) {
 
 		while (!isConnected()) {
                         
+			HAGGLE_DBG("Protocol %s connecting to %s\n", getName(), (peerNode ? peerNode->getName().c_str() : "n/a"));
 			if (connectToPeer() == PROT_EVENT_SUCCESS) {
 				// The connected flag should probably be set in connectToPeer,
 				// but set it here for safety
-				HAGGLE_DBG("%s successfully connected\n", getName());
+				HAGGLE_DBG("%s successfully connected to %s\n", getName(), (peerNode ? peerNode->getName().c_str() : "n/a"));
 			} else {
 				numConnectTry++;
-				HAGGLE_DBG("%s connection failure %d/%d\n", 
+				HAGGLE_DBG("%s connection failure %d/%d to %s\n", 
 					   getName(), numConnectTry, 
-					   PROT_CONNECTION_ATTEMPTS);
+					   PROT_CONNECTION_ATTEMPTS,
+					   (peerNode ? peerNode->getName().c_str() : "n/a"));
 
 				if (numConnectTry == PROT_CONNECTION_ATTEMPTS) {
-					HAGGLE_DBG("%s failed to connect...\n", getName());
+					HAGGLE_DBG("%s failed to connect to %s...\n", getName(), (peerNode ? peerNode->getName().c_str() : "n/a"));
 					q->close();
 					setMode(PROT_MODE_DONE);
 				} else {
@@ -1066,9 +1033,13 @@ bool Protocol::run()
 		Timeval timeout(PROT_WAIT_TIME_BEFORE_DONE);
 		DataObjectRef dObj;
 
+		HAGGLE_DBG("%s Waiting for data object or timeout...\n", getName());
+
 		pEvent = waitForEvent(dObj, &timeout);
 		
 		timeout = Timeval::now() - t_start;
+
+		HAGGLE_DBG("%s Got event %d, checking what to do...\n", getName(), pEvent);
 
 		switch (pEvent) {
 			case PROT_EVENT_TIMEOUT:
@@ -1079,7 +1050,7 @@ bool Protocol::run()
 				// Data object to send:
 				if (!dObj) {
 					// Something is wrong here. TODO: better error handling than continue?
-					HAGGLE_ERR("%s No data object in queue despite indicated. Something is WRONG!\n", 
+					HAGGLE_ERR("%s No data object in queue despite indicated. Something is WRONG when sending to [%s]!\n", 
 						   getName(), (peerNode ? peerNode->getName().c_str() : "n/a"));
 					
 					break;
@@ -1092,7 +1063,7 @@ bool Protocol::run()
 				if (pEvent == PROT_EVENT_SUCCESS || pEvent == PROT_EVENT_REJECT) {
 					// Treat reject as SUCCESS, since it probably means the peer already has the
 					// data object and we should therefore not try to send it again.
-					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, dObj, peerNode, (pEvent == PROT_EVENT_REJECT)?1:0));
+					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, dObj, peerNode, (pEvent == PROT_EVENT_REJECT) ? 1 : 0));
 				} else {
 					// Send success/fail event with this data object
 					switch (pEvent) {
@@ -1112,10 +1083,12 @@ bool Protocol::run()
 							closeConnection();
 							break;
 						case PROT_EVENT_ERROR:
-							HAGGLE_ERR("%s Data object send failed...\n", getName());
+							HAGGLE_ERR("%s Data object send to [%s] failed...\n", 
+								getName(), (peerNode ? peerNode->getName().c_str() : "n/a"));
 							break;
 						case PROT_EVENT_ERROR_FATAL:
-							HAGGLE_ERR("%s Data object send fatal error!\n", getName());
+							HAGGLE_ERR("%s Data object fatal error when sending to %s!\n", 
+								getName(), (peerNode ? peerNode->getName().c_str() : "n/a"));
 							q->close();
 							setMode(PROT_MODE_DONE);
 							break;
@@ -1189,13 +1162,16 @@ bool Protocol::run()
 		numerr = 0;
 	}
       done:
-	HAGGLE_DBG("%s client DONE!\n", getName());
+
+	HAGGLE_DBG("%s DONE!\n", getName());
 
 	if (isConnected())
 		closeConnection();
 
         setMode(PROT_MODE_DONE);
-	
+
+	HAGGLE_DBG("%s exits runloop!\n", getName());
+
 	return false;
 }
 
@@ -1242,7 +1218,8 @@ void Protocol::cleanup()
 	
 	hookCleanup();
 	
-	closeConnection();
+	if (isConnected())
+		closeConnection();
 	HAGGLE_DBG("%s protocol is now garbage!\n", getName());
 	setMode(PROT_MODE_GARBAGE);
 	unregisterWithManager();
