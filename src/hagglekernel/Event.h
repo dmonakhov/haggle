@@ -355,12 +355,12 @@ private:
 		thread has finished with the object.
         */
 
-	DataObjectRef dObjRef;
-	NodeRef nodeRef;
-	InterfaceRef ifaceRef;
-	PolicyRef policyRef;
+	DataObjectRef dObj;
+	NodeRef node;
+	InterfaceRef iface;
+	PolicyRef policy;
 #ifdef DEBUG
-	DebugCmdRef dbgCmdRef;
+	DebugCmdRef dbgCmd;
 #endif
 	DataObjectRefList dObjs;
 	
@@ -399,27 +399,27 @@ private:
 			return -1;
         }
 public:
-        Event(EventType _type, const DataObjectRef&  _dObjRef, double _delay = 0.0);
-        Event(EventType _type, const InterfaceRef& _ifaceRef, double _delay = 0.0);
-        Event(EventType _type, const NodeRef& _nodeRef, double _delay = 0.0);
-        Event(EventType _type, const PolicyRef& _policyRef, double _delay = 0.0);
-        Event(EventType _type, const DataObjectRef&  _dObjRef, const NodeRef& _nodeRef, unsigned long flags = 0, double _delay = 0.0);
+        Event(EventType _type, const DataObjectRef& _dObj, double _delay = 0.0);
+        Event(EventType _type, const InterfaceRef& _iface, double _delay = 0.0);
+        Event(EventType _type, const NodeRef& _node, double _delay = 0.0);
+        Event(EventType _type, const PolicyRef& _policy, double _delay = 0.0);
+        Event(EventType _type, const DataObjectRef&  _dObj, const NodeRef& _node, unsigned long flags = 0, double _delay = 0.0);
 #ifdef DEBUG
         Event(const DebugCmdRef& _dbgCmdRef, double _delay = 0.0);
 #endif
-        Event(EventType _type, const NodeRef& _nodeRef, const NodeRefList& _nodes, double _delay = 0.0);
-        Event(EventType _type, const DataObjectRef& _dObjRef, const NodeRefList& _nodes, double _delay = 0.0);
-	Event(EventType _type, const DataObjectRef& _dObjRef, const NodeRef& _nodeRef, const NodeRefList& _nodes, double _delay = 0.0);
+        Event(EventType _type, const NodeRef& _node, const NodeRefList& _nodes, double _delay = 0.0);
+        Event(EventType _type, const DataObjectRef& _dObj, const NodeRefList& _nodes, double _delay = 0.0);
+	Event(EventType _type, const DataObjectRef& _dObj, const NodeRef& _node, const NodeRefList& _nodes, double _delay = 0.0);
         Event(EventType _type, const DataObjectRefList&  _dObjs, double _delay = 0.0);
         Event(EventType _type, void *_data = NULL, double _delay = 0.0);
         Event(const EventCallback<EventHandler> *_callback, void *_data, double _delay = 0.0);
-	Event(const EventCallback<EventHandler> *_callback, const DataObjectRef&  _dObjRef, double _delay = 0.0);
-	Event(const EventCallback<EventHandler> *_callback, const InterfaceRef& _ifaceRef, double _delay = 0.0);
-	Event(const EventCallback<EventHandler> *_callback, const NodeRef& _nodeRef, double _delay = 0.0);
-	Event(const EventCallback<EventHandler> *_callback, const PolicyRef& _policyRef, double _delay = 0.0);
+	Event(const EventCallback<EventHandler> *_callback, const DataObjectRef&  _dObj, double _delay = 0.0);
+	Event(const EventCallback<EventHandler> *_callback, const InterfaceRef& _iface, double _delay = 0.0);
+	Event(const EventCallback<EventHandler> *_callback, const NodeRef& _node, double _delay = 0.0);
+	Event(const EventCallback<EventHandler> *_callback, const PolicyRef& _policy, double _delay = 0.0);
 	Event(const EventCallback<EventHandler> *_callback, const DataObjectRefList& _dObjs, double _delay = 0.0);
 #ifdef DEBUG
-	Event(const EventCallback<EventHandler> *_callback, const DebugCmdRef& _dbgCmdRef, double _delay = 0.0);
+	Event(const EventCallback<EventHandler> *_callback, const DebugCmdRef& _dbgCmd, double _delay = 0.0);
 #endif
 	Event(const Event &);
 
@@ -430,6 +430,7 @@ public:
                 return type;
         }
 	double getKey() const { return timeout.getTimeAsSecondsDouble(); }
+
 	bool hasData() {
 		return doesHaveData;
 	}
@@ -438,23 +439,23 @@ public:
 	}
 
 	DataObjectRef& getDataObject() {
-		return dObjRef;
+		return dObj;
 	}
 	DataObjectRefList& getDataObjectList() {
 		return dObjs;
 	}
 	InterfaceRef& getInterface() {
-		return ifaceRef;
+		return iface;
 	}
 	NodeRef& getNode() {
-		return nodeRef;
+		return node;
 	}
 	PolicyRef& getPolicy() {
-		return policyRef;
+		return policy;
 	}
 #ifdef DEBUG
 	DebugCmdRef& getDebugCmd() {
-		return dbgCmdRef;
+		return dbgCmd;
 	}
 #endif
 	NodeRefList& getNodeList() {

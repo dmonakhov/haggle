@@ -387,6 +387,7 @@ void ApplicationManager::onPrepareShutdown()
 		 has finished processing what deRegisterApplication sent it, not to
 		 get the actual data.
 		 */
+		HAGGLE_DBG("Retrieving node %s to determine when data store has finished\n", (*lst.begin())->getName().c_str());
 		kernel->getDataStore()->retrieveNode(*(lst.begin()), onDataStoreFinishedProcessingCallback, true);
 		
 	} else {
@@ -769,7 +770,7 @@ static const char *ctrl_type_names[] = {
 	NULL 
 };
 
-static const control_type_t ctrl_name_to_type(const char *name)
+static control_type_t ctrl_name_to_type(const char *name)
 {
 	unsigned int i = 0;
 	

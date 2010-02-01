@@ -114,6 +114,8 @@ bool ForwardingManager::init_derived()
 		return false;
 	}
 
+	HAGGLE_DBG("Created forwarding module \'%s\'\n", forwardingModule->getName());
+
 	return true;
 }
 
@@ -192,6 +194,9 @@ void ForwardingManager::setForwardingModule(Forwarder *forw)
 		 after the state has been saved in the module.
 		 */
 		kernel->getDataStore()->readRepository(new RepositoryEntry(forwardingModule->getName()), repositoryCallback);
+		HAGGLE_DBG("Set new forwarding module to \'%s'\n", forwardingModule->getName());
+	} else {
+		HAGGLE_DBG("Set new forwarding module to \'NULL'\n");
 	}
 }
 
@@ -291,7 +296,7 @@ void ForwardingManager::onRepositoryData(Event *e)
 				   n, forwardingModule->getName());
 		}
 	} else {
-		HAGGLE_DBG("No saved state for forwarding module \'%s\'\n", forwardingModule->getName());
+		HAGGLE_ERR("No forwarding module set for when retreiving saved state\n");
 	}
 	
 	delete qr;
@@ -705,9 +710,11 @@ void ForwardingManager::findMatchingDataObjectsAndTargets(NodeRef& node)
 		// Ask the forwarding module for additional target nodes for which 
 		// this neighbor can act as delegate.
 		
-		HAGGLE_DBG("%s trying to find targets for which neighbor %s [id=%s] is a good delegate\n", 
-			   getName(), node->getName().c_str(), node->getIdStr());
-		forwardingModule->generateTargetsFor(node);
+		if (forwardingModule) {
+			HAGGLE_DBG("%s trying to find targets for which neighbor %s [id=%s] is a good delegate\n", 
+				 getName(), node->getName().c_str(), node->getIdStr());
+			forwardingModule->generateTargetsFor(node);
+		}
 	} else {
                 HAGGLE_ERR("Neighbor is not available, cannot send forwarding information\n");
         }

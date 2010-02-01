@@ -204,12 +204,12 @@ public:
 	Node *copy() { return new Node(*this); }
         static const unsigned char *strIdToRaw(const char *strId);
 	static const char *typeToStr(const NodeType_t type);
-        const NodeType_t getType() const;
+        NodeType_t getType() const;
 	const char *getTypeStr() const { return typestr[type]; }
         const unsigned char *getId() const;
 	void setId(const NodeId_t _id);
         const char *getIdStr() const;
-	const unsigned long getNum() const { return num; }
+	unsigned long getNum() const { return num; }
 	bool isStored() const { return stored; }
 	void setStored(bool _stored = true) { stored = _stored; }
 	string getName() const;

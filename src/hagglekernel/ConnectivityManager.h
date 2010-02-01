@@ -205,6 +205,7 @@ public:
 		INTERFACE_STATUS_HAGGLE.
         */
 	InterfaceStatus_t have_interface(const InterfaceType_t type, const unsigned char *identifier);
+
 	 /**
         	Utility function to check whether an interface already exists in the
 		interface store or not.
@@ -214,7 +215,15 @@ public:
 		INTERFACE_STATUS_HAGGLE.
         */
 	InterfaceStatus_t have_interface(const Interface *iface);
+	/**
+        	Utility function to check whether an interface already exists in the
+		interface store or not.
 
+		@param iface the interface to check for.
+		@returns INTERFACE_STATUS_NONE if the interface is not in the store, otherwise
+		INTERFACE_STATUS_HAGGLE.
+        */
+	InterfaceStatus_t have_interface(const InterfaceRef& iface);
 	/*
 		Check if an interface is known from before.
 

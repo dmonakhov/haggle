@@ -23,14 +23,14 @@ Bloomfilter::Bloomfilter(float _error_rate, unsigned int _capacity, bool _counti
 		LeakMonitor(LEAK_TYPE_BLOOMFILTER),
 #endif
                 error_rate(_error_rate),
-                capacity(_capacity)
+                capacity(_capacity),
+		non_counting(NULL),
+		counting(NULL)
 {
 	if (_counting) {
-		non_counting = NULL;
 		counting = counting_bloomfilter_new(error_rate, capacity);
 	} else {
 		non_counting = bloomfilter_new(error_rate, capacity);
-		counting = NULL;
 	}
 }
 
@@ -88,7 +88,7 @@ bool Bloomfilter::has(const DataObjectRef &dObj) const
 	if (non_counting != NULL) {
 		return bloomfilter_check(non_counting, (const char *)dObj->getId(), DATAOBJECT_ID_LEN) != 0;
 	} else if (counting != NULL) {
-		return counting_bloomfilter_check(counting, (const char *) dObj->getId(), DATAOBJECT_ID_LEN) != 0;
+		return counting_bloomfilter_check(counting, (const char *)dObj->getId(), DATAOBJECT_ID_LEN) != 0;
 	}
 	
 	HAGGLE_ERR("Tried to check bloomfilter which is neither counting or non-counting!\n");

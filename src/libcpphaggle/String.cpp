@@ -67,7 +67,7 @@ String::String(const char *_s, size_t n) : s(&nullchar), alloc_len(0), slen(0)
 
 String::String(const char *_s) : s(&nullchar), alloc_len(0), slen(0)
 {
-	if (_s && strlen(_s) && alloc(strlen(_s) + 1)) {
+	if (_s && alloc(strlen(_s) + 1)) {
                 strcpy(s, _s);
                 slen = strlen(s);
         }
@@ -75,7 +75,7 @@ String::String(const char *_s) : s(&nullchar), alloc_len(0), slen(0)
 
 String::String(const String& str) : s(&nullchar), alloc_len(0), slen(0)
 {
-	if (str.slen && alloc(str.slen + 1)) {
+	if (alloc(str.slen + 1)) {
 		strcpy(s, str.s);
                 slen = str.slen;
         }
@@ -83,11 +83,14 @@ String::String(const String& str) : s(&nullchar), alloc_len(0), slen(0)
 
 String::String(const char c) : s(&nullchar), alloc_len(0), slen(0)
 {
-	if (alloc(2)) {
+	if (c != '\0' && alloc(2)) {
                 s[0] = c;
                 s[1] = '\0';
                 slen = 1;
-        }
+	} else if (alloc(1)) {
+		s[0] = '\0';
+		slen = 0;
+	}
 }
 
 String::~String() 
@@ -407,7 +410,7 @@ String& String::erase(size_t pos, size_t n)
 // operators
 String& String::operator=(const string& str)
 {
-        if (str.slen && alloc(str.slen + 1)) {
+        if (alloc(str.slen + 1)) {
                 strcpy(s, str.s);
                 slen = str.slen;
         }
@@ -417,7 +420,7 @@ String& String::operator=(const string& str)
 
 String& String::operator=(const char* _s)
 {
-        if (_s && strlen(_s) && alloc(strlen(_s) + 1)) {
+        if (_s && alloc(strlen(_s) + 1)) {
                 strcpy(s, _s);
                 slen = strlen(s);
         }
@@ -426,11 +429,14 @@ String& String::operator=(const char* _s)
 
 String& String::operator=(char c)
 {
-        if (alloc(2)) {
+        if (c != '\0' && alloc(2)) {
                 s[0] = c;
                 s[1] = '\0';
                 slen = 1;
-        }
+	} else if (alloc(1)) {
+		s[0] = '\0';
+		slen = 0;
+	}
         return *this;
 }
 

@@ -84,7 +84,8 @@ class ProtocolSocket : public Protocol
 	
 	ProtocolEvent receiveData(void *buf, size_t len, const int flags, size_t *bytes);
 	ProtocolEvent sendData(const void *buf, size_t len, const int flags, size_t *bytes);
-
+	ProtocolError getProtocolError();
+	const char *getProtocolErrorStr();
     public:
 	ProtocolSocket(const ProtType_t _type, const char *_name, InterfaceRef _localIface = NULL,
                        InterfaceRef _peerIface = NULL, const int _flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL, 

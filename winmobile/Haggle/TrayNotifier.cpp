@@ -13,6 +13,7 @@
 * limitations under the License.
 */
 #include <HaggleKernel.h>
+#include <Debug.h>
 #include "TrayNotifier.h"
 #include "resource.h"
 
@@ -152,7 +153,7 @@ void TrayNotifier::cleanup()
 	*/
 }
 
-static void print_memory_status()
+static void print_status(HaggleKernel *kernel)
 {
 	MEMORYSTATUS memInfo;
 	
@@ -162,6 +163,24 @@ static void print_memory_status()
 
 	HAGGLE_DBG("Memory status - Total RAM: %lu bytes Free: %lu Used: %lu\n", 
 		memInfo.dwTotalPhys, memInfo.dwAvailPhys, memInfo.dwTotalPhys - memInfo.dwAvailPhys);
+
+#if defined(DEBUG)
+	printf("- Threads\n");
+	Thread::registryPrint();
+
+	printf("- Managers:\n");
+	kernel->printRegisteredManagers();
+
+	printf("- Interfaces:\n");
+	kernel->getInterfaceStore()->print();
+
+	printf("- Nodes:\n");
+	kernel->getNodeStore()->print();
+	
+	printf("- Protocols:\n");
+	DebugCmdRef dbgCmd = new DebugCmd(DBG_CMD_PRINT_PROTOCOLS);
+	kernel->addEvent(new Event(dbgCmd));
+#endif
 }
 
 LRESULT CALLBACK NotifyCallback(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
@@ -291,6 +310,7 @@ LRESULT CALLBACK NotifyCallback(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
 			switch (HIWORD(wParam)) {
 			case BN_CLICKED:
 				HAGGLE_DBG("Dismiss button clicked\n");
+				print_status(tn->kernel);
 				ShowWindow(hDlg, SW_HIDE); 
 				return TRUE;
 			default:
@@ -353,12 +373,10 @@ LRESULT CALLBACK NotifyCallback(HWND hDlg, UINT message, WPARAM wParam, LPARAM l
 		*/
 		ShowWindow(hDlg, SW_HIDE);
 		HAGGLE_DBG("NotifyCallback : %s\n", msgname(message));
-		print_memory_status();
 		return TRUE;
 	case WM_ACTIVATE:
 	case WM_HIBERNATE:
 		HAGGLE_DBG("NotifyCallback : %s\n", msgname(message));
-		print_memory_status();
 		break;
 	default:
 		break;

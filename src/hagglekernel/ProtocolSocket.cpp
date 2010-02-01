@@ -477,3 +477,125 @@ ProtocolEvent ProtocolSocket::waitForEvent(DataObjectRef &dObj, Timeval *timeout
 
 	return PROT_EVENT_ERROR;
 }
+
+#if defined(OS_LINUX) || defined (OS_MACOSX)
+ProtocolError Protocol::getProtocolError()
+{
+	switch (errno) {
+	case EAGAIN:
+		error = PROT_ERROR_WOULD_BLOCK;
+		break;
+	case EBADF:
+		error = PROT_ERROR_BAD_HANDLE;
+		break;
+	case ECONNREFUSED:
+		error = PROT_ERROR_CONNECTION_REFUSED;
+		break;
+	case EINTR:
+		error = PROT_ERROR_INTERRUPTED;
+		break;
+	case EINVAL:
+		error = PROT_ERROR_INVALID_ARGUMENT;
+		break;
+	case ENOMEM:
+		error = PROT_ERROR_NO_MEMORY;
+		break;
+	case ENOTCONN:
+		error = PROT_ERROR_NOT_CONNECTED;
+		break;
+	case ECONNRESET:
+		error = PROT_ERROR_CONNECTION_RESET;
+		break;
+	case ENOTSOCK:
+		error = PROT_ERROR_NOT_A_SOCKET;
+		break;
+	case ENOSPC:
+		error = PROT_ERROR_NO_STORAGE_SPACE;
+		break;
+	default:
+		error = PROT_ERROR_UNKNOWN;
+		break;
+	}
+
+	return error;
+}
+const char *Protocol::getProtocolErrorStr()
+{
+	// We could append the system error string from strerror
+	//return (error < _PROT_ERROR_MAX && error > _PROT_ERROR_MIN) ? errorStr[error] : "Bad error";
+	return strerror(errno);
+}
+
+#else
+
+ProtocolError ProtocolSocket::getProtocolError()
+{
+	switch (WSAGetLastError()) {
+	case WSAEWOULDBLOCK:
+	case WSAEINPROGRESS:
+		error = PROT_ERROR_WOULD_BLOCK;
+		break;
+	case WSA_INVALID_HANDLE:
+	case WSAEBADF:
+		error = PROT_ERROR_BAD_HANDLE;
+		break;
+	case WSAECONNREFUSED:
+		error = PROT_ERROR_CONNECTION_REFUSED;
+		break;
+	case WSAEINTR:
+		error = PROT_ERROR_INTERRUPTED;
+		break;
+	case WSAEINVAL:
+		error = PROT_ERROR_INVALID_ARGUMENT;
+		break;
+	case WSA_NOT_ENOUGH_MEMORY:
+		error = PROT_ERROR_NO_MEMORY;
+		break;
+	case WSAENOTCONN:
+		error = PROT_ERROR_NOT_CONNECTED;
+		break;
+	case WSAECONNRESET:
+		error = PROT_ERROR_CONNECTION_RESET;
+		break;
+	case WSAENOTSOCK:
+		error = PROT_ERROR_NOT_A_SOCKET;
+		break;
+	default:
+		error = PROT_ERROR_UNKNOWN;
+		break;
+	}
+
+	return error;
+}
+
+const char *ProtocolSocket::getProtocolErrorStr()
+{
+	static char *errStr = NULL;
+	static const char *unknownErrStr = "Unknown error";
+	LPVOID lpMsgBuf;
+
+	DWORD len = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+				  NULL,
+				  WSAGetLastError(),
+				  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+				  (LPTSTR) & lpMsgBuf,
+				  0,
+				  NULL);
+	if (len) {
+		if (errStr && (strlen(errStr) < len)) {
+			delete [] errStr;
+			errStr = NULL;
+		}
+		if (errStr == NULL)
+			errStr = new char[len + 1];
+
+		sprintf(errStr, "%s", reinterpret_cast < TCHAR * >(lpMsgBuf));
+		LocalFree(lpMsgBuf);
+
+		return errStr;
+	} 
+
+	return unknownErrStr;
+}
+#endif /* OS_LINUX OS_MACOSX */
+

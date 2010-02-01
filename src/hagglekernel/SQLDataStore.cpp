@@ -2107,9 +2107,10 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 //	sqlQuery(SQL_END_TRANSACTION_CMD);	
 	node.unlock();
 	
-	if (callback)
+	if (callback) {
+		HAGGLE_DBG("Scheduling callback for inserted node\n");
 		kernel->addEvent(new Event(callback, node));
-	
+	}
 	HAGGLE_DBG("Node %s inserted successfully\n", node->getName().c_str());
 
 	return 1;
@@ -2117,8 +2118,7 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 out_insertNode_err:
 //	sqlQuery(SQL_END_TRANSACTION_CMD);
 	node.unlock();
-	return -1;
-	
+	return -1;	
 }
 
 int SQLDataStore::_deleteDataObject(const DataObjectId_t &id, bool shouldReportRemoval)
@@ -2292,7 +2292,8 @@ int SQLDataStore::_insertDataObject(DataObjectRef& dObj, const EventCallback<Eve
 		return -1;
 	}
 
-	HAGGLE_DBG("DataStore insert DataObject with num_attributes=%d\n", dObj->getAttributes()->size());
+	HAGGLE_DBG("DataStore insert data object [%s] with num_attributes=%d\n", 
+		dObj->getIdStr(), dObj->getAttributes()->size());
 
 	if (!dObj->getRawMetadataAlloc((unsigned char **)&metadata, &metadatalen)) {
 		HAGGLE_ERR("Could not get raw metadata from DO\n");

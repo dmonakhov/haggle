@@ -174,7 +174,12 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 
 void ConnectivityBluetooth::hookStopOrCancel()
 {
-	WIDCOMMBluetooth::stopInquiry();
+	HAGGLE_DBG("Stopping inquiry if running...\n");
+	if (WIDCOMMBluetooth::stopInquiry()) {
+		HAGGLE_DBG("Inquiry stopped\n");
+	} else {
+		HAGGLE_DBG("Inquiry wasn't running\n");
+	}
 }
 
 void ConnectivityBluetooth::hookCleanup()

@@ -155,7 +155,7 @@ public:
 	static bool enumerateRemoteDevicesStart();
 	static const RemoteDevice *getNextRemoteDevice();
 
-	static void stopInquiry();
+	static bool stopInquiry();
 	// A blocking inquiry
 	static int doInquiry(widcomm_inquiry_callback_t callback = NULL, void *data = NULL);
 	// A non-blocking inquiry

@@ -35,7 +35,7 @@ public:
 	const char* getErrorMsg() {
 		return errormsg;
 	}
-	const int getError() {
+	int getError() const {
 		return error;
 	}
 };

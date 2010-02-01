@@ -129,7 +129,7 @@ public:
 	/**
 		Gets the type for this interface.
 	*/
-	const InterfaceType_t getType() const { return type; }
+	InterfaceType_t getType() const { return type; }
 	const char *getTypeStr() const { return typeToStr(type); }
 	/**
 		Gets a pointer to the beginning of the raw identifier which is unique for this interface.
@@ -138,7 +138,7 @@ public:
 	/** 
 		Gets the length of the raw identifier which is unique for this interface.
 	*/
-	const size_t getIdentifierLen() const;
+	size_t getIdentifierLen() const;
 	/**
 		Gets the identifier for this interface as a pair.
 	*/

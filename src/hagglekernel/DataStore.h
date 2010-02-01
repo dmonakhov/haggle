@@ -133,7 +133,7 @@ public:
         const NodeRef getNode() const {
                 return node;
         }
-        const unsigned int getAttrMatch() const {
+        unsigned int getAttrMatch() const {
                 return attrMatch;
         }
         const Timeval& getQueryInitTime() const {
@@ -162,7 +162,7 @@ public:
         const NodeRef getNextNode() {
                 return nodes.pop();
         }
-        const unsigned int getAttrMatch() const {
+        unsigned int getAttrMatch() const {
                 return attrMatch;
         }
         const Timeval& getQueryInitTime() const {
@@ -189,13 +189,13 @@ public:
 	const DataObjectRef getDataObject() const {
 		return dObj;
 	}
-	const unsigned int getMaxResp() const {
+	unsigned int getMaxResp() const {
 		return maxResp;
 	}
-	const unsigned int getAttrMatch() const {
+	unsigned int getAttrMatch() const {
 		return attrMatch;
 	}
-	const unsigned int getRatio() const {
+	unsigned int getRatio() const {
 		return ratio;
 	}
 	const Timeval& getQueryInitTime() const {
@@ -227,7 +227,7 @@ class DataStoreDump
         char *data;
         size_t len;
     public:
-        const size_t getLen() { return len; }
+	size_t getLen() { return len; }
         const char *getData() { return data; }
         DataStoreDump(char *_data, const size_t _len) : data(_data), len(_len) {}
         ~DataStoreDump() { if (data) free(data); }

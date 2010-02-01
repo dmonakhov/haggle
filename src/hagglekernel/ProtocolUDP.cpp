@@ -222,7 +222,12 @@ ProtocolEvent ProtocolUDP::receiveDataObject()
 	}
 
         peerIface = new Interface(IFTYPE_APPLICATION_PORT, &port, addr, "Application", IFFLAG_UP);
-        
+        peerNode = getKernel()->getNodeStore()->retrieve(peerIface);
+
+	if (!peerNode) {
+		peerNode = new Node(NODE_TYPE_APPLICATION, (char *)NULL, "Unknown application");
+	}
+
         delete addr;
 
         dObj = new DataObject(buffer, len, localIface, peerIface);
@@ -248,14 +253,14 @@ ProtocolEvent ProtocolUDP::receiveDataObject()
 	}
 
 	// Generate first an incoming event to conform with the base Protocol class
-	getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_INCOMING, dObj));
+	getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_INCOMING, dObj, peerNode));
 	
 	HAGGLE_DBG("Received data object [%s] from interface %s:%u\n", 
 		dObj->getIdStr(), sa ? ip_to_str(sa->sin_addr) : "undefined", port);
 
 	// Since there is no data following, we generate the received event immediately 
 	// following the incoming one
-	getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_RECEIVED, dObj));
+	getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_RECEIVED, dObj, peerNode));
 
 	return PROT_EVENT_SUCCESS;
 }
