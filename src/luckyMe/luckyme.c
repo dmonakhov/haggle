@@ -128,7 +128,7 @@ static void luckyme_prng_init()
 		return srandom(node_number);
 	}
 #endif
-	return prng_init();
+	prng_init();
 }
 
 static unsigned int luckyme_prng_uint32()
@@ -142,7 +142,7 @@ static unsigned int luckyme_prng_uint32()
 }
 
 
-void luckyme_dataobject_set_createtime(const struct dataobject *dobj)
+void luckyme_dataobject_set_createtime(struct dataobject *dobj)
 {
 #ifdef OS_UNIX
 	if (repeatableSeed) {
