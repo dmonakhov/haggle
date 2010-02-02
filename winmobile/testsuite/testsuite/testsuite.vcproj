@@ -592,11 +592,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\testsuite\test_libcpphaggle\newlist.cpp"
+				RelativePath="..\..\..\testsuite\test_libcpphaggle\newmap.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\testsuite\test_libcpphaggle\newmap.cpp"
+				RelativePath="..\..\..\testsuite\test_libcpphaggle\stringimpl.cpp"
 				>
 			</File>
 			<File
@@ -609,6 +609,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\testsuite\testsuiteWindows.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\testsuite\test_libcpphaggle\timeval.cpp"
 				>
 			</File>
 			<Filter

@@ -395,39 +395,44 @@ bool ForwardingManager::addToSendList(DataObjectRef& dObj, const NodeRef& node, 
 
 bool ForwardingManager::shouldForward(const DataObjectRef& dObj, const NodeRef& node)
 {
-        NodeRef nodeInStore;
+        NodeRef peer;
         
+	if (!node) {
+		HAGGLE_ERR("node is NULL\n");
+		return false;
+	}
+	
 	if (dObj->isNodeDescription()) {
 		NodeRef descNode = new Node(NODE_TYPE_PEER, dObj);
 		
 		if (descNode) {
 			if (descNode == node) {
 				// Do not send the peer its own node description
-				HAGGLE_DBG("Data object is peer's node description. - not sending!\n");
+				HAGGLE_DBG("Data object [%s] is peer %s's node description. - not sending!\n", 
+					dObj->getIdStr(), node->getName().c_str());
 				return false;
 			}
 		}
 	}
 	
-	HAGGLE_DBG("%s Checking if data object %s should be forwarded to node '%s'\n", 
-                   getName(), dObj->getIdStr(), node->getName().c_str());
+	HAGGLE_DBG("%s Checking if data object %s should be forwarded to node %s (%s num=%lu)\n", 
+		getName(), dObj->getIdStr(), node->getName().c_str(), 
+		node->isStored() ? "stored" : "not stored", node->getNum());
 	
-        // Check if the node is in the node store
-        nodeInStore = kernel->getNodeStore()->retrieve(node, false);
+        // Make sure we use the node in the node store
+        peer = kernel->getNodeStore()->retrieve(node, false);
 
-        if (node->getType() == NODE_TYPE_PEER && !nodeInStore)
-                nodeInStore = node;
+	if (!peer) {
+		peer = node;
+	} 
 
-	if (nodeInStore) {
-		if (nodeInStore->getBloomfilter()->has(dObj)) {
-			HAGGLE_DBG("%s node %s already has data object %s\n", 
-				getName(), nodeInStore->getIdStr(), dObj->getIdStr());
-		} else {
-                        return true;
-		}
+	if (peer->getBloomfilter()->has(dObj)) {
+		HAGGLE_DBG("%s node %s [%s] already has data object [%s]\n", 
+			getName(), peer->getName().c_str(), peer->getIdStr(), dObj->getIdStr());
 	} else {
-		HAGGLE_DBG("No active targets for data object\n");
+		return true;
 	}
+
 	return false;
 }
 
@@ -448,7 +453,7 @@ void ForwardingManager::onDataObjectForward(Event *e)
 	}
 
 	// Get the node:
-	NodeRef target = e->getNode();
+	NodeRef& target = e->getNode();
 
 	if (!target) {
 		HAGGLE_ERR("Someone posted an EVENT_TYPE_DATAOBJECT_FORWARD event without a node.\n");

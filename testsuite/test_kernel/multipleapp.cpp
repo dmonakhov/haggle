@@ -40,16 +40,18 @@ static int has_gotten_do_1, has_gotten_do_2;
 static Condition	*my_cond;
 static Mutex		*mutex;
 
-static void STDCALL multipleapp_1_dataobject_event_handler(struct dataobject *my_do, void *arg)
+static int STDCALL multipleapp_1_dataobject_event_handler(haggle_event_t *e, void *arg)
 {
 	has_gotten_do_1++;
-	haggle_dataobject_free(my_do);
+
+	return 0;
 }
 
-static void STDCALL multipleapp_2_dataobject_event_handler(struct dataobject *my_do, void *arg)
+static int STDCALL multipleapp_2_dataobject_event_handler(haggle_event_t *e, void *arg)
 {
 	has_gotten_do_2++;
-	haggle_dataobject_free(my_do);
+
+	return 0;
 }
 
 #if defined(OS_WINDOWS)

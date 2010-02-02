@@ -766,7 +766,7 @@ ProtocolEvent Protocol::receiveDataObject()
 						if (pEvent == PROT_EVENT_SUCCESS) {
 							LOG_ADD("%s: %s\t%s\t%s\n", 
 								Timeval::now().getAsString().c_str(), ctrlmsgToStr(&m).c_str(), 
-								dObj->getIdStr(), peerDescription().c_str());
+								dObj->getIdStr(), peerNode ? peerNode->getIdStr() : "unknown");
 						}
                                                 return pEvent;
 					} else {
@@ -791,9 +791,10 @@ ProtocolEvent Protocol::receiveDataObject()
                                                 pEvent = sendControlMessage(&m);
 
 						if (pEvent == PROT_EVENT_SUCCESS) {
+
 							LOG_ADD("%s: %s\t%s\t%s\n", 
 								Timeval::now().getAsString().c_str(), ctrlmsgToStr(&m).c_str(), 
-								dObj->getIdStr(), peerDescription().c_str());
+								dObj->getIdStr(), peerNode ? peerNode->getIdStr() : "unknown");
 						}
 					}
 					

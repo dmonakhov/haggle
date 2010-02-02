@@ -633,6 +633,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalOptions=" /SUBSYSTEM:WINDOWSCE,5.02"
+				AdditionalLibraryDirectories="$(OutDir)"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -654,7 +655,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory="%CSIDL_PROGRAM_FILES%\Haggle"
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\testsuite"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>
@@ -712,6 +713,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalOptions=" /SUBSYSTEM:WINDOWSCE,5.02"
+				AdditionalLibraryDirectories="$(OutDir)"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -733,7 +735,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory=""
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\testsuite"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>
@@ -794,7 +796,7 @@
 				AdditionalDependencies="ws2.lib libxml2.lib"
 				OutputFile="$(OutDir)/libhaggle.dll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\libxml2"
+				AdditionalLibraryDirectories="$(OutDir)"
 				DelayLoadDLLs="$(NOINHERIT)"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/libhaggle.pdb"
@@ -803,7 +805,7 @@
 				StackCommitSize="4096"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary="./libhaggle.lib"
+				ImportLibrary="$(OutDir)/libhaggle.lib"
 				TargetMachine="0"
 			/>
 			<Tool
@@ -826,7 +828,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory="%CSIDL_PROGRAM_FILES%\Haggle"
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\testsuite"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>

@@ -64,18 +64,19 @@ public:
 	void cleanup() {} 
 };
 
-static void STDCALL largedo_dataobject_event_handler(struct dataobject *my_do, void *arg)
+static int STDCALL largedo_dataobject_event_handler(haggle_event_t *e, void *arg)
 {
 	struct attribute *attrib;
-	
+
 	has_gotten_do++;
-	attrib = haggle_dataobject_get_attribute_by_name(my_do, MY_ATTRIBUTE);
+	attrib = haggle_dataobject_get_attribute_by_name( e->dobj, MY_ATTRIBUTE);
 	has_attrib = (attrib != NULL);
-	if(has_attrib)
+	if (has_attrib)
 		do_interest_size = strlen(haggle_attribute_get_value(attrib));
 	
-	haggle_dataobject_free(my_do);
 	my_cond->signal();
+
+	return 0;
 }
 
 #if defined(OS_WINDOWS)

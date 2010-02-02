@@ -923,6 +923,11 @@ int DataObject::parseMetadata()
 		has_CreateTime = true;
 	}
 	
+	Metadata *nm = metadata->getMetadata(NODE_METADATA);
+
+	if (nm)
+		isNodeDesc = true;
+
 	Metadata *sm = metadata->getMetadata(DATAOBJECT_METADATA_SIGNATURE);
 	
 	if (sm) {

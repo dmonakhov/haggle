@@ -55,7 +55,8 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
-				CompileAs="1"			/>
+				CompileAs="1"
+			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
 			/>
@@ -135,7 +136,9 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
-				CompileAs="1"			/>
+				CompileAs="1"
+				EnableFloatingPointEmulation="false"
+			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
 			/>
@@ -216,7 +219,8 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
-				CompileAs="1"			/>
+				CompileAs="1"
+			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
 			/>
@@ -793,7 +797,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory=""
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\testsuite"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>
@@ -875,7 +879,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory=""
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\testsuite"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>
@@ -957,7 +961,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory=""
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\testsuite"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>

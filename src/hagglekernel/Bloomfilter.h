@@ -110,7 +110,7 @@ public:
 	/**
 		Returns the number of data objects in the bloomfilter.
 	*/
-	unsigned long countDataObjects() const;
+	unsigned long numObjects() const;
 	
 	/**
 	*/

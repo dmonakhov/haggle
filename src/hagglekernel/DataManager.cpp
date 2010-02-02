@@ -372,14 +372,15 @@ void DataManager::onIncomingDataObject(Event *e)
 		if (peer->getType() != NODE_TYPE_APPLICATION && peer->getType() != NODE_TYPE_UNDEF) {
 			// Add the data object to the peer's bloomfilter so that
 			// we do not send the data object back.
-			HAGGLE_DBG("Adding data object [%s] to peer node %s's bloomfilter\n", 
-				dObj->getIdStr(), peer->getName().c_str());
-
+			HAGGLE_DBG("Adding data object [%s] to peer node %s's (%s num=%lu) bloomfilter\n", 
+				dObj->getIdStr(), peer->getName().c_str(), peer->isStored() ? "stored" : "not stored", peer->getNum());
+			/*
 			LOG_ADD("%s: BLOOMFILTER:ADD %s\t%s:%s\n", 
 				Timeval::now().getAsString().c_str(), dObj->getIdStr(), 
-				peer->getTypeStr(), peer->getName().c_str());
-
+				peer->getTypeStr(), peer->getIdStr());
+			*/
 			peer->getBloomfilter()->add(dObj);
+
 		}
 	} else {
 		HAGGLE_DBG("No valid peer node for incoming data object [%s]\n", dObj->getIdStr());

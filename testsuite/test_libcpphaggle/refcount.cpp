@@ -99,8 +99,7 @@ int haggle_test_refcount(void)
 				print_pass(tmp_succ);
 			}
 
-			iface = new Interface(IFTYPE_BLUETOOTH, mac);
-			InterfaceRef ifaceRef(iface);
+			InterfaceRef ifaceRef = new Interface(IFTYPE_BLUETOOTH, mac);
 		
 			print_over_test_str(1, "Refcount==0 when NULL: ");
 		
@@ -120,7 +119,7 @@ int haggle_test_refcount(void)
 			ifaceRef = InterfaceRef(iface);
 			
 			try {
-				InterfaceRef ifaceRef(iface2);
+				InterfaceRef ifaceRef = iface2;
 				tmp_succ = true;
 			} catch (Exception &) {
 				tmp_succ = false;
@@ -129,9 +128,8 @@ int haggle_test_refcount(void)
 			print_pass(tmp_succ);
 
 			print_over_test_str(1, "Decrease/increase refcount on reassignment: ");
-			iface2 = new Interface(IFTYPE_BLUETOOTH, mac);
+			InterfaceRef ifaceRef3 = new Interface(IFTYPE_BLUETOOTH, mac);
 			InterfaceRef ifaceRef2 = ifaceRef;
-			InterfaceRef ifaceRef3(iface2);
 			
 			tmp_succ = (ifaceRef.refcount() == 2 && 
 				    ifaceRef2.refcount() == 2 && 

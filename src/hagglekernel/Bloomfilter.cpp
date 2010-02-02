@@ -87,7 +87,7 @@ void Bloomfilter::add(const DataObjectRef &dObj)
 	if (non_counting != NULL) {
 		bloomfilter_add(non_counting, (const char *)dObj->getId(), DATAOBJECT_ID_LEN);
 	} else if (counting != NULL) {
-		counting_bloomfilter_add(counting, (const char *) dObj->getId(), DATAOBJECT_ID_LEN);
+		counting_bloomfilter_add(counting, (const char *)dObj->getId(), DATAOBJECT_ID_LEN);
 	} else{
 		HAGGLE_ERR("Tried to add to bloomfilter which is neither counting or non-counting!\n");
 	}
@@ -98,7 +98,7 @@ void Bloomfilter::remove(const DataObjectRef &dObj)
 	if (non_counting != NULL){
 		// Ignored
 	} else if (counting != NULL) {
-		counting_bloomfilter_remove(counting, (const char *) dObj->getId(), DATAOBJECT_ID_LEN);
+		counting_bloomfilter_remove(counting, (const char *)dObj->getId(), DATAOBJECT_ID_LEN);
 	} else {
 		HAGGLE_ERR("Tried to remove from bloomfilter which is neither counting or non-counting!\n");
 	}
@@ -201,7 +201,7 @@ string Bloomfilter::toBase64NonCounting(void) const
 	return retval;
 }
 
-unsigned long Bloomfilter::countDataObjects(void) const
+unsigned long Bloomfilter::numObjects(void) const
 {
 	if (non_counting != NULL) {
 		return bloomfilter_get_n(non_counting);

@@ -826,28 +826,31 @@ NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 	sqlite_int64 node_rowid;
 	NodeRef node = NULL;
 	int num_match = 0;
+	NodeId_t node_id;
 
 	if (!in_stmt)
 		return node;
 
+	memcpy(node_id, sqlite3_column_blob(in_stmt, table_nodes_id), sizeof(NodeId_t));
+
 	// First try to retrieve the node from the node store
-	node = kernel->getNodeStore()->retrieve((unsigned char *)sqlite3_column_blob(in_stmt, table_nodes_id));
+	node = kernel->getNodeStore()->retrieve(node_id);
 
 	if (!node) {
 		node = new Node((NodeType_t)sqlite3_column_int(in_stmt, table_nodes_type), 
-			(unsigned char *)sqlite3_column_blob(in_stmt, table_nodes_id), 
+			node_id, 
 			(char *)sqlite3_column_text(in_stmt, table_nodes_name));
 
 		if (!node) {
 			HAGGLE_ERR("Could not create node from data store information\n");
 			return NULL;
 		}
+		// Set matching limit and threshold:
+		node->setMaxDataObjectsInMatch((unsigned int)sqlite3_column_int(in_stmt, table_nodes_resolution_max_matching_dataobjects));
+		node->setMatchingThreshold((unsigned int)sqlite3_column_int(in_stmt, table_nodes_resolution_threshold));
+		// set bloomfilter
+		node->getBloomfilter()->setRaw((unsigned char *)sqlite3_column_blob(in_stmt, table_nodes_bloomfilter));
 	}
-	// Set matching limit and threshold:
-	node->setMaxDataObjectsInMatch((unsigned int)sqlite3_column_int(in_stmt, table_nodes_resolution_max_matching_dataobjects));
-	node->setMatchingThreshold((unsigned int)sqlite3_column_int(in_stmt, table_nodes_resolution_threshold));
-	// set bloomfilter
-	node->getBloomfilter()->setRaw((unsigned char *)sqlite3_column_blob(in_stmt, table_nodes_bloomfilter));
 
 	node_rowid = sqlite3_column_int64(in_stmt, table_nodes_rowid);
 

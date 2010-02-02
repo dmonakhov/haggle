@@ -776,7 +776,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory=""
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\testsuite"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>
@@ -857,7 +857,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory=""
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\testsuite"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>
@@ -937,7 +937,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory=""
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\testsuite"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>

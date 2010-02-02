@@ -171,8 +171,8 @@ inline bool Node::init_node(const unsigned char *_id)
 		}
 	}
 	if (type == NODE_TYPE_THIS_NODE) {
-		calcId();
 		dObj->setIsThisNodeDescription(true);
+		calcId();
 	} else if (type == NODE_TYPE_UNDEF) {
 		if (_id) {
 			HAGGLE_DBG("Attempted to create undefined node with ID. ID ignored.\n");
@@ -258,7 +258,7 @@ Node::Node(const Node& n) :
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_NODE),
 #endif
-	type(n.type), num(totNum), name(n.name), 
+	type(n.type), num(totNum++), name(n.name), 
 	nodeDescExch(n.nodeDescExch), 
 	dObj(NULL), interfaces(n.interfaces), 
 	doBF(new Bloomfilter(*n.doBF)), 
@@ -831,7 +831,7 @@ void Node::setBloomfilter(const Bloomfilter& bf, const bool set_create_time)
 
 void Node::setCreateTime(Timeval t)
 {
-	if (dObj->isThisNodeDescription()) {
+	if (type == NODE_TYPE_THIS_NODE) {
 		//HAGGLE_DBG("SETTING create time on node description\n");
 		dObj->setCreateTime(t);
 	}

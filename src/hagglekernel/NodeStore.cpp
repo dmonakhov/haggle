@@ -225,9 +225,6 @@ NodeRef NodeStore::retrieve(const NodeId_t id, bool mustBeNeighbor)
 {
         Mutex::AutoLocker l(mutex);
 
-	if (!id)
-		return NULL;
-
 	for (NodeStore::iterator it = begin(); it != end(); it++) {
 		NodeRecord *nr = *it;
 		NodeRef node = nr->node;

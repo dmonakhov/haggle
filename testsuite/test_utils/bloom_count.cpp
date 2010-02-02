@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 {
 	struct counting_bloomfilter *cbf = NULL, *cbf_copy = NULL;
 	struct bloomfilter *bf_from_cbf = NULL, *bf_from_base64 = NULL;
-	char *b64_cbf_copy_1, *b64_cbf_copy_2, *b64_nc_cbf_copy1, *b64_nc_cbf_copy2;
+	char *b64_cbf_copy_1, *b64_cbf_copy_2, *b64_nc_cbf_copy2;
 	long i,j;
 	int success = (1==1), tmp_succ;
 

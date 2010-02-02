@@ -39,11 +39,12 @@ static int has_gotten_do;
 static Condition	*my_cond;
 static Mutex		*mutex;
 
-static void STDCALL singleapp_dataobject_event_handler(struct dataobject *my_do, void *arg)
+static int STDCALL singleapp_dataobject_event_handler(haggle_event_t *e, void *arg)
 {
 	has_gotten_do++;
-	haggle_dataobject_free(my_do);
 	my_cond->signal();
+
+	return 0;
 }
 
 #if defined(OS_WINDOWS)
