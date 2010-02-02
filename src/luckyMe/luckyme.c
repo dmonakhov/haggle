@@ -60,6 +60,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+
 unsigned long grid_size = 0;
 char *filename = "\\luckyMeData.jpg";
 char *single_source_name = NULL;
@@ -68,6 +69,7 @@ unsigned long attribute_pool_size = 100;
 unsigned long num_dataobject_attributes = 3;
 unsigned long variance_interest_attributes = 2;
 unsigned long node_number = 0;
+unsigned long repeatableSeed = 0;
 
 #define APP_NAME "LuckyMe"
 
@@ -117,6 +119,43 @@ static const char *ulong_to_str(unsigned long n)
 	snprintf(buf, 32, "%lu", n);
 	
 	return buf;
+}
+
+static void luckyme_prng_init()
+{
+#ifdef OS_UNIX
+	if (repeatableSeed) {
+		return srandom(node_number);
+	}
+#endif
+	return prng_init();
+}
+
+static unsigned int luckyme_prng_uint32()
+{
+#ifdef OS_UNIX
+	if (repeatableSeed) {
+		return random();
+	}
+#endif
+	return prng_uint32();
+}
+
+
+void luckyme_dataobject_set_createtime(const struct dataobject *dobj)
+{
+#ifdef OS_UNIX
+	if (repeatableSeed) {
+		struct timeval ct;
+		ct.tv_sec = num_dobj_created;
+		ct.tv_usec = node_number;
+		haggle_dataobject_set_createtime(dobj, &ct);
+	} else {
+		haggle_dataobject_set_createtime(dobj, NULL);
+	}
+#else
+	haggle_dataobject_set_createtime(dobj, NULL);
+#endif
 }
 
 #ifdef OS_WINDOWS_MOBILE
@@ -345,7 +384,7 @@ int create_interest_binomial()
 {
 	int i = 0;
 	struct attributelist *al;	
-	const unsigned long luck = prng_uint32() % attribute_pool_size;
+	const unsigned long luck = luckyme_prng_uint32() % attribute_pool_size;
 	// use binomial distribution to approximate normal distribution (sum of weights = 100)
 	// mean = np = luck, variance = np(1-p) = LUCK_INTERESTS
 	double p = 0.5;
@@ -441,12 +480,12 @@ int create_dataobject_random()
 	
 	// todo: get unique attributes
 	for (i = 0; i < num_dataobject_attributes; i++) {
-		unsigned long value = prng_uint32() % attribute_pool_size;
+		unsigned long value = luckyme_prng_uint32() % attribute_pool_size;
 		haggle_dataobject_add_attribute(dobj, APP_NAME, ulong_to_str(value));
 		printf("   %s=%s\n", APP_NAME, ulong_to_str(value));
 	}
-	
-	haggle_dataobject_set_createtime(dobj, NULL);
+
+	luckyme_dataobject_set_createtime(dobj);
 	haggle_ipc_publish_dataobject(hh, dobj);
 	haggle_dataobject_free(dobj);
 	
@@ -491,7 +530,7 @@ int create_dataobject_grid()
 		}
 	}
 	
-	haggle_dataobject_set_createtime(dobj, NULL);
+	luckyme_dataobject_set_createtime(dobj);
 	haggle_ipc_publish_dataobject(hh, dobj);
 	haggle_dataobject_free(dobj);
 	
@@ -633,6 +672,7 @@ static void print_usage()
 	fprintf(stderr, "          -i interest variance (default %lu)\n", variance_interest_attributes);
 	fprintf(stderr, "          -g use grid topology (gridSize x gridSize, overwrites -Adi, default off)\n");
 	fprintf(stderr, "          -t interval to create data objects [s] (default %lu)\n", create_data_interval);
+	fprintf(stderr, "          -r repeatable experiments (constant seed, incremental createtime, default off)\n");
 	fprintf(stderr, "          -s singe source (create data objects only on node 'name', default off)\n");
 	fprintf(stderr, "          -f data file to be sent (default off)\n");
 }
@@ -646,7 +686,7 @@ static void parse_commandline(int argc, char **argv)
 	// Parse command line options using getopt.
 	
 	do {
-		ch = getopt(argc, argv, "A:d:i:t:g:s:f:");
+		ch = getopt(argc, argv, "A:d:i:t:g:rs:f:");
 		if (ch != -1) {
 			switch (ch) {
 				case 'A':
@@ -664,6 +704,9 @@ static void parse_commandline(int argc, char **argv)
 				case 'g':
 					grid_size = strtoul(optarg, NULL, 10);
 					attribute_pool_size = 2 * grid_size;
+					break;
+				case 'r':
+					repeatableSeed = 1;
 					break;
 				case 's':
 					single_source_name = optarg;
@@ -760,7 +803,7 @@ void on_event_loop_start(void *arg)
 {	
 	haggle_handle_t hh = (haggle_handle_t)arg;
 
-	prng_init();
+	luckyme_prng_init();
 	/* retreive interests: */
 	if (haggle_ipc_get_application_interests_async(hh) != HAGGLE_NO_ERROR) {
 		LIBHAGGLE_DBG("Could not request interests\n");
@@ -798,14 +841,14 @@ int luckyme_run()
 		return -1;
 	}
 #endif
-	// reset random number generator
-	prng_init();
-	
 	stop_now = 0;
 	// get hostname (used to set interest)
 	gethostname(hostname, 128);
 	node_number = atoi(&(hostname[5]));
-	
+
+	// reset random number generator
+	luckyme_prng_init();
+		
 	do {
 		ret = haggle_handle_get(APP_NAME, &hh);
 		
