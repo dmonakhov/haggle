@@ -80,7 +80,7 @@ public:
 		simply returns copy of the bloomfilter.
 		If an error occurs, the function returns NULL.
 	*/
-	Bloomfilter *Bloomfilter::to_noncounting() const;
+	Bloomfilter *to_noncounting() const;
 	/**
 		Returns a platform-independent representation of the bloomfilter in a
 		Base64 encoded string.
