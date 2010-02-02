@@ -243,6 +243,13 @@ protected:
          */
         virtual ProtocolEvent receiveDataObject();
 
+	// Generate a description of the peer node for this protocol.
+	// This function handles the fact that a node may be undefined
+	// before the node description is received. In that case, the
+	// function tries to generate a description using the peer interface 
+	// instead.
+	string peerDescription();
+
         /**
            Return an platform independent error number whenever a file
            operation fails.

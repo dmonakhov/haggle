@@ -101,7 +101,7 @@
 
 #if defined(OS_WINDOWS_MOBILE)
 #ifndef ENABLE_BLUETOOTH
-#define ENABLE_BLUETOOTH
+//#define ENABLE_BLUETOOTH
 #endif
 
 #ifndef ENABLE_ETHERNET

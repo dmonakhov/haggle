@@ -335,7 +335,7 @@ void DataManager::onSendResult(Event *e)
 
 	if (e->getType() == EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL) {
 		// Add data object to node's bloomfilter.
-		HAGGLE_DBG("Adding data object [%s] to node \'%s\''s bloomfilter\n", dObj->getIdStr(), node->getName().c_str());
+		HAGGLE_DBG("Adding data object [%s] to node %s's bloomfilter\n", dObj->getIdStr(), node->getName().c_str());
 		node->getBloomfilter()->add(dObj);
 	}
 }
@@ -351,29 +351,41 @@ void DataManager::onIncomingDataObject(Event *e)
 		HAGGLE_DBG("Incoming data object event without data object!\n");
 		return;
 	}
-	// Add the data object to the bloomfilter of the one who sent it:
-	// Find the interface it came from:
-	const InterfaceRef& iface = dObj->getRemoteInterface();
 
-	// Was there one?
-	if (iface) {
-		// Find the node associated with that interface
-		NodeRef inStore = kernel->getNodeStore()->retrieve(iface);
-		// Was there one?
-		if (inStore) {
-			// Is the sending node an application?
-			if (inStore->getType() != NODE_TYPE_APPLICATION) {
-				// No. Add the data object to the node's bloomfilter:
-				inStore->getBloomfilter()->add(dObj);
-				// yes:
-				// Don't add the data object to the bloomfilter of the application
-				// that sent it, since the correct behaviour is to deliver it to
-				// the application if it wants it.
-			}
+	// Add the data object to the bloomfilter of the one who sent it:
+	NodeRef& peer = e->getNode();
+
+	if (!peer || peer->getType() == NODE_TYPE_UNDEF) {
+		// No valid node in event, try to figure out from interface
+
+		// Find the interface it came from:
+		const InterfaceRef& iface = dObj->getRemoteInterface();
+
+		if (iface) {
+			peer = kernel->getNodeStore()->retrieve(iface);
+		} else {
+			HAGGLE_DBG("No valid peer interface in data object, cannot figure out peer node\n");
 		}
 	}
 	
-	// Add the incoming data object to our own bloomfilter
+	if (peer) {
+		if (peer->getType() != NODE_TYPE_APPLICATION && peer->getType() != NODE_TYPE_UNDEF) {
+			// Add the data object to the peer's bloomfilter so that
+			// we do not send the data object back.
+			HAGGLE_DBG("Adding data object [%s] to peer node %s's bloomfilter\n", 
+				dObj->getIdStr(), peer->getName().c_str());
+
+			LOG_ADD("%s: BLOOMFILTER:ADD %s\t%s:%s\n", 
+				Timeval::now().getAsString().c_str(), dObj->getIdStr(), 
+				peer->getTypeStr(), peer->getName().c_str());
+
+			peer->getBloomfilter()->add(dObj);
+		}
+	} else {
+		HAGGLE_DBG("No valid peer node for incoming data object [%s]\n", dObj->getIdStr());
+	}
+
+	// Add the incoming data object also to our own bloomfilter
 	// We do this early in order to avoid receiving duplicates in case
 	// the same object is received at nearly the same time from multiple neighbors
 	if (dObj->isPersistent()) {
