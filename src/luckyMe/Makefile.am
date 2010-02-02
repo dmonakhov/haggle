@@ -1,5 +1,6 @@
 bin_PROGRAMS=luckyMe
 luckyMe_SOURCES=luckyme.c
+EXTRA_DIST=luckyme.h
 
 CPPFLAGS +=-I$(top_builddir)/src/libhaggle/include 
 CPPFLAGS +=-I$(top_builddir)/src/utils 

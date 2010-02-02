@@ -322,6 +322,7 @@ bool ConnectivityLocal::run()
 
 				if (error != ERROR_TIMEOUT) {
 					HAGGLE_DBG("Error - Failed to read message from queue error=%d!\n", error);
+					return false;
 				}
 			} else {
 				handleBTEvent(&btEvent);
