@@ -167,7 +167,16 @@ void ForwardingManager::onPrepareShutdown()
 
 	// Save the forwarding module's state
 	if (forwardingModule) {
-		setForwardingModule(NULL);
+		if (forwardingModule->isRunning())
+			// Delay signaling we are ready for shutdown until the running
+			// module tells us it is done
+			setForwardingModule(NULL);
+		else {
+			// The forwarding module exists, but is not running,
+			// delete it and signal that we are ready
+			delete forwardingModule;
+			signalIsReadyForShutdown();
+		}
 	} else {
 		signalIsReadyForShutdown();
 	}

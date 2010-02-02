@@ -33,6 +33,27 @@ Bloomfilter::Bloomfilter(float _error_rate, unsigned int _capacity, bool _counti
 		non_counting = bloomfilter_new(error_rate, capacity);
 	}
 }
+Bloomfilter::Bloomfilter(float _error_rate, unsigned int _capacity, struct bloomfilter *bf) :
+#ifdef DEBUG_LEAKS
+		LeakMonitor(LEAK_TYPE_BLOOMFILTER),
+#endif
+                error_rate(_error_rate),
+                capacity(_capacity),
+		non_counting(bf),
+		counting(NULL)
+{
+}
+
+Bloomfilter::Bloomfilter(float _error_rate, unsigned int _capacity, struct counting_bloomfilter *cbf) :
+#ifdef DEBUG_LEAKS
+		LeakMonitor(LEAK_TYPE_BLOOMFILTER),
+#endif
+                error_rate(_error_rate),
+                capacity(_capacity),
+		non_counting(NULL),
+		counting(cbf)
+{
+}
 
 Bloomfilter::Bloomfilter(const Bloomfilter &bf) :
 #ifdef DEBUG_LEAKS
@@ -94,6 +115,22 @@ bool Bloomfilter::has(const DataObjectRef &dObj) const
 	HAGGLE_ERR("Tried to check bloomfilter which is neither counting or non-counting!\n");
 	
 	return false;
+}
+
+Bloomfilter *Bloomfilter::to_noncounting() const
+{
+	struct bloomfilter *bf;
+
+	if (non_counting) {
+		return new Bloomfilter(*this);	
+	} 
+
+	bf = counting_bloomfilter_to_noncounting(counting);
+
+	if (!bf)
+		return NULL;
+
+	return new Bloomfilter(error_rate, capacity, bf);
 }
 
 string Bloomfilter::toBase64(void) const

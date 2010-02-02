@@ -40,6 +40,8 @@ private:
 	unsigned int capacity;
 	struct bloomfilter *non_counting;
 	struct counting_bloomfilter *counting;
+	Bloomfilter(float _error_rate, unsigned int _capacity, struct bloomfilter *bf);
+	Bloomfilter(float _error_rate, unsigned int _capacity, struct counting_bloomfilter *cbf);
 public:
 	/**
 		Creates a bloomfilter with the given error rate and capacity.
@@ -68,7 +70,17 @@ public:
 		Returns true iff the data object is in the bloomfilter.
 	*/
 	bool has(const DataObjectRef &dObj) const;
-	
+	/**
+		Returns a newly allocated non counting bloomfilter based
+		on a counting bloomfilter.
+		
+		Returns: A non-counting version of the bloomfilter if
+		the original bloomfilter was a counting one. If the 
+		original bloomfilter was no a counting one, the function 
+		simply returns copy of the bloomfilter.
+		If an error occurs, the function returns NULL.
+	*/
+	Bloomfilter *Bloomfilter::to_noncounting() const;
 	/**
 		Returns a platform-independent representation of the bloomfilter in a
 		Base64 encoded string.

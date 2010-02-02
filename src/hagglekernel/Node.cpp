@@ -819,8 +819,11 @@ void Node::setBloomfilter(const char *base64, const bool set_create_time)
 
 void Node::setBloomfilter(const Bloomfilter& bf, const bool set_create_time)
 {
-	doBF->fromBase64(bf.toBase64NonCounting());
-	
+	if (doBF)
+		delete doBF;
+
+	doBF = bf.to_noncounting();
+
 	/* See not above about setting the create time here. */
 	if (set_create_time)
 		setCreateTime();
