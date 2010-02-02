@@ -22,26 +22,24 @@
 #include "bloomfilter.h"
 #include <openssl/sha.h>
 
-static int bloomfilter_calculate_length(unsigned int num_keys, double error_rate, unsigned  int *lowest_m, unsigned int *best_k);
-
 struct bloomfilter *bloomfilter_new(float error_rate, unsigned int capacity)
 {
 	struct bloomfilter *bf;
 	unsigned int m, k, i;
-	int bflen;
+	unsigned long bflen;
 	salt_t *salts;
 	struct timeval tv;
 
 	bloomfilter_calculate_length(capacity, error_rate, &m, &k);
 
-	bflen = k*SALT_SIZE + m*BIN_BITS/8;
+	bflen = sizeof(struct bloomfilter) + (k * SALT_SIZE + m / VALUES_PER_BIN * BIN_SIZE);
 
-	bf = (struct bloomfilter *)malloc(sizeof(struct bloomfilter) + bflen);
+	bf = (struct bloomfilter *)malloc(bflen);
 
 	if (!bf)
 		return NULL;
 
-	memset(bf, 0, sizeof(struct bloomfilter) + bflen);
+	memset(bf, 0, bflen);
 
 	bf->m = m;
 	bf->k = k;
@@ -81,24 +79,20 @@ struct bloomfilter *bloomfilter_copy(const struct bloomfilter *bf)
 
 void bloomfilter_print(struct bloomfilter *bf)
 {
-	unsigned int i;
+	unsigned int i, j;
 	
 	if (!bf)
 		return;
 
 	printf("Bloomfilter m=%u k=%u n=%u\n", bf->m, bf->k, bf->n);
 
-	for (i = 0; i < bf->m / 8; i++) {
+	for (i = 0; i < bf->m / VALUES_PER_BIN; i++) {
 		bin_t *bins = BLOOMFILTER_GET_FILTER(bf);
 
-		printf("%d", bins[i] & 0x01 ? 1 : 0);
-		printf("%d", bins[i] & 0x02 ? 1 : 0);
-		printf("%d", bins[i] & 0x04 ? 1 : 0);
-		printf("%d", bins[i] & 0x08 ? 1 : 0);
-		printf("%d", bins[i] & 0x10 ? 1 : 0);
-		printf("%d", bins[i] & 0x20 ? 1 : 0);
-		printf("%d", bins[i] & 0x40 ? 1 : 0);
-		printf("%d", bins[i] & 0x80 ? 1 : 0);
+                for (j = 0; j < VALUES_PER_BIN; j++) {
+                        printf("%d", bins[i] & (1 << (i % VALUES_PER_BIN)) ? 1 : 0);
+                        
+                }
 	}
 	printf("\n");
 }
@@ -266,15 +260,15 @@ int bloomfilter_operation(struct bloomfilter *bf, const char *key,
 
 		//printf("index%d=%u\n", i, index);
 
-		switch(op) {
+		switch (op) {
 		case BF_OP_CHECK:
-			if (!(BLOOMFILTER_GET_FILTER(bf)[index/8] & (1 << (index % 8)))) {
+			if (!(BLOOMFILTER_GET_FILTER(bf)[index/VALUES_PER_BIN] & (1 << (index % VALUES_PER_BIN)))) {
 				res = 0;
 				goto out;
 			}
 			break;
 		case BF_OP_ADD:
-			BLOOMFILTER_GET_FILTER(bf)[index/8] |= (1 << (index % 8));
+			BLOOMFILTER_GET_FILTER(bf)[index/VALUES_PER_BIN] |= (1 << (index % VALUES_PER_BIN));
 			break;
 		default:
 			fprintf(stderr, "Unknown Bloomfilter operation\n");

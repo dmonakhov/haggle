@@ -45,17 +45,17 @@ struct counting_bloomfilter {
 };
 
 /* Counting bloomfilter bin size in bits */
-typedef u_int32_t counting_bin_t;
+typedef u_int16_t counting_bin_t;
 #define COUNTING_BIN_SIZE (sizeof(counting_bin_t))
-#define COUNTING_BIN_BITS (COUNTING_BIN_SIZE*8)
+#define COUNTING_VALUES_PER_BIN (1)
 
 #define K_SIZE sizeof(u_int32_t)
 #define M_SIZE sizeof(u_int32_t)
 #define N_SIZE sizeof(u_int32_t)
 #define COUNTING_SALT_SIZE sizeof(counting_salt_t)
 
-#define CB_FILTER_LEN(bf) ((bf)->m*COUNTING_BIN_BITS/8)
-#define CB_SALTS_LEN(bf) ((bf)->k*COUNTING_SALT_SIZE)
+#define CB_FILTER_LEN(bf) ((bf)->m / COUNTING_VALUES_PER_BIN * COUNTING_BIN_SIZE)
+#define CB_SALTS_LEN(bf) ((bf)->k * COUNTING_SALT_SIZE)
 #define COUNTING_BLOOMFILTER_TOT_LEN(bf) (sizeof(struct counting_bloomfilter) + CB_SALTS_LEN(bf) + CB_FILTER_LEN(bf))
 
 #define COUNTING_BLOOMFILTER_GET_SALTS(bf) ((counting_salt_t *)((unsigned char *)(bf) + sizeof(struct counting_bloomfilter)))
@@ -81,7 +81,7 @@ struct counting_bloomfilter *counting_bloomfilter_new(float error_rate, unsigned
 int counting_bloomfilter_operation(struct counting_bloomfilter *bf, const char *key, const unsigned int len, unsigned int op);
 void counting_bloomfilter_free(struct counting_bloomfilter *bf);
 struct counting_bloomfilter *counting_bloomfilter_copy(const struct counting_bloomfilter *bf);
-
+struct bloomfilter *counting_bloomfilter_to_noncounting(const struct counting_bloomfilter *bf);
 char *counting_bloomfilter_to_base64(const struct counting_bloomfilter *bf);
 char *counting_bloomfilter_to_noncounting_base64(const struct counting_bloomfilter *bf);
 struct counting_bloomfilter *base64_to_counting_bloomfilter(const char *b64str, const size_t b64len);

@@ -47,17 +47,17 @@ struct bloomfilter {
 
 /* Bloomfilter bin size in bits */
 typedef unsigned char bin_t;
-#define BIN_BITS (1)
-	
+
 #define BIN_SIZE (sizeof(bin_t))
+#define VALUES_PER_BIN (8 * BIN_SIZE)
 
 #define K_SIZE sizeof(u_int32_t)
 #define M_SIZE sizeof(u_int32_t)
 #define N_SIZE sizeof(u_int32_t)
 #define SALT_SIZE sizeof(salt_t)
 
-#define FILTER_LEN(bf) ((bf)->m*BIN_BITS/8)
-#define SALTS_LEN(bf) ((bf)->k*SALT_SIZE)
+#define FILTER_LEN(bf) ((bf)->m / VALUES_PER_BIN * BIN_SIZE)
+#define SALTS_LEN(bf) ((bf)->k * SALT_SIZE)
 #define BLOOMFILTER_TOT_LEN(bf) (sizeof(struct bloomfilter) + SALTS_LEN(bf) + FILTER_LEN(bf))
 
 #define BLOOMFILTER_GET_SALTS(bf) ((salt_t *)((unsigned char *)(bf) + sizeof(struct bloomfilter)))
@@ -76,6 +76,9 @@ enum bf_op {
 #define inline __inline
 #endif
 #endif
+
+int bloomfilter_calculate_length(unsigned int num_keys, double error_rate, 
+				 unsigned int *lowest_m, unsigned int *best_k);
 
 struct bloomfilter *bloomfilter_new(float error_rate, unsigned int capacity);
 int bloomfilter_operation(struct bloomfilter *bf, const char *key, const unsigned int len, unsigned int op);

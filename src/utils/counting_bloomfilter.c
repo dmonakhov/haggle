@@ -23,26 +23,24 @@
 #include <openssl/sha.h>
 #include "bloomfilter.h"
 
-static int counting_bloomfilter_calculate_length(unsigned int num_keys, double error_rate, unsigned  int *lowest_m, unsigned int *best_k);
-
 struct counting_bloomfilter *counting_bloomfilter_new(float error_rate, unsigned int capacity)
 {
 	struct counting_bloomfilter *bf;
 	unsigned int m, k, i;
-	int bflen;
+	unsigned long bflen;
 	counting_salt_t *salts;
 	struct timeval tv;
 
-	counting_bloomfilter_calculate_length(capacity, error_rate, &m, &k);
+	bloomfilter_calculate_length(capacity, error_rate, &m, &k);
 
-	bflen = k*COUNTING_SALT_SIZE + m*COUNTING_BIN_BITS/8;
+	bflen = sizeof(struct counting_bloomfilter) + (k * COUNTING_SALT_SIZE + m / COUNTING_VALUES_PER_BIN * COUNTING_BIN_SIZE);
 
-	bf = (struct counting_bloomfilter *)malloc(sizeof(struct counting_bloomfilter) + bflen);
+	bf = (struct counting_bloomfilter *)malloc(bflen);
 
 	if (!bf)
 		return NULL;
 
-	memset(bf, 0, sizeof(struct counting_bloomfilter) + bflen);
+	memset(bf, 0, bflen);
 
 	bf->m = m;
 	bf->k = k;
@@ -126,6 +124,67 @@ char *counting_bloomfilter_to_str(struct counting_bloomfilter *bf)
 	return str;
 }
 
+struct bloomfilter *counting_bloomfilter_to_noncounting(const struct counting_bloomfilter *bf)
+{
+        struct bloomfilter *bf_nc;
+        unsigned long bflen;
+	counting_salt_t *salts;
+	counting_bin_t *bins;
+        unsigned long i, j;
+	salt_t *salts_nc;
+	bin_t *bins_nc;
+        unsigned int bits_to_shift;
+
+        if (!bf)
+                return NULL;
+
+        bflen = sizeof(struct bloomfilter *) + (bf->k * SALT_SIZE + bf->m / VALUES_PER_BIN * BIN_SIZE);
+
+	bf_nc = (struct bloomfilter *)malloc(bflen);
+
+	if (!bf_nc)
+		return NULL;
+
+	memset(bf_nc, 0, bflen);
+
+	bf_nc->m = bf->m;
+	bf_nc->k = bf->k;
+	bf_nc->n = bf->n;
+
+	/* Get pointers */
+	salts = COUNTING_BLOOMFILTER_GET_SALTS(bf);
+	salts_nc = BLOOMFILTER_GET_SALTS(bf_nc);
+	bins = COUNTING_BLOOMFILTER_GET_FILTER(bf);
+	bins_nc = BLOOMFILTER_GET_FILTER(bf_nc);
+
+	j = 0;
+
+        // Copy the salts
+        for (i = 0; i < bf->k; i++) {
+                salts_nc[i] = salts[i]; 
+        }
+
+        /* Set the bins */
+	for (i = 0; i < bf->m; i++) {
+                bits_to_shift = (i % VALUES_PER_BIN);
+
+                if (bins[i]) {
+                        bins_nc[j] |= (1 << bits_to_shift);
+                }
+
+                if (bits_to_shift == (VALUES_PER_BIN - 1)) {
+                        unsigned long k = VALUES_PER_BIN - 1;
+                        while (1) {
+                                if (k-- == 0)
+                                        break;
+                        }
+                        j++;
+                }
+	}
+
+        return bf_nc;
+}
+
 char *counting_bloomfilter_to_base64(const struct counting_bloomfilter *bf)
 {
 	char *b64str;
@@ -164,7 +223,7 @@ char *counting_bloomfilter_to_base64(const struct counting_bloomfilter *bf)
 		salts_net[i] = htonl(salts[i]);
 	
 	for (i = 0; i < bf->m; i++) {
-		bins_net[i] = htonl(bins[i]);
+		bins_net[i] = htons(bins[i]);
 	}
 	len = base64_encode_alloc((const char *)bf_net, COUNTING_BLOOMFILTER_TOT_LEN(bf), &b64str);
 
@@ -187,62 +246,18 @@ char *counting_bloomfilter_to_base64(const struct counting_bloomfilter *bf)
 char *counting_bloomfilter_to_noncounting_base64(const struct counting_bloomfilter *bf)
 {
 	char *b64str;
-	unsigned int i = 0, j, k;
-	counting_bin_t current_bin;
 	struct bloomfilter *bf_other;
-	counting_salt_t *salts;
-	salt_t *salts_other;
-	counting_bin_t *bins;
-	bin_t *bins_other;
 	
 	if (!bf)
 		return NULL;
 	
-	// This is sort of a hack, but it will work, since we'll replace the data
-	// in the new bloomfilter anyway.
-	bf_other = bloomfilter_copy((struct bloomfilter *)bf);
+	bf_other = counting_bloomfilter_to_noncounting(bf);
 	
 	if (!bf_other)
 		return NULL;
 	
-	/* Get pointers */
-	salts = COUNTING_BLOOMFILTER_GET_SALTS(bf);
-	salts_other = BLOOMFILTER_GET_SALTS(bf_other);
-	bins = COUNTING_BLOOMFILTER_GET_FILTER(bf);
-	bins_other = BLOOMFILTER_GET_FILTER(bf_other);
-
-	j = 0;
-	k = 0;
-	current_bin = 0;
-	for (i = 0; i < bf->m; i++) {
-		current_bin = current_bin >> 1;
-		if (bins[i] != 0)
-			current_bin |= 
-#if 0
-				1
-#else
-				(1<<15)
-#endif
-				;
-		k++;
-		
-		if (k == COUNTING_BIN_BITS) {
-			bins_other[j] = 
-#if 1
-				current_bin
-#else
-				((current_bin & 0xFF) << 8) | 
-				((current_bin >> 8) & 0xFF)
-#endif
-				;
-			current_bin = 0;
-			k = 0;
-			j++;
-		}
-	}
-	
 	b64str = bloomfilter_to_base64(bf_other);
-	
+
 	bloomfilter_free(bf_other);
 	
 	return b64str;
@@ -276,7 +291,7 @@ struct counting_bloomfilter *base64_to_counting_bloomfilter(const char *b64str, 
 	
 	for (i = 0; i < bf_net->m; i++) {
 		counting_bin_t *bins = COUNTING_BLOOMFILTER_GET_FILTER(bf_net);
-		bins[i] = ntohl(bins[i]);
+		bins[i] = ntohs(bins[i]);
 	}
 
 	return bf_net;
@@ -378,35 +393,6 @@ void counting_bloomfilter_free(struct counting_bloomfilter *bf)
 		return;
 
 	free(bf);	
-}
-
-/* Adapted from the perl code found at this URL:
- * http://www.perl.com/lpt/a/831 and at CPAN */
-#define MAX_NUM_HASH_FUNCS 100
-
-int counting_bloomfilter_calculate_length(unsigned int num_keys, double error_rate, 
-				 unsigned int *lowest_m, unsigned int *best_k)
-{
-	double m_tmp = -1;
-	double k;
-	
-	*best_k = 1;
-
-	for (k = 1; k <= MAX_NUM_HASH_FUNCS; k++) {
-		double m = (-1 * k * num_keys) / log(1 - pow(error_rate, 1/k));
-		
-		if (m_tmp < 0 || m < m_tmp) {
-			m_tmp = m;
-			*best_k = (unsigned int)k;
-		}
-	}
-	*lowest_m = (unsigned int)(m_tmp + 1);
-
-	/* Make sure we align with bytes */
-	if (*lowest_m % 8 != 0)
-		*lowest_m += (8-(*lowest_m % 8));
-
-	return 0;
 }
 
 #ifdef COUNTING_BLOOMFILTER_MAIN

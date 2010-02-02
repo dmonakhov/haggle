@@ -78,30 +78,16 @@ int check_for_data_objects(struct counting_bloomfilter *bf)
 // Returns boolean true/false actually:
 int check_for_data_objects_noncounting(struct bloomfilter *bf)
 {
-	long	i;
+	long i;
 	
 	// Check for presence of inserted objects:
-	for(i = 0;
-		i < NUMBER_OF_DATA_OBJECTS_INSERTED
-			- NUMBER_OF_DATA_OBJECTS_REMOVED
-			;
-		i++)
-		if(	bloomfilter_check(
-				bf, 
-				data_object_count[i], 
-				data_object_count_len[i]) == 0)
+	for (i = 0; i < NUMBER_OF_DATA_OBJECTS_INSERTED - NUMBER_OF_DATA_OBJECTS_REMOVED; i++)
+		if (bloomfilter_check(bf, data_object_count[i], data_object_count_len[i]) == 0)
 			return 0;
 	
 	// Check for non-presence of non-inserted objects:
-	for(i = NUMBER_OF_DATA_OBJECTS_INSERTED
-			- NUMBER_OF_DATA_OBJECTS_REMOVED
-			; 
-		i < NUMBER_OF_DATA_OBJECTS;
-		i++)
-		if(	bloomfilter_check(
-				bf, 
-				data_object_count[i], 
-				data_object_count_len[i]) != 0)
+	for (i = NUMBER_OF_DATA_OBJECTS_INSERTED - NUMBER_OF_DATA_OBJECTS_REMOVED; i < NUMBER_OF_DATA_OBJECTS; i++)
+		if (bloomfilter_check(bf, data_object_count[i], data_object_count_len[i]) != 0)
 			return 0;
 	
 	return 1;
@@ -113,36 +99,37 @@ int haggle_test_bloom_count(void)
 int main(int argc, char *argv[])
 #endif
 {
-	struct counting_bloomfilter	*my_filter, *filter_copy;
-	struct bloomfilter	*noncounting_filter;
-	char				*b64_filter_copy_1, *b64_filter_copy_2, *b64_nc_filter_copy;
-	long				i,j;
-	int					success = (1==1), tmp_succ;
+	struct counting_bloomfilter *cbf = NULL, *cbf_copy = NULL;
+	struct bloomfilter *bf_from_cbf = NULL, *bf_from_base64 = NULL;
+	char *b64_cbf_copy_1, *b64_cbf_copy_2, *b64_nc_cbf_copy1, *b64_nc_cbf_copy2;
+	long i,j;
+	int success = (1==1), tmp_succ;
 
 	prng_init();
 
 	print_over_test_str_nl(0, "Counting bloomfilter test: ");
 	// Create random data objects:
-	for(i = 0; i < NUMBER_OF_DATA_OBJECTS; i++)
-	{
+	for (i = 0; i < NUMBER_OF_DATA_OBJECTS; i++)  {
 		data_object_count_len[i] = 
 			((prng_uint8() << 8) | prng_uint8()) % DATA_OBJECT_BYTES;
 		for(j = 0; j < data_object_count_len[i]; j++)
 			data_object_count[i][j] = prng_uint8();
 	}
 
-	print_over_test_str(1, "Create bloomfilter: ");
-	my_filter = counting_bloomfilter_new((float)0.01, BLOOMFILTER_SIZE);
+	print_over_test_str(1, "Create counting bloomfilter: ");
+	cbf = counting_bloomfilter_new((float)0.01, BLOOMFILTER_SIZE);
 
 	// Check that it worked
-	if(my_filter == NULL)
+	if (cbf == NULL)
 		return 1;
 
 	print_passed();
-	print_over_test_str(1, "Add data objects: ");
+
+	print_over_test_str(1, "Add data objects to filters: ");
 	// Insert objects:
-	for(i = 0; i < NUMBER_OF_DATA_OBJECTS_INSERTED; i++)
-		counting_bloomfilter_add(my_filter, data_object_count[i], data_object_count_len[i]);
+	for (i = 0; i < NUMBER_OF_DATA_OBJECTS_INSERTED; i++) {
+		counting_bloomfilter_add(cbf, data_object_count[i], data_object_count_len[i]);
+        }
 
 	print_passed();
 	print_over_test_str(1, "Remove data objects: ");
@@ -150,64 +137,62 @@ int main(int argc, char *argv[])
 	for(i = NUMBER_OF_DATA_OBJECTS_INSERTED - NUMBER_OF_DATA_OBJECTS_REMOVED;
 		i < NUMBER_OF_DATA_OBJECTS_INSERTED;
 		i++)
-		counting_bloomfilter_remove(my_filter, data_object_count[i], data_object_count_len[i]);
+		counting_bloomfilter_remove(cbf, data_object_count[i], data_object_count_len[i]);
 
 	print_passed();
-	print_over_test_str(1, "Contains those data objects: ");
+	
+        print_over_test_str(1, "Contains those data objects (counting): ");
 	// Check filter contents:
-	tmp_succ = check_for_data_objects(my_filter);
+	tmp_succ = check_for_data_objects(cbf);
 	success &= tmp_succ;
 	print_pass(tmp_succ);
 
 	print_over_test_str(1, "Copy: ");
-	filter_copy = counting_bloomfilter_copy(my_filter);
+	cbf_copy = counting_bloomfilter_copy(cbf);
 
 	// Check that it worked
-	if(filter_copy == NULL)
+	if (cbf_copy == NULL)
 		return 1;
 
 	print_passed();
 	print_over_test_str(1, "Copy contains data objects: ");
 	// Check filter contents:
-	tmp_succ = check_for_data_objects(filter_copy);
+	tmp_succ = check_for_data_objects(cbf_copy);
 	success &= tmp_succ;
 	print_pass(tmp_succ);
 
-	counting_bloomfilter_free(filter_copy);
-
-
 	print_over_test_str(1, "To Base64: ");
-	b64_filter_copy_1 = counting_bloomfilter_to_base64(my_filter);
+	b64_cbf_copy_1 = counting_bloomfilter_to_base64(cbf);
 
 	// Check that it worked
-	if(b64_filter_copy_1 == NULL)
+	if (b64_cbf_copy_1 == NULL)
 		return 1;
 
 	print_passed();
+
+        counting_bloomfilter_free(cbf_copy);
+
 	print_over_test_str(1, "From Base64: ");
-	filter_copy = 
-		base64_to_counting_bloomfilter(
-		b64_filter_copy_1, 
-		strlen(b64_filter_copy_1));
+	cbf_copy = base64_to_counting_bloomfilter(b64_cbf_copy_1, strlen(b64_cbf_copy_1));
 
 	// Check that it worked
-	if(filter_copy == NULL)
+	if (cbf_copy == NULL)
 		return 1;
 
 	print_passed();
 	print_over_test_str(1, "To Base64 match: ");
-	b64_filter_copy_2 = counting_bloomfilter_to_base64(filter_copy);
+	b64_cbf_copy_2 = counting_bloomfilter_to_base64(cbf_copy);
 	
 	// Check that it worked
-	if(b64_filter_copy_2 == NULL)
+	if (b64_cbf_copy_2 == NULL)
 		return 1;
 	
 	// Check that the lengths are the same:
-	if(strlen(b64_filter_copy_2) != strlen(b64_filter_copy_1))
+	if (strlen(b64_cbf_copy_2) != strlen(b64_cbf_copy_1)) {
 		tmp_succ = (1==0);
-	else{
+        } else {
 		// Check that they are equal:
-		if(strcmp(b64_filter_copy_2, b64_filter_copy_1) != 0)
+		if (strcmp(b64_cbf_copy_2, b64_cbf_copy_1) != 0)
 			tmp_succ = (1==0);
 	}
 	
@@ -215,35 +200,56 @@ int main(int argc, char *argv[])
 	print_pass(tmp_succ);
 	print_over_test_str(1, "Copy contains data objects: ");
 	// Check filter contents:
-	tmp_succ = check_for_data_objects(filter_copy);
+	tmp_succ = check_for_data_objects(cbf_copy);
 	success &= tmp_succ;
 	print_pass(tmp_succ);
-	
-	print_over_test_str(1, "Create noncounting base64 string:");
-	b64_nc_filter_copy = counting_bloomfilter_to_noncounting_base64(my_filter);
-	tmp_succ = (b64_nc_filter_copy != NULL);
-	success &= tmp_succ;
-	print_pass(tmp_succ);
-	
-	print_over_test_str(1, "Create noncounting filter by base64 string:");
-	noncounting_filter = 
-		base64_to_bloomfilter(
-			b64_nc_filter_copy, 
-			strlen(b64_nc_filter_copy));
-	tmp_succ = (noncounting_filter != NULL);
+	//
+
+        print_over_test_str(1, "Create noncounting filter from counting one:");
+	bf_from_cbf = counting_bloomfilter_to_noncounting(cbf);
+	tmp_succ = (bf_from_cbf != NULL);
 	success &= tmp_succ;
 	print_pass(tmp_succ);
 	
 	// Check filter contents:
 	print_over_test_str(1, "Noncounting copy contains the same:");
-	tmp_succ = check_for_data_objects_noncounting(noncounting_filter);
+	tmp_succ = check_for_data_objects_noncounting(bf_from_cbf);
+	success &= tmp_succ;
+	print_pass(tmp_succ);
+        
+        //
+	print_over_test_str(1, "Create noncounting base64 string from counting:");
+	b64_nc_cbf_copy2 = counting_bloomfilter_to_noncounting_base64(cbf);
+	tmp_succ = (b64_nc_cbf_copy2 != NULL);
+	success &= tmp_succ;
+	print_pass(tmp_succ);
+
+	print_over_test_str(1, "Create noncounting filter by base64 string:");
+	bf_from_base64 = base64_to_bloomfilter(b64_nc_cbf_copy2, strlen(b64_nc_cbf_copy2));
+
+	tmp_succ = (bf_from_cbf != NULL);
+	success &= tmp_succ;
+	print_pass(tmp_succ);
+	
+	// Check filter contents:
+	print_over_test_str(1, "Noncounting copy contains the same:");
+	tmp_succ = check_for_data_objects_noncounting(bf_from_base64);
 	success &= tmp_succ;
 	print_pass(tmp_succ);
 	
 	print_over_test_str(1, "Release: ");
-	counting_bloomfilter_free(filter_copy);
-	counting_bloomfilter_free(my_filter);
-	bloomfilter_free(noncounting_filter);
+
+        if (cbf)
+                counting_bloomfilter_free(cbf);
+        
+        if (cbf_copy)
+                counting_bloomfilter_free(cbf_copy);
+
+        if (bf_from_cbf)
+        	bloomfilter_free(bf_from_cbf);
+
+        if (bf_from_base64)
+        	bloomfilter_free(bf_from_base64);
 	
 	print_passed();
 	
