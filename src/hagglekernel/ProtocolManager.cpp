@@ -70,7 +70,14 @@ bool ProtocolManager::init_derived()
 		HAGGLE_ERR("Could not register event handler\n");
 		return false;
 	}
-
+	
+	ret = setEventHandler(EVENT_TYPE_NEIGHBOR_INTERFACE_DOWN, onNeighborInterfaceDown);
+	
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event handler\n");
+		return false;
+	}
+	
 	ret = setEventHandler(EVENT_TYPE_NODE_UPDATED, onNodeUpdated);
 
 	if (ret < 0) {
@@ -594,6 +601,36 @@ void ProtocolManager::onLocalInterfaceDown(Event *e)
 			// Tell the protocol to handle this:
 			HAGGLE_DBG("Shutting down protocol %s because interface %s went down\n",
 				p->getName(), iface->getIdentifierStr());
+			p->handleInterfaceDown(iface);
+		}
+	}
+}
+
+void ProtocolManager::onNeighborInterfaceDown(Event *e)
+{
+	InterfaceRef& iface = e->getInterface();
+	
+	if (!iface)
+		return;
+	
+	// Go through the protocol list
+	protocol_registry_t::iterator it = protocol_registry.begin();
+	
+	for (;it != protocol_registry.end(); it++) {
+		Protocol *p = (*it).second;
+		
+		/* 
+		 Never bring down our application IPC protocol when
+		 application interfaces go down (i.e., applications deregister).
+		 */
+		if (p->getLocalInterface()->getType() == IFTYPE_APPLICATION_PORT) {
+			continue;
+		}
+		// Is the associated with this protocol?
+		if (p->isClient() && p->isForInterface(iface)) {
+			
+			HAGGLE_DBG("Shutting down protocol %s because neighbor interface %s went away\n",
+				   p->getName(), iface->getIdentifierStr());
 			p->handleInterfaceDown(iface);
 		}
 	}

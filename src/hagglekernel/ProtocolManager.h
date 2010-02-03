@@ -65,6 +65,7 @@ private:
         void onSendDataObjectActual(Event *e);
         void onLocalInterfaceUp(Event *e);
         void onLocalInterfaceDown(Event *e);
+        void onNeighborInterfaceDown(Event *e);
 
         void onAddProtocolEvent(Event *e);
         void onDeleteProtocolEvent(Event *e);
