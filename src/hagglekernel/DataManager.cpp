@@ -329,7 +329,7 @@ void DataManager::onSendResult(Event *e)
 
 	if (!node->isStored()) {
 		HAGGLE_DBG("Send result node %s is not in node store, trying to retrieve\n", node->getName().c_str());
-		NodeRef& peer = kernel->getNodeStore()->retrieve(node);
+		NodeRef peer = kernel->getNodeStore()->retrieve(node);
 
 		if (peer) {
 			HAGGLE_DBG("Found node %s in node store, using the one in store\n", node->getName().c_str());
