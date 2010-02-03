@@ -79,6 +79,7 @@ namespace LuckyGUI
                         uint pid = 0;
 
                         int ret = UnmanagedDaemonPid(ref pid);
+
                         if (ret == 1)
                                 return (int)pid;
                         else
@@ -110,6 +111,7 @@ namespace LuckyGUI
               
                 public enum EventType
                 {
+                        EVENT_TYPE_ERROR = -1,
                         EVENT_TYPE_SHUTDOWN = 0,
                         EVENT_TYPE_NEIGHBOR_UPDATE,
                         EVENT_TYPE_NEW_DATAOBJECT,

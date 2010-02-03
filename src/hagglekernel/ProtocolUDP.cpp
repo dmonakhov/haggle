@@ -27,7 +27,7 @@
 #define SOCKADDR_SIZE sizeof(struct sockaddr_in)
 #endif
 
-#define PROTOCOL_UDP_BUFSIZE (30000)
+#define PROTOCOL_UDP_BUFSIZE (50000)
 
 bool ProtocolUDP::init_derived()
 {	

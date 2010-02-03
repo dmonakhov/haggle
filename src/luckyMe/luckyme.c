@@ -64,7 +64,7 @@
 unsigned long grid_size = 0;
 char *filename = "\\luckyMeData.jpg";
 char *single_source_name = NULL;
-unsigned long create_data_interval = 120;
+unsigned long create_data_interval = 30;
 unsigned long attribute_pool_size = 100;
 unsigned long num_dataobject_attributes = 3;
 unsigned long variance_interest_attributes = 2;
@@ -89,6 +89,7 @@ DWORD WINAPI luckyme_run(void *);
 static callback_function_t callback = NULL;
 
 #define NOTIFY() { if (callback) { callback(EVENT_TYPE_STATUS_UPDATE); } }
+#define NOTIFY_ERROR() { if (callback) { callback(EVENT_TYPE_ERROR); } }
 
 static HANDLE luckyme_thread_handle = NULL;
 static HANDLE haggle_start_thread_handle = NULL;
@@ -98,6 +99,7 @@ static int test_is_running = 0;
 
 #else
 #define NOTIFY()
+#define NOTIFY_ERROR()
 static int test_loop_event[2];
 #endif
 
@@ -302,7 +304,7 @@ int luckyme_start(void)
 		return -1;
 	}
 
-	ret = WaitForSingleObject(luckyme_start_event, 30000);
+	ret = WaitForSingleObject(luckyme_start_event, 90000);
 	
 	switch (ret) {
 		case WAIT_TIMEOUT:
@@ -542,11 +544,21 @@ int create_dataobject_grid()
 
 int on_dataobject(haggle_event_t *e, void* nix)
 {
+	char *xml;
+
 	num_dobj_received++;
+
 #if defined(OS_WINDOWS_MOBILE)
 	if (callback)
 		callback(EVENT_TYPE_NEW_DATAOBJECT);
 #endif
+
+	xml = (char *)haggle_dataobject_get_raw(e->dobj);
+
+	if (xml) {
+		LIBHAGGLE_DBG("Received data object:\n%s\n", xml);
+		free(xml);
+	}
 	
 	return 0;
 }
@@ -629,8 +641,13 @@ int on_shutdown(haggle_event_t *e, void* nix)
 
 int on_interests(haggle_event_t *e, void* nix)
 {
+	LIBHAGGLE_DBG("Received application interests event\n");
+
 	if (haggle_attributelist_get_attribute_by_name(e->interests, APP_NAME) != NULL) {
 		list_t *pos;
+
+		LIBHAGGLE_DBG("Checking existing interests\n");
+
 		// We already have some interests, so we don't create any new ones.
 		
 		// In the future, we might want to delete the old interests, and
@@ -639,12 +656,14 @@ int on_interests(haggle_event_t *e, void* nix)
 		
 		list_for_each(pos, &e->interests->attributes) {
 			struct attribute *attr = (struct attribute *)pos;
-			printf("interest: %s=%s:%lu\n", 
+			LIBHAGGLE_DBG("interest: %s=%s:%lu\n", 
 			       haggle_attribute_get_name(attr), 
 			       haggle_attribute_get_value(attr), 
 			       haggle_attribute_get_weight(attr));
 		}
-	} else {		
+	} else {
+		LIBHAGGLE_DBG("No existing interests, generating new ones\n");
+
 		// No old interests: Create new interests.
 		if (grid_size > 0) {
 			create_interest_grid();
@@ -864,18 +883,49 @@ int luckyme_run()
 	} while (ret != HAGGLE_NO_ERROR && retry-- != 0);
 	
 	if (ret != HAGGLE_NO_ERROR || hh == NULL) {
+		LIBHAGGLE_ERR("Could not get Haggle handle\n");
 		goto out_error;
 	}
-	haggle_event_loop_register_callbacks(hh, on_event_loop_start, on_event_loop_stop, hh);
 	
-	// register callback for new data objects
-	haggle_ipc_register_event_interest(hh, LIBHAGGLE_EVENT_SHUTDOWN, on_shutdown);
-	haggle_ipc_register_event_interest(hh, LIBHAGGLE_EVENT_NEIGHBOR_UPDATE, on_neighbor_update);
-	haggle_ipc_register_event_interest(hh, LIBHAGGLE_EVENT_NEW_DATAOBJECT, on_dataobject);
-	haggle_ipc_register_event_interest(hh, LIBHAGGLE_EVENT_INTEREST_LIST, on_interests);
+	ret = haggle_event_loop_register_callbacks(hh, on_event_loop_start, on_event_loop_stop, hh);
 	
-	if (haggle_event_loop_run_async(hh) != HAGGLE_NO_ERROR)
+	if (ret != HAGGLE_NO_ERROR) {
+		LIBHAGGLE_ERR("Could not register start and stop callbacks\n");
 		goto out_error;
+	}
+	// register callback for new data objects
+	ret = haggle_ipc_register_event_interest(hh, LIBHAGGLE_EVENT_SHUTDOWN, on_shutdown);
+
+	if (ret != HAGGLE_NO_ERROR) {
+		LIBHAGGLE_ERR("Could not register shutdown event interest\n");
+		goto out_error;
+	}
+
+	ret = haggle_ipc_register_event_interest(hh, LIBHAGGLE_EVENT_NEIGHBOR_UPDATE, on_neighbor_update);
+
+	if (ret != HAGGLE_NO_ERROR) {
+		LIBHAGGLE_ERR("Could not register neighbor update event interest\n");
+		goto out_error;
+	}
+
+	ret = haggle_ipc_register_event_interest(hh, LIBHAGGLE_EVENT_NEW_DATAOBJECT, on_dataobject);
+
+	if (ret != HAGGLE_NO_ERROR) {
+		LIBHAGGLE_ERR("Could not register new data object event interest\n");
+		goto out_error;
+	}
+
+	ret = haggle_ipc_register_event_interest(hh, LIBHAGGLE_EVENT_INTEREST_LIST, on_interests);
+
+	if (ret != HAGGLE_NO_ERROR) {
+		LIBHAGGLE_ERR("Could not register interest list event interest\n");
+		goto out_error;
+	}
+	
+	if (haggle_event_loop_run_async(hh) != HAGGLE_NO_ERROR) {
+		LIBHAGGLE_ERR("Could not start event loop\n");
+		goto out_error;
+	}
 		
 	NOTIFY();
 	
@@ -896,6 +946,8 @@ int luckyme_run()
 	return 0;
 	
 out_error:
+	NOTIFY_ERROR();
+
 	if (hh)
 		haggle_handle_free(hh);
 	

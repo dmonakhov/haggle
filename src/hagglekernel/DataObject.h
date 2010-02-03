@@ -220,6 +220,7 @@ class DataObject
         bool duplicate; // Set if the data object was received, but already existed in the data store
 	bool isNodeDesc; // True if this is a node description
 	bool isThisNodeDesc; // True iff this is the node description for the local node.
+	bool controlMessage; // True if this is a control message from an application
         /*
           this is for putData().
         */
@@ -318,6 +319,7 @@ class DataObject
 	bool isNodeDescription() const { return isNodeDesc; }
 	void setIsThisNodeDescription(bool yes) { isThisNodeDesc = yes; }
 	bool isThisNodeDescription() const { return isThisNodeDesc; }
+	bool isControlMessage() const { return controlMessage; }
 
 	// Metadata functions
 	const Metadata *toMetadata() const;

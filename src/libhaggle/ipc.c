@@ -68,7 +68,7 @@ typedef pthread_attr_t thread_handle_attr_t;
 #include "base64.h"
 
 #define DATA_BUFLEN (10000) /* What would be a suitable max size */
-#define EVENT_BUFLEN (40000)
+#define EVENT_BUFLEN (50000)
 
 #define ID_LEN SHA1_DIGEST_LENGTH
 #define ID_BASE64_LEN ((((ID_LEN) + 2) / 3) * 4 + 1)
@@ -155,14 +155,14 @@ extern wchar_t *strtowstr_alloc(const char *str);
 typedef int socklen_t;
 
 /* DLL entry point */
-BOOL APIENTRY DllMain( HANDLE hModule, 
-                       DWORD  ul_reason_for_call, 
-                       LPVOID lpReserved)
+BOOL APIENTRY DllMain(HANDLE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
 {
 	switch (ul_reason_for_call) {
 	case DLL_PROCESS_ATTACH:
 #if defined(DEBUG)
-		libhaggle_debug_init();
+		if (libhaggle_debug_init() < 0) {
+			fprintf(stderr, "Could not initialize debugging\n");
+		}
 #endif
 		break;
 	case DLL_THREAD_ATTACH:
@@ -528,8 +528,8 @@ static int spawn_daemon_internal(const char *daemonpath)
 	}
 #endif
 	
-	// Wait for 60 seconds max.
-	time_left = 60;
+	// Wait for 90 seconds max.
+	time_left = 90;
 	tv.tv_sec = 1;
 	tv.tv_usec = 0;
 	ret = HAGGLE_ERROR;
@@ -1402,7 +1402,7 @@ int haggle_event_loop_stop(haggle_handle_t hh)
  Returns less than 1 on error, or 0 or 1 on success.
  If the return value is -1 or 0 the data object should be freed, if the value is 1 or greater it should not be freed.
 */
-static int handle_event(struct haggle_handle *hh, haggle_event_type_t type, struct dataobject *dobj, metadata_t *event_m)
+static int handle_event(struct haggle_handle *hh, haggle_event_type_t type, struct dataobject *dobj, metadata_t *app_m, metadata_t *event_m)
 {
 	haggle_event_t e;
 	int ret = 0;
@@ -1445,6 +1445,10 @@ static int handle_event(struct haggle_handle *hh, haggle_event_type_t type, stru
 			break;
 		case LIBHAGGLE_EVENT_NEW_DATAOBJECT:
 			e.dobj = dobj;
+			/* Remove the application metadata */
+			if (app_m)
+				metadata_free(app_m);
+
 			ret = hh->handlers[type].handler(&e, hh->handlers[type].arg);
 			break;
 		case LIBHAGGLE_EVENT_NEIGHBOR_UPDATE:
@@ -1479,8 +1483,16 @@ static int handle_event(struct haggle_handle *hh, haggle_event_type_t type, stru
 start_ret_t haggle_event_loop(void *arg)
 {
 	struct haggle_handle *hh = (struct haggle_handle *)arg;
-	unsigned char eventbuffer[EVENT_BUFLEN];
+	unsigned char *eventbuffer;
 	int ret;
+	unsigned int error_retries = 0;
+
+	eventbuffer = (unsigned char *)malloc(EVENT_BUFLEN);
+
+	if (!eventbuffer) {
+		LIBHAGGLE_ERR("Could not allocated event buffer\n");
+		goto done;
+	}
 
 	hh->event_loop_running = 1;
 
@@ -1503,7 +1515,11 @@ start_ret_t haggle_event_loop(void *arg)
 		if (ret == EVENT_LOOP_ERROR) {
 			LIBHAGGLE_ERR("Haggle event loop wait error!\n");
                         // Break or try again?
-			break;
+
+			if (error_retries++ == 4) {
+				hh->event_loop_running = 0;
+			}
+			continue;
 		} else if (ret == EVENT_LOOP_TIMEOUT) {
 			LIBHAGGLE_DBG("Event loop timeout!\n");
 			break;
@@ -1518,6 +1534,10 @@ start_ret_t haggle_event_loop(void *arg)
                         
                         if (ret == SOCKET_ERROR) {
                                 LIBHAGGLE_ERR("Haggle event loop recv() error!\n");
+
+				if (error_retries++ == 4) {
+					hh->event_loop_running = 0;
+				}
                                 continue;
                         }
                         
@@ -1577,15 +1597,18 @@ start_ret_t haggle_event_loop(void *arg)
                                                
                         event_type = atoi(event_type_str);
                         			
-			if (handle_event(hh, event_type, dobj, event_m) <= 0) {
+			if (handle_event(hh, event_type, dobj, app_m, event_m) <= 0) {
 				haggle_dataobject_free(dobj);
 			}
-                }
+		}
+		error_retries = 0;
 	}
-	
+
         if (hh->stop)
                 hh->stop(hh->arg);
 
+	free(eventbuffer);
+done:
 #if defined(WIN32) || defined(WINCE)
 	return 0;
 #else

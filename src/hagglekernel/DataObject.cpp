@@ -108,7 +108,8 @@ DataObject::DataObject(InterfaceRef _localIface, InterfaceRef _remoteIface, cons
 		has_CreateTime(false), receiveTime(-1), 
                 localIface(_localIface), remoteIface(_remoteIface), rxTime(0), 
                 persistent(true), duplicate(false), isNodeDesc(false), isThisNodeDesc(false),
-                putData_data(NULL), hasDataHash(false), dataState(DATA_STATE_NO_DATA)
+		controlMessage(false), putData_data(NULL), hasDataHash(false), 
+		dataState(DATA_STATE_NO_DATA)
 {
 	putData_data = create_pDd();
 }
@@ -125,7 +126,8 @@ DataObject::DataObject(const unsigned char *raw, const unsigned long len, Interf
 		has_CreateTime(false), receiveTime(-1), 
                 localIface(_localIface), remoteIface(_remoteIface), rxTime(0), 
                 persistent(true), duplicate(false), isNodeDesc(false), isThisNodeDesc(false),
-                putData_data(NULL), hasDataHash(false), dataState(DATA_STATE_NO_DATA)
+		controlMessage(false), putData_data(NULL), hasDataHash(false), 
+		dataState(DATA_STATE_NO_DATA)
 {
 	if (!raw) {
                 if (!initMetadata()) {
@@ -173,7 +175,8 @@ DataObject::DataObject(const DataObject& dObj) :
                 localIface(dObj.localIface), remoteIface(dObj.remoteIface), 
                 rxTime(dObj.rxTime), persistent(dObj.persistent), 
                 duplicate(false), isNodeDesc(dObj.isNodeDesc), isThisNodeDesc(dObj.isThisNodeDesc),
-                putData_data(NULL), hasDataHash(dObj.hasDataHash), dataState(dObj.dataState)
+		controlMessage(false), putData_data(NULL), hasDataHash(dObj.hasDataHash), 
+		dataState(dObj.dataState)
 {
 	memcpy(id, dObj.id, DATAOBJECT_ID_LEN);
 	memcpy(idStr, dObj.idStr, MAX_DATAOBJECT_ID_STR_LEN);
@@ -923,11 +926,21 @@ int DataObject::parseMetadata()
 		has_CreateTime = true;
 	}
 	
-	Metadata *nm = metadata->getMetadata(NODE_METADATA);
+	
+	// Check if this is a node description. 
+	Metadata *m = metadata->getMetadata(NODE_METADATA);
 
-	if (nm)
+	if (m)
 		isNodeDesc = true;
 
+	// Check if this is a control message from an application
+	m = metadata->getMetadata(DATAOBJECT_METADATA_APPLICATION);
+
+	if (m) {
+		if (m->getMetadata(DATAOBJECT_METADATA_APPLICATION_CONTROL)) {
+			controlMessage = true;
+		}
+	}
 	Metadata *sm = metadata->getMetadata(DATAOBJECT_METADATA_SIGNATURE);
 	
 	if (sm) {

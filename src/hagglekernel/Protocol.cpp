@@ -276,10 +276,12 @@ string Protocol::peerDescription()
 {
 	string peerstr = "Unknown peer";
 
-	if (peerNode && peerNode->getType() != NODE_TYPE_UNDEF) {
-		peerstr = peerNode->getName();
-	} else if (peerIface) {
-		peerstr = peerIface->getIdentifierStr();
+	if (peerNode) {
+		if (peerNode->getType() != NODE_TYPE_UNDEF) {
+			peerstr = peerNode->getName();
+		} else if (peerIface) {
+			peerstr = peerIface->getIdentifierStr();
+		}
 	}
 
 	return peerstr;

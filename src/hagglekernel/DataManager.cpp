@@ -316,7 +316,7 @@ void DataManager::onVerifiedDataObject(Event *e)
 void DataManager::onSendResult(Event *e)
 {
 	DataObjectRef& dObj = e->getDataObject();
-	NodeRef& node = e->getNode();
+	NodeRef node = e->getNode();
 
 	if (!dObj) {
 		HAGGLE_ERR("No data object in send result\n");	
@@ -327,12 +327,15 @@ void DataManager::onSendResult(Event *e)
 		return;
 	}
 
-	if (node->getType() == NODE_TYPE_UNDEF) {
-		HAGGLE_DBG("Node \'%s\' is undefined, no reason to add data object [%s] to its bloomfilter...\n", 
-			node->getName().c_str(), dObj->getIdStr());
-		return;
-	}
+	if (!node->isStored()) {
+		HAGGLE_DBG("Send result node %s is not in node store, trying to retrieve\n", node->getName().c_str());
+		NodeRef& peer = kernel->getNodeStore()->retrieve(node);
 
+		if (peer) {
+			HAGGLE_DBG("Found node %s in node store, using the one in store\n", node->getName().c_str());
+			node = peer;
+		}
+	}
 	if (e->getType() == EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL) {
 		// Add data object to node's bloomfilter.
 		HAGGLE_DBG("Adding data object [%s] to node %s's bloomfilter\n", dObj->getIdStr(), node->getName().c_str());
@@ -353,7 +356,7 @@ void DataManager::onIncomingDataObject(Event *e)
 	}
 
 	// Add the data object to the bloomfilter of the one who sent it:
-	NodeRef& peer = e->getNode();
+	NodeRef peer = e->getNode();
 
 	if (!peer || peer->getType() == NODE_TYPE_UNDEF) {
 		// No valid node in event, try to figure out from interface
@@ -386,10 +389,13 @@ void DataManager::onIncomingDataObject(Event *e)
 		HAGGLE_DBG("No valid peer node for incoming data object [%s]\n", dObj->getIdStr());
 	}
 
-	// Add the incoming data object also to our own bloomfilter
-	// We do this early in order to avoid receiving duplicates in case
-	// the same object is received at nearly the same time from multiple neighbors
-	if (dObj->isPersistent()) {
+	// Check if this is a control message from an application. We do not want 
+	// to bloat our bloomfilter with such messages, because they are sent
+	// everytime an application connects.
+	if (!dObj->isControlMessage()) {
+		// Add the incoming data object also to our own bloomfilter
+		// We do this early in order to avoid receiving duplicates in case
+		// the same object is received at nearly the same time from multiple neighbors
 		if (localBF.has(dObj)) {
 			HAGGLE_DBG("Data object [%s] already in our bloomfilter, marking as duplicate...\n", dObj->getIdStr());
 			dObj->setDuplicate();
@@ -398,8 +404,6 @@ void DataManager::onIncomingDataObject(Event *e)
 			localBF.add(dObj);
 			kernel->getThisNode()->setBloomfilter(localBF, setCreateTimeOnBloomfilterUpdate);
 		}
-	} else {
-		HAGGLE_DBG("Data object [%s] is not persistent, hence not adding to bloomfilter\n", dObj->getIdStr());
 	}
 }
 

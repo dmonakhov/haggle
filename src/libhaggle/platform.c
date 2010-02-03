@@ -357,7 +357,7 @@ static int has_haggle_folder(LPCWSTR path)
 	do {
 		i++;
 		my_path[len+i] = DEFAULT_STORAGE_PATH_POSTFIX[i];
-	} while(DEFAULT_STORAGE_PATH_POSTFIX[i] != 0 && i < 15);
+	} while (DEFAULT_STORAGE_PATH_POSTFIX[i] != 0 && i < 15);
 	
 	if (GetFileAttributesEx(my_path, GetFileExInfoStandard, &data)) {
 		return (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
@@ -387,9 +387,10 @@ void fill_in_default_path()
 		GetDiskFreeSpaceEx(best_path, &best_avail, &best_size, NULL);
 		best_path_has_haggle_folder = has_haggle_folder(best_path);
 	}
-	LIBHAGGLE_ERR("Found data card path: \"%ls\" (size: %I64d/%I64d, haggle folder: %s)\n", 
+
+	LIBHAGGLE_DBG("Found data card path: \"%ls\" (size: %I64d/%I64d, haggle folder: %s)\n", 
 		best_path, best_avail, best_size,
-		best_path_has_haggle_folder?"Yes":"No");
+		best_path_has_haggle_folder ? "Yes" : "No");
 
 	find_handle = FindFirstFlashCard(&find_data);
 	
@@ -402,9 +403,9 @@ void fill_in_default_path()
 				
 				GetDiskFreeSpaceEx(find_data.cFileName, &avail, &size, &free);
 				haggle_folder = has_haggle_folder(find_data.cFileName);
-				LIBHAGGLE_ERR("Found data card path: \"%ls\" (size: %I64d/%I64d, haggle folder: %s)\n", 
+				LIBHAGGLE_DBG("Found data card path: \"%ls\" (size: %I64d/%I64d, haggle folder: %s)\n", 
 					find_data.cFileName, avail, size,
-					haggle_folder?"Yes":"No");
+					haggle_folder ?" Yes" : "No");
 				// is this a better choice than the previous one?
 				// FIXME: should there be any case when a memory card is not used?
 				if (1) {
@@ -459,19 +460,30 @@ const char *platform_get_path(path_type_t type, const char *append)
 	}
 	for (len = 0; login1[len] != 0; len++)
 		path[len] = (char) login1[len];
-	
+
 path_valid:
-        if (type == PLATFORM_PATH_PROGRAM || 
-	    type == PLATFORM_PATH_PRIVATE || 
-	    type == PLATFORM_PATH_DATA || 
-	    type == PLATFORM_PATH_TEMP) {
-                if (len + strlen(DEFAULT_STORAGE_PATH_POSTFIX) > MAX_PATH_LEN)
-                        return NULL;
-                len += snprintf(path + len, MAX_PATH_LEN - len, "%s", DEFAULT_STORAGE_PATH_POSTFIX);
+	if (type == PLATFORM_PATH_PROGRAM || 
+		type == PLATFORM_PATH_PRIVATE || 
+		type == PLATFORM_PATH_DATA || 
+		type == PLATFORM_PATH_TEMP) {
+			wchar_t *wpath;
+			if (len + strlen(DEFAULT_STORAGE_PATH_POSTFIX) > MAX_PATH_LEN)
+				return NULL;
+			len += snprintf(path + len, MAX_PATH_LEN - len, "%s", DEFAULT_STORAGE_PATH_POSTFIX);
+
+			/*
+			  Make sure the path exists...
+			*/
+			wpath = strtowstr_alloc(path);
+
+			if (wpath) {
+				CreateDirectory(wpath, NULL);
+				free(wpath);
+			} 
 	} 
-        if (append) {
-                if (len + strlen(append) > MAX_PATH_LEN)
-                        return NULL;
+	if (append) {
+		if (len + strlen(append) > MAX_PATH_LEN)
+			return NULL;
                 strcpy(path + len, append);
         }
         return path;

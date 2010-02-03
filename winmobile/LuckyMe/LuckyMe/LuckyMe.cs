@@ -71,11 +71,27 @@ namespace LuckyGUI
                 }
                 public static void eventCallback(LuckyMeLib.EventType eventType)
                 {
+                        bool exitApplication = false;
+                        DialogResult res;
+
                         // Make sure we execute the callbacks in the Window thread
                         switch (eventType)
                         {
+                                case LuckyMeLib.EventType.EVENT_TYPE_ERROR:
+                                        Debug.WriteLine("main_window: got error event");
+                                        res = MessageBox.Show("An error occurred in LuckyMe. Exit LuckyMe?", "", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
+
+                                        if (res == DialogResult.Yes)
+                                        {
+                                                exitApplication = true;
+
+                                                if (LuckyMeLib.isLuckyMeRunning())
+                                                {
+                                                        LuckyMeLib.stopLuckyMe(0);
+                                                }
+                                        }
+                                        break;
                                 case LuckyMeLib.EventType.EVENT_TYPE_SHUTDOWN:
-                                        bool exitApplication = false;
                                         Debug.WriteLine("callback: Haggle was shutdown");
 
                                         LuckyMeLib.stopLuckyMe(0);
@@ -89,7 +105,7 @@ namespace LuckyGUI
                                         {
                                                 Debug.WriteLine("main_window: got shutdown event, but is not in shutdown stage");
 
-                                                DialogResult res = MessageBox.Show("Haggle was shutdown. Exit LuckyMe?", "", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
+                                                res = MessageBox.Show("Haggle was shutdown. Exit LuckyMe?", "", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1);
 
                                                 if (res == DialogResult.Yes)
                                                 {
@@ -113,8 +129,6 @@ namespace LuckyGUI
 
                                         Debug.WriteLine("Log files saved");
 
-                                        if (exitApplication)
-                                                 Application.Exit();
                                         break;
                                 case LuckyMeLib.EventType.EVENT_TYPE_NEIGHBOR_UPDATE:
                                         Debug.WriteLine("callback neighbor update");
@@ -135,6 +149,9 @@ namespace LuckyGUI
                                         main_window.BeginInvoke(new myDelegate(main_window.onStatusUpdate));
                                         break;
                         }
+
+                        if (exitApplication)
+                                Application.Exit();
                 }
 
                 public static bool startTest()

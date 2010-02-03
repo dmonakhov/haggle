@@ -31,6 +31,9 @@
 		{
                         this.mainMenu1 = new System.Windows.Forms.MainMenu();
                         this.menuBack = new System.Windows.Forms.MenuItem();
+                        this.menuItem1 = new System.Windows.Forms.MenuItem();
+                        this.menuItemKillHaggle = new System.Windows.Forms.MenuItem();
+                        this.menuItemQuitLuckyMe = new System.Windows.Forms.MenuItem();
                         this.testStageLabel = new System.Windows.Forms.Label();
                         this.start_button = new System.Windows.Forms.Button();
                         this.stop_button = new System.Windows.Forms.Button();
@@ -44,11 +47,28 @@
                         // mainMenu1
                         // 
                         this.mainMenu1.MenuItems.Add(this.menuBack);
+                        this.mainMenu1.MenuItems.Add(this.menuItem1);
                         // 
                         // menuBack
                         // 
                         this.menuBack.Text = "Back";
                         this.menuBack.Click += new System.EventHandler(this.menuBack_Click);
+                        // 
+                        // menuItem1
+                        // 
+                        this.menuItem1.MenuItems.Add(this.menuItemKillHaggle);
+                        this.menuItem1.MenuItems.Add(this.menuItemQuitLuckyMe);
+                        this.menuItem1.Text = "Force";
+                        // 
+                        // menuItemKillHaggle
+                        // 
+                        this.menuItemKillHaggle.Text = "Kill Haggle";
+                        this.menuItemKillHaggle.Click += new System.EventHandler(this.kill_haggle_Click);
+                        // 
+                        // menuItemQuitLuckyMe
+                        // 
+                        this.menuItemQuitLuckyMe.Text = "Quit LuckyMe";
+                        this.menuItemQuitLuckyMe.Click += new System.EventHandler(this.quit_luckyme_Click);
                         // 
                         // testStageLabel
                         // 
@@ -149,5 +169,8 @@
 		public System.Windows.Forms.Button start_button;
 		public System.Windows.Forms.Label label2;
                 private System.Windows.Forms.Label statusMsgLabel;
+                private System.Windows.Forms.MenuItem menuItem1;
+                private System.Windows.Forms.MenuItem menuItemKillHaggle;
+                private System.Windows.Forms.MenuItem menuItemQuitLuckyMe;
 	}
 }

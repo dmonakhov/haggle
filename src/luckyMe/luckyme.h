@@ -63,6 +63,7 @@ LUCKYME_API char *luckyme_get_neighbor(unsigned int n);
 LUCKYME_API int luckyme_is_running(void);
 
 enum {
+	EVENT_TYPE_ERROR = -1,
 	EVENT_TYPE_SHUTDOWN = 0,
 	EVENT_TYPE_NEIGHBOR_UPDATE,
 	EVENT_TYPE_NEW_DATAOBJECT,

@@ -544,6 +544,8 @@ void ProtocolManager::onLocalInterfaceDown(Event *e)
 	if (!iface)
 		return;
 
+	HAGGLE_DBG("Local interface [%s] went down, checking for associated protocols\n", iface->getIdentifierStr());
+
 	// Go through the protocol list
 	protocol_registry_t::iterator it = protocol_registry.begin();
 
@@ -599,7 +601,7 @@ void ProtocolManager::onLocalInterfaceDown(Event *e)
 			   For now, I've chosen the first solution.
 			 */
 			// Tell the protocol to handle this:
-			HAGGLE_DBG("Shutting down protocol %s because interface %s went down\n",
+			HAGGLE_DBG("Shutting down protocol %s because local interface [%s] went down\n",
 				p->getName(), iface->getIdentifierStr());
 			p->handleInterfaceDown(iface);
 		}
@@ -613,6 +615,8 @@ void ProtocolManager::onNeighborInterfaceDown(Event *e)
 	if (!iface)
 		return;
 	
+	HAGGLE_DBG("Neighbor interface [%s] went away, checking for associated protocols\n", iface->getIdentifierStr());
+
 	// Go through the protocol list
 	protocol_registry_t::iterator it = protocol_registry.begin();
 	
@@ -629,7 +633,7 @@ void ProtocolManager::onNeighborInterfaceDown(Event *e)
 		// Is the associated with this protocol?
 		if (p->isClient() && p->isForInterface(iface)) {
 			
-			HAGGLE_DBG("Shutting down protocol %s because neighbor interface %s went away\n",
+			HAGGLE_DBG("Shutting down protocol %s because neighbor interface [%s] went away\n",
 				   p->getName(), iface->getIdentifierStr());
 			p->handleInterfaceDown(iface);
 		}

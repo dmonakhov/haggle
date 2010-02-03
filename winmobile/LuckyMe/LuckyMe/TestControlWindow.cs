@@ -190,5 +190,42 @@ namespace LuckyGUI
                 {
 
                 }
+
+                private void quit_luckyme_Click(object sender, EventArgs e)
+                {
+                        if (LuckyMeLib.isLuckyMeRunning())
+                        {
+                                int res = LuckyMeLib.stopLuckyMe(0);
+                        }
+                        Application.Exit();
+                }
+
+                private void kill_haggle_Click(object sender, EventArgs e)
+                {
+                        if (LuckyMeLib.isHaggleRunning())
+                        {
+                                int pid = LuckyMeLib.HagglePid();
+
+                                if (pid != 0)
+                                {
+                                        try
+                                        {
+                                                Process haggle = Process.GetProcessById(pid);
+
+                                                haggle.Kill();
+                                        }
+                                        catch (Exception)
+                                        {
+                                                Debug.WriteLine("No Haggle process with pid " + pid);
+                                        }
+                                        Debug.WriteLine("Could not get Haggle process pid");
+
+                                }
+                        }
+                        else
+                        {
+                                Debug.WriteLine("Haggle is not running");
+                        }
+                }
         }
 }

@@ -1844,6 +1844,8 @@ int SQLDataStore::_insertFilter(Filter *f, bool matchFilter, const EventCallback
 	if (!f)
 		return -1;
 
+	HAGGLE_DBG("Insert filter\n");
+
 	sql_cmd = SQL_INSERT_FILTER_CMD(f->getEventType());
 
 	ret = sqlite3_prepare_v2(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
