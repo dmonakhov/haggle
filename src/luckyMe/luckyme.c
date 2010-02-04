@@ -544,7 +544,7 @@ int create_dataobject_grid()
 
 int on_dataobject(haggle_event_t *e, void* nix)
 {
-	char *xml;
+	;
 
 	num_dobj_received++;
 
@@ -552,12 +552,13 @@ int on_dataobject(haggle_event_t *e, void* nix)
 	if (callback)
 		callback(EVENT_TYPE_NEW_DATAOBJECT);
 #endif
-
-	xml = (char *)haggle_dataobject_get_raw(e->dobj);
-
-	if (xml) {
-		LIBHAGGLE_DBG("Received data object:\n%s\n", xml);
-		free(xml);
+	
+	if (e->dobj) {
+		const unsigned char *xml = haggle_dataobject_get_raw(e->dobj);
+		
+		if (xml) {
+			LIBHAGGLE_DBG("Received data object:\n%s\n", (const char *)xml);
+		}
 	}
 	
 	return 0;
@@ -812,6 +813,8 @@ void test_loop() {
 					callback(EVENT_TYPE_DATA_OBJECT_GENERATED);
 #endif
 			}
+		} else if (result == 1) {
+			stop_now = 1;
 		}
 	}
 	LIBHAGGLE_DBG("test loop done!\n");
