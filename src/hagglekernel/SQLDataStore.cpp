@@ -785,7 +785,6 @@ static inline char *SQL_DEL_FILTER_CMD(const sqlite_int64 filter_rowid)
 DataObject *SQLDataStore::createDataObject(sqlite3_stmt * stmt)
 {
 	size_t datalen = 0;
-	bool dynamic_datalen = false;
 	Timeval create_time = -1, receive_time = -1; // Mark as invalid
 
 	sqlite_int64 len = sqlite3_column_int64(stmt, table_dataobjects_datalen);

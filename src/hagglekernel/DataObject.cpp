@@ -192,7 +192,6 @@ DataObject *DataObject::create(const string filepath, const string filename)
 	}
 
 	// Set the file hash
-	bool success = false;
 	char data[4096];
 	size_t read_bytes;
         SHA_CTX ctx;

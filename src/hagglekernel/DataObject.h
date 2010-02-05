@@ -298,7 +298,7 @@ public:
            Returns: The data state after verification.
 	*/
 	DataState_t verifyData();
-	void DataObject::deleteData();
+	void deleteData();
 	bool hasData() const { return (dataLen && filepath.length()); }
 
 	DataState_t getDataState() const { return dataState; }
