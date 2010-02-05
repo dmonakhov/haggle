@@ -231,12 +231,13 @@ HAGGLE_API void *haggle_dataobject_get_data_all(struct dataobject *dobj);
 
 
 /**
-	Returns the raw metadata of the given data object.
+	Returns the raw metadata of the given data object. The metadata belongs
+	to the data object and should NOT be freed by the caller
 	
 	@param dobj the data object
 	@returns a valid pointer to the raw metadata on success, or NULL.
 */
-HAGGLE_API unsigned char *haggle_dataobject_get_raw(struct dataobject *dobj);
+HAGGLE_API const unsigned char *haggle_dataobject_get_raw(struct dataobject *dobj);
 HAGGLE_API size_t haggle_dataobject_get_raw_length(const struct dataobject *dobj);
 	
 /**
@@ -245,6 +246,9 @@ HAGGLE_API size_t haggle_dataobject_get_raw_length(const struct dataobject *dobj
 	@param a pointer to a pointer that will point to the allocated buffer.
 	@param a pointer to an size_t integer which will hold the length of the
 	allocated buffer.
+ 
+	The raw metadata belongs to the caller and should be freed after usage.
+ 
 	@returns HAGGLE_NO_ERROR on success, or a Haggle error code on failure.
 */
 HAGGLE_API int haggle_dataobject_get_raw_alloc(struct dataobject *dobj, unsigned char **buf, size_t *len);

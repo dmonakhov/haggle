@@ -230,7 +230,6 @@
 		4207998A0F372BA300B7BB49 /* ForwarderEmpty.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ForwarderEmpty.h; path = ../src/hagglekernel/ForwarderEmpty.h; sourceTree = SOURCE_ROOT; };
 		4207998B0F372BA300B7BB49 /* ForwarderAsynchronous.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ForwarderAsynchronous.h; path = ../src/hagglekernel/ForwarderAsynchronous.h; sourceTree = SOURCE_ROOT; };
 		4207998C0F372BA300B7BB49 /* ForwarderAsynchronous.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ForwarderAsynchronous.cpp; path = ../src/hagglekernel/ForwarderAsynchronous.cpp; sourceTree = SOURCE_ROOT; };
-		423AD9CF0EE80E3F00ED758E /* luckyMe.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = luckyMe.cpp; sourceTree = "<group>"; };
 		423AD9E80EE8161400ED758E /* luckyMe */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = luckyMe; sourceTree = BUILT_PRODUCTS_DIR; };
 		423B09690F4A277000D04E7B /* libssl.0.9.7.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libssl.0.9.7.dylib; path = usr/lib/libssl.0.9.7.dylib; sourceTree = SDKROOT; };
 		425C159B0E79406400D9D1AB /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
@@ -597,7 +596,6 @@
 		423AD9CD0EE80E1F00ED758E /* luckyMe */ = {
 			isa = PBXGroup;
 			children = (
-				423AD9CF0EE80E3F00ED758E /* luckyMe.cpp */,
 				D3F8B05F1104A11D00999BF2 /* luckyme.h */,
 				D3F8B0601104A11D00999BF2 /* luckyme.c */,
 			);
@@ -1432,7 +1430,6 @@
 					"-DDEBUG",
 					"-DDEBUG_LEAKS",
 					"-DENABLE_ETHERNET",
-					"-DENABLE_BLUETOOTH",
 				);
 				OTHER_CPLUSPLUSFLAGS = (
 					"-g",
@@ -1440,7 +1437,6 @@
 					"-DDEBUG",
 					"-DDEBUG_LEAKS",
 					"-DENABLE_ETHERNET",
-					"-DENABLE_BLUETOOTH",
 				);
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = Haggle;

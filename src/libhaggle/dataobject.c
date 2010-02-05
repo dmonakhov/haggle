@@ -673,7 +673,7 @@ metadata_t *haggle_dataobject_to_metadata(struct dataobject *dobj)
         return dobj->m;
 }
 
-unsigned char *haggle_dataobject_get_raw(struct dataobject *dobj)
+const unsigned char *haggle_dataobject_get_raw(struct dataobject *dobj)
 {
         metadata_t *m;
 

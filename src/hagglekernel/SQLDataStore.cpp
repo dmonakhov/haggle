@@ -2784,7 +2784,7 @@ int SQLDataStore::_doDataObjectForNodesQuery(DataStoreDataObjectForNodesQuery *q
 	}
 #endif
 
-	HAGGLE_DBG("%u data objects matched query\n", total_match);
+	HAGGLE_DBG("%u data objects matched node %s [%s]\n", total_match, node->getName().c_str(), node->getIdStr());
 
 	return num_match;
 }
@@ -2801,7 +2801,7 @@ int SQLDataStore::_doNodeQuery(DataStoreNodeQuery *q)
 	DataStoreQueryResult *qr;
 	DataObjectRef dObj = q->getDataObject();
 	
-	HAGGLE_DBG("DataStore Node Query for dataobject=%s\n", dObj->getIdStr());
+	HAGGLE_DBG("Node query for data object [%s]\n", dObj->getIdStr());
 	
 	qr = new DataStoreQueryResult();
 	
@@ -2879,7 +2879,7 @@ int SQLDataStore::_doNodeQuery(DataStoreNodeQuery *q)
 	kernel->addEvent(new Event(q->getCallback(), qr));
 #endif
 	
-	HAGGLE_DBG("%u data objects matched query\n", num_match);
+	HAGGLE_DBG("%u nodes matched data object [%s]\n", num_match, dObj->getIdStr());
 	
 	return num_match;
 out_err:
