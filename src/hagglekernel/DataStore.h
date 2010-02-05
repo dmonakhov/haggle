@@ -183,7 +183,6 @@ class DataStoreNodeQuery
 	Timeval queryInitTime;
 	const unsigned int maxResp;
 	const unsigned int attrMatch;
-	const unsigned int ratio;
 	const EventCallback<EventHandler> *callback;
 public:
 	const DataObjectRef getDataObject() const {
@@ -195,16 +194,13 @@ public:
 	unsigned int getAttrMatch() const {
 		return attrMatch;
 	}
-	unsigned int getRatio() const {
-		return ratio;
-	}
 	const Timeval& getQueryInitTime() const {
 		return queryInitTime;
 	}
 	const EventCallback<EventHandler> *getCallback() const {
 		return callback;
 	}
-	DataStoreNodeQuery(DataObjectRef& d, const unsigned int _maxResp, const unsigned int _attrMatch, const unsigned int _ratio,const EventCallback<EventHandler> *_callback) : dObj(d), queryInitTime(Timeval::now()), maxResp(_maxResp), attrMatch(_attrMatch), ratio(_ratio), callback(_callback) {
+	DataStoreNodeQuery(DataObjectRef& d, const unsigned int _maxResp, const unsigned int _attrMatch, const EventCallback<EventHandler> *_callback) : dObj(d), queryInitTime(Timeval::now()), maxResp(_maxResp), attrMatch(_attrMatch), callback(_callback) {
 	}
 	~DataStoreNodeQuery() {}
 };
@@ -425,7 +421,7 @@ public:
 	int doDataObjectForNodesQuery(const NodeRef &n, const NodeRefList &ns, 
                                       const unsigned int match,
                                       const EventCallback<EventHandler> *callback);
-	int doNodeQuery(DataObjectRef& d, const unsigned int max, const unsigned int match, const unsigned int ratio, EventCallback<EventHandler> *callback);
+	int doNodeQuery(DataObjectRef& d, const unsigned int maxResp, const unsigned int match, EventCallback<EventHandler> *callback);
 #ifdef DEBUG_DATASTORE
 	virtual void print();
 #endif

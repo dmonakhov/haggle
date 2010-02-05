@@ -768,7 +768,7 @@ void ForwardingManager::onNewDataObject(Event *e)
 	if (dObj->isPersistent()) {
 		HAGGLE_DBG("%s - new data object %s, doing node query\n", getName(), dObj->getIdStr());
 		//dObj->print();
-		kernel->getDataStore()->doNodeQuery(dObj, MAX_NODES_TO_FIND_FOR_NEW_DATAOBJECTS, 1, 0, nodeQueryCallback);
+		kernel->getDataStore()->doNodeQuery(dObj, MAX_NODES_TO_FIND_FOR_NEW_DATAOBJECTS, 1, nodeQueryCallback);
 	}
 }
 

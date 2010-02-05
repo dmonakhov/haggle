@@ -521,11 +521,11 @@ int DataStore::doDataObjectForNodesQuery(const NodeRef &n, const NodeRefList &ns
 */
 
 
-int DataStore::doNodeQuery(DataObjectRef& d, const unsigned int max, const unsigned int match, const unsigned int ratio, EventCallback < EventHandler > *callback)
+int DataStore::doNodeQuery(DataObjectRef& d, const unsigned int maxResp, const unsigned int match, EventCallback < EventHandler > *callback)
 {
 	Mutex::AutoLocker l(mutex);
 	
-	taskQ.insert(new DataStoreTask(new DataStoreNodeQuery(d, max, match, ratio, callback), TASK_NODE_QUERY));
+	taskQ.insert(new DataStoreTask(new DataStoreNodeQuery(d, maxResp, match, callback), TASK_NODE_QUERY));
 	
 	cond.signal();
 

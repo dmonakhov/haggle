@@ -415,7 +415,7 @@ enum {
 };
 
 //------------------------------------------
-#define SQL_CREATE_VIEW_DATAOBJECT_NODE_MATCH_CMD_RATED_CMD "CREATE VIEW " VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO " AS SELECT 100*weight/n.sum_weights as ratio, m.* FROM " VIEW_MATCH_DATAOBJECTS_AND_NODES " as m LEFT JOIN " TABLE_NODES " as n ON m.node_rowid=n.rowid ORDER BY ratio desc, mcount desc;"
+#define SQL_CREATE_VIEW_DATAOBJECT_NODE_MATCH_CMD_RATED_CMD "CREATE VIEW " VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO " AS SELECT 100*weight/n.sum_weights as ratio, m.* FROM, n.resolution_threshold as threshold " VIEW_MATCH_DATAOBJECTS_AND_NODES " as m LEFT JOIN " TABLE_NODES " as n ON m.node_rowid=n.rowid ORDER BY ratio desc, mcount desc;"
 // using count: #define SQL_CREATE_VIEW_DATAOBJECT_NODE_MATCH_CMD_RATED_CMD "CREATE VIEW " VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO " AS SELECT 100*mcount/dacount as dataobject_ratio, 100*mcount/nacount as node_ratio, m.* FROM " VIEW_MATCH_DATAOBJECTS_AND_NODES " as m LEFT JOIN " VIEW_NODE_ATTRIBUTE_COUNT " as cn ON m.node_rowid=cn.node_rowid LEFT JOIN " VIEW_DATAOBJECT_ATTRIBUTE_COUNT " as cd ON m.dataobject_rowid=cd.dataobject_rowid ORDER BY 100*mcount/nacount+100*mcount/dacount desc, mcount desc;"
 enum {
 	view_match_dataobjects_and_nodes_as_ratio_ratio = 0,
@@ -2633,7 +2633,7 @@ int SQLDataStore::_doDataObjectQueryStep2(NodeRef &node, NodeRef alsoThisBF, Dat
 		return 0;
 	}
 
-	/* limit VIEW_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID_DYNAMIC to dataobject in question */
+	/* limit VIEW_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID_DYNAMIC to node in question */
 	setViewLimitedNodeAttributes(node_rowid);
 	 
 	/* matching */
@@ -2821,9 +2821,9 @@ int SQLDataStore::_doNodeQuery(DataStoreNodeQuery *q)
 	
 	/* the actual query */
 	if (q->getMaxResp() > 0) {
-		snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT * FROM %s WHERE ratio >= %u AND mcount >= %u AND dataobject_not_match=0 limit %u;", VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO, q->getRatio(), q->getAttrMatch(), q->getMaxResp());
+		snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT * FROM %s WHERE ratio >= threshold AND mcount >= %u AND dataobject_not_match=0 limit %u;", VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO, q->getAttrMatch(), q->getMaxResp());
 	} else {
-		snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT * FROM %s WHERE ratio >= %u AND mcount >= %u AND dataobject_not_match=0;", VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO, q->getRatio(), q->getAttrMatch());
+		snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT * FROM %s WHERE ratio >= threshold AND mcount >= %u AND dataobject_not_match=0;", VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO, q->getAttrMatch());
 	}
 	
 	ret = sqlite3_prepare(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
