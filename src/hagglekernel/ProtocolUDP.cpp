@@ -224,21 +224,25 @@ ProtocolEvent ProtocolUDP::receiveDataObject()
         peerIface = new Interface(IFTYPE_APPLICATION_PORT, &port, addr, "Application", IFFLAG_UP);
         peerNode = getKernel()->getNodeStore()->retrieve(peerIface);
 
+	delete addr;
+
 	if (!peerNode) {
-		peerNode = new Node(NODE_TYPE_APPLICATION, (char *)NULL, "Unknown application");
+		peerNode = Node::create(NODE_TYPE_APPLICATION, "Unknown application");
+
+		if (!peerNode) {      
+			HAGGLE_ERR("Could not create application node\n");
+			return PROT_EVENT_ERROR;
+		}
 	}
 
-        delete addr;
+	dObj = DataObject::create(buffer, len, localIface, peerIface);
 
-        dObj = new DataObject(buffer, len, localIface, peerIface);
-
-	if (!dObj || !dObj->isValid()) {
+	if (!dObj) {
                 HAGGLE_DBG("%s:%lu Could not create data object\n", getName(), getId());
 		return PROT_EVENT_ERROR;
 	}
 
         // Haggle doesn't own files that applications have put in:
-        dObj->setOwnsFile(false);
 	dObj->setReceiveTime(Timeval::now());
 
         // We must release the peer interface reference after

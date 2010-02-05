@@ -157,6 +157,9 @@ typedef int socklen_t;
 /* DLL entry point */
 BOOL APIENTRY DllMain(HANDLE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
 {
+	int iResult = 0;
+	WSADATA wsaData;
+
 	switch (ul_reason_for_call) {
 	case DLL_PROCESS_ATTACH:
 #if defined(DEBUG)
@@ -164,6 +167,13 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  ul_reason_for_call, LPVOID lpReserv
 			fprintf(stderr, "Could not initialize debugging\n");
 		}
 #endif
+		// Make sure Winsock is initialized
+		iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
+
+		if (iResult != 0) {
+			fprintf(stderr, "WSAStartup failed\n");
+			return FALSE;
+		}
 		break;
 	case DLL_THREAD_ATTACH:
 		break;
@@ -173,6 +183,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  ul_reason_for_call, LPVOID lpReserv
 #if defined(DEBUG)
 		libhaggle_debug_fini();
 #endif
+		WSACleanup();
 		break;
 	}
 	return TRUE;
@@ -440,14 +451,14 @@ int haggle_daemon_pid(unsigned long *pid)
         return HAGGLE_DAEMON_CRASHED;
 }
 
-static int spawn_daemon_internal(const char *daemonpath)
+static int spawn_daemon_internal(const char *daemonpath, daemon_spawn_callback_t callback)
 {
 	int ret = HAGGLE_ERROR;
 	int status;
 	SOCKET sock;
 	fd_set readfds;
-	struct timeval tv;
-	int time_left;
+	struct timeval timeout;
+	unsigned int time_left, time_passed = 0;
 	int maxfd = 0;
 	
 #if defined(OS_WINDOWS)
@@ -457,19 +468,6 @@ static int spawn_daemon_internal(const char *daemonpath)
 	const char *path;
 #endif
 	PROCESS_INFORMATION pi;
-	
-	if (num_handles == 0) {
-		int iResult = 0;
-		WSADATA wsaData;
-
-		// Make sure Winsock is initialized
-		iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
-
-		if (iResult != 0) {
-			ret = HAGGLE_WSA_ERROR;
-			goto fail_setup;
-		}
-	}
 #endif
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -530,8 +528,8 @@ static int spawn_daemon_internal(const char *daemonpath)
 	
 	// Wait for 90 seconds max.
 	time_left = 90;
-	tv.tv_sec = 1;
-	tv.tv_usec = 0;
+	timeout.tv_sec = 1;
+	timeout.tv_usec = 0;
 	ret = HAGGLE_ERROR;
 	
 	LIBHAGGLE_DBG("Waiting for Haggle to start...\n");
@@ -542,27 +540,40 @@ static int spawn_daemon_internal(const char *daemonpath)
 		
 		maxfd = sock;
 		
-		status = select(maxfd + 1, &readfds, NULL, NULL, &tv);
+		status = select(maxfd + 1, &readfds, NULL, NULL, &timeout);
 
 		if (status < 0) {
 			LIBHAGGLE_DBG("Socket error while waiting for Haggle to start\n");
 			ret = HAGGLE_SOCKET_ERROR;
 			haggle_set_socket_error();
-		} else if (ret == 0) {
+		} else if (status == 0) {
 			// Timeout!
 			
 			LIBHAGGLE_DBG("Timeout while waiting for Haggle to start\n");
 
-			// FIXME: call a callback function to provide feedback.
 			time_left--;
-			tv.tv_sec = 1;
-			tv.tv_usec = 0;
+			timeout.tv_sec = 1;
+			timeout.tv_usec = 0;
+			time_passed += timeout.tv_sec * 1000 + timeout.tv_usec / 1000;
+
 			if (time_left == 0)
 				ret = HAGGLE_DAEMON_ERROR;
+
+			if (callback) {
+				LIBHAGGLE_DBG("Calling daemon spawn callback, time_passed=%u\n", time_passed);
+				if (callback(time_passed) == 1) {
+					LIBHAGGLE_DBG("Application wants to stop waiting\n");
+					ret = HAGGLE_DAEMON_ERROR;
+				}
+			}
 		} else if (FD_ISSET(sock, &readfds)) {
 			// FIXME: should probably check that the message is a correct data 
 			// object first...
 			LIBHAGGLE_DBG("Haggle signals it is running\n");
+			if (callback) {
+				LIBHAGGLE_DBG("Done! Calling daemon spawn callback\n");
+				callback(0);
+			}
 			ret = HAGGLE_NO_ERROR;
 		}
 	} while (ret == HAGGLE_ERROR);
@@ -570,16 +581,15 @@ static int spawn_daemon_internal(const char *daemonpath)
 fail_start:
 	CLOSE_SOCKET(sock);
 fail_sock:
-#if defined(WIN32) || defined(WINCE)
-	if (num_handles == 0) {
-		WSACleanup();
-	}
-fail_setup:;
-#endif
 	return ret;
 }
 
 int haggle_daemon_spawn(const char *daemonpath)
+{
+	return haggle_daemon_spawn_with_callback(daemonpath, NULL);
+}
+
+int haggle_daemon_spawn_with_callback(const char *daemonpath, daemon_spawn_callback_t callback)
 {
         int i = 0;
 
@@ -587,8 +597,12 @@ int haggle_daemon_spawn(const char *daemonpath)
                 return HAGGLE_NO_ERROR;
 
         if (daemonpath) {
-                return spawn_daemon_internal(daemonpath);
+                return spawn_daemon_internal(daemonpath, callback);
         }
+
+	if (!callback) {
+		LIBHAGGLE_DBG("No daemon spawn callback\n");
+	}
 
 	while (1) {
 		/*
@@ -608,7 +622,7 @@ int haggle_daemon_spawn(const char *daemonpath)
 
 		if (fp) {
 			fclose(fp);
-			return spawn_daemon_internal(haggle_paths[i]);
+			return spawn_daemon_internal(haggle_paths[i], callback);
 		}
 
 		if (!haggle_paths[++i])
@@ -730,19 +744,6 @@ int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ig
                 return HAGGLE_DAEMON_ERROR;
 #endif
 
-#if defined(OS_WINDOWS)
-	if (num_handles == 0) {
-		int iResult = 0;
-		WSADATA wsaData;
-
-		// Make sure Winsock is initialized
-		iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
-
-		if (iResult != 0) {
-			return HAGGLE_WSA_ERROR;
-		}
-	}
-#endif
 	hh = (struct haggle_handle *)malloc(sizeof(struct haggle_handle));
 
 	if (!hh)
@@ -991,13 +992,6 @@ void haggle_handle_free(haggle_handle_t hh)
 	hh = NULL;
 #ifdef DEBUG
 	haggle_dataobject_leak_report_print();
-#endif
-
-
-#if defined(WIN32) || defined(WINCE)
-	if (num_handles == 0) {
-		WSACleanup();
-	}
 #endif
 }
 

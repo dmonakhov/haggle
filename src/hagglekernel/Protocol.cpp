@@ -121,7 +121,11 @@ bool Protocol::init()
 			// Set a temporary peer node. It will be updated by the protocol manager
 			// when it received a node updated event once the node description
 			// has been received.
-			peerNode = new Node(NODE_TYPE_UNDEF, (char *)NULL, "Peer node");
+			peerNode = Node::create(NODE_TYPE_UNDEF, "Peer node");
+
+			if (!peerNode)
+				return false;
+
 			peerNode->addInterface(peerIface);
 		}
 	}
@@ -700,7 +704,7 @@ ProtocolEvent Protocol::receiveDataObject()
 
 	HAGGLE_DBG("%s receiving data object\n", getName());
 
-        dObj = new DataObject(localIface, peerIface, getKernel()->getStoragePath());
+	dObj = DataObject::create_for_putting(localIface, peerIface, getKernel()->getStoragePath());
 
         if (!dObj) {
 		HAGGLE_ERR("Could not create pending data object\n");
@@ -770,6 +774,7 @@ ProtocolEvent Protocol::receiveDataObject()
 								Timeval::now().getAsString().c_str(), ctrlmsgToStr(&m).c_str(), 
 								dObj->getIdStr(), peerNode ? peerNode->getIdStr() : "unknown");
 						}
+						
                                                 return pEvent;
 					} else {
                                                 m.type = CTRLMSG_TYPE_ACCEPT;
@@ -850,8 +855,8 @@ ProtocolEvent Protocol::sendDataObjectNow(const DataObjectRef& dObj)
 	ssize_t len;
         struct ctrlmsg m;
 
-	HAGGLE_DBG("%s : Sending data object to interface \'%s\'\n", 
-			getName(), peerDescription().c_str());
+	HAGGLE_DBG("%s : Sending data object [%s] to peer \'%s\'\n", 
+			getName(), dObj->getIdStr(), peerDescription().c_str());
 	
 	DataObjectDataRetrieverRef retriever = dObj->getDataObjectDataRetriever();
 

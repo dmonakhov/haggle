@@ -322,7 +322,10 @@ void NodeManager::onNeighborInterfaceUp(Event *e)
 
 		// Create new node
 		// It will have uninitilized state
-		neigh = new Node();
+		neigh = Node::create();
+
+		if (!neigh)
+			return;
 
 		// Add this interface to it
 		neigh->addInterface(e->getInterface());
@@ -439,7 +442,7 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 
 		DataObjectRef dObj = dObjs.pop();
 
-		NodeRef node = new Node(NODE_TYPE_PEER, dObj);
+		NodeRef node = Node::create(NODE_TYPE_PEER, dObj);
 
 		if (!node) {
 			HAGGLE_DBG("Could not create node from metadata!\n");
@@ -555,8 +558,14 @@ void NodeManager::onRetrieveNodeDescription(Event *e)
 		return;
 	} 
 	
-	NodeRef node = NodeRef(new Node(NODE_TYPE_PEER, dObj));
+	NodeRef node = Node::create(NODE_TYPE_PEER, dObj);
 	
+	if (!node) {
+		HAGGLE_DBG("Could not create node from node description\n");
+		delete qr;
+		return;
+	}
+
 	HAGGLE_DBG("New node description from node %s -- creating node: createTime %s receiveTime %s\n", 
 		   node->getName().c_str(), 
 		   dObj->getCreateTime().getAsString().c_str(), 

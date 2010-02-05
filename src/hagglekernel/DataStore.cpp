@@ -230,7 +230,7 @@ DataStoreTask::DataStoreTask(DataStoreRepositoryQuery *q, TaskType _type) :
 }
 
 DataStoreTask::DataStoreTask(const Filter& _f, TaskType _type, const EventCallback<EventHandler> *_callback, bool _boolParameter) :
-	HeapItem(), type(_type), priority(TASK_PRIORITY_MEDIUM), f(_f.copy()), callback(_callback), boolParameter(_boolParameter) 
+	HeapItem(), type(_type), priority(TASK_PRIORITY_HIGH), f(_f.copy()), callback(_callback), boolParameter(_boolParameter) 
 {
 	if (type == TASK_ADD_FILTER) {
 	} else {

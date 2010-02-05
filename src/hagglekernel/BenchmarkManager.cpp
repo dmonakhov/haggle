@@ -177,7 +177,11 @@ NodeRef BenchmarkManager::createNode(unsigned int numAttr)
 	sprintf(nodeid, "%ld", id);
 	sprintf(nodename, "node %ld", id);
 	
-	NodeRef node = new Node(NODE_TYPE_PEER, nodeid, nodename);
+	NodeRef node = Node::create_with_id(NODE_TYPE_PEER, nodeid, nodename);
+
+	if (!node)
+		return NULL;
+
 	node->addInterface(iface);
 
 	for (unsigned int i = 0; i < numAttr; i++) {
@@ -249,7 +253,7 @@ DataObjectRef BenchmarkManager::createDataObject(unsigned int numAttr)
 	Address addr2(AddressType_EthMAC, (unsigned char *) macaddr2);
 	InterfaceRef localIface = new Interface(IFTYPE_ETHERNET, macaddr, &addr);		
 	InterfaceRef remoteIface = new Interface(IFTYPE_ETHERNET, macaddr2, &addr2);		
-	DataObjectRef dObj = new DataObject(localIface, remoteIface);
+	DataObjectRef dObj = DataObject::create(NULL, 0, localIface, remoteIface);
 
 	for (unsigned int i = 0; i < numAttr; i++) {
 		int tries = 0;

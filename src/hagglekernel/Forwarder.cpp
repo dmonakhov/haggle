@@ -19,9 +19,9 @@ DataObjectRef Forwarder::createRoutingInformationDataObject()
 {
 	// No need to have a reference in this function because it won't be 
 	// visible outside until this function is done with it.
-	DataObjectRef dObj = new DataObject();
+	DataObjectRef dObj = DataObject::create();
 	
-	if (!dObj || !dObj->isValid())
+	if (!dObj)
 		return NULL;
 
 	dObj->setPersistent(false);

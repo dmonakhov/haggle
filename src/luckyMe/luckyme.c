@@ -62,7 +62,7 @@
 
 
 unsigned long grid_size = 0;
-char *filename = "\\luckyMeData.jpg";
+char *filename = "\\luckyme.png";
 char *single_source_name = NULL;
 unsigned long create_data_interval = 30;
 unsigned long attribute_pool_size = 100;
@@ -102,6 +102,50 @@ static int test_is_running = 0;
 #define NOTIFY_ERROR()
 static int test_loop_event[2];
 #endif
+#ifdef OS_WINDOWS
+typedef CRITICAL_SECTION mutex_t;
+#elif defined(OS_UNIX)
+#include <pthread.h>
+#include <libgen.h>
+typedef pthread_mutex_t mutex_t;
+#endif
+
+mutex_t mutex;
+
+static void mutex_init(mutex_t *m)
+{
+#ifdef OS_WINDOWS
+	InitializeCriticalSection(m);
+#elif defined(OS_UNIX)
+	pthread_mutex_init(m, NULL);
+#endif
+}
+static void mutex_del(mutex_t *m)
+{
+#ifdef OS_WINDOWS
+	DeleteCriticalSection(m);
+#elif defined(OS_UNIX)
+	pthread_mutex_destroy(m);
+#endif
+}
+static inline int mutex_lock(mutex_t *m)
+{
+#ifdef OS_WINDOWS
+	EnterCriticalSection(m);
+	return 0;
+#elif defined(OS_UNIX)
+	return pthread_mutex_lock(m);
+#endif
+}
+
+static inline void mutex_unlock(mutex_t *m)
+{
+#ifdef OS_WINDOWS
+	LeaveCriticalSection(m);
+#elif defined(OS_UNIX)
+	pthread_mutex_unlock(m);
+#endif
+}
 
 static double fac(int n)
 {
@@ -163,14 +207,13 @@ void luckyme_dataobject_set_createtime(struct dataobject *dobj)
 #ifdef OS_WINDOWS_MOBILE
 
 /* DLL entry point */
-BOOL APIENTRY DllMain( HANDLE hModule, 
-		      DWORD  ul_reason_for_call, 
-		      LPVOID lpReserved)
+BOOL APIENTRY DllMain(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
 	switch (ul_reason_for_call) {
 		case DLL_PROCESS_ATTACH:
 			test_loop_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 			luckyme_start_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+			mutex_init(&mutex);
 			break;
 		case DLL_THREAD_ATTACH:
 			break;
@@ -179,6 +222,7 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 		case DLL_PROCESS_DETACH:
 			CloseHandle(test_loop_event);
 			CloseHandle(luckyme_start_event);
+			mutex_del(&mutex);
 			break;
 	}
 	return TRUE;
@@ -254,7 +298,7 @@ unsigned long luckyme_get_num_neighbors(void)
 	return num_neighbors;
 }
 
-char *luckyme_get_neighbor(unsigned int i)
+char *luckyme_get_neighbor_unlocked(unsigned int i)
 {
 	if (i < num_neighbors) {
 		return neighbors[i];
@@ -262,13 +306,49 @@ char *luckyme_get_neighbor(unsigned int i)
 	return NULL;
 }
 
-int luckyme_haggle_start(void)
+char *luckyme_get_neighbor_locked(unsigned int i)
+{
+	char *neigh, *neighbor = NULL;
+
+	mutex_lock(&mutex);
+
+	neigh = luckyme_get_neighbor_unlocked(i);
+
+	if (neigh) {
+		neighbor = (char *)malloc(strlen(neigh) + 1);
+		strcpy(neighbor, neigh);
+	}
+	
+	mutex_unlock(&mutex);
+
+	return NULL;
+}
+
+void luckyme_free_neighbor(char *neigh)
+{
+	if (neigh)
+		free(neigh);
+}
+
+int luckyme_neighborlist_lock()
+{
+	return mutex_lock(&mutex);
+}
+
+void luckyme_neighborlist_unlock()
+{
+	mutex_unlock(&mutex);
+}
+
+int luckyme_haggle_start(daemon_spawn_callback_t callback)
 {
 	if (haggle_daemon_pid(NULL) == HAGGLE_DAEMON_RUNNING) {
 		return 0;
 	}
+
+	LIBHAGGLE_DBG("callback is %s\n", callback ? "set" : "NULL");
 	
-	return haggle_daemon_spawn(NULL) == HAGGLE_NO_ERROR;
+	return haggle_daemon_spawn_with_callback(NULL, callback) == HAGGLE_NO_ERROR;
 }
 
 
@@ -469,7 +549,9 @@ int create_dataobject_random()
 	if (filename) {
 		dobj = haggle_dataobject_new_from_file(filename);
 		
-		if (!dobj)
+		if (dobj)
+			haggle_dataobject_add_hash(dobj);
+		else
 			dobj = haggle_dataobject_new();
 	} else {
 		dobj = haggle_dataobject_new();
@@ -514,7 +596,9 @@ int create_dataobject_grid()
 	if (filename) {
 		dobj = haggle_dataobject_new_from_file(filename);
 
-		if (!dobj)
+		if (dobj)
+			haggle_dataobject_add_hash(dobj);
+		else
 			dobj = haggle_dataobject_new();
 	} else {
 		dobj = haggle_dataobject_new();
@@ -544,8 +628,6 @@ int create_dataobject_grid()
 
 int on_dataobject(haggle_event_t *e, void* nix)
 {
-	;
-
 	num_dobj_received++;
 
 #if defined(OS_WINDOWS_MOBILE)
@@ -568,6 +650,8 @@ static void neighbor_list_clear()
 {
 	unsigned long i;
 
+	mutex_lock(&mutex);
+
 	if (num_neighbors) {
 		for (i = 0; i < num_neighbors; i++) {
 			free(neighbors[i]);
@@ -576,6 +660,8 @@ static void neighbor_list_clear()
 	}
 	num_neighbors = 0;
 	neighbors = NULL;
+
+	mutex_unlock(&mutex);
 }
 
 int on_neighbor_update(haggle_event_t *e, void* nix)
@@ -585,6 +671,8 @@ int on_neighbor_update(haggle_event_t *e, void* nix)
 	
 	neighbor_list_clear();
 	
+	mutex_lock(&mutex);
+
 	num_neighbors = haggle_nodelist_size(nl);
 
 	LIBHAGGLE_DBG("number of neighbors is %lu\n", num_neighbors);
@@ -608,6 +696,9 @@ int on_neighbor_update(haggle_event_t *e, void* nix)
 			}
 		}
 	} 
+	
+	mutex_unlock(&mutex);
+
 #if defined(OS_WINDOWS_MOBILE)
 	if (callback)
 		callback(EVENT_TYPE_NEIGHBOR_UPDATE);
@@ -814,7 +905,7 @@ void test_loop() {
 #endif
 			}
 		} else if (result == 1) {
-			stop_now = 1;
+			// Check whether we should exit
 		}
 	}
 	LIBHAGGLE_DBG("test loop done!\n");
@@ -827,6 +918,8 @@ void on_event_loop_start(void *arg)
 
 	luckyme_prng_init();
 	/* retreive interests: */
+	LIBHAGGLE_DBG("Requesting application interests.\n");
+
 	if (haggle_ipc_get_application_interests_async(hh) != HAGGLE_NO_ERROR) {
 		LIBHAGGLE_DBG("Could not request interests\n");
 	}
@@ -872,6 +965,8 @@ int luckyme_run()
 	luckyme_prng_init();
 		
 	do {
+		LIBHAGGLE_DBG("Trying to register with Haggle\n");
+
 		ret = haggle_handle_get(APP_NAME, &hh);
 		
 		// Busy?
@@ -967,10 +1062,17 @@ void signal_handler()
 
 int main(int argc, char **argv)
 {
+	int res;
+
 	signal(SIGINT, signal_handler);      // SIGINT is what you get for a Ctrl-C
 	parse_commandline(argc, argv);
+	mutex_init(&mutex);
+
+	res = luckyme_run();
 	
-	return luckyme_run();
+	mutex_del(&mutex);
+
+	return res;
 }
 #elif defined(OS_WINDOWS_MOBILE) && defined(CONSOLE)
 int wmain()

@@ -35,18 +35,6 @@ NodeStore::~NodeStore()
 	HAGGLE_DBG("Deleted %d node records in node store\n", n);
 }
 
-//NodeStore::NodeStore(const NodeStore &store) {}
-/*
-  Active neighbor list functions.
-
- */
-/*
-NodeStore *NodeStore::copy()
-{
-	return new NodeStore(*this);
-}
-*/
-
 bool NodeStore::_stored(const NodeRef &node, bool mustBeNeighbor)
 {
 	for (NodeStore::iterator it = begin(); it != end(); it++) {

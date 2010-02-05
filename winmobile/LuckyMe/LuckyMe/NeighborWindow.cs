@@ -29,12 +29,16 @@ namespace LuckyGUI
                         // fill in list!
                         uint i, j;
 
+                        LuckyMeLib.neighborListLock();
+
                         j = LuckyMeLib.getNumberOfNeighbors();
 
                         for (i = 0; i < j; i++)
                         {
                                 listView1.Items.Add(new ListViewItem(LuckyMeLib.getNeighborName(i)));
                         }
+
+                        LuckyMeLib.neighborListUnlock();
                 }
         }
 }

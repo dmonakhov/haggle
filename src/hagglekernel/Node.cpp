@@ -181,9 +181,7 @@ inline bool Node::init_node(const unsigned char *_id)
 	} else if (_id) {
 		memcpy(id, _id, sizeof(NodeId_t));
 		calcIdStr();
-	} else if (!createdFromNodeDescription) {
-		HAGGLE_ERR("Created node without node ID.\n");
-	}
+	} 
 
 	if (!doBF)
 		return false;
@@ -191,68 +189,17 @@ inline bool Node::init_node(const unsigned char *_id)
 	return true;
 }
 
-Node::Node(const NodeType_t _type, const DataObjectRef& dObj) : 
-#ifdef DEBUG_LEAKS
-	LeakMonitor(LEAK_TYPE_NODE),
-#endif
-	type(_type), num(totNum++), name("Unnamed node"), nodeDescExch(false), 
-	dObj(dObj ? dObj : DataObjectRef(new DataObject())), 
-	doBF(NULL), eventid(-1), stored(false), createdFromNodeDescription(dObj ? true : false), 
-	filterEventId(-1), matchThreshold(NODE_DEFAULT_MATCH_THRESHOLD), 
-	numberOfDataObjectsPerMatch(NODE_DEFAULT_DATAOBJECTS_PER_MATCH)
-{
-	init_node(NULL);
-}
-
-Node::Node(const NodeType_t _type, const NodeId_t _id, const string _name) : 
+Node::Node(const NodeType_t _type, const string _name) : 
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_NODE),
 #endif
 	type(_type), num(totNum++), name(_name), nodeDescExch(false), 
-	dObj(DataObjectRef(new DataObject())), doBF(NULL), eventid(-1),
+	dObj(NULL), doBF(NULL), eventid(-1),
 	stored(false), createdFromNodeDescription(false),
 	filterEventId(-1), matchThreshold(NODE_DEFAULT_MATCH_THRESHOLD), 
 	numberOfDataObjectsPerMatch(NODE_DEFAULT_DATAOBJECTS_PER_MATCH)
 {
-	init_node(_id);
 }
-
-Node::Node(const NodeType_t _type, const char *_idStr, const string _name) : 
-#ifdef DEBUG_LEAKS
-	LeakMonitor(LEAK_TYPE_NODE),
-#endif
-	type(_type), num(totNum++), name(_name), nodeDescExch(false), 
-	dObj(DataObjectRef(new DataObject())), doBF(NULL), 
-	eventid(-1), stored(false), createdFromNodeDescription(false),
-	filterEventId(-1), matchThreshold(NODE_DEFAULT_MATCH_THRESHOLD),
-	numberOfDataObjectsPerMatch(NODE_DEFAULT_DATAOBJECTS_PER_MATCH)
-{
-	NodeId_t iD;
-	long i;
-
-	if (_idStr != NULL) {
-		for (i = 0; i < NODE_ID_LEN; i++) {
-			iD[i] = 0;
-			if (_idStr[i*2] <= '9')
-				iD[i] += (_idStr[i*2] - '0') << 4;
-			else if (_idStr[i*2] <= 'G')
-				iD[i] += (_idStr[i*2] - 'A' + 10) << 4;
-			else //if(_idStr[i*2] <= 'g')
-				iD[i] += (_idStr[i*2] - 'a' + 10) << 4;
-			if (_idStr[i*2 + 1] <= '9')
-				iD[i] += (_idStr[i*2 + 1] - '0');
-			else if (_idStr[i*2 + 1] <= 'G')
-				iD[i] += (_idStr[i*2 + 1] - 'A' + 10);
-			else //if (_idStr[i*2 + 1] <= 'g')
-				iD[i] += (_idStr[i*2 + 1] - 'a' + 10);
-		}
-
-		init_node(iD);
-	} else {
-		init_node(NULL);
-	}
-}
-
 
 Node::Node(const Node& n) :
 #ifdef DEBUG_LEAKS
@@ -275,6 +222,130 @@ Node::Node(const Node& n) :
 
 	if (n.dObj)
 		dObj = n.dObj->copy();
+}
+
+Node *Node::create(NodeType_t type, const DataObjectRef& dObj)
+{
+	if (!dObj) {
+		HAGGLE_ERR("Bad data object\n");
+		return NULL;
+	}
+
+	Node *node = new Node(type);
+
+	if (!node)
+		return NULL;
+
+	node->dObj = dObj;
+	node->createdFromNodeDescription = true;
+
+	if (!node->init_node(NULL)) {
+		HAGGLE_DBG("Node could not be initialized\n");
+		delete node;
+		node = NULL;
+	}
+
+	return node;
+}
+
+Node *Node::create(NodeType_t type, const string name)
+{
+	Node *node = new Node(type, name);
+
+	if (!node)
+		return NULL;
+	
+	node->dObj = DataObject::create();
+
+	if (!node->dObj) {
+		HAGGLE_DBG("Data object could not be created\n");
+		delete node;
+		return NULL;
+	}
+
+	if (!node->init_node(NULL)) {
+		HAGGLE_DBG("Node could not be initialized\n");
+		delete node;
+		node = NULL;
+	}
+
+	return node;
+}
+
+Node *Node::create_with_id(NodeType_t type, const NodeId_t id, const string name)
+{
+	Node *node = new Node(type, name);
+
+	if (!node)
+		return NULL;
+	
+	node->dObj = DataObject::create();
+
+	if (!node->dObj) {
+		HAGGLE_DBG("Data object could not be created\n");
+		delete node;
+		return NULL;
+	}
+
+	if (!node->init_node(id)) {
+		HAGGLE_DBG("Node could not be initialized\n");
+		delete node;
+		node = NULL;
+	}
+
+	return node;
+}
+
+Node *Node::create_with_id(NodeType_t type, const char *_idStr, const string name)
+{
+	NodeId_t iD;
+	unsigned int i;
+
+	if (!_idStr) {
+		HAGGLE_ERR("Bad identifier string\n");
+		return NULL;
+	}
+
+	if (strlen(_idStr) != (MAX_NODE_ID_STR_LEN - 1)) {
+		HAGGLE_ERR("Bad length of identifier string\n");
+		return NULL;
+	}
+	for (i = 0; i < NODE_ID_LEN; i++) {
+		iD[i] = 0;
+		if (_idStr[i*2] <= '9')
+			iD[i] += (_idStr[i*2] - '0') << 4;
+		else if (_idStr[i*2] <= 'G')
+			iD[i] += (_idStr[i*2] - 'A' + 10) << 4;
+		else //if(_idStr[i*2] <= 'g')
+			iD[i] += (_idStr[i*2] - 'a' + 10) << 4;
+		if (_idStr[i*2 + 1] <= '9')
+			iD[i] += (_idStr[i*2 + 1] - '0');
+		else if (_idStr[i*2 + 1] <= 'G')
+			iD[i] += (_idStr[i*2 + 1] - 'A' + 10);
+		else //if (_idStr[i*2 + 1] <= 'g')
+			iD[i] += (_idStr[i*2 + 1] - 'a' + 10);
+	}
+
+	Node *node = new Node(type, name);
+
+	if (!node)
+		return NULL;
+	
+	node->dObj = DataObject::create();
+
+	if (!node->dObj) {
+		HAGGLE_DBG("Data object could not be created\n");
+		delete node;
+		return NULL;
+	}
+
+	if (!node->init_node(iD)) {
+		HAGGLE_DBG("Node could not be initialized\n");
+		delete node;
+		node = NULL;
+	}
+
+	return node;
 }
 
 Node::~Node()

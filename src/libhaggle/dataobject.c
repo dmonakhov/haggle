@@ -293,11 +293,13 @@ struct dataobject *haggle_dataobject_new_from_file(const char *filepath)
         FILE *fp;
 	struct dataobject *dobj;
         size_t datalen;
+	const char *filename;
+	int i;
 
 	if (!filepath || strlen(filepath) == 0)
 		return NULL;
 	
-        fp = fopen(filepath, "r");
+        fp = fopen(filepath, "rb");
 
         if (!fp) {
                 LIBHAGGLE_DBG("Could not stat file %s\n", filepath);
@@ -333,7 +335,25 @@ struct dataobject *haggle_dataobject_new_from_file(const char *filepath)
 		return NULL;
 	}
 	strcpy(dobj->filepath, filepath);
-	
+
+	/* Find out the filename */
+	for (i = strlen(filepath) - 1; i >= 0; i--) {
+		filename = &filepath[i];
+		if (filepath[i] == '/' || filepath[i] == '\\') {
+			filename = &filepath[i+1];
+			break;
+		}
+	}
+
+	dobj->filename = (char *)malloc(strlen(filename) + 1);
+
+	if (!dobj->filename) {
+		haggle_dataobject_free(dobj);
+		return NULL;
+	}
+
+	strcpy(dobj->filename, filename);
+
         dobj->m = metadata_new(HAGGLE_TAG, NULL, NULL);
 	
         if (!dobj->m) {

@@ -155,13 +155,18 @@ void DebugManager::onFindRepositoryKey(Event *e)
 	if (!re) {
 		// No repository entry: no data object.
 		DataObjectRef dObj;
-		
+
+		// Name the log so that the files are more easily readable on the 
+		// machine that receives them:
+		char filename[128];
+		sprintf(filename, "log-%s.txt", kernel->getThisNode()->getIdStr());
+
 		// Create data object:
 		
 		// Empty at first:
-		dObj = new DataObject();
+		dObj = DataObject::create(LogTrace::ltrace.getFile(), filename);
 		
-		if (!dObj || !dObj->isValid()) {
+		if (!dObj) {
 			HAGGLE_ERR("Could not create data object\n");
 			return;
 		}
@@ -172,20 +177,9 @@ void DebugManager::onFindRepositoryKey(Event *e)
 		// Add node id of local node, to make sure that two logs from different 
 		// nodes don't clash:
 		Attribute b("Node id", kernel->getThisNode()->getIdStr());
-		dObj->addAttribute(b);
+		dObj->addAttribute(b);;
 		
-		// Give the data object the log as data:
-		dObj->setFilePath(LogTrace::ltrace.getFile());
 		
-		// Name the log so that the files are more easily readable on the 
-		// machine that receives them:
-		char str[128];
-		sprintf(str, "log-%s.txt", kernel->getThisNode()->getIdStr());
-		dObj->setFileName(str);
-		
-		// Set the data object so that the getData_begin() function figures out
-		// the file length, rather than specify it here.
-		dObj->setDynamicDataLen(true);
 		
 		// Insert data object:
 		kernel->getDataStore()->insertDataObject(dObj);

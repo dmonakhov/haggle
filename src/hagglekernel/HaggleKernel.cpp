@@ -90,7 +90,7 @@ bool HaggleKernel::init()
         
         HAGGLE_DBG("Hostname is %s\n", hostname);
 
-	thisNode = nodeStore.add(new Node(NODE_TYPE_THIS_NODE, (char*)NULL, hostname));
+	thisNode = nodeStore.add(Node::create(NODE_TYPE_THIS_NODE, hostname));
 
 	if (!thisNode) {
 		HAGGLE_ERR("Could not create this node\n");
@@ -318,7 +318,7 @@ bool HaggleKernel::readStartupDataObject(FILE *fp)
 		
 		while (i < len) {
 			if (theDO == NULL)
-				theDO = new DataObject((InterfaceRef) NULL);
+				theDO = DataObject::create_for_putting();
 			
 			if (!theDO) {
 				ret = false;

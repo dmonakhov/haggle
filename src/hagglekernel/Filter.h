@@ -55,6 +55,7 @@ public:
         Filter *copy() const {
                 return new Filter(*this);
         }
+	string getFilterDescription() const;
 };
 
 

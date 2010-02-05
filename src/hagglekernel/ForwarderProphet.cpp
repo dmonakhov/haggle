@@ -284,7 +284,7 @@ void ForwarderProphet::_generateTargetsFor(const NodeRef &neighbor)
 				// Yes: insert this node into the list of targets for this 
 				// delegate forwarder.
 				
-				NodeRef target = new Node(NODE_TYPE_PEER, id_number_to_nodeid[it->first].c_str(), "PRoPHET target node");
+				NodeRef target = Node::create_with_id(NODE_TYPE_PEER, id_number_to_nodeid[it->first].c_str(), "PRoPHET target node");
                                 
 				if (target) {
 					lst.push_back(target);
@@ -315,7 +315,7 @@ void ForwarderProphet::_generateDelegatesFor(const DataObjectRef &dObj, const No
 		// Exclude ourselves and the target node from the list of good delegate
 		// forwarders:
 		if (it->first != this_node_id && it->first != target_id) {
-                        //NodeRef delegate = new Node(id_number_to_nodeid[it->first].c_str(), NODE_TYPE_PEER, "PRoPHET delegate node");
+                        //NodeRef delegate = Node::create_with_id(NODE_TYPE_PEER, id_number_to_nodeid[it->first].c_str(), "PRoPHET delegate node");
 			
 			NodeRef delegate = kernel->getNodeStore()->retrieve(id_number_to_nodeid[it->first], true);
 			

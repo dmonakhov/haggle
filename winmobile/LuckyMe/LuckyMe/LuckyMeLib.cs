@@ -9,8 +9,6 @@ namespace LuckyGUI
 {
         public class LuckyMeLib
         {
-                public delegate void Callback();
-
                 [DllImport("luckymelib.dll", EntryPoint = "luckyme_test_start")]
                 static public extern int startTest();
                 [DllImport("luckymelib.dll", EntryPoint = "luckyme_test_stop")]
@@ -19,8 +17,10 @@ namespace LuckyGUI
                 static public extern int startLuckyMe();
                 [DllImport("luckymelib.dll", EntryPoint = "luckyme_stop")]
                 static public extern int stopLuckyMe(int stop_haggle);
+
+                public delegate int SpawnCallback(uint milliseconds);
                 [DllImport("luckymelib.dll", EntryPoint = "luckyme_haggle_start")]
-                static public extern int startHaggle();
+                static public extern int startHaggle(SpawnCallback callback);
                 [DllImport("luckymelib.dll", EntryPoint = "luckyme_haggle_stop")]
                 static public extern int stopHaggle();
 
@@ -59,7 +59,14 @@ namespace LuckyGUI
 
                         return str;
                 }
-                [DllImport("luckymelib.dll", EntryPoint = "luckyme_get_neighbor")]
+
+                [DllImport("luckymelib.dll", EntryPoint = "luckyme_neighborlist_lock")]
+                static public extern int neighborListLock();
+
+                [DllImport("luckymelib.dll", EntryPoint = "luckyme_neighborlist_unlock")]
+                static public extern void neighborListUnlock();
+
+                [DllImport("luckymelib.dll", EntryPoint = "luckyme_get_neighbor_unlocked")]
                 static extern IntPtr UnmanagedGetNeighborName(uint n);
                 static public String getNeighborName(uint n)
                 {
@@ -72,6 +79,7 @@ namespace LuckyGUI
                         }
                         return AnsiIntPtrToString(actual);
                 }
+
                 [DllImport("libhaggle.dll", EntryPoint = "haggle_daemon_pid")]
                 static extern int UnmanagedDaemonPid(ref uint p);
                 public static int HagglePid()

@@ -403,7 +403,7 @@ bool ForwardingManager::shouldForward(const DataObjectRef& dObj, const NodeRef& 
 	}
 	
 	if (dObj->isNodeDescription()) {
-		NodeRef descNode = new Node(NODE_TYPE_PEER, dObj);
+		NodeRef descNode = Node::create(NODE_TYPE_PEER, dObj);
 		
 		if (descNode) {
 			if (descNode == node) {

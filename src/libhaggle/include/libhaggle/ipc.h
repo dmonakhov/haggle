@@ -80,6 +80,16 @@ typedef int (STDCALL *haggle_event_handler_t) (haggle_event_t *, void *);
 typedef void (STDCALL *haggle_event_loop_start_t) (void *);
 typedef void (STDCALL *haggle_event_loop_stop_t) (void *);
 
+/* 
+Callback for providing feedback during spawning of Haggle. The unsigned integer passed is the 
+total number of milliseconds that have passed since spawning was initiated. The value will be
+zero once the daemon has been spawned, and the callback will not be called again.
+
+The return value of the callback can be used to cancel the spawning. Return 1 to cancel, 
+any other value will continue the operation.
+*/
+typedef int (STDCALL *daemon_spawn_callback_t) (unsigned int);
+
 /* Errors */
 #define	LIBHAGGLE_ERR_BAD_HANDLE    0x01
 #define	LIBHAGGLE_ERR_NOT_CONNECTED 0x02
@@ -193,6 +203,7 @@ HAGGLE_API int haggle_daemon_pid(unsigned long *pid);
         was spawned and HAGGLE_ERROR if an error occured.
 */
 HAGGLE_API int haggle_daemon_spawn(const char *daemonpath);
+HAGGLE_API int haggle_daemon_spawn_with_callback(const char *daemonpath, daemon_spawn_callback_t callback);
 
 /**
 	This function can be used by an application to remove any previous 

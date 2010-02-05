@@ -84,3 +84,20 @@ Filter::~Filter()
 	   }
 	 */
 }
+
+
+string Filter::getFilterDescription() const
+{
+	string desc = "empty filter";
+
+	if (attrs.size())
+		desc = "";
+
+	for (Attributes::const_iterator it = attrs.begin(); it != attrs.end(); it++) {
+		desc += (*it).second.getName();
+		desc += ":";
+		desc += (*it).second.getValue();
+		desc += " ";
+	}
+	return desc;
+}

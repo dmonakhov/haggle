@@ -27,7 +27,7 @@ LUCKYME_API int luckyme_test_stop(void);
 LUCKYME_API int luckyme_start(void);
 LUCKYME_API int luckyme_stop(int stop_haggle);
 
-LUCKYME_API int luckyme_haggle_start(void);
+LUCKYME_API int luckyme_haggle_start(daemon_spawn_callback_t callback);
 LUCKYME_API int luckyme_haggle_stop(void);
 
 LUCKYME_API int luckyme_is_haggle_shuttingdown();
@@ -52,10 +52,15 @@ LUCKYME_API unsigned long luckyme_get_num_neighbors(void);
 
 /*
  Returns the name of the given neighbor. NULL if luckyme is not running,
- the index is out of range etc.
+ the index is out of range etc. 
+ The returned string must be freed after usage.
  */
-LUCKYME_API char *luckyme_get_neighbor(unsigned int n);
+LUCKYME_API char *luckyme_get_neighbor_unlocked(unsigned int n);
+LUCKYME_API char *luckyme_get_neighbor_locked(unsigned int n);
+LUCKYME_API void luckyme_free_neighbor(char *neigh);
 
+LUCKYME_API int luckyme_neighborlist_lock();
+LUCKYME_API void luckyme_neighborlist_unlock();
 /*
  Returns 1 if luckyMe is running
  Returns 0 if luckyMe is not running
@@ -72,7 +77,6 @@ enum {
 };
 
 typedef void (__stdcall *callback_function_t) (int);
-
 
 LUCKYME_API int set_callback(callback_function_t callback);
 

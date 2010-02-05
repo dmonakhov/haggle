@@ -13,12 +13,29 @@ namespace LuckyGUI
 {
         public partial class TestControlWindow : Form
         {
+                long milliseconds_progress = 0;
+
                 public TestControlWindow()
                 {
                         InitializeComponent();
                         statusMsgLabel.Text = "";
-                }
+                        progressBar.Maximum = 60000;
 
+                }
+                private void updateProgressValue(object sender, EventArgs e)
+                {
+                        if (milliseconds_progress == 0)
+                                progressBar.Value = progressBar.Maximum;
+                        else if (milliseconds_progress == -1)
+                                progressBar.Value = 0;
+                        else
+                                progressBar.Value = (int)milliseconds_progress;
+                }
+                public void updateStartupProgressBar(long milliseconds)
+                {
+                        milliseconds_progress = milliseconds;
+                        progressBar.Invoke(new EventHandler(updateProgressValue));
+                }
                 public void onShutdown()
                 {
                         Debug.WriteLine("testcontrol_window: onShutdown()");
@@ -39,6 +56,8 @@ namespace LuckyGUI
                                         stop_button.Enabled = false;
                                         shutdown_button.Enabled = true;
                                         menuBack.Text = "Back";
+                                        updateStartupProgressBar(-1);
+                                        progressBar.Visible = false;
                                         break;
                                 case LuckyMe.TestStage.STARTING:
                                         start_button.Text = "Please wait...";
@@ -48,6 +67,7 @@ namespace LuckyGUI
                                         stop_button.Enabled = false;
                                         shutdown_button.Enabled = false;
                                         menuBack.Text = "";
+                                        progressBar.Visible = true;
                                         break;
                                 case LuckyMe.TestStage.RUNNING:
                                         start_button.Text = "Start test";
@@ -56,6 +76,8 @@ namespace LuckyGUI
                                         stop_button.Enabled = true;
                                         shutdown_button.Enabled = true;
                                         menuBack.Text = "Back";
+                                        updateStartupProgressBar(-1);
+                                        progressBar.Visible = false;
                                         break;
                                 case LuckyMe.TestStage.STOPPING:
                                         statusMsgLabel.Text = "Stopping test, please wait...";
@@ -65,6 +87,8 @@ namespace LuckyGUI
                                         stop_button.Text = "Please wait...";
                                         shutdown_button.Enabled = false;
                                         menuBack.Text = "";
+                                        updateStartupProgressBar(-1);
+                                        progressBar.Visible = false;
                                         break;
                                 case LuckyMe.TestStage.SAVING_LOGS:
                                         statusMsgLabel.Text = "Saving log files, please wait...";
@@ -75,6 +99,7 @@ namespace LuckyGUI
                                         menuBack.Text = "";
                                         break;
                                 case LuckyMe.TestStage.SHUTDOWN:
+                                        progressBar.Visible = false;
                                         statusMsgLabel.Text = "Shutting down...";
                                         break;
                         }
@@ -226,6 +251,11 @@ namespace LuckyGUI
                         {
                                 Debug.WriteLine("Haggle is not running");
                         }
+                }
+
+                private void progressBar_ParentChanged(object sender, EventArgs e)
+                {
+
                 }
         }
 }

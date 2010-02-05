@@ -28,6 +28,7 @@ namespace LuckyGUI
                 public delegate void myDelegate();
                 public delegate void myDelegateState(object state);
                 private static LuckyMeLib.UnmanagedCallback mCallback = null;
+                private static LuckyMeLib.SpawnCallback mSpawnCallback = null;
                 public static bool inShutdown = false; 
                 private static ulong numDataObjectsGenerated = 0;
                 private static System.Threading.Timer mCallTimer = null;
@@ -68,6 +69,15 @@ namespace LuckyGUI
                 public static ulong getNumDataObjectsGenerated()
                 {
                         return numDataObjectsGenerated;
+                }
+
+                public static int spawnCallback(uint milliseconds)
+                {
+                        Debug.WriteLine("Spawning, milliseconds=" + milliseconds);
+
+                        testcontrol_window.updateStartupProgressBar((long)milliseconds);
+
+                        return 0;
                 }
                 public static void eventCallback(LuckyMeLib.EventType eventType)
                 {
@@ -175,7 +185,7 @@ namespace LuckyGUI
                                 // Make sure we delete old haggle files.
                                 archiveHaggleFiles(false);
 
-                                int res = LuckyMeLib.startHaggle();
+                                int res = LuckyMeLib.startHaggle(mSpawnCallback);
 
                                 if (res < 0)
                                 {
@@ -540,6 +550,7 @@ namespace LuckyGUI
                 {
 
                         mCallback = new LuckyMeLib.UnmanagedCallback(eventCallback);
+                        mSpawnCallback = new LuckyMeLib.SpawnCallback(spawnCallback);
                         mCallTimer = new System.Threading.Timer(new TimerCallback(new myDelegateState(onTimerStatusCheck)),
                                        null, System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
 

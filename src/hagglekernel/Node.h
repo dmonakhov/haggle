@@ -191,16 +191,17 @@ class Node
 	
 	unsigned long matchThreshold;
 	unsigned long numberOfDataObjectsPerMatch;
+
+        Node(NodeType_t _type, const string name = "Unnamed node");
 public:
-        Node(const NodeType_t _type, const DataObjectRef& dObj);
-        Node(const NodeType_t _type, const NodeId_t _id, const string name = "Unnamed node");
-        // Does the same as the above one, except that this takes an id string.
-        Node(const NodeType_t _type = NODE_TYPE_UNDEF, const char *_idStr = NULL, const string name = "Unnamed node");
-        //Node(const NodeType_t _type = NODE_TYPE_UNDEF, const string name = "Unnamed node");
+	static Node *create(NodeType_t type, const DataObjectRef& dObj);
+	static Node *create(NodeType_t type = NODE_TYPE_UNDEF, const string name = "Unnamed node");
+	static Node *create_with_id(NodeType_t type, const NodeId_t id, const string name = "Unnamed node");
+	static Node *create_with_id(NodeType_t type, const char *idStr, const string name = "Unnamed node");
+
         Node(const Node &n); // Copy constructor
         Node& operator=(const Node &);
-
-        ~Node();
+	~Node();
 	Node *copy() { return new Node(*this); }
         static const unsigned char *strIdToRaw(const char *strId);
 	static const char *typeToStr(const NodeType_t type);

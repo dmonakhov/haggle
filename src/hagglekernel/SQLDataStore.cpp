@@ -151,7 +151,7 @@ using namespace haggle;
 
 // Create tables for Dataobjects, Nodes, Attributes, Filters, Interfaces
 //------------------------------------------
-#define SQL_CREATE_TABLE_DATAOBJECTS_CMD "CREATE TABLE IF NOT EXISTS " TABLE_DATAOBJECTS " (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, id BLOB UNIQUE ON CONFLICT ROLLBACK, xmlhdr TEXT, filepath TEXT, filename TEXT, datalen INTEGER, num_attributes INTEGER DEFAULT 0, signaturestatus INTEGER, signee TEXT, createtime INTEGER, receivetime INTEGER, rxtime INTEGER, source_iface_rowid INTEGER, timestamp DATE);"
+#define SQL_CREATE_TABLE_DATAOBJECTS_CMD "CREATE TABLE IF NOT EXISTS " TABLE_DATAOBJECTS " (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, id BLOB UNIQUE ON CONFLICT ROLLBACK, xmlhdr TEXT, filepath TEXT, filename TEXT, datalen INTEGER, datastate INTEGER, datahash BLOB, num_attributes INTEGER DEFAULT 0, signaturestatus INTEGER, signee TEXT, signature BLOB, siglen INTEGER, createtime INTEGER, receivetime INTEGER, rxtime INTEGER, source_iface_rowid INTEGER, timestamp DATE);"
 enum {
 	table_dataobjects_rowid	= 0,
 	table_dataobjects_id,
@@ -159,9 +159,13 @@ enum {
 	table_dataobjects_filepath,
 	table_dataobjects_filename,
 	table_dataobjects_datalen,
+	table_dataobjects_datastate,
+	table_dataobjects_datahash,
 	table_dataobjects_num_attributes,
 	table_dataobjects_signature_status,
 	table_dataobjects_signee,
+	table_dataobjects_signature,
+	table_dataobjects_signature_len,
 	table_dataobjects_createtime, // The creation time in milliseconds (creator's local time)
 	table_dataobjects_receivetime, // The receive time in milliseconds (local time)
 	table_dataobjects_rxtime, // The transfer time in milliseconds 
@@ -485,8 +489,6 @@ enum {
 	table_repository_value
 };
 
-
-
 /*
 	indexing
  
@@ -566,12 +568,11 @@ static inline string SQL_INSERT_DATAOBJECT_CMD(const char *metadata, const sqlit
 		query suffers from a risk of SQL injection. See the haggle trac page,
 		ticket #139.
 	*/
-	int ret = stringprintf(cmd, "INSERT INTO %s (id,xmlhdr,filepath,filename,datalen,signaturestatus,signee,createtime,receivetime,rxtime,source_iface_rowid) VALUES(?,\'%s\',\'%s\',\'%s\',%lu,%lu,\'%s\'," INT64_FORMAT "," INT64_FORMAT ",%lu," INT64_FORMAT ");", 
+	int ret = stringprintf(cmd, "INSERT INTO %s (id,xmlhdr,filepath,filename,datalen,datastate,datahash,signaturestatus,signee,signature,siglen,createtime,receivetime,rxtime,source_iface_rowid) VALUES(?,\'%s\',\'%s\',\'%s\',%lu,%lu,?,%lu,\'%s\',?,%lu," INT64_FORMAT "," INT64_FORMAT ",%lu," INT64_FORMAT ");", 
                            TABLE_DATAOBJECTS, metadata, dObj->getFilePath().c_str(), dObj->getFileName().c_str(), 
-                           (dObj->getDynamicDataLen() ? -1 : (unsigned long) dObj->getDataLen()), 
-			       dObj->getSignatureStatus(), dObj->getSignee().c_str(),
-                           dObj->getCreateTime().getTimeAsMilliSeconds(), dObj->getReceiveTime().getTimeAsMilliSeconds(), 
-                           dObj->getRxTime(), ifaceRowId);
+                           (unsigned long)dObj->getDataLen(), dObj->getDataState(), dObj->getSignatureStatus(), dObj->getSignee().c_str(),
+			   dObj->getSignatureLength(), dObj->getCreateTime().getTimeAsMilliSeconds(), 
+			   dObj->getReceiveTime().getTimeAsMilliSeconds(), dObj->getRxTime(), ifaceRowId);
 
         if (ret < 0) {
                 HAGGLE_ERR("SQL_INSERT_DATAOBJECT_CMD: stringprintf failed\n");
@@ -783,38 +784,46 @@ static inline char *SQL_DEL_FILTER_CMD(const sqlite_int64 filter_rowid)
 
 DataObject *SQLDataStore::createDataObject(sqlite3_stmt * stmt)
 {
-	DataObject *dObj = NULL;
+	size_t datalen = 0;
+	bool dynamic_datalen = false;
+	Timeval create_time = -1, receive_time = -1; // Mark as invalid
 
-	dObj = new DataObject(sqlite3_column_text(stmt, table_dataobjects_xmlhdr), 
-					sqlite3_column_bytes(stmt, table_dataobjects_xmlhdr), NULL);
+	sqlite_int64 len = sqlite3_column_int64(stmt, table_dataobjects_datalen);
 
-	if (!dObj)
-		return NULL;
+	if (len != -1)
+		datalen = (size_t)len;
 
-	if (!dObj->isValid()) {
-		delete dObj;
-		return NULL;
-	}
-	dObj->setOwnsFile(false);
-	dObj->setFilePath((const char *) sqlite3_column_text(stmt, table_dataobjects_filepath));
-	dObj->setFileName((const char *) sqlite3_column_text(stmt, table_dataobjects_filename));
-	dObj->setSignatureStatus((DataObject::SignatureStatus_t)sqlite3_column_int64(stmt, table_dataobjects_signature_status));
-	dObj->setSignee(String(((const char *) sqlite3_column_text(stmt, table_dataobjects_signee))));
-	sqlite_int64 millisecs = sqlite3_column_int64(stmt, table_dataobjects_receivetime);
+	sqlite_int64 createtime_millisecs = sqlite3_column_int64(stmt, table_dataobjects_createtime);
+	sqlite_int64 receivetime_millisecs = sqlite3_column_int64(stmt, table_dataobjects_receivetime);
 	
-	dObj->setReceiveTime(Timeval((long)(millisecs / 1000), (long)((millisecs - (millisecs / 1000)*1000) * 1000)));
+	if (createtime_millisecs != -1)
+		create_time = Timeval((long)(createtime_millisecs / 1000), (long)((createtime_millisecs - (createtime_millisecs / 1000)*1000) * 1000));
 
-	long size = (long) sqlite3_column_int64(stmt, table_dataobjects_datalen);
-	
-	if (size == -1)
-		dObj->setDynamicDataLen(true);
-	else
-		dObj->setDataLen((size_t) size);
+	if (receivetime_millisecs != -1)
+		receive_time = Timeval((long)(receivetime_millisecs / 1000), (long)((receivetime_millisecs - (receivetime_millisecs / 1000)*1000) * 1000));
 
-	dObj->setRxTime((unsigned long) sqlite3_column_int64(stmt, table_dataobjects_rxtime));
-	// Todo: add source interface
-	//dObj->setSourceInterface(getInterfaceFromRowId(db, sqlite3_column_int64(stmt, table_dataobjects_source_iface_rowid)));
-	return dObj;
+	/*
+	   FIXME: most of these fields that we use to initialize the data object will probably be overwritten when the metadata
+	   is parsed during construction. We should either decide that the fields are always set when parsing the metadata
+	   and then the create function should be much simpler, or, we should allow data objects to be created solely based on the information 
+	   in the data base. This last option would probably speed up data object construction since we would not have to parse
+	   the information all over again every time the data object is retrieved from the data store.
+
+	   FIXME: add signature to data object table and set here.
+	   FIXME: add source interface.
+	*/
+	return DataObject::create(sqlite3_column_text(stmt, table_dataobjects_xmlhdr), 
+					sqlite3_column_bytes(stmt, table_dataobjects_xmlhdr), NULL, NULL, true,
+					(const char *) sqlite3_column_text(stmt, table_dataobjects_filepath),
+					(const char *) sqlite3_column_text(stmt, table_dataobjects_filename),
+					(DataObject::SignatureStatus_t)sqlite3_column_int64(stmt, table_dataobjects_signature_status),
+					(const char *) sqlite3_column_text(stmt, table_dataobjects_signee),
+					(unsigned char *)sqlite3_column_blob(stmt, table_dataobjects_signature),
+					(unsigned long)sqlite3_column_int64(stmt, table_dataobjects_signature_len),
+					create_time, receive_time,
+					(unsigned long)sqlite3_column_int64(stmt, table_dataobjects_rxtime), datalen,
+					(DataObject::DataState_t)sqlite3_column_int64(stmt, table_dataobjects_datastate),
+					(unsigned char *)sqlite3_column_blob(stmt, table_dataobjects_datahash));
 }
 
 NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
@@ -837,9 +846,8 @@ NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 	node = kernel->getNodeStore()->retrieve(node_id);
 
 	if (!node) {
-		node = new Node((NodeType_t)sqlite3_column_int(in_stmt, table_nodes_type), 
-			node_id, 
-			(char *)sqlite3_column_text(in_stmt, table_nodes_name));
+		node = Node::create_with_id((NodeType_t)sqlite3_column_int(in_stmt, table_nodes_type), 
+			node_id, (char *)sqlite3_column_text(in_stmt, table_nodes_name));
 
 		if (!node) {
 			HAGGLE_ERR("Could not create node from data store information\n");
@@ -1844,7 +1852,7 @@ int SQLDataStore::_insertFilter(Filter *f, bool matchFilter, const EventCallback
 	if (!f)
 		return -1;
 
-	HAGGLE_DBG("Insert filter\n");
+	HAGGLE_DBG("Insert filter: %s\n", f->getFilterDescription().c_str());
 
 	sql_cmd = SQL_INSERT_FILTER_CMD(f->getEventType());
 
@@ -2146,6 +2154,7 @@ int SQLDataStore::_deleteDataObject(const DataObjectId_t &id, bool shouldReportR
 		// file? (If it has one.) So that the file is removed from disk along 
 		// with the data object.
 		if (dObj) {
+			dObj->setStored(false);
 			kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_DELETED, dObj));
 		} else {
 			HAGGLE_ERR("Tried to report removal of a data object that "
@@ -2195,7 +2204,6 @@ int SQLDataStore::_deleteDataObject(DataObjectRef& dObj, bool shouldReportRemova
 	// FIXME: shouldn't the data object be given back ownership of it's file?
 	// (If it has one.) So that the file is removed from disk along with the
 	// data object.
-	
 	if (_deleteDataObject(dObj->getId(), false) == 0 && shouldReportRemoval)
 		kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_DELETED, dObj));
 	
@@ -2248,7 +2256,9 @@ int SQLDataStore::_ageDataObjects(const Timeval& minimumAge, const EventCallback
 	
 	while (dObjs.size() < DATASTORE_MAX_DATAOBJECTS_AGED_AT_ONCE && (ret = sqlite3_step(stmt)) != SQLITE_DONE) {
 		if (ret == SQLITE_ROW) {
-			dObjs.push_back(createDataObject(stmt));
+			DataObjectRef dObj = createDataObject(stmt);
+			dObj->setStored(false);
+			dObjs.push_back(dObj);
 		} else if (ret == SQLITE_ERROR) {
 			HAGGLE_DBG("Could not age data object - Error: %s\n", sqlite3_errmsg(db));
 			sqlite3_finalize(stmt);
@@ -2262,6 +2272,7 @@ int SQLDataStore::_ageDataObjects(const Timeval& minimumAge, const EventCallback
 	for (DataObjectRefList::iterator it = dObjs.begin(); it != dObjs.end(); it++) {
 		_deleteDataObject(*it, false);	// delete and report as event
 	}
+
 	kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_DELETED, dObjs));
 	
 	if (ret == SQLITE_ERROR) {
@@ -2290,18 +2301,17 @@ int SQLDataStore::_insertDataObject(DataObjectRef& dObj, const EventCallback<Eve
 	sqlite_int64 ifaceRowId = -1;
 	const Attributes *attrs;
 
-	dObj.lock();
-
 	if (!dObj) {
-		dObj.unlock();
 		return -1;
 	}
+
+	dObj.lock();
 
 	HAGGLE_DBG("DataStore insert data object [%s] with num_attributes=%d\n", 
 		dObj->getIdStr(), dObj->getAttributes()->size());
 
 	if (!dObj->getRawMetadataAlloc((unsigned char **)&metadata, &metadatalen)) {
-		HAGGLE_ERR("Could not get raw metadata from DO\n");
+		HAGGLE_ERR("Could not get raw metadata from data object\n");
 		dObj.unlock();
 		return -1;
 	}
@@ -2309,11 +2319,9 @@ int SQLDataStore::_insertDataObject(DataObjectRef& dObj, const EventCallback<Eve
 	if (dObj->getRemoteInterface())
 		ifaceRowId = getInterfaceRowId(dObj->getRemoteInterface());
 
-
 	sql_cmd_str = SQL_INSERT_DATAOBJECT_CMD(metadata, ifaceRowId, dObj);
 	sql_cmd = (char *) sql_cmd_str.c_str();
 
-	//HAGGLE_DBG("SQLcmd: %s\n", sql_cmd);
 	ret = sqlite3_prepare_v2(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
 
 	if (ret != SQLITE_OK) {
@@ -2324,9 +2332,29 @@ int SQLDataStore::_insertDataObject(DataObjectRef& dObj, const EventCallback<Eve
 	ret = sqlite3_bind_blob(stmt, 1, dObj->getId(), DATAOBJECT_ID_LEN, SQLITE_TRANSIENT);
 
 	if (ret != SQLITE_OK) {
-		HAGGLE_ERR("SQLite could not bind blob!\n");
+		HAGGLE_ERR("SQLite could not bind data object identifier blob!\n");
 		sqlite3_finalize(stmt);
 		goto out_insertDataObject_err;
+	}
+
+	if (dObj->getDataState() > DataObject::DATA_STATE_NO_DATA) {
+		ret = sqlite3_bind_blob(stmt, 2, dObj->getDataHash(), sizeof(DataHash_t), SQLITE_TRANSIENT);
+
+		if (ret != SQLITE_OK) {
+			HAGGLE_ERR("SQLite could not bind data object signature blob!\n");
+			sqlite3_finalize(stmt);
+			goto out_insertDataObject_err;
+		}
+	}
+
+	if (dObj->getSignatureLength() && dObj->getSignatureStatus() != DataObject::SIGNATURE_MISSING) {
+		ret = sqlite3_bind_blob(stmt, 3, dObj->getSignature(), dObj->getSignatureLength(), SQLITE_TRANSIENT);
+
+		if (ret != SQLITE_OK) {
+			HAGGLE_ERR("SQLite could not bind data object signature blob!\n");
+			sqlite3_finalize(stmt);
+			goto out_insertDataObject_err;
+		}
 	}
 
 	ret = sqlite3_step(stmt);
@@ -2343,19 +2371,23 @@ int SQLDataStore::_insertDataObject(DataObjectRef& dObj, const EventCallback<Eve
 			_deleteDataObject(dObj, false);
 			return _insertDataObject(dObj, callback);
 		}
-		HAGGLE_ERR("DataObject already in datastore\n");
+		HAGGLE_ERR("DataObject [%s] already in datastore\n", dObj->getIdStr());
+		// Mark as a duplicate
                 dObj->setDuplicate();
+		// Also mark object as stored so that the data is not deleted
+		dObj->setStored();
 		goto out_insertDataObject_duplicate;
 	}
 	
-	dObj->setOwnsFile(false);
-	
 	if (ret == SQLITE_ERROR) {
-		HAGGLE_ERR("Could not insert DO Error: %s\n", sqlite3_errmsg(db));
+		HAGGLE_ERR("Could not insert data object [%s] Error: %s\n", dObj->getIdStr(), sqlite3_errmsg(db));
 		goto out_insertDataObject_err;
 	} else if (ret != SQLITE_DONE) {
                 HAGGLE_ERR("Insert data object did not return SQLITE_DONE\n");
         }
+
+	// Mark object as stored so that the data is not deleted
+	dObj->setStored();
 
 	dataobject_rowid = sqlite3_last_insert_rowid(db);
 
@@ -2395,6 +2427,8 @@ int SQLDataStore::_insertDataObject(DataObjectRef& dObj, const EventCallback<Eve
 	dObj.unlock();
 	free(metadata);
 
+	HAGGLE_DBG("Data object [%s] successfully inserted\n", dObj->getIdStr());
+
 	// Evaluate Filters
 	evaluateFilters(dObj, dataobject_rowid);
 
@@ -2421,6 +2455,7 @@ out_insertDataObject_duplicate:
         
         return 0;
 out_insertDataObject_err:
+	HAGGLE_ERR("Error when inserting data object [%s]\n", dObj->getIdStr());
 	dObj.unlock();
 	free(metadata);
 	return -1;
@@ -2758,7 +2793,7 @@ int SQLDataStore::_doDataObjectForNodesQuery(DataStoreDataObjectForNodesQuery *q
 	threshold = node->getMatchingThreshold();
 	node = q->getNextNode();
 	
-	while (node != (Node *)NULL && !(has_maximum && (num_left <= 0))) {
+	while (node && !(has_maximum && (num_left <= 0))) {
 
 		num_match = _doDataObjectQueryStep2(node, delegateNode, qr, num_left, threshold, q->getAttrMatch());
                 
@@ -2784,7 +2819,7 @@ int SQLDataStore::_doDataObjectForNodesQuery(DataStoreDataObjectForNodesQuery *q
 	}
 #endif
 
-	HAGGLE_DBG("%u data objects matched node %s [%s]\n", total_match, node->getName().c_str(), node->getIdStr());
+	HAGGLE_DBG("%u data objects matched query\n", total_match);
 
 	return num_match;
 }

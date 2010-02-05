@@ -244,15 +244,12 @@ ProtocolEvent ProtocolMedia::receiveDataObject()
 			HAGGLE_DBG("read %s (%d of %d bytes)\n", filename.str().c_str(), len, filesize);
 
 			// create dataobject
-			DataObject *dObj = new DataObject(buf, 0, NULL);
+			DataObject *dObj = DataObject::create(buf, len);
 
 			if (!dObj) {
 				return PROT_EVENT_ERROR;
 			}
-			if (!dObj->isValid()) {
-				delete dObj;
-				return PROT_EVENT_ERROR;
-			}
+			
 			// set remoteFilepath
 			hasFile = (dObj->getDataLen() > 0);
 			if (hasFile) {
