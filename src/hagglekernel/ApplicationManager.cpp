@@ -154,7 +154,7 @@ bool ApplicationManager::init_derived()
 	onDataStoreFinishedProcessingCallback = newEventCallback(onDataStoreFinishedProcessing);
 	onRetrieveAppNodesCallback = newEventCallback(onRetrieveAppNodes);
 	
-	kernel->getDataStore()->retrieveNodeByType(NODE_TYPE_APPLICATION, onRetrieveAppNodesCallback);
+	kernel->getDataStore()->retrieveNode(NODE_TYPE_APPLICATION, onRetrieveAppNodesCallback);
 	
         /* 
          * Register a filter that makes sure we receive all data
@@ -1044,7 +1044,7 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 							
 							// Update the node description and send it to all 
 							// neighbors.
-							kernel->getDataStore()->retrieveNodeByType(NODE_TYPE_APPLICATION, onRetrieveAppNodesCallback);
+							kernel->getDataStore()->retrieveNode(NODE_TYPE_APPLICATION, onRetrieveAppNodesCallback);
 						}
 					} else {
 						HAGGLE_ERR("No application node \'%s\' for request to remove interests\n", name_str);

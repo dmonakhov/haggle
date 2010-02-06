@@ -331,7 +331,7 @@ class Reference {
 	/**
            This function will return a heap-allocated copy of this reference.
 	*/
-	Reference<T> *copy() { return new Reference<T>(*this); }
+	Reference<T> *copy() const { return new Reference<T>(*this); }
 
 	/**
            This function provides access to any and all member functions of the 

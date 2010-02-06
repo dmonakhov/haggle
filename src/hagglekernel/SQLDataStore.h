@@ -61,6 +61,7 @@ private:
 	sqlite_int64 getDataObjectRowId(const DataObjectRef& dObj);
 	sqlite_int64 getAttributeRowId(const Attribute* attr);
 	sqlite_int64 getNodeRowId(const NodeRef& node);
+	sqlite_int64 getNodeRowId(const InterfaceRef& iface);
 	sqlite_int64 getInterfaceRowId(const InterfaceRef& iface);
 
 	DataObject *createDataObject(sqlite3_stmt *stmt);
@@ -86,7 +87,8 @@ protected:
 	int _insertNode(NodeRef& node, const EventCallback<EventHandler> *callback = NULL);
 	int _deleteNode(NodeRef& node);
 	int _retrieveNode(NodeRef& node, const EventCallback<EventHandler> *callback, bool forceCallback);
-	int _retrieveNodeByType(NodeType_t type, const EventCallback<EventHandler> *callback);
+	int _retrieveNode(NodeType_t type, const EventCallback<EventHandler> *callback);
+	int _retrieveNode(const InterfaceRef& iface, const EventCallback<EventHandler> *callback, bool forceCallback);
 	int _insertDataObject(DataObjectRef& dObj, const EventCallback<EventHandler> *callback = NULL);
 	int _deleteDataObject(const DataObjectId_t &id, bool shouldReportRemoval = true);
 	int _deleteDataObject(DataObjectRef& dObj, bool shouldReportRemoval = true);

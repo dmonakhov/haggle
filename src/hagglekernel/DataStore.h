@@ -242,6 +242,7 @@ typedef enum {
 	TASK_DELETE_NODE,
 	TASK_RETRIEVE_NODE,
 	TASK_RETRIEVE_NODE_BY_TYPE,
+	TASK_RETRIEVE_NODE_BY_INTERFACE,
 	TASK_ADD_FILTER,
 	TASK_DELETE_FILTER,
 	TASK_FILTER_QUERY,
@@ -287,6 +288,7 @@ class DataStoreTask : public HeapItem
 		DataStoreRepositoryQuery *RepositoryQuery;
 		NodeRef *node;
 		DataObjectRef *dObj;
+		InterfaceRef *iface;
 		NodeType_t nodeType;
 		Timeval *age;
 		DataObjectId_t id;
@@ -297,8 +299,9 @@ class DataStoreTask : public HeapItem
 public:
 	DataStoreTask(DataObjectRef& _dObj, TaskType _type = TASK_INSERT_DATAOBJECT, const EventCallback<EventHandler> *_callback = NULL);
 	DataStoreTask(const DataObjectId_t _id, TaskType _type = TASK_DELETE_DATAOBJECT, const EventCallback<EventHandler> *_callback = NULL);
-	DataStoreTask(NodeRef& _node, TaskType _type = TASK_INSERT_NODE, const EventCallback<EventHandler> *_callback = NULL, bool _boolParameter = false);
+	DataStoreTask(const NodeRef& _node, TaskType _type = TASK_INSERT_NODE, const EventCallback<EventHandler> *_callback = NULL, bool _boolParameter = false);
         DataStoreTask(NodeType_t _nodeType, TaskType _type = TASK_RETRIEVE_NODE_BY_TYPE, const EventCallback<EventHandler> *_callback = NULL);
+	DataStoreTask(const InterfaceRef& _iface, TaskType _type = TASK_RETRIEVE_NODE_BY_INTERFACE, const EventCallback<EventHandler> *_callback = NULL, bool _boolParameter = false);
         DataStoreTask(DataStoreFilterQuery *q, TaskType _type = TASK_FILTER_QUERY);
 	DataStoreTask(DataStoreDataObjectQuery *q, TaskType _type = TASK_DATAOBJECT_QUERY);
         DataStoreTask(DataStoreDataObjectForNodesQuery *q, TaskType _type = TASK_DATAOBJECT_FOR_NODES_QUERY);
@@ -343,7 +346,8 @@ protected:
 	virtual int _insertNode(NodeRef& node, const EventCallback<EventHandler> *callback = NULL) = 0;
 	virtual int _deleteNode(NodeRef& node) = 0;
 	virtual int _retrieveNode(NodeRef& node, const EventCallback<EventHandler> *callback, bool forceCallback = false) = 0;
-	virtual int _retrieveNodeByType(NodeType_t type, const EventCallback<EventHandler> *callback) = 0;
+	virtual int _retrieveNode(NodeType_t type, const EventCallback<EventHandler> *callback) = 0;
+	virtual int _retrieveNode(const InterfaceRef& iface, const EventCallback<EventHandler> *callback, bool forceCallback = false) = 0;
 	virtual int _insertDataObject(DataObjectRef& dObj, const EventCallback<EventHandler> *callback = NULL) = 0;
 	virtual int _deleteDataObject(const DataObjectId_t &id, bool shouldReportRemoval = true) = 0;
 	virtual int _deleteDataObject(DataObjectRef& dObj, bool shouldReportRemoval = true) = 0;
@@ -396,7 +400,7 @@ public:
            @returns 0 on success, or negative on failure.
            
          */
-        int dump(const EventCallback<EventHandler> *callback = NULL);
+        void dump(const EventCallback<EventHandler> *callback = NULL);
         /**
            Dump the data store to a file. The function works asynchronously.
 
@@ -404,30 +408,31 @@ public:
            @returns 0 on success, or negative on failure.
            
          */
-        int dumpToFile(const char *filename);
-	int insertInterface(InterfaceRef& iface);
-	int insertNode(NodeRef& node, const EventCallback<EventHandler> *callback = NULL);
-	int deleteNode(NodeRef& node);
-	int retrieveNode(NodeRef& node, const EventCallback<EventHandler> *callback, bool forceCallback = false);
-	int retrieveNodeByType(NodeType_t type, const EventCallback<EventHandler> *callback);
-	int insertDataObject(DataObjectRef& dObj, const EventCallback<EventHandler> *callback = NULL);
-	int deleteDataObject(const DataObjectId_t id);
-	int deleteDataObject(DataObjectRef& dObj);
-	int ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback = NULL);
-	int insertFilter(const Filter& f, bool matchFilter = false, const EventCallback<EventHandler> *callback = NULL);
-	int deleteFilter(long eventtype);
-	int doFilterQuery(const Filter *f, EventCallback<EventHandler> *callback);
-	int doDataObjectQuery(NodeRef& n, const unsigned int match, EventCallback<EventHandler> *callback);
-	int doDataObjectForNodesQuery(const NodeRef &n, const NodeRefList &ns, 
+        void dumpToFile(const char *filename);
+	void insertInterface(InterfaceRef& iface);
+	void insertNode(NodeRef& node, const EventCallback<EventHandler> *callback = NULL);
+	void deleteNode(NodeRef& node);
+	void retrieveNode(const NodeRef& node, const EventCallback<EventHandler> *callback, bool forceCallback = false);
+	void retrieveNode(NodeType_t type, const EventCallback<EventHandler> *callback);
+	void retrieveNode(const InterfaceRef& iface, const EventCallback<EventHandler> *callback, bool forceCallback = false);
+	void insertDataObject(DataObjectRef& dObj, const EventCallback<EventHandler> *callback = NULL);
+	void deleteDataObject(const DataObjectId_t id);
+	void deleteDataObject(DataObjectRef& dObj);
+	void ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback = NULL);
+	void insertFilter(const Filter& f, bool matchFilter = false, const EventCallback<EventHandler> *callback = NULL);
+	void deleteFilter(long eventtype);
+	void doFilterQuery(const Filter *f, EventCallback<EventHandler> *callback);
+	void doDataObjectQuery(NodeRef& n, const unsigned int match, EventCallback<EventHandler> *callback);
+	void doDataObjectForNodesQuery(const NodeRef &n, const NodeRefList &ns, 
                                       const unsigned int match,
                                       const EventCallback<EventHandler> *callback);
-	int doNodeQuery(DataObjectRef& d, const unsigned int maxResp, const unsigned int match, EventCallback<EventHandler> *callback);
+	void doNodeQuery(DataObjectRef& d, const unsigned int maxResp, const unsigned int match, EventCallback<EventHandler> *callback);
 #ifdef DEBUG_DATASTORE
 	virtual void print();
 #endif
-	int insertRepository(RepositoryEntryRef re);
-	int readRepository(RepositoryEntryRef re, EventCallback < EventHandler > *callback);
-	int deleteRepository(RepositoryEntryRef re);
+	void insertRepository(RepositoryEntryRef re);
+	void readRepository(RepositoryEntryRef re, EventCallback < EventHandler > *callback);
+	void deleteRepository(RepositoryEntryRef re);
 };
 
 #endif /* _DATASTORE_H */

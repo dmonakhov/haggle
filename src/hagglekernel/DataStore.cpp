@@ -124,6 +124,7 @@ const char *DataStoreTask::taskName[_TASK_MAX] = {
 	"TASK_DELETE_NODE",
 	"TASK_RETRIEVE_NODE",
 	"TASK_RETRIEVE_NODE_BY_TYPE",
+	"TASK_RETRIEVE_NODE_BY_INTERFACE",
 	"TASK_ADD_FILTER",
 	"TASK_DELETE_FILTER",
 	"TASK_FILTER_QUERY",
@@ -162,7 +163,7 @@ DataStoreTask::DataStoreTask(const DataObjectId_t _id, TaskType _type, const Eve
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
 	}
 }
-DataStoreTask::DataStoreTask(NodeRef& _node, TaskType _type, const EventCallback<EventHandler> *_callback, bool _boolParameter) :
+DataStoreTask::DataStoreTask(const NodeRef& _node, TaskType _type, const EventCallback<EventHandler> *_callback, bool _boolParameter) :
 	HeapItem(), type(_type), priority(TASK_PRIORITY_LOW), node(_node.copy()), callback(_callback), boolParameter(_boolParameter) 
 {
 	if (type == TASK_INSERT_NODE ||
@@ -179,6 +180,14 @@ DataStoreTask::DataStoreTask(NodeType_t _nodeType, TaskType _type, const EventCa
 {
 	if (type == TASK_RETRIEVE_NODE_BY_TYPE) {
 	} else {
+		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
+	}
+}
+DataStoreTask::DataStoreTask(const InterfaceRef& _iface, TaskType _type, const EventCallback<EventHandler> *_callback, bool _boolParameter) :
+HeapItem(), type(_type), priority(TASK_PRIORITY_HIGH), iface(_iface.copy()), callback(_callback), boolParameter(_boolParameter) 
+{
+	if (type != TASK_RETRIEVE_NODE_BY_INTERFACE) {
+		priority = TASK_PRIORITY_LOW;
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
 	}
 }
@@ -297,6 +306,9 @@ DataStoreTask::~DataStoreTask()
 		break;
 	case TASK_RETRIEVE_NODE_BY_TYPE:
 		break;
+	case TASK_RETRIEVE_NODE_BY_INTERFACE:
+		delete iface;
+		break;
 	case TASK_ADD_FILTER:
 		// HAGGLE_DBG("Destroying filter\n");
 		delete f;
@@ -355,149 +367,132 @@ DataStore::~DataStore()
 	}
 }
 
-int DataStore::insertNode(NodeRef& node, const EventCallback<EventHandler> *callback)
+void DataStore::insertNode(NodeRef& node, const EventCallback<EventHandler> *callback)
 {
 	Mutex::AutoLocker l(mutex);
 
 	taskQ.insert(new DataStoreTask(node, TASK_INSERT_NODE, callback));
 
 	cond.signal();
-
-	return 0;
 }
 
-int DataStore::deleteNode(NodeRef& node)
+void DataStore::deleteNode(NodeRef& node)
 {
 	Mutex::AutoLocker l(mutex);
 	
 	taskQ.insert(new DataStoreTask(node, TASK_DELETE_NODE));
 	
 	cond.signal();
-	
-	return 0;
 }
 
-int DataStore::retrieveNode(NodeRef& node, const EventCallback<EventHandler> *callback, bool forceCallback) 
+void DataStore::retrieveNode(const NodeRef& node, const EventCallback<EventHandler> *callback, bool forceCallback) 
 {
 	Mutex::AutoLocker l(mutex);
 	
 	taskQ.insert(new DataStoreTask(node, TASK_RETRIEVE_NODE, callback, forceCallback));
 	
 	cond.signal();
-	
-	return 0;
 }
 
-int DataStore::retrieveNodeByType(NodeType_t type, const EventCallback<EventHandler> *callback)
+void DataStore::retrieveNode(NodeType_t type, const EventCallback<EventHandler> *callback)
 {
 	Mutex::AutoLocker l(mutex);
 	
 	taskQ.insert(new DataStoreTask(type, TASK_RETRIEVE_NODE_BY_TYPE, callback));
 	
 	cond.signal();
-	
-	return 0;
 }
 
-int DataStore::insertDataObject(DataObjectRef& dObj, const EventCallback<EventHandler> *callback)
+void DataStore::retrieveNode(const InterfaceRef& iface, const EventCallback<EventHandler> *callback, bool forceCallback)
+{
+	Mutex::AutoLocker l(mutex);
+	
+	taskQ.insert(new DataStoreTask(iface, TASK_RETRIEVE_NODE_BY_INTERFACE, callback, forceCallback));
+	
+	cond.signal();
+}
+
+void DataStore::insertDataObject(DataObjectRef& dObj, const EventCallback<EventHandler> *callback)
 {
 	Mutex::AutoLocker l(mutex);
 
 	taskQ.insert(new DataStoreTask(dObj, TASK_INSERT_DATAOBJECT, callback));
 
 	cond.signal();
-
-	return 0;
 }
 
-int DataStore::deleteDataObject(const DataObjectId_t id)
+void DataStore::deleteDataObject(const DataObjectId_t id)
 {
 	Mutex::AutoLocker l(mutex);
 	
 	taskQ.insert(new DataStoreTask(id, TASK_DELETE_DATAOBJECT));
 	
 	cond.signal();
-	
-	return 0;
 }
 
-int DataStore::deleteDataObject(DataObjectRef& dObj)
+void DataStore::deleteDataObject(DataObjectRef& dObj)
 {
 	Mutex::AutoLocker l(mutex);
 	
 	taskQ.insert(new DataStoreTask(dObj, TASK_DELETE_DATAOBJECT));
 	
 	cond.signal();
-	
-	return 0;
 }
 
-int DataStore::ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback)
+void DataStore::ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback)
 {
 	Mutex::AutoLocker l(mutex);
 	
 	taskQ.insert(new DataStoreTask(minimumAge, TASK_AGE_DATAOBJECTS, callback));
 	
 	cond.signal();
-	
-	return 0;
 }
 
-int DataStore::insertFilter(const Filter& f, bool matchFilter, const EventCallback<EventHandler> *callback)
+void DataStore::insertFilter(const Filter& f, bool matchFilter, const EventCallback<EventHandler> *callback)
 {
 	Mutex::AutoLocker l(mutex);
 
 	taskQ.insert(new DataStoreTask(f, TASK_ADD_FILTER, callback, matchFilter));
 
 	cond.signal();
-
-	return 0;
 }
 
 
-int DataStore::deleteFilter(long eventtype)
+void DataStore::deleteFilter(long eventtype)
 {
 	Mutex::AutoLocker l(mutex);
 
 	taskQ.insert(new DataStoreTask(TASK_DELETE_FILTER, new long(eventtype)));
 
 	cond.signal();
-
-	return 0;
 }
 
 /* NOTE: The filter will be deleted, but not the callback. */
-int DataStore::doFilterQuery(const Filter *f, EventCallback < EventHandler > *callback)
+void DataStore::doFilterQuery(const Filter *f, EventCallback < EventHandler > *callback)
 {
 	Mutex::AutoLocker l(mutex);
 
 	taskQ.insert(new DataStoreTask(new DataStoreFilterQuery(f, callback), TASK_FILTER_QUERY));
 
 	cond.signal();
-
-	return 0;
 }
 
-int DataStore::doDataObjectQuery(NodeRef& n, const unsigned int match, EventCallback < EventHandler > *callback)
+void DataStore::doDataObjectQuery(NodeRef& n, const unsigned int match, EventCallback < EventHandler > *callback)
 {
 	Mutex::AutoLocker l(mutex);
 
 	taskQ.insert(new DataStoreTask(new DataStoreDataObjectQuery(n, match, callback), TASK_DATAOBJECT_QUERY));
 
 	cond.signal();
-
-	return 0;
 }
 
-int DataStore::doDataObjectForNodesQuery(const NodeRef &n, const NodeRefList &ns, const unsigned int match, const EventCallback < EventHandler > *callback)
+void DataStore::doDataObjectForNodesQuery(const NodeRef &n, const NodeRefList &ns, const unsigned int match, const EventCallback < EventHandler > *callback)
 {
 	Mutex::AutoLocker l(mutex);
 
 	taskQ.insert(new DataStoreTask(new DataStoreDataObjectForNodesQuery(n, ns, match, callback), TASK_DATAOBJECT_FOR_NODES_QUERY));
 
 	cond.signal();
-
-	return 0;
 }
 
 /* It is not possible to do lookups in the datastore simultaneously
@@ -521,15 +516,13 @@ int DataStore::doDataObjectForNodesQuery(const NodeRef &n, const NodeRefList &ns
 */
 
 
-int DataStore::doNodeQuery(DataObjectRef& d, const unsigned int maxResp, const unsigned int match, EventCallback < EventHandler > *callback)
+void DataStore::doNodeQuery(DataObjectRef& d, const unsigned int maxResp, const unsigned int match, EventCallback < EventHandler > *callback)
 {
 	Mutex::AutoLocker l(mutex);
 	
 	taskQ.insert(new DataStoreTask(new DataStoreNodeQuery(d, maxResp, match, callback), TASK_NODE_QUERY));
 	
 	cond.signal();
-
-	return 0;
 }
 #ifdef DEBUG_DATASTORE
 void DataStore::print() 
@@ -549,68 +542,58 @@ void DataStore::print()
 	for the specification of the uri, see DataStore.h
 */
 
-int DataStore::insertRepository(RepositoryEntryRef re)
+void DataStore::insertRepository(RepositoryEntryRef re)
 {
 	Mutex::AutoLocker l(mutex);
 
 	if (!re)
-		return -1;
+		return;
 	
 	taskQ.insert(new DataStoreTask(new DataStoreRepositoryQuery(re), TASK_INSERT_REPOSITORY));
 	
 	cond.signal();
-	
-	return 0;
 }
 
-int DataStore::readRepository(RepositoryEntryRef re, EventCallback < EventHandler > *callback)
+void DataStore::readRepository(RepositoryEntryRef re, EventCallback < EventHandler > *callback)
 {
 	Mutex::AutoLocker l(mutex);
 	
 	if (!re)
-		return -1;
+		return;
 	
 	taskQ.insert(new DataStoreTask(new DataStoreRepositoryQuery(re, callback), TASK_READ_REPOSITORY));
 	
 	cond.signal();
-		
-	return 0;
 }
 
-int DataStore::deleteRepository(RepositoryEntryRef re)
+void DataStore::deleteRepository(RepositoryEntryRef re)
 {
 	Mutex::AutoLocker l(mutex);
 	
 	if (!re)
-		return -1;
+		return;
 	
 	taskQ.insert(new DataStoreTask(new DataStoreRepositoryQuery(re), TASK_DELETE_REPOSITORY));
 	
 	cond.signal();
-	
-	return 0;
 }
 
-int DataStore::dump(const EventCallback<EventHandler> *callback)
+void DataStore::dump(const EventCallback<EventHandler> *callback)
 {
         Mutex::AutoLocker l(mutex);
                 
 	taskQ.insert(new DataStoreTask(TASK_DUMP_DATASTORE, NULL, callback));
 	
 	cond.signal();
-	
-	return 0;
 }
 
-int DataStore::dumpToFile(const char *filename)
+void DataStore::dumpToFile(const char *filename)
 {
         Mutex::AutoLocker l(mutex);
                 
 	taskQ.insert(new DataStoreTask(TASK_DUMP_DATASTORE_TO_FILE, new string(filename)));
 	
 	cond.signal();
-	
-	return 0;
 }
 
 void DataStore::hookCancel()
@@ -679,7 +662,10 @@ bool DataStore::run()
 			_retrieveNode(*task->node, task->callback, task->boolParameter);
 			break;
 		case TASK_RETRIEVE_NODE_BY_TYPE:
-			_retrieveNodeByType(task->nodeType, task->callback);
+			_retrieveNode(task->nodeType, task->callback);
+			break;
+		case TASK_RETRIEVE_NODE_BY_INTERFACE:
+			_retrieveNode(*task->iface, task->callback, task->boolParameter);
 			break;
 		case TASK_ADD_FILTER:
 			_insertFilter(task->f, task->boolParameter, task->callback);

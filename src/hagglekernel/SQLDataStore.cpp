@@ -1597,6 +1597,41 @@ sqlite_int64 SQLDataStore::getInterfaceRowId(const InterfaceRef& iface)
 }
 
 
+sqlite_int64 SQLDataStore::getNodeRowId(const InterfaceRef& iface)
+{
+	sqlite_int64 nodeRowId = -1;
+	sqlite3_stmt *stmt;
+	const char *tail;
+	int ret;
+	
+	// lookup by common interfaces
+	
+	snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT node_rowid FROM %s WHERE (type = %d AND mac_str='%s');", 
+		 TABLE_INTERFACES, iface->getType(), iface->getIdentifierStr());
+		
+	ret = sqlite3_prepare_v2(db, sqlcmd, (int) strlen(sqlcmd), &stmt, &tail);
+	
+	if (ret != SQLITE_OK) {
+		HAGGLE_DBG("SQLite command compilation failed! %s\n", sqlcmd);
+		return -1;
+	}
+	
+	ret = sqlite3_step(stmt);
+	
+	if (ret == SQLITE_ROW) {
+		// No name for this column: See select statement in this function:
+		nodeRowId = sqlite3_column_int64(stmt, 0);
+	}
+	
+	if (ret == SQLITE_ERROR) {
+		HAGGLE_DBG("Could not retrieve node from database: %s\n", sqlite3_errmsg(db));
+		return -1;
+	}
+	
+	sqlite3_finalize(stmt);	
+	
+	return nodeRowId;
+}
 
 sqlite_int64 SQLDataStore::getNodeRowId(const NodeRef& node)
 {
@@ -2469,7 +2504,7 @@ out_insertDataObject_err:
 
 int SQLDataStore::_retrieveNode(NodeRef& refNode, const EventCallback<EventHandler> *callback, bool forceCallback)
 {
-	NodeRef node;
+	NodeRef node = NULL;
 
 	if (!callback) {
 		HAGGLE_ERR("No callback specified\n");
@@ -2480,14 +2515,15 @@ int SQLDataStore::_retrieveNode(NodeRef& refNode, const EventCallback<EventHandl
 	
 	sqlite_int64 node_rowid = getNodeRowId(refNode);
 	
-	node = getNodeFromRowId(node_rowid);
+	if (node_rowid != -1)
+		node = getNodeFromRowId(node_rowid);
 	
 	if (!node) {
 		HAGGLE_DBG("No node %s in data store\n", refNode->getName().c_str());
 		if (forceCallback) {
 			HAGGLE_DBG("Forcing callback\n");
 			kernel->addEvent(new Event(callback, refNode));
-			return 1;
+			return 0;
 		} else {
 			return -1;
 		}
@@ -2518,13 +2554,18 @@ int SQLDataStore::_retrieveNode(NodeRef& refNode, const EventCallback<EventHandl
 	return 1;
 }
 
-int SQLDataStore::_retrieveNodeByType(NodeType_t type, const EventCallback<EventHandler> *callback)
+int SQLDataStore::_retrieveNode(NodeType_t type, const EventCallback<EventHandler> *callback)
 {
 	NodeRefList *nodes = NULL;
 	int ret;
 	char *sql_cmd;
 	sqlite3_stmt *stmt;
 	const char *tail;
+	
+	if (!callback) {
+		HAGGLE_ERR("No callback specified\n");
+		return -1;
+	}
 	
 	sql_cmd = SQL_NODE_BY_TYPE_CMD(type);
 	
@@ -2556,6 +2597,44 @@ int SQLDataStore::_retrieveNodeByType(NodeType_t type, const EventCallback<Event
 	return 1;
 }
 
+int SQLDataStore::_retrieveNode(const InterfaceRef& iface, const EventCallback<EventHandler> *callback, bool forceCallback)
+{
+	NodeRef node = NULL;
+	
+	if (!callback) {
+		HAGGLE_ERR("No callback specified\n");
+		return -1;
+	}
+	
+	
+	HAGGLE_DBG("Retrieving node based on interface [%s]\n", iface->getIdentifierStr());
+	
+	sqlite_int64 node_rowid = getNodeRowId(iface);
+	
+	if (node_rowid != -1)
+		node = getNodeFromRowId(node_rowid);
+	
+	if (!node) {
+		HAGGLE_DBG("No node with interface [%s] in data store\n", iface->getIdentifierStr());
+		if (forceCallback) {
+			HAGGLE_DBG("Forcing callback\n");
+			kernel->addEvent(new Event(callback, iface));
+			return 0;
+		} else {
+			return -1;
+		}
+	}
+	
+	if (iface->isUp()) {
+		node->setInterfaceUp(iface);
+	}
+	
+	HAGGLE_DBG("Node %s retrieved successfully based on interface [%s]\n", node->getName().c_str(), iface->getIdentifierStr());
+	
+	kernel->addEvent(new Event(callback, node));
+	
+	return 1;
+}
 
 
 /* ========================================================= */

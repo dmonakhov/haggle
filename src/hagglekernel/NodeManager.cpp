@@ -320,20 +320,10 @@ void NodeManager::onNeighborInterfaceUp(Event *e)
 	if (!neigh) {
 		// No one had that interface?
 
-		// Create new node
-		// It will have uninitilized state
-		neigh = Node::create();
-
-		if (!neigh)
-			return;
-
-		// Add this interface to it
-		neigh->addInterface(e->getInterface());
-
 		// merge if node exists in datastore (asynchronous call), we force it to return
 		// as we only generate a node up event when we know we have the best information
 		// for the node.
-		kernel->getDataStore()->retrieveNode(neigh, onRetrieveNodeCallback, true);
+		kernel->getDataStore()->retrieveNode(e->getInterface(), onRetrieveNodeCallback, true);
 	} else {
 		neigh->setInterfaceUp(e->getInterface());
 	}
@@ -350,13 +340,29 @@ void NodeManager::onRetrieveNode(Event *e)
 	if (!e || !e->hasData())
 		return;
 	
-	NodeRef node = e->getNode();
+	NodeRef& node = e->getNode();
 
+	if (!node) {
+		InterfaceRef& iface = e->getInterface();
+		
+		if (!iface) {
+			HAGGLE_ERR("Neither node nor interface in callback\n");
+			return;
+		}
+		
+		node = Node::create();
+		
+		if (!node) 
+			return;
+		
+		node->addInterface(iface);
+		
+	}
 	// See if this node is already an active neighbor but in an uninitialized state
 	if (kernel->getNodeStore()->update(node)) {
-		HAGGLE_DBG("Node %s [id=%s] was updated in node store\n", node->getName().c_str(), node->getIdStr());
+		HAGGLE_DBG("Node %s [%s] was updated in node store\n", node->getName().c_str(), node->getIdStr());
 	} else {
-		HAGGLE_DBG("Node %s [id=%s] not previously neighbor... Adding to node store\n", node->getName().c_str(), node->getIdStr());
+		HAGGLE_DBG("Node %s [%s] not previously neighbor... Adding to node store\n", node->getName().c_str(), node->getIdStr());
 		kernel->getNodeStore()->add(node);
 	}
 	

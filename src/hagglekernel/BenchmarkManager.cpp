@@ -116,7 +116,7 @@ void BenchmarkManager::onTimeout(Event *e)	// start evaluation
 	HAGGLE_LOG("Starting benchmark\n");
 
 #ifdef USE_PREGENERATED_DATABASE
-	kernel->getDataStore()->retrieveNodeByType(NODE_TYPE_PEER, newEventCallback(onRetreiveNodes));
+	kernel->getDataStore()->retrieveNode(NODE_TYPE_PEER, newEventCallback(onRetreiveNodes));
 #else
 	// Generate and insert nodes
 	for (unsigned int n = 0; n < Test_Num; n++) {
