@@ -420,7 +420,6 @@ enum {
 
 //------------------------------------------
 #define SQL_CREATE_VIEW_DATAOBJECT_NODE_MATCH_CMD_RATED_CMD "CREATE VIEW " VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO " AS SELECT 100*weight/n.sum_weights as ratio, n.resolution_threshold as threshold, m.* FROM " VIEW_MATCH_DATAOBJECTS_AND_NODES " as m LEFT JOIN " TABLE_NODES " as n ON m.node_rowid=n.rowid ORDER BY ratio desc, mcount desc;"
-// using count: #define SQL_CREATE_VIEW_DATAOBJECT_NODE_MATCH_CMD_RATED_CMD "CREATE VIEW " VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO " AS SELECT 100*mcount/dacount as dataobject_ratio, 100*mcount/nacount as node_ratio, m.* FROM " VIEW_MATCH_DATAOBJECTS_AND_NODES " as m LEFT JOIN " VIEW_NODE_ATTRIBUTE_COUNT " as cn ON m.node_rowid=cn.node_rowid LEFT JOIN " VIEW_DATAOBJECT_ATTRIBUTE_COUNT " as cd ON m.dataobject_rowid=cd.dataobject_rowid ORDER BY 100*mcount/nacount+100*mcount/dacount desc, mcount desc;"
 enum {
 	view_match_dataobjects_and_nodes_as_ratio_ratio = 0,
 	view_match_dataobjects_and_nodes_as_ratio_resolution_threshold,

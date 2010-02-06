@@ -61,15 +61,20 @@
 #include <stdio.h>
 
 
-unsigned long grid_size = 0;
-char *filename = "\\luckyme.png";
-char *single_source_name = NULL;
-unsigned long create_data_interval = 30;
-unsigned long attribute_pool_size = 100;
-unsigned long num_dataobject_attributes = 3;
-unsigned long variance_interest_attributes = 2;
+unsigned long grid_size = 0;						// overwrite by -g
+char *filename = "\\luckyme.png";					// overwrite by -f
+char *single_source_name = NULL;					// overwrite by -s
+unsigned long create_data_interval = 30;			// overwrite by -t
+unsigned long repeatableSeed = 0;					// overwrite by -r
+unsigned long useNodeNumber = 0;					// overwrite by -n
+
+unsigned long attribute_pool_size = 100;			// overwrite by -A
+unsigned long num_dataobject_attributes = 3;		// overwrite by -d
+unsigned long variance_interest_attributes = 2;		// overwrite by -i
+unsigned long numDataObjects = -1;					// overwrite by -N
+
 unsigned long node_number = 0;
-unsigned long repeatableSeed = 0;
+
 
 #define APP_NAME "LuckyMe"
 
@@ -171,7 +176,7 @@ static void luckyme_prng_init()
 {
 #ifdef OS_UNIX
 	if (repeatableSeed) {
-		return srandom(node_number);
+		return srandom(node_number+1);
 	}
 #endif
 	prng_init();
@@ -535,6 +540,28 @@ int create_interest_grid()
 }
 
 
+int create_interest_node_number() 
+{
+	char luckAttrValue[32];
+	struct attributelist *al = haggle_attributelist_new();
+	
+	if (!al)
+		return -1;
+	
+	printf("createInterest\n");
+	struct attribute *attr = haggle_attribute_new_weighted(APP_NAME, ulong_to_str(node_number), 1);
+	haggle_attributelist_add_attribute(al, attr);
+	LIBHAGGLE_DBG("   %s=%s:%lu\n", haggle_attribute_get_name(attr), haggle_attribute_get_value(attr), haggle_attribute_get_weight(attr));
+	
+	haggle_ipc_add_application_interests(hh, al);
+
+	haggle_attributelist_free(al);
+	
+	return node_number;
+}
+
+
+
 /*
  we create a dataobject with a number of random attributes.
  at the moment the attributes are uniformly distributed.
@@ -757,7 +784,9 @@ int on_interests(haggle_event_t *e, void* nix)
 		LIBHAGGLE_DBG("No existing interests, generating new ones\n");
 
 		// No old interests: Create new interests.
-		if (grid_size > 0) {
+		if (useNodeNumber == 1) {
+			create_interest_node_number();
+		} else if (grid_size > 0) {
 			create_interest_grid();
 		} else {
 			create_interest_binomial();
@@ -776,16 +805,17 @@ int on_interests(haggle_event_t *e, void* nix)
 static void print_usage()
 {	
 	fprintf(stderr, 
-		"Usage: ./%s [-A num] [-d num] [-i num] [-t interval] [-g gridSize] [-s hostname] [-f path]\n", 
+		"Usage: ./%s [-A num] [-d num] [-i num] [-t interval] [-n] [-g gridSize] [-s hostname] [-f path]\n", 
 		APP_NAME);
 	fprintf(stderr, "          -A attribute pool (default %lu)\n", attribute_pool_size);
 	fprintf(stderr, "          -d number of attributes per data object (default %lu)\n", num_dataobject_attributes);
 	fprintf(stderr, "          -i interest variance (default %lu)\n", variance_interest_attributes);
-	fprintf(stderr, "          -g use grid topology (gridSize x gridSize, overwrites -Adi, default off)\n");
 	fprintf(stderr, "          -t interval to create data objects [s] (default %lu)\n", create_data_interval);
-	fprintf(stderr, "          -r repeatable experiments (constant seed, incremental createtime, default off)\n");
 	fprintf(stderr, "          -s singe source (create data objects only on node 'name', default off)\n");
 	fprintf(stderr, "          -f data file to be sent (default off)\n");
+    fprintf(stderr, "          -n use node number as interest (default off)\n");
+	fprintf(stderr, "          -g use grid topology (gridSize x gridSize, overwrites -Adi, default off)\n");
+	fprintf(stderr, "          -r repeatable experiments (constant seed, incremental createtime, default off)\n");
 }
 
 static void parse_commandline(int argc, char **argv)
@@ -797,7 +827,7 @@ static void parse_commandline(int argc, char **argv)
 	// Parse command line options using getopt.
 	
 	do {
-		ch = getopt(argc, argv, "A:d:i:t:g:rs:f:");
+		ch = getopt(argc, argv, "A:d:i:t:g:nrs:f:");
 		if (ch != -1) {
 			switch (ch) {
 				case 'A':
@@ -818,6 +848,9 @@ static void parse_commandline(int argc, char **argv)
 					break;
 				case 'r':
 					repeatableSeed = 1;
+					break;
+				case 'n':
+					useNodeNumber = 1;
 					break;
 				case 's':
 					single_source_name = optarg;
@@ -959,9 +992,17 @@ int luckyme_run()
 	stop_now = 0;
 	// get hostname (used to set interest)
 	gethostname(hostname, 128);
-	node_number = atoi(&(hostname[5]));
+	char tmp_hostname[128];
+	char *num;
+	strcpy(tmp_hostname, hostname);
+	num = strtok(tmp_hostname, "-");
+	num = strtok(NULL, "-");
+	node_number = atoi(num);
+	printf("hostname = %s\n", hostname);
+	printf("node_number = %d\n", node_number);
 
 	// reset random number generator
+	// note: set node_number before the call of luckyme_prng_init();
 	luckyme_prng_init();
 		
 	do {
