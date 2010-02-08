@@ -482,6 +482,7 @@ void NodeStore::print()
                        nr->node->getName().c_str(),
                        (nr->node->isAvailable() && (nr->node->getType() == NODE_TYPE_PEER || nr->node->getType() == NODE_TYPE_UNDEF)) ? "Neighbor" : "Unconfirmed neighbor",
                        nr->node->isStored() ? "Yes" : "No");
+		printf("Num objects in bloomfilter=%lu\n", nr->node->getBloomfilter()->numObjects());
                 printf("id=%s\n", nr->node->getIdStr());
                 printf("");
 		nr->node->printInterfaces();

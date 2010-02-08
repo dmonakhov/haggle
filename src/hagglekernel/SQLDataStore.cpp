@@ -2016,6 +2016,7 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 		node.unlock();
 		return -1;
 	}
+	
 	HAGGLE_DBG("Inserting node %s, num attributes=%lu num interfaces=%lu\n", 
 		node->getName().c_str(), node->getAttributes()->size(), node->getInterfaces()->size());
 

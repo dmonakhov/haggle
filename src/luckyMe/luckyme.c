@@ -518,7 +518,7 @@ int create_interest_grid()
 	interests[0] = node_number / grid_size;
 	interests[1] = (node_number % grid_size) + grid_size;
 	
-	LIBHAGGLE_DBG("create interes\n");
+	LIBHAGGLE_DBG("create interest\n");
 	
 	al = haggle_attributelist_new();
 	
@@ -542,15 +542,18 @@ int create_interest_grid()
 
 int create_interest_node_number() 
 {
-	char luckAttrValue[32];
+	struct attribute *attr;
 	struct attributelist *al = haggle_attributelist_new();
 	
 	if (!al)
 		return -1;
 	
-	printf("createInterest\n");
-	struct attribute *attr = haggle_attribute_new_weighted(APP_NAME, ulong_to_str(node_number), 1);
+	LIBHAGGLE_DBG("create interest based on node number\n");
+	
+	attr = haggle_attribute_new_weighted(APP_NAME, ulong_to_str(node_number), 1);
+	
 	haggle_attributelist_add_attribute(al, attr);
+	
 	LIBHAGGLE_DBG("   %s=%s:%lu\n", haggle_attribute_get_name(attr), haggle_attribute_get_value(attr), haggle_attribute_get_weight(attr));
 	
 	haggle_ipc_add_application_interests(hh, al);
@@ -813,7 +816,7 @@ static void print_usage()
 	fprintf(stderr, "          -t interval to create data objects [s] (default %lu)\n", create_data_interval);
 	fprintf(stderr, "          -s singe source (create data objects only on node 'name', default off)\n");
 	fprintf(stderr, "          -f data file to be sent (default off)\n");
-    fprintf(stderr, "          -n use node number as interest (default off)\n");
+	fprintf(stderr, "          -n use node number as interest (default off)\n");
 	fprintf(stderr, "          -g use grid topology (gridSize x gridSize, overwrites -Adi, default off)\n");
 	fprintf(stderr, "          -r repeatable experiments (constant seed, incremental createtime, default off)\n");
 }
@@ -978,7 +981,7 @@ DWORD WINAPI luckyme_run(void *arg)
 int luckyme_run()
 #endif
 {
-	int ret = 0;
+	int ret = 0, i;
 	unsigned int retry = 3;
 	
 #if defined(OS_UNIX)
@@ -992,14 +995,14 @@ int luckyme_run()
 	stop_now = 0;
 	// get hostname (used to set interest)
 	gethostname(hostname, 128);
-	char tmp_hostname[128];
-	char *num;
-	strcpy(tmp_hostname, hostname);
-	num = strtok(tmp_hostname, "-");
-	num = strtok(NULL, "-");
-	node_number = atoi(num);
+	
+	for (i = strlen(hostname) - 1; i >= 0; i--) {
+		if (hostname[i] == '-') {
+			node_number = strtoul(&hostname[i + 1], NULL, 10);
+		}
+	}
 	printf("hostname = %s\n", hostname);
-	printf("node_number = %d\n", node_number);
+	printf("node_number = %lu\n", node_number);
 
 	// reset random number generator
 	// note: set node_number before the call of luckyme_prng_init();

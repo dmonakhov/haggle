@@ -442,10 +442,15 @@ Metadata *Node::toMetadata(bool withBloomfilter) const
         
 	b64len = base64_encode_alloc((const char *)getId(), NODE_ID_LEN, &b64str);
 
-        nm->setParameter(NODE_METADATA_ID_PARAM, b64str);
-
+	if (!b64str) {
+		HAGGLE_ERR("Could not convert node id to metadata\n");
+		return NULL;
+	}
+	
+	nm->setParameter(NODE_METADATA_ID_PARAM, b64str);
+	
 	free(b64str);
-
+	
         nm->setParameter(NODE_METADATA_NAME_PARAM, name.c_str());
 		
         nm->setParameter(NODE_METADATA_THRESHOLD_PARAM, matchThreshold);
@@ -463,6 +468,10 @@ Metadata *Node::toMetadata(bool withBloomfilter) const
 
                 b64len = base64_encode_alloc((const char *)(*it)->getIdentifier(), (*it)->getIdentifierLen(), &b64str);
                 
+		if (!b64str) {
+			HAGGLE_ERR("Could not convert interface to metadata\n");
+			return NULL;
+		}
                 im->setParameter(NODE_METADATA_INTERFACE_IDENTIFIER_PARAM, b64str);
                 
                 free(b64str);

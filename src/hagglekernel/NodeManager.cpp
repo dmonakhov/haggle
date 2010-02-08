@@ -245,7 +245,8 @@ int NodeManager::sendNodeDescription(NodeRefList& neighList)
 		if (neigh->getBloomfilter()->has(dObj)) {
 			HAGGLE_DBG("Neighbor %s already has our most recent node description\n", neigh->getName().c_str());
 		} else {
-			HAGGLE_DBG("Sending node description [id=%s] to \'%s\'\n", dObj->getIdStr(), neigh->getName().c_str());
+			HAGGLE_DBG("Sending node description [id=%s] to \'%s\', bloomfilter #objs=%lu\n", 
+				   dObj->getIdStr(), neigh->getName().c_str(), kernel->getThisNode()->getBloomfilter()->numObjects());
 			targetList.push_back(neigh);
 			// Remember that we tried to send our node description to this node:
 			nodeExchangeList.push_back(Pair<NodeRef, DataObjectRef>(neigh, dObj));
@@ -357,7 +358,11 @@ void NodeManager::onRetrieveNode(Event *e)
 		
 		node->addInterface(iface);
 		
+	} else {
+		HAGGLE_DBG("Neighbor node %s has %lu objects in bloomfilter\n", 
+			   node->getName().c_str(), node->getBloomfilter()->numObjects());
 	}
+	
 	// See if this node is already an active neighbor but in an uninitialized state
 	if (kernel->getNodeStore()->update(node)) {
 		HAGGLE_DBG("Node %s [%s] was updated in node store\n", node->getName().c_str(), node->getIdStr());
@@ -572,10 +577,11 @@ void NodeManager::onRetrieveNodeDescription(Event *e)
 		return;
 	}
 
-	HAGGLE_DBG("New node description from node %s -- creating node: createTime %s receiveTime %s\n", 
+	HAGGLE_DBG("New node description from node %s -- creating node: createTime %s receiveTime %s, bloomfilter #objs=%lu\n", 
 		   node->getName().c_str(), 
 		   dObj->getCreateTime().getAsString().c_str(), 
-		   receiveTime.getAsString().c_str());
+		   receiveTime.getAsString().c_str(),
+		   node->getBloomfilter()->numObjects());
 		
 	// insert node into DataStore
 	kernel->getDataStore()->insertNode(node);
