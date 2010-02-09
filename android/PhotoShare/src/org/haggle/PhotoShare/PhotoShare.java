@@ -4,9 +4,11 @@ import org.haggle.Attribute;
 import org.haggle.DataObject;
 import org.haggle.Handle;
 import org.haggle.Node;
+import org.haggle.LaunchCallback;
 
 import android.app.AlertDialog;
 import android.app.Application;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
 import android.util.Log;
@@ -99,19 +101,32 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 		finiHaggle();
 	}
 	public int initHaggle() {
-
+		
 		if (hh != null)
 			return STATUS_OK;
 
-		long pid = Handle.getDaemonPid();
+		int status = Handle.getDaemonStatus();
+		
+		if (status == Handle.HAGGLE_DAEMON_NOT_RUNNING || status == Handle.HAGGLE_DAEMON_CRASHED) {
+			Log.d(PhotoShare.LOG_TAG, "Trying to spawn Haggle daemon");
 
-		Log.d(PhotoShare.LOG_TAG, "Trying to spawn Haggle daemon");
+			if (!Handle.spawnDaemon(new LaunchCallback() {
 
-		if (!Handle.spawnDaemon()) {
-			Log.d(PhotoShare.LOG_TAG, "Spawning failed...");
-			return STATUS_SPAWN_DAEMON_FAILED;
+				public int callback(long milliseconds) {
+
+					Log.d(PhotoShare.LOG_TAG, "Spawning milliseconds..." + milliseconds);
+
+					if (milliseconds == 0) {
+						// Daemon launched
+					}
+					return 0;
+				}
+			})) {
+				Log.d(PhotoShare.LOG_TAG, "Spawning failed...");
+				return STATUS_SPAWN_DAEMON_FAILED;
+			}
 		}
-		pid = Handle.getDaemonPid();
+		long pid = Handle.getDaemonPid();
 
 		Log.d(PhotoShare.LOG_TAG, "Haggle daemon pid is " + pid);
 

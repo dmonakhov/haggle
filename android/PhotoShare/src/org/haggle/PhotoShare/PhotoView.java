@@ -9,6 +9,7 @@ import java.util.HashMap;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -146,9 +147,11 @@ public class PhotoView extends Activity implements OnClickListener {
     @Override
     public void onStart() {
     	super.onStart();
+    	
     	Log.d(PhotoShare.LOG_TAG, "PhotoView:onStart() freemem=" +  Runtime.getRuntime().freeMemory());	
     	
     	if (shouldRegisterWithHaggle) {
+    		
     		int ret = ps.initHaggle();
 
     		if (ret != PhotoShare.STATUS_OK) {
