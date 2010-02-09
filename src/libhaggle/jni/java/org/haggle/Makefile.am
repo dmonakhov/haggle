@@ -1,6 +1,6 @@
 # Do not install compiled class files. We instead generate and install
 # a jar file with the class files in a subdirectory
-noinst_JAVA = Handle.java EventHandler.java Node.java Attribute.java DataObject.java Interface.java
+noinst_JAVA = Handle.java EventHandler.java Node.java Attribute.java DataObject.java Interface.java LaunchCallback.java
 
 EXTRA_DIST=
 

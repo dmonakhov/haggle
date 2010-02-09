@@ -5,6 +5,7 @@ import java.lang.Thread;
 import org.haggle.Handle;
 import org.haggle.EventHandler;
 import org.haggle.DataObject;
+import org.haggle.LaunchCallback;
 
 public class TestApp extends Thread implements EventHandler {	
         private Handle h = null;
@@ -47,7 +48,12 @@ public class TestApp extends Thread implements EventHandler {
 
                 if (pid == 0) {
                         // Haggle is not running
-                        if (Handle.spawnDaemon() == false) {
+                        if (Handle.spawnDaemon(new LaunchCallback() { 
+                                        public int callback(long milliseconds) {
+                                                System.out.println("Launching haggle, milliseconds=" + milliseconds); 
+                                                return 0;
+                                        }
+                                }) == false) {
                                 // Could not spawn daemon
                                 System.out.println("Could not spawn new Haggle daemon");
                                 return;

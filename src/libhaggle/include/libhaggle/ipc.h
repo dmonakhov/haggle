@@ -85,7 +85,7 @@ Callback for providing feedback during spawning of Haggle. The unsigned integer 
 total number of milliseconds that have passed since spawning was initiated. The value will be
 zero once the daemon has been spawned, and the callback will not be called again.
 
-The return value of the callback can be used to cancel the spawning. Return 1 to cancel, 
+The return value of the callback can be used to cancel the spawning. Return -1 to cancel, 
 any other value will continue the operation.
 */
 typedef int (STDCALL *daemon_spawn_callback_t) (unsigned int);

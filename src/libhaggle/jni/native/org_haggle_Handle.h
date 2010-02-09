@@ -169,6 +169,14 @@ JNIEXPORT jlong JNICALL Java_org_haggle_Handle_getDaemonPid
 
 /*
  * Class:     org_haggle_Handle
+ * Method:    getDaemonStatus
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_org_haggle_Handle_getDaemonStatus
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     org_haggle_Handle
  * Method:    spawnDaemon
  * Signature: ()Z
  */
@@ -182,6 +190,22 @@ JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_spawnDaemon__
  */
 JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_spawnDaemon__Ljava_lang_String_2
   (JNIEnv *, jclass, jstring);
+
+/*
+ * Class:     org_haggle_Handle
+ * Method:    spawnDaemon
+ * Signature: (Lorg/haggle/LaunchCallback;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_spawnDaemon__Lorg_haggle_LaunchCallback_2
+  (JNIEnv *, jclass, jobject);
+
+/*
+ * Class:     org_haggle_Handle
+ * Method:    spawnDaemon
+ * Signature: (Ljava/lang/String;Lorg/haggle/LaunchCallback;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_spawnDaemon__Ljava_lang_String_2Lorg_haggle_LaunchCallback_2
+  (JNIEnv *, jclass, jstring, jobject);
 
 #ifdef __cplusplus
 }

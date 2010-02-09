@@ -1,4 +1,5 @@
 package org.haggle;
+import org.haggle.LaunchCallback;
 
 public class Handle {
         private long nativeHandle = 0; // pointer to Haggle handle C struct
@@ -29,10 +30,21 @@ public class Handle {
 	public native boolean eventLoopStop();
         public native boolean eventLoopIsRunning();
 
+        public static int HAGGLE_ERROR = -100;
+        public static int HAGGLE_NO_ERROR = 0;
+
         // Useful for launcing Haggle from an application
+        public static int HAGGLE_DAEMON_ERROR = HAGGLE_ERROR;
+        public static int HAGGLE_DAEMON_NOT_RUNNING = HAGGLE_NO_ERROR;
+        public static int HAGGLE_DAEMON_RUNNING = 1;
+        public static int HAGGLE_DAEMON_CRASHED = 2;
+        
         public static native long getDaemonPid();
+        public static native int getDaemonStatus();
         public static native boolean spawnDaemon();
         public static native boolean spawnDaemon(String path);
+        public static native boolean spawnDaemon(LaunchCallback c);
+        public static native boolean spawnDaemon(String path, LaunchCallback c);
         
 	// Non-native methods follow here
 	public Handle(String name) throws RegistrationFailedException

@@ -561,7 +561,7 @@ static int spawn_daemon_internal(const char *daemonpath, daemon_spawn_callback_t
 
 			if (callback) {
 				LIBHAGGLE_DBG("Calling daemon spawn callback, time_passed=%u\n", time_passed);
-				if (callback(time_passed) == 1) {
+				if (callback(time_passed) == -1) {
 					LIBHAGGLE_DBG("Application wants to stop waiting\n");
 					ret = HAGGLE_DAEMON_ERROR;
 				}
