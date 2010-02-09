@@ -460,7 +460,7 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 			return;
 		}
 
-                HAGGLE_DBG("Node description from node with id=%s\n", node->getIdStr());
+                HAGGLE_DBG("Node description from node %s [%s]\n", node->getName().c_str(), node->getIdStr());
 
 		if (node == kernel->getThisNode()) {
 			HAGGLE_ERR("Node description is my own. Ignoring and deleting from data store\n");
@@ -468,21 +468,44 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 			kernel->getDataStore()->deleteDataObject(dObj);
 			return;
 		}
-
+		
 		// Make sure at least the interface of the remote node is set to up
 		// this 
 		if (dObj->getRemoteInterface()) {
-			// Mark the interface as up in the node.
-			node->setInterfaceUp(dObj->getRemoteInterface());
-
-			if (node->hasInterface(dObj->getRemoteInterface())) {			
+			
+			if (node->hasInterface(dObj->getRemoteInterface())) {
+				// Node description was received directly from
+				// the node it belongs to
+				
+				// Mark the interface as up in the node.
+				node->setInterfaceUp(dObj->getRemoteInterface());				
 			} else {
-				// Node description was received from a third party
+				// Node description was received from third party.
+				// Ignore the node description if the node it describes
+				// is a current neighbor. We trust such a neighbor to give
+				// us the its latest node description when necessary.
+				NodeRef peer = kernel->getNodeStore()->retrieve(dObj->getRemoteInterface(), true);
+				
+				if  (peer) {
+					HAGGLE_DBG("Received %s's node description from third party node %s [%s]\n",
+						   node->getName().c_str(), peer->getName().c_str(), peer->getIdStr());
+				} else {
+					HAGGLE_DBG("Received %s's node description from third party node with interface %s\n",
+						   node->getName().c_str(), dObj->getRemoteInterface()->getIdentifierStr());
+				}
+				NodeRef neighbor = kernel->getNodeStore()->retrieve(node, true);
+				
+				if (neighbor) {
+					HAGGLE_DBG("Node description of %s received from third party describes a neighbor -- ignoring!\n",
+						   node->getName().c_str());
+					return;
+				}
 			}
 		} else {
-			HAGGLE_DBG("Node description data object has no remote interface\n");
+			HAGGLE_DBG("Node description of %s [%s] has no remote interface\n",
+				   node->getName().c_str(), node->getIdStr());
 		}
-
+		
 		// The received node description may be older than one that we already have stored. Therefore, we
 		// need to retrieve any stored node descriptions before we accept this one.
 		char filterString[255];
