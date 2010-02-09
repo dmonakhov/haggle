@@ -92,6 +92,8 @@ typedef unsigned int uintptr_t;
 
 //typedef unsigned long socklen_t;
 typedef SSIZE_T ssize_t;
+#define SIZE_T_CONVERSION "%Iu"
+
 #define snprintf _snprintf  // Not sure this is totally safe
 
 /*
@@ -125,6 +127,7 @@ typedef int SOCKET; /* This makes it easier to be compatible to the Windows API 
 #define INVALID_SOCKET -1
 #define ERRNO errno
 #define STRERROR(err) strerror(err)
+#define SIZE_T_CONVERSION "%zu"
 
 #endif
 

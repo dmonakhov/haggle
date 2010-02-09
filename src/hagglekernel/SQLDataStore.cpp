@@ -481,12 +481,15 @@ enum {
 	Repository Table
  
 */
-#define SQL_CREATE_TABLE_REPOSITORY_CMD "CREATE TABLE " TABLE_REPOSITORY " (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, authority TEXT, key TEXT, value TEXT);"
+#define SQL_CREATE_TABLE_REPOSITORY_CMD "CREATE TABLE " TABLE_REPOSITORY " (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, type INTEGER, authority TEXT, key TEXT, value_str TEXT, value_blob BLOB, value_len INTEGER);"
 enum {
 	table_repository_rowid = 0,
+	table_repository_type,
 	table_repository_authority,
 	table_repository_key,
-	table_repository_value
+	table_repository_value_str,
+	table_repository_value_blob,
+	table_repository_value_len
 };
 
 /*
@@ -3020,8 +3023,10 @@ int SQLDataStore::_insertRepository(DataStoreRepositoryQuery *q)
 	char *sql_cmd = sqlcmd;
 	const RepositoryEntryRef query = q->getQuery();
 	
+	HAGGLE_DBG("Inserting repository \'%s\' : \'%s\'\n", query->getAuthority(), query->getKey() ? query->getKey() : "-");
+	
 	// Prepare a select statemen to see if we should update or insert
-	snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "SELECT * FROM " TABLE_REPOSITORY " WHERE authority='%s' AND key='%s';", 
+	snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "SELECT * FROM " TABLE_REPOSITORY " WHERE (authority='%s' AND key='%s');",
 		 query->getAuthority(), 
 		 query->getKey());
 	
@@ -3038,25 +3043,64 @@ int SQLDataStore::_insertRepository(DataStoreRepositoryQuery *q)
 	
 	if (ret == SQLITE_ROW) {
 		if (query->getId() > 0) {
-			snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "UPDATE " TABLE_REPOSITORY " SET authority='%s', key='%s', value='%s' WHERE rowid='%u' AND authority='%s';", 
-				 query->getAuthority(), 
-				 query->getKey(), 
-				 query->getValue(),
-				 query->getId(),
-				 query->getAuthority());
+			if (query->getType() == RepositoryEntry::VALUE_TYPE_BLOB) {
+				snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "UPDATE " TABLE_REPOSITORY " SET type=%u, authority='%s', key='%s', value_str='-', value_blob=?, value_len="SIZE_T_CONVERSION" WHERE (rowid='%u' AND type=%u AND authority='%s');",
+					 query->getType(),
+					 query->getAuthority(), 
+					 query->getKey(), 
+					 query->getValueLen(),
+					 query->getId(),
+					 query->getType(),
+					 query->getAuthority());
+			} else {
+				snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "UPDATE " TABLE_REPOSITORY " SET type=%u, authority='%s', key='%s', value_str='%s', value_len="SIZE_T_CONVERSION" WHERE (rowid='%u' AND type=%u AND authority='%s');", 
+					 query->getType(),
+					 query->getAuthority(), 
+					 query->getKey(), 
+					 query->getValueStr(),
+					 query->getValueLen(),
+					 query->getId(),
+					 query->getType(),
+					 query->getAuthority());
+			}
 		} else {
-			snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "UPDATE " TABLE_REPOSITORY " SET authority='%s', key='%s', value='%s' WHERE authority='%s' AND key='%s';", 
-				 query->getAuthority(), 
-				 query->getKey(), 
-				 query->getValue(),
-				 query->getAuthority(),
-				 query->getKey());
+			if (query->getType() == RepositoryEntry::VALUE_TYPE_BLOB) {
+				snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "UPDATE " TABLE_REPOSITORY " SET type=%u, authority='%s', key='%s', value_str='-', value_blob=?, value_len="SIZE_T_CONVERSION" WHERE (type=%u AND authority='%s' AND key='%s');", 
+					 query->getType(),
+					 query->getAuthority(), 
+					 query->getKey(), 
+					 query->getValueLen(),
+					 query->getType(),
+					 query->getAuthority(),
+					 query->getKey());
+			} else {
+				snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "UPDATE " TABLE_REPOSITORY " SET type=%u, authority='%s', key='%s', value_str='%s', value_len="SIZE_T_CONVERSION" WHERE (type=%u AND authority='%s' AND key='%s');", 
+					 query->getType(),
+					 query->getAuthority(), 
+					 query->getKey(), 
+					 query->getValueStr(),
+					 query->getValueLen(),
+					 query->getType(),
+					 query->getAuthority(),
+					 query->getKey());
+			}
 		}
 	} else if (ret == SQLITE_DONE) {
-		snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "INSERT INTO " TABLE_REPOSITORY " (authority, key, value) VALUES ('%s', '%s', '%s');", 
-			 query->getAuthority(), 
-			 query->getKey(), 
-			 query->getValue());		
+		if (query->getType() == RepositoryEntry::VALUE_TYPE_BLOB) {
+			snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "INSERT INTO " TABLE_REPOSITORY " (type, authority, key, value_str, value_blob, value_len) VALUES (%u, '%s', '%s', '-', ?, "SIZE_T_CONVERSION");", 
+				 query->getType(),
+				 query->getAuthority(), 
+				 query->getKey(), 
+				 query->getValueLen());
+			
+		} else {
+			snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "INSERT INTO " TABLE_REPOSITORY " (type, authority, key, value_str, value_len) VALUES (%u, '%s', '%s', '%s', "SIZE_T_CONVERSION");", 
+				 query->getType(),
+				 query->getAuthority(), 
+				 query->getKey(), 
+				 query->getValueStr(),				 
+				 query->getValueLen());
+		}
 	} else {
 		// Did something bad occur?
 		return -1;
@@ -3067,6 +3111,16 @@ int SQLDataStore::_insertRepository(DataStoreRepositoryQuery *q)
 	if (ret != SQLITE_OK) {
 		HAGGLE_DBG("SQLite command compilation failed! %s\n", sql_cmd);
 		return -1;
+	}
+	
+	if (query->getType() == RepositoryEntry::VALUE_TYPE_BLOB) {
+		ret = sqlite3_bind_blob(stmt, 1, query->getValueBlob(), query->getValueLen(), SQLITE_TRANSIENT);
+		
+		if (ret != SQLITE_OK) {
+			HAGGLE_DBG("SQLite could not bind blob!\n");
+			sqlite3_finalize(stmt);
+			return -1;
+		}
 	}
 	
 	ret = sqlite3_step(stmt);
@@ -3085,6 +3139,9 @@ int SQLDataStore::_readRepository(DataStoreRepositoryQuery *q, const EventCallba
 	const RepositoryEntryRef query = q->getQuery();
 	DataStoreQueryResult *qr = new DataStoreQueryResult();
 	
+	HAGGLE_DBG("Reading repository \'%s\' : \'%s\'\n", query->getAuthority(), query->getKey() ? query->getKey() : "-");
+	
+	
 	if (!qr) {
 		HAGGLE_ERR("Could not allocate query result object\n");
 		return -1;
@@ -3097,20 +3154,20 @@ int SQLDataStore::_readRepository(DataStoreRepositoryQuery *q, const EventCallba
 	
 	if (query->getKey() && query->getId() > 0) {
 		snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "SELECT * FROM " TABLE_REPOSITORY " WHERE authority='%s' AND key LIKE '%s' AND id=%u;", 
-				query->getAuthority(), 
-				query->getKey(),
-				query->getId());	
+			 query->getAuthority(), 
+			 query->getKey(),
+			 query->getId());	
 	} else if (query->getKey()) {
-		snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "SELECT * FROM " TABLE_REPOSITORY " WHERE authority='%s' AND key LIKE '%s';", 
-				query->getAuthority(), 
-				query->getKey());	
+		snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "SELECT * FROM " TABLE_REPOSITORY " WHERE authority='%s' AND key LIKE '%s';",
+			 query->getAuthority(), 
+			 query->getKey());	
 	} else if (query->getId() > 0) {
 		snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "SELECT * FROM " TABLE_REPOSITORY " WHERE authority='%s' AND id='%u';", 
-				query->getAuthority(), 
-				query->getId());	
+			 query->getAuthority(), 
+			 query->getId());	
 	} else {
-		snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "SELECT * FROM " TABLE_REPOSITORY " WHERE authority='%s';", 
-				query->getAuthority());	
+		snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "SELECT * FROM " TABLE_REPOSITORY " WHERE authority='%s';",
+			 query->getAuthority());	
 	}
 	
 	ret = sqlite3_prepare_v2(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
@@ -3125,14 +3182,23 @@ int SQLDataStore::_readRepository(DataStoreRepositoryQuery *q, const EventCallba
 	
 	while ((ret = sqlite3_step(stmt)) != SQLITE_DONE) {
 		if (ret == SQLITE_ROW) {
-			
 			unsigned int id = (unsigned int)sqlite3_column_int64(stmt, table_repository_rowid);
+			RepositoryEntry::ValueType type = (RepositoryEntry::ValueType)sqlite3_column_int64(stmt, table_repository_type);
 			const char* authority = (const char*)sqlite3_column_text(stmt, table_repository_authority);
 			const char* key = (const char*)sqlite3_column_text(stmt, table_repository_key);
-			const char* value = (const char*)sqlite3_column_text(stmt, table_repository_value);
 			
-			re = RepositoryEntryRef(new RepositoryEntry(authority, key, value, id));
-			qr->addRepositoryEntry(re);
+			if (type == RepositoryEntry::VALUE_TYPE_STRING) {
+				const char* value_str = (const char*)sqlite3_column_text(stmt, table_repository_value_str);
+				re = RepositoryEntryRef(new RepositoryEntry(authority, key, value_str, id));
+			} else if (type == RepositoryEntry::VALUE_TYPE_BLOB) {
+				unsigned char* value_blob = (unsigned char*)sqlite3_column_text(stmt, table_repository_value_blob);
+				size_t len = (size_t)sqlite3_column_int64(stmt, table_repository_value_len);
+				
+				re = RepositoryEntryRef(new RepositoryEntry(authority, key, value_blob, len, id));
+			}
+			if (re) {
+				qr->addRepositoryEntry(re);
+			}
 		} else if (ret == SQLITE_ERROR) {
 			HAGGLE_DBG("query Error:%s\n", sqlite3_errmsg(db));
 			sqlite3_finalize(stmt);
@@ -3157,13 +3223,13 @@ int SQLDataStore::_deleteRepository(DataStoreRepositoryQuery *q)
 	
 	if (query->getId() > 0) {
 		snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "DELETE FROM " TABLE_REPOSITORY " WHERE authority='%s' AND key='%s' AND rowid = %u;", 
-				query->getAuthority(), 
-				query->getKey(),
-				query->getId());	
+			 query->getAuthority(), 
+			 query->getKey(),
+			 query->getId());	
 	} else {
 		snprintf(sql_cmd, SQL_MAX_CMD_SIZE, "DELETE FROM " TABLE_REPOSITORY " WHERE authority='%s' AND key='%s';", 
-				query->getAuthority(), 
-				query->getKey());	
+			 query->getAuthority(), 
+			 query->getKey());	
 	}	
 	
 	ret = sqlite3_prepare_v2(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);

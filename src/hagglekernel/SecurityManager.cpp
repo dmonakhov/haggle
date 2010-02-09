@@ -484,7 +484,6 @@ void SecurityManager::onShutdown()
 	unregisterWithKernel();
 }
 
-
 void SecurityManager::onRepositoryData(Event *e)
 {
 	RepositoryEntryRef re;
@@ -515,11 +514,11 @@ void SecurityManager::onRepositoryData(Event *e)
 			if (privKey)
 				RSA_free(privKey);
 			
-			privKey = stringToRSAKey(re->getValue(), KEY_TYPE_PRIVATE);
+			privKey = stringToRSAKey(re->getValueStr(), KEY_TYPE_PRIVATE);
 			
 			HAGGLE_DBG("Read my own private key from repository\n");
 		} else {
-			CertificateRef c = Certificate::fromPEM(re->getValue());
+			CertificateRef c = Certificate::fromPEM(re->getValueStr());
 			
 			if (c) {
 				if (c->getSubject() == kernel->getThisNode()->getIdStr())

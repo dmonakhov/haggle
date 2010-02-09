@@ -293,7 +293,7 @@ struct dataobject *haggle_dataobject_new_from_file(const char *filepath)
         FILE *fp;
 	struct dataobject *dobj;
         size_t datalen;
-	const char *filename;
+	const char *filename = NULL;
 	int i;
 
 	if (!filepath || strlen(filepath) == 0)
@@ -345,15 +345,17 @@ struct dataobject *haggle_dataobject_new_from_file(const char *filepath)
 		}
 	}
 
-	dobj->filename = (char *)malloc(strlen(filename) + 1);
+	if (filename) {
+		dobj->filename = (char *)malloc(strlen(filename) + 1);
 
-	if (!dobj->filename) {
-		haggle_dataobject_free(dobj);
-		return NULL;
+		if (!dobj->filename) {
+			haggle_dataobject_free(dobj);
+			return NULL;
+		}
+
+		strcpy(dobj->filename, filename);
 	}
-
-	strcpy(dobj->filename, filename);
-
+	
         dobj->m = metadata_new(HAGGLE_TAG, NULL, NULL);
 	
         if (!dobj->m) {
@@ -614,7 +616,7 @@ metadata_t *haggle_dataobject_to_metadata(struct dataobject *dobj)
 			}
 		}
 #if defined(OS_WINDOWS)
-                snprintf(datalenstr, 20, "%u", dobj->datalen);
+                snprintf(datalenstr, 20, "%Iu", dobj->datalen);
 #else
                 snprintf(datalenstr, 20, "%zu", dobj->datalen);
 #endif

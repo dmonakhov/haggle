@@ -270,14 +270,17 @@ class DataStoreTask : public HeapItem
 	 is a min-heap.
 	 */
 	typedef enum {
-		TASK_PRIORITY_HIGH = 1,
+		TASK_PRIORITY_HIGH,
 		TASK_PRIORITY_MEDIUM,
 		TASK_PRIORITY_LOW
 	} Priority_t;
+	static unsigned long totNum;
 	static const char *taskName[_TASK_MAX];
 	friend class DataStore;
 	TaskType type;
 	Priority_t priority;
+	unsigned long num;
+	Timeval timestamp;
 	union {
 		void *data;
 		Filter *f;
@@ -318,7 +321,10 @@ public:
 	const Priority_t& getPriority() const { return priority; }
 	// getKey() is overridden from the HeapItem class and decides how the task
 	// is sorted in the task queue.
-	double getKey() const { return (double)priority; }
+	const Timeval& getTimestamp() const { return timestamp; }
+	
+	bool compare_less(const HeapItem& i) const;
+	bool compare_greater(const HeapItem& i) const;
 };
 
 

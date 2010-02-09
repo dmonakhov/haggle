@@ -75,12 +75,12 @@ void Heap::heapify(unsigned long i)
 	l = (2 * i) + 1;	/* left child */
 	r = l + 1;		/* right child */
 
-	if ((l < _size) && (heap[l]->getKey() < heap[i]->getKey()))
+	if ((l < _size) && (*heap[l] < *heap[i]))
 		smallest = l;
 	else
 		smallest = i;
 
-	if ((r < _size) && (heap[r]->getKey() < heap[smallest]->getKey()))
+	if ((r < _size) && (*heap[r] < *heap[smallest]))
 		smallest = r;
 
 	if (smallest == i)
@@ -131,7 +131,7 @@ bool Heap::insert(HeapItem *item)
 	parent = (i - 1) / 2;
 
 	/* find the correct place to insert */
-	while ((i > 0) && (heap[parent]->getKey() > item->getKey())) {
+	while ((i > 0) && (*heap[parent] > *item)) {
 		heap[i] = heap[parent];
 		heap[i]->index = i;
 		i = parent;
@@ -160,6 +160,17 @@ HeapItem *Heap::extractFirst(void)
 	return max;
 }
 
+	
+bool operator< (const HeapItem& i1, const HeapItem& i2)
+{
+	return i1.compare_less(i2);
+}
+
+bool operator> (const HeapItem& i1, const HeapItem& i2)
+{
+	return i1.compare_greater(i2);
+}
+	
 void Heap::pop_front()
 {
 	extractFirst();

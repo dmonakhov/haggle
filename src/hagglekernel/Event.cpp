@@ -730,3 +730,13 @@ int Event::unregisterType(EventType _type)
 		return -1;
 	}
 }
+
+
+bool Event::compare_less(const HeapItem& i) const
+{
+	return (timeout < static_cast<const Event&>(i).timeout);
+}
+bool Event::compare_greater(const HeapItem& i) const
+{
+	return (timeout > static_cast<const Event&>(i).timeout);
+}

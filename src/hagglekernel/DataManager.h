@@ -75,7 +75,7 @@ class DataManager : public Manager
 	 non-counting version is much smaller in size, and hence more suitable for sending out
 	 in the node description.
 	 */
-	Bloomfilter localBF;
+	Bloomfilter *localBF;
 	bool setCreateTimeOnBloomfilterUpdate;
 	unsigned int agingMaxAge;
 	unsigned int agingPeriod;

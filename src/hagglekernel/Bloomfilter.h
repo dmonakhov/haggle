@@ -47,6 +47,10 @@ public:
 		Creates a bloomfilter with the given error rate and capacity.
 	*/
 	Bloomfilter(float error_rate, unsigned int capacity, bool counting = false);
+
+	
+	Bloomfilter(const unsigned char *bf, size_t len);
+
 	/**
 		Creates an identical copy of the given bloomfilter.
 	*/
@@ -117,7 +121,7 @@ public:
 	const unsigned char *getRaw() const;
 	/**
 	*/
-	unsigned long getRawLen(void) const;
+	size_t getRawLen(void) const;
 	
 	/**
 	*/

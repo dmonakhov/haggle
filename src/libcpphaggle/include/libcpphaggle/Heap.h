@@ -36,11 +36,14 @@ public:
 	virtual ~HeapItem();
         void enable();
         void disable();
-	/**
-		getKey() returns the key which decides where to place the item
-		in the heap. Must be overridden by derived class.
-	*/
-        virtual double getKey() const = 0;
+		
+	// The following two comparison functions have to be implemented in a derived class.
+	// They are used to place the item in the heap
+	virtual bool compare_less(const HeapItem& i) const = 0;
+	virtual bool compare_greater(const HeapItem& i) const = 0;
+
+	friend bool operator< (const HeapItem& i1, const HeapItem& i2);
+	friend bool operator> (const HeapItem& i1, const HeapItem& i2);
 private:
         unsigned long index;
         bool active;

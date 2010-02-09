@@ -429,8 +429,9 @@ public:
         const EventType getType() const {
                 return type;
         }
-	double getKey() const { return timeout.getTimeAsSecondsDouble(); }
-
+	
+	const Timeval& getTimeout() const { return timeout; }
+	
 	bool hasData() {
 		return doesHaveData;
 	}
@@ -498,6 +499,8 @@ public:
                         return;
                 (*callback)(this);
         }
+	bool compare_less(const HeapItem& i) const;
+	bool compare_greater(const HeapItem& i) const;
 };
 
 

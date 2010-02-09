@@ -20,12 +20,12 @@
 
 Bloomfilter::Bloomfilter(float _error_rate, unsigned int _capacity, bool _counting) :
 #ifdef DEBUG_LEAKS
-		LeakMonitor(LEAK_TYPE_BLOOMFILTER),
+	LeakMonitor(LEAK_TYPE_BLOOMFILTER),
 #endif
-                error_rate(_error_rate),
-                capacity(_capacity),
-		non_counting(NULL),
-		counting(NULL)
+	error_rate(_error_rate),
+	capacity(_capacity),
+	non_counting(NULL),
+	counting(NULL)
 {
 	if (_counting) {
 		counting = counting_bloomfilter_new(error_rate, capacity);
@@ -35,32 +35,53 @@ Bloomfilter::Bloomfilter(float _error_rate, unsigned int _capacity, bool _counti
 }
 Bloomfilter::Bloomfilter(float _error_rate, unsigned int _capacity, struct bloomfilter *bf) :
 #ifdef DEBUG_LEAKS
-		LeakMonitor(LEAK_TYPE_BLOOMFILTER),
+	LeakMonitor(LEAK_TYPE_BLOOMFILTER),
 #endif
-                error_rate(_error_rate),
-                capacity(_capacity),
-		non_counting(bf),
-		counting(NULL)
+	error_rate(_error_rate),
+	capacity(_capacity),
+	non_counting(bf),
+	counting(NULL)
 {
 }
 
 Bloomfilter::Bloomfilter(float _error_rate, unsigned int _capacity, struct counting_bloomfilter *cbf) :
 #ifdef DEBUG_LEAKS
-		LeakMonitor(LEAK_TYPE_BLOOMFILTER),
+	LeakMonitor(LEAK_TYPE_BLOOMFILTER),
 #endif
-                error_rate(_error_rate),
-                capacity(_capacity),
-		non_counting(NULL),
-		counting(cbf)
+	error_rate(_error_rate),
+	capacity(_capacity),
+	non_counting(NULL),
+	counting(cbf)
 {
+}
+Bloomfilter::Bloomfilter(const unsigned char *bf, size_t len) :
+#ifdef DEBUG_LEAKS
+	LeakMonitor(LEAK_TYPE_BLOOMFILTER),
+#endif
+	error_rate(0),
+	capacity(0),
+	non_counting(NULL),
+	counting(NULL)
+{
+	if (BLOOMFILTER_TOT_LEN((struct bloomfilter *)bf) == len) {
+		non_counting = bloomfilter_copy((struct bloomfilter*)bf);
+		counting = NULL;
+		HAGGLE_DBG("Bloomfilter is non-counting and contains %lu objects\n", bloomfilter_get_n(non_counting)); 
+	} else if (COUNTING_BLOOMFILTER_TOT_LEN((struct counting_bloomfilter *)bf) == len){
+		non_counting = NULL;
+		counting = counting_bloomfilter_copy((struct counting_bloomfilter*)bf);
+		HAGGLE_DBG("Bloomfilter is counting and contains %lu objects\n", counting_bloomfilter_get_n(counting)); 
+	} else {
+		HAGGLE_ERR("bloomfilter is neither counting nor non-counting\n");
+	}
 }
 
 Bloomfilter::Bloomfilter(const Bloomfilter &bf) :
 #ifdef DEBUG_LEAKS
-                LeakMonitor(LEAK_TYPE_BLOOMFILTER),
+	LeakMonitor(LEAK_TYPE_BLOOMFILTER),
 #endif
-                error_rate(bf.error_rate),
-                capacity(bf.capacity)
+	error_rate(bf.error_rate),
+	capacity(bf.capacity)
 {
 	if (bf.non_counting != NULL) {
 		non_counting = bloomfilter_copy(bf.non_counting);
@@ -227,7 +248,7 @@ const unsigned char *Bloomfilter::getRaw(void) const
 	return NULL;
 }
 
-unsigned long Bloomfilter::getRawLen(void) const
+size_t Bloomfilter::getRawLen(void) const
 {
 	if (non_counting != NULL) {
 		return (unsigned long)BLOOMFILTER_TOT_LEN(non_counting);

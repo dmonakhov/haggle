@@ -156,7 +156,14 @@ int HaggleKernel::unregisterManager(Manager *m)
         }
 	HAGGLE_DBG("Manager \'%s\' unregistered. Still %lu registered:%s\n", 
 		   m->getName(), registry.size(), registeredManagers.c_str());
-#endif		
+#endif	
+	/*
+	if (registry.size() == 0) {
+		// Tell the data store to cancel itself
+		dataStore->cancel();
+		HAGGLE_DBG("Data store cancelled!\n");
+	}
+	 */
 	return registry.size();
 }
 
@@ -232,9 +239,6 @@ void HaggleKernel::signalIsReadyForShutdown(Manager *m)
 	HAGGLE_DBG("All managers are ready for shutdown, generating shutdown event!\n");
 	running = false;
 	enableShutdownEvent();
-	// Tell the data store to cancel itself
-	dataStore->cancel();
-	HAGGLE_DBG("Data store cancelled!\n");
 }
 
 #ifdef DEBUG

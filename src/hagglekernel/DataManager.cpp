@@ -120,7 +120,7 @@ void DataHelper::cleanup()
 }
 
 DataManager::DataManager(HaggleKernel * _kernel, const bool _setCreateTimeOnBloomfilterUpdate) : 
-	Manager("DataManager", _kernel), localBF((float) 0.01, MAX_RECV_DATAOBJECTS, true),
+	Manager("DataManager", _kernel), localBF(NULL),
 	setCreateTimeOnBloomfilterUpdate(_setCreateTimeOnBloomfilterUpdate)
 {	
 	if (setCreateTimeOnBloomfilterUpdate) {
@@ -181,8 +181,15 @@ bool DataManager::init_derived()
 		HAGGLE_ERR("Could not create data manager helper\n");
 		return false;
 	}
+	
+	localBF = new Bloomfilter((float) 0.01, MAX_RECV_DATAOBJECTS, true);
+	
+	if (!localBF) {
+		HAGGLE_ERR("Could not create data manager bloomfilter\n");
+		return false;
+	}
 	onGetLocalBFCallback = newEventCallback(onGetLocalBF);
-	RepositoryEntryRef lbf = new RepositoryEntry("DataManager", "Local Bloomfilter");
+	RepositoryEntryRef lbf = new RepositoryEntry(getName(), "Bloomfilter");
 	kernel->getDataStore()->readRepository(lbf, onGetLocalBFCallback);
 	
 	HAGGLE_DBG("Starting data helper...\n");
@@ -207,6 +214,9 @@ DataManager::~DataManager()
 
 	if (onGetLocalBFCallback)
 		delete onGetLocalBFCallback;
+	
+	if (localBF)
+		delete localBF;
 }
 
 void DataManager::onShutdown()
@@ -215,14 +225,10 @@ void DataManager::onShutdown()
 		HAGGLE_DBG("Stopping data helper...\n");
 		helper->stop();
 	}
-	// FIXME: why would the following crash the data store?
-	/*
-	RepositoryEntryRef lbf = 
-		new RepositoryEntry(
-			"DataManager", 
-			"Local Bloomfilter",
-			localBF.toBase64().c_str());
-	kernel->getDataStore()->insertRepository(lbf);*/
+	
+	RepositoryEntryRef lbf = new RepositoryEntry(getName(), "Bloomfilter", localBF->getRaw(), localBF->getRawLen());
+	
+	kernel->getDataStore()->insertRepository(lbf);
 	
 	unregisterWithKernel();
 }
@@ -233,6 +239,9 @@ void DataManager::onGetLocalBF(Event *e)
 		return;
 	
 	DataStoreQueryResult *qr = static_cast < DataStoreQueryResult * >(e->getData());
+	
+	HAGGLE_DBG("Got repository callback\n");
+	
 	// Are there any repository entries?
 	if (qr->countRepositoryEntries() != 0) {
 		RepositoryEntryRef re;
@@ -242,9 +251,13 @@ void DataManager::onGetLocalBF(Event *e)
 		re = qr->detachFirstRepositoryEntry();
 		// Was there a repository entry? => was this really what we expected?
 		if (re) {
+			HAGGLE_DBG("Retrieved bloomfilter from data store\n");
 			// Yes:
-			string str = re->getValue();
-			localBF.fromBase64(str);
+			if (localBF)
+				delete localBF;
+			
+			localBF = new Bloomfilter(re->getValueBlob(), re->getValueLen());
+			kernel->getThisNode()->setBloomfilter(*localBF, setCreateTimeOnBloomfilterUpdate);
 		}
 		RepositoryEntryRef lbf = new RepositoryEntry("DataManager", "Local Bloomfilter");
 		kernel->getDataStore()->deleteRepository(lbf);
@@ -289,17 +302,17 @@ void DataManager::onVerifiedDataObject(Event *e)
 		// This data object had a bad signature, we should remove
 		// it from the bloomfilter
 		HAGGLE_DBG("Data object [%s] had bad signature, removing from bloomfilter\n", dObj->getIdStr());
-		localBF.remove(dObj);
-		kernel->getThisNode()->setBloomfilter(localBF, setCreateTimeOnBloomfilterUpdate);
+		localBF->remove(dObj);
+		kernel->getThisNode()->setBloomfilter(*localBF, setCreateTimeOnBloomfilterUpdate);
 		return;
 	}
 
 	if (dObj->getDataState() == DataObject::DATA_STATE_VERIFIED_BAD) {
 		HAGGLE_ERR("Data in data object flagged as bad! -- discarding\n");
-		if (localBF.has(dObj)) {
+		if (localBF->has(dObj)) {
 			// Remove the data object from the bloomfilter since it was bad.
-			localBF.remove(dObj);
-			kernel->getThisNode()->setBloomfilter(localBF, setCreateTimeOnBloomfilterUpdate);
+			localBF->remove(dObj);
+			kernel->getThisNode()->setBloomfilter(*localBF, setCreateTimeOnBloomfilterUpdate);
 		}
 		return;
 	} else if (dObj->getDataState() == DataObject::DATA_STATE_NOT_VERIFIED && helper) {
@@ -396,13 +409,13 @@ void DataManager::onIncomingDataObject(Event *e)
 		// Add the incoming data object also to our own bloomfilter
 		// We do this early in order to avoid receiving duplicates in case
 		// the same object is received at nearly the same time from multiple neighbors
-		if (localBF.has(dObj)) {
+		if (localBF->has(dObj)) {
 			HAGGLE_DBG("Data object [%s] already in our bloomfilter, marking as duplicate...\n", dObj->getIdStr());
 			dObj->setDuplicate();
 		} else {
 			HAGGLE_DBG("Adding data object [%s] to our bloomfilter\n", dObj->getIdStr());
-			localBF.add(dObj);
-			kernel->getThisNode()->setBloomfilter(localBF, setCreateTimeOnBloomfilterUpdate);
+			localBF->add(dObj);
+			kernel->getThisNode()->setBloomfilter(*localBF, setCreateTimeOnBloomfilterUpdate);
 		}
 	}
 }
@@ -445,11 +458,11 @@ void DataManager::onDeletedDataObject(Event * e)
 		  want to receive old node descriptions again.
 		*/
 		if (!(*it)->isNodeDescription())
-			localBF.remove(*it);
+			localBF->remove(*it);
 	}
 	
 	if (dObjs.size() > 0)
-		kernel->getThisNode()->setBloomfilter(localBF, setCreateTimeOnBloomfilterUpdate);
+		kernel->getThisNode()->setBloomfilter(*localBF, setCreateTimeOnBloomfilterUpdate);
 }
 
 /*

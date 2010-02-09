@@ -577,6 +577,9 @@ void NodeManager::onRetrieveNodeDescription(Event *e)
 		return;
 	}
 
+	// Add the node description to the node's bloomfilter
+	node->getBloomfilter()->add(dObj);
+	
 	HAGGLE_DBG("New node description from node %s -- creating node: createTime %s receiveTime %s, bloomfilter #objs=%lu\n", 
 		   node->getName().c_str(), 
 		   dObj->getCreateTime().getAsString().c_str(), 

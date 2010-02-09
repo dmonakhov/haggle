@@ -14,69 +14,81 @@
  */
 #include "RepositoryEntry.h"
 
-int RepositoryEntry::init(const char* _authority, const char* _key, const char* _value, unsigned int _id) 
+RepositoryEntry::RepositoryEntry(const string _authority, const string _key, const string _value, unsigned int _id) : 
+	type(VALUE_TYPE_STRING), authority(_authority), key(_key), value(NULL), len(_value.length()), id(_id)
 {
-	if (!_authority)
-		return -1;
+	if (len) {
+		value_str = (char *)malloc(len + 1);
 	
-	authority = (char *)malloc(strlen(_authority)+1);
-	
-	if (!authority)
-		return -1;
-	
-	strcpy(authority, _authority);
-	
-	if (_key) {
-		key = (char *)malloc(strlen(_key)+1);
-		
-		if (!key) {
-			free(authority);
-			return -1;
+		if (value_str) {
+			strcpy(value_str, _value.c_str()); 
 		}
-		strcpy(key, _key);
-	} 
-	
-	if (_value) {
-		value = (char *)malloc(strlen(_value)+1);
-		
-		if (!value) {
-			free(authority);
-			
-			if (key)
-				free(key);
-		
-			return -1;
-		}
-		
-		strcpy(value, _value);
-	} 
-	return 0;
+	}
 }
 
-RepositoryEntry::RepositoryEntry(const char* _authority, const char* _key, const char* _value, unsigned int _id) : 
-	authority(NULL), key(NULL), value(NULL), id(_id)
+RepositoryEntry::RepositoryEntry(const string _authority, const string _key, const unsigned char* _value, size_t _len, unsigned int _id) : 
+	type(VALUE_TYPE_BLOB), authority(_authority), key(_key), value(NULL), len(_len), id(_id)
 {
-	if (init(_authority, _key, _value, _id) == -1) {
-		fprintf(stderr, "Could not initialize repository entry\n");
+	if (_value && len) {
+		value = malloc(len);
+		
+		if (value) {
+			memcpy(value, _value, len);
+		}
 	}
 }
 
 RepositoryEntry::~RepositoryEntry()
 {
-	if (authority) 
-		free(authority);
-
-	if (key) 
-		free(key);
-
 	if (value) 
 		free(value);
 }
 
+const char *RepositoryEntry::getAuthority() const 
+{
+	return authority.length() ? authority.c_str() : NULL;
+}
+
+const char *RepositoryEntry::getKey() const 
+{
+	return key.length() ? key.c_str() : NULL;
+}
+
+const void *RepositoryEntry::getValue() const 
+{
+	return value;
+}
+
+const char *RepositoryEntry::getValueStr() const 
+{
+	return value_str;
+}
+
+const unsigned char *RepositoryEntry::getValueBlob() const
+{
+	return value_blob;
+}
+
+size_t RepositoryEntry::getValueLen() const 
+{
+	return len;
+}
 
 bool operator==(const RepositoryEntry& e1, const RepositoryEntry& e2)
 {
-        return (strcmp(e1.authority, e2.authority) == 0 && 
-                strcmp(e1.key, e2.key) == 0 && 
-                strcmp(e1.value, e2.value) == 0);
+	if (!e1.type != e2.type)
+		return false;
+	
+	switch (e1.type) {
+		case RepositoryEntry::VALUE_TYPE_STRING:
+			return (strcmp(e1.authority.c_str(), e2.authority.c_str()) == 0 && 
+				strcmp(e1.key.c_str(), e2.key.c_str()) == 0 && 
+				strcmp(e1.value_str, e2.value_str) == 0);
+		case RepositoryEntry::VALUE_TYPE_BLOB:
+			return (strcmp(e1.authority.c_str(), e2.authority.c_str()) == 0 && 
+			       strcmp(e1.key.c_str(), e2.key.c_str()) == 0 && 
+			       e1.len == e2.len &&
+			       memcmp(e1.value, e2.value, e1.len) == 0);
+	}
+	return false;
 }

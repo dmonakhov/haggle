@@ -80,7 +80,7 @@ public:
 			tv->zero();
 			return EQ_EVENT_SHUTDOWN;
 		} else if (!empty()) {
-                        tv->set(front()->getKey());
+                        *tv = static_cast<Event *>(front())->getTimeout();
                         return EQ_EVENT;
                 }
                 return EQ_EMPTY;

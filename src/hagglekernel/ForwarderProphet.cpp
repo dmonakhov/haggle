@@ -54,7 +54,7 @@ bool ForwarderProphet::setSaveState(RepositoryEntryRef& e)
 	if (strcmp(e->getAuthority(), getName()) != 0)
 		return false;
 	
-	string value = e->getValue();
+	string value = e->getValueStr();
 	
 	// Find the separating ':' character in the string
 	size_t pos = value.find(':');

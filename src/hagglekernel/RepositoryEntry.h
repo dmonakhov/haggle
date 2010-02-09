@@ -39,39 +39,67 @@ using namespace haggle;
 	entries by retrieveing with an entry where only the authority is set.
 */
 class RepositoryEntry
-{
+{	
+public:
+	typedef enum {
+		VALUE_TYPE_STRING,
+		VALUE_TYPE_BLOB
+	} ValueType; 
 private:
-	char *authority;
-	char *key;
-	char *value;
+	ValueType type;
+	string authority;
+	string key;
+	union {
+		char *value_str;
+		unsigned char *value_blob;
+		void *value;
+	};
+	size_t len; // Length of value
 	unsigned int id;
-	int init(const char* _authority, const char* _key = NULL, const char* _value = NULL, unsigned int _id = 0);
 public:	
 	/**
 		Constructor. The key, value and id parts are optional for matching 
 		purposes.
 	*/
-	RepositoryEntry(const char* _authority, const char* _key = NULL, const char* _value = NULL, unsigned int _id = 0);
+	RepositoryEntry(const string _authority, const string _key = "", const string _value = "", unsigned int _id = 0);
+	RepositoryEntry(const string _authority, const string _key, const unsigned char  *_value, size_t _len, unsigned int _id = 0);
 	/**
 		Destructor.
 	*/
 	~RepositoryEntry();
 	
 	/**
+		Returns the type of the entry 
+	 */
+	ValueType getType() const { return type; }
+	
+	/**
 		Returns the key of this repository entry.
 	*/
-	const char *getKey() const { return key; }
+	const char *getKey() const;
 
 	/**
 		Returns the authority of this repository entry.
 	*/
-	const char *getAuthority() const { return authority; }
-
+	const char *getAuthority() const;
 	/**
 		Returns the value of this repository entry.
 	*/
-	const char *getValue() const { return value; }
-
+	const void *getValue() const;
+	/**
+	 Returns the value of this repository entry as a string.
+	 */
+	const char *getValueStr() const;
+	/**
+	 Returns the value of this repository entry as a blob.
+	 */
+	const unsigned char *getValueBlob() const;
+	
+	/**
+	 Returns the length of the value
+	 */
+	size_t getValueLen() const;
+	
 	/**
 		Returns the id of this repository entry.
 	*/
