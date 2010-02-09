@@ -410,7 +410,7 @@ void DataObject::setSignature(const string signee, unsigned char *sig, size_t si
 	signature_len = siglen;
 	signatureStatus = DataObject::SIGNATURE_UNVERIFIED;
 	
-	HAGGLE_DBG("Set signature on data object, siglen=%lu\n", siglen);
+	//HAGGLE_DBG("Set signature on data object, siglen=%lu\n", siglen);
 }
 
 bool DataObject::setFilePath(const string _filepath, size_t data_len, bool from_network) 

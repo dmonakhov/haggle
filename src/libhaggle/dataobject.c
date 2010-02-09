@@ -616,7 +616,7 @@ metadata_t *haggle_dataobject_to_metadata(struct dataobject *dobj)
 			}
 		}
 #if defined(OS_WINDOWS)
-                snprintf(datalenstr, 20, "%Iu", dobj->datalen);
+                snprintf(datalenstr, 20, "%u", dobj->datalen);
 #else
                 snprintf(datalenstr, 20, "%zu", dobj->datalen);
 #endif

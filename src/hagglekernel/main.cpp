@@ -633,7 +633,7 @@ static void set_path(void)
 			str[i] = (char) tstr[i];
 		
 		fill_in_haggle_path(str);
-	}else{
+	} else{
 		fill_in_haggle_path(".\\");
 	}
 }
@@ -653,37 +653,8 @@ int WINAPI WinMain(
 #endif
 	atexit(cleanup);
 	set_path();
-	/*
-	 Test memory limits and what happens when with Haggle when it runs out of memory
-	 on Windows mobile.
-	unsigned long bytes = 0;
-	unsigned long n = 1024*1024;
-	char *mem[5] = { NULL };
-	unsigned int i = 0;
-
-	while (true) {
-		char *tmp = (char *)malloc(n);
-
-		if (!tmp) {
-			fprintf(stderr, "could not allocate %lu bytes\n", n);
-			break;
-		} else {
-			bytes += n;
-			mem[i%5] = tmp;
-		}
-		if (i % 9 == 0) {
-			double kb = bytes / 1024;
-			double mb = kb / 1024;
-			printf("Allocated a total of %lu bytes (%lf Kb) (%lf Mb)\n", bytes, kb, mb);
-		}
-		i++;
-	}
 	
-	for (i = 0; i < 5; i++) {
-		if (mem[i])
-			free(mem[i]);
-	}
-	*/
+	setCreateTimeOnBloomfilterUpdate = true;
 
 	return run_haggle();
 }

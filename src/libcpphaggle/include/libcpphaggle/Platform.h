@@ -92,7 +92,7 @@ typedef unsigned int uintptr_t;
 
 //typedef unsigned long socklen_t;
 typedef SSIZE_T ssize_t;
-#define SIZE_T_CONVERSION "%Iu"
+#define SIZE_T_CONVERSION "%u"
 
 #define snprintf _snprintf  // Not sure this is totally safe
 
