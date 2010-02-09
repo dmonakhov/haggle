@@ -19,7 +19,10 @@ doc/api/*
 autom4te.cache
 bin
 lib
+macosx/build
+*pbxuser*
 *.libs/*
+NEWS
 config.guess
 config.h
 config.h.in
