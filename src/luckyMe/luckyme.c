@@ -69,11 +69,11 @@ unsigned long use_node_number = 0;					// overwrite by -n
 #if defined(OS_WINDOWS_MOBILE)
 unsigned long attribute_pool_size = 1;
 unsigned long num_dataobject_attributes = 1;
-unsigned long variance_interest_attributes = 0;
+unsigned long num_interest_attributes = 0;
 #else
 unsigned long attribute_pool_size = 100;		// overwrite by -A
-unsigned long num_dataobject_attributes = 3;		// overwrite by -d
-unsigned long variance_interest_attributes = 2;		// overwrite by -i
+unsigned long num_dataobject_attributes = 3;	// overwrite by -d
+unsigned long num_interest_attributes = 6;		// overwrite by -i
 #endif
 
 unsigned long node_number = 0;
@@ -470,27 +470,36 @@ int create_interest_binomial()
 	struct attributelist *al;	
 	const unsigned long luck = luckyme_prng_uint32() % attribute_pool_size;
 	// use binomial distribution to approximate normal distribution (sum of weights = 100)
-	// mean = np = luck, variance = np(1-p) = LUCK_INTERESTS
+	// mean = u = np, variance = np(1-p)
+
+	// chosing p and n:
+	// to get non-skewed distribution, we use p = 0.5  (skewness = (1-2p)/sqrt(np(1-p)))
+	// n is given by num_interest_attributes. variance: n = variance/(p(1-p)) (for p=0.5: variance=n/4)
+	// u is the mean value (u=np, for p=0.5:u=n/2)
+	//   this gives us n interests (note the limitation below)
 	double p = 0.5;
-	unsigned long n = (unsigned long)(4 * sqrt((double)variance_interest_attributes));
+	unsigned long n = (unsigned long)num_interest_attributes - 1;
 	unsigned long u = (unsigned long)(n * p);
 	
 	LIBHAGGLE_DBG("create interest (luck=%ld)\n", luck);
-	// printf("binomial distribution  n=%u, p=%f\n", n, p);
+	printf("binomial distribution  n=%lu, p=%f\n", n, p);
 	
 	al = haggle_attributelist_new();
 	
 	if (!al)
 		return -1;
 	
+	// calculate P(X=i) = (n over i) p^i (1-p)^(n-i) as weight
+	// in our case P(X=i) = (n over i) 0.5^n
 	for (i = 0; (unsigned long)i <= n; i++) {
+		// create n interests, take the highest weight for luck (i=u)
 		unsigned long interest = (luck + i - u + attribute_pool_size) % attribute_pool_size;
 		unsigned long weight = (unsigned long)(100 * fac(n)/(fac(n-i)*fac(i))*pow(p,i)*pow(1-p,n-i));
-		if (weight > 0) {
-			struct attribute *attr = haggle_attribute_new_weighted(APP_NAME, ulong_to_str(interest), weight);
-			haggle_attributelist_add_attribute(al, attr);
-			LIBHAGGLE_DBG("   %s=%s:%lu\n", haggle_attribute_get_name(attr), haggle_attribute_get_value(attr), haggle_attribute_get_weight(attr));
-		}
+		// do not add interest with weight < 1 (corresponds to P(X=i) < 0.01)
+		if (weight < 1) weight = 1;
+		struct attribute *attr = haggle_attribute_new_weighted(APP_NAME, ulong_to_str(interest), weight);
+		haggle_attributelist_add_attribute(al, attr);
+		LIBHAGGLE_DBG("   %s=%s:%lu\n", haggle_attribute_get_name(attr), haggle_attribute_get_value(attr), haggle_attribute_get_weight(attr));
 	}
 	
 	haggle_ipc_add_application_interests(hh, al);
@@ -809,7 +818,7 @@ static void print_usage()
 		APP_NAME);
 	fprintf(stderr, "          -A attribute pool (default %lu)\n", attribute_pool_size);
 	fprintf(stderr, "          -d number of attributes per data object (default %lu)\n", num_dataobject_attributes);
-	fprintf(stderr, "          -i interest variance (default %lu)\n", variance_interest_attributes);
+	fprintf(stderr, "          -i number of interests (default %f)\n", num_interest_attributes);
 	fprintf(stderr, "          -t interval to create data objects [s] (default %lu)\n", create_data_interval);
 	fprintf(stderr, "          -s singe source (create data objects only on node 'name', default off)\n");
 	fprintf(stderr, "          -f data file to be sent (default off)\n");
@@ -837,7 +846,7 @@ static void parse_commandline(int argc, char **argv)
 					num_dataobject_attributes = strtoul(optarg, NULL, 10);
 					break;
 				case 'i':
-					variance_interest_attributes = strtoul(optarg, NULL, 10);
+					num_interest_attributes = strtoul(optarg, NULL, 10);
 					break;
 				case 't':
 					create_data_interval = strtoul(optarg, NULL, 10);
