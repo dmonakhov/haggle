@@ -822,7 +822,7 @@ static void print_usage()
 		APP_NAME);
 	fprintf(stderr, "          -A attribute pool (default %lu)\n", attribute_pool_size);
 	fprintf(stderr, "          -d number of attributes per data object (default %lu)\n", num_dataobject_attributes);
-	fprintf(stderr, "          -i number of interests (default %f)\n", num_interest_attributes);
+	fprintf(stderr, "          -i number of interests (default %lu)\n", num_interest_attributes);
 	fprintf(stderr, "          -t interval to create data objects [s] (default %lu)\n", create_data_interval);
 	fprintf(stderr, "          -s singe source (create data objects only on node 'name', default off)\n");
 	fprintf(stderr, "          -f data file to be sent (default off)\n");
