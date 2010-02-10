@@ -349,7 +349,7 @@ protected:
 	HaggleKernel *kernel;
 
 	// Functions acting on the DataStore through the task queue
-	virtual int _insertNode(NodeRef& node, const EventCallback<EventHandler> *callback = NULL) = 0;
+	virtual int _insertNode(NodeRef& node, const EventCallback<EventHandler> *callback = NULL, bool mergeBloomfilter = false) = 0;
 	virtual int _deleteNode(NodeRef& node) = 0;
 	virtual int _retrieveNode(NodeRef& node, const EventCallback<EventHandler> *callback, bool forceCallback = false) = 0;
 	virtual int _retrieveNode(NodeType_t type, const EventCallback<EventHandler> *callback) = 0;
@@ -416,7 +416,7 @@ public:
          */
         void dumpToFile(const char *filename);
 	void insertInterface(InterfaceRef& iface);
-	void insertNode(NodeRef& node, const EventCallback<EventHandler> *callback = NULL);
+	void insertNode(NodeRef& node, const EventCallback<EventHandler> *callback = NULL, bool mergeBloomfilter = false);
 	void deleteNode(NodeRef& node);
 	void retrieveNode(const NodeRef& node, const EventCallback<EventHandler> *callback, bool forceCallback = false);
 	void retrieveNode(NodeType_t type, const EventCallback<EventHandler> *callback);

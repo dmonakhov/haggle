@@ -68,6 +68,8 @@ public:
 	QueueElement(const DataObjectRef& dObj, const NodeRef targ = NULL, const InterfaceRef iface = NULL);
 	QueueElement(const QueueElement &qe);
 	~QueueElement();
+
+	friend bool operator==(const QueueElement& q1, const QueueElement& q2);
 };
 
 /**

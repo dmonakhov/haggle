@@ -54,6 +54,9 @@ NodeManager::~NodeManager()
 	
 	if (onRetrieveNodeDescriptionCallback)
 		delete onRetrieveNodeDescriptionCallback;
+
+	if (onInsertedNodeCallback)
+		delete onInsertedNodeCallback;
 }
 
 bool NodeManager::init_derived()
@@ -133,6 +136,7 @@ bool NodeManager::init_derived()
 	onRetrieveNodeCallback = newEventCallback(onRetrieveNode);
 	onRetrieveThisNodeCallback = newEventCallback(onRetrieveThisNode);
 	onRetrieveNodeDescriptionCallback = newEventCallback(onRetrieveNodeDescription);
+	onInsertedNodeCallback = newEventCallback(onInsertedNode);
 
 	kernel->getDataStore()->retrieveNode(kernel->getThisNode(), onRetrieveThisNodeCallback);
 	
@@ -319,8 +323,14 @@ void NodeManager::onNeighborInterfaceUp(Event *e)
 		// merge if node exists in datastore (asynchronous call), we force it to return
 		// as we only generate a node up event when we know we have the best information
 		// for the node.
+		HAGGLE_DBG("No active neighbor with interface [%s], retrieving node from data store\n", 
+			e->getInterface()->getIdentifierStr());
+
 		kernel->getDataStore()->retrieveNode(e->getInterface(), onRetrieveNodeCallback, true);
 	} else {
+		HAGGLE_DBG("Neighbor %s has new active interface [%s], setting to UP\n", 
+			neigh->getName().c_str(), e->getInterface()->getIdentifierStr());
+
 		neigh->setInterfaceUp(e->getInterface());
 	}
 }
@@ -488,8 +498,9 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 					HAGGLE_DBG("Received %s's node description from third party node with interface %s\n",
 						   node->getName().c_str(), dObj->getRemoteInterface()->getIdentifierStr());
 				}
+
 				NodeRef neighbor = kernel->getNodeStore()->retrieve(node, true);
-				
+
 				if (neighbor) {
 					HAGGLE_DBG("Node description of %s received from third party describes a neighbor -- ignoring!\n",
 						   node->getName().c_str());
@@ -603,9 +614,44 @@ void NodeManager::onRetrieveNodeDescription(Event *e)
 		   receiveTime.getAsString().c_str(),
 		   node->getBloomfilter()->numObjects());
 		
-	// insert node into DataStore
-	kernel->getDataStore()->insertNode(node);
+	// insert node into DataStore, merge bloomfilters with the one in the data store
+	// if the node description was received from third party node
+	bool mergeBloomfilter = false;
+
+#if defined(MERGE_BLOOMFILTERS)
+	if (kernel->getNodeStore()->retrieve(node, true)) {
+		// Currently not a neighbor, which means that the node description
+		// we receive might not represent the latest state of the node.
+		// Therefore we merge the bloomfilter with what we have stored
+		// already
+		mergeBloomfilter = true;
+	}
+#endif
+	kernel->getDataStore()->insertNode(node, onInsertedNodeCallback, mergeBloomfilter);
 	
+	// Continue processing when the node has been inserted in onInsertedNode()
+	// This is because we might want to make sure that the node exists in the data store
+	// before we announce it as updated. The data store might also have to merge the bloomfilter
+	// of the node with an already existing one
+	
+	delete qr;
+}
+
+void NodeManager::onInsertedNode(Event *e)
+{
+	if (!e || !e->hasData())
+		return;
+	
+	NodeRef& node = e->getNode();
+
+	if (!node) {
+		HAGGLE_ERR("No node in callback\n");
+		return;
+	}
+
+	HAGGLE_DBG("Node %s [%s] was successfully inserted into data store\n", 
+		node->getName().c_str(), node->getIdStr());
+
 	NodeRefList nl;
 	
 	// See if this node is already an active neighbor but in an uninitialized state
@@ -663,7 +709,4 @@ void NodeManager::onRetrieveNodeDescription(Event *e)
 	// if they are not neighbors. This is because we want to match data objects against the node although
 	// we might not have direct connectivity to it.
 	kernel->addEvent(new Event(EVENT_TYPE_NODE_UPDATED, node, nl));
-
-	delete qr;
 }
-

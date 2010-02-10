@@ -404,7 +404,7 @@ struct dataobject *haggle_dataobject_new_from_file(const char *filepath)
 		EXTRACTOR_removeAll(plugins); /* unload plugins */
 	} while(0);
 #endif
-
+	
 #ifdef DEBUG
 	num_dobj_alloc++;
         dobj->num = num_dobj_alloc;
@@ -541,12 +541,7 @@ int haggle_dataobject_calculate_id(const struct dataobject *dobj, dataobject_id_
 	if (dobj->createtime.tv_sec != 0) {
 		char buf[20];
 
-		snprintf(
-			buf, 
-			20, 
-			CREATETIME_ASSTRING_FORMAT, 
-			(long)dobj->createtime.tv_sec, 
-			(long)dobj->createtime.tv_usec);
+		snprintf(buf, 20, CREATETIME_ASSTRING_FORMAT, dobj->createtime.tv_sec, dobj->createtime.tv_usec);
 		SHA1_Update(&ctxt, (unsigned char *)buf, strlen(buf));
 	}
 
@@ -593,12 +588,7 @@ metadata_t *haggle_dataobject_to_metadata(struct dataobject *dobj)
 	
 	if (dobj->createtime.tv_sec != 0) {
 		char createtime[32];
-		long sec, usec;
-		
-		sec = dobj->createtime.tv_sec;
-		usec = dobj->createtime.tv_usec;
-		
-		sprintf(createtime, CREATETIME_ASSTRING_FORMAT, sec, usec);
+		sprintf(createtime, CREATETIME_ASSTRING_FORMAT, dobj->createtime.tv_sec, dobj->createtime.tv_usec);
 		metadata_set_parameter(dobj->m, DATAOBJECT_CREATE_TIME_PARAM, createtime);
 	}
 	

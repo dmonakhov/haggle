@@ -40,6 +40,7 @@ class NodeManager : public Manager
 	EventCallback<EventHandler> *onRetrieveNodeCallback;
 	EventCallback<EventHandler> *onRetrieveThisNodeCallback;
 	EventCallback<EventHandler> *onRetrieveNodeDescriptionCallback;
+	EventCallback<EventHandler> *onInsertedNodeCallback;
         EventType nodeDescriptionEType;
         int sendNodeDescription(NodeRefList& neighList);
         void onFilterQueryResult(Event *e);
@@ -57,6 +58,7 @@ class NodeManager : public Manager
 	//int onNodeContactEnd(Event *e);
 	void onRetrieveThisNode(Event *e);
 	void onNodeInformation(Event *e);
+	void onInsertedNode(Event *e);
 
 #if defined(ENABLE_METADAPARSER)
         bool onParseMetadata(Metadata *md);

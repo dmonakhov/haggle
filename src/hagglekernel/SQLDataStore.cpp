@@ -1712,7 +1712,6 @@ sqlite_int64 SQLDataStore::getNodeRowId(const NodeRef& node)
 		}
 
 		sqlite3_finalize(stmt);
-
 	}
 
 	return nodeRowId;
@@ -1996,7 +1995,7 @@ int SQLDataStore::_deleteNode(NodeRef& node)
 }
 
 
-int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *callback)
+int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *callback, bool mergeBloomfilter)
 {
 	int ret;
 	char *sql_cmd;
@@ -2058,7 +2057,19 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 
 	if (ret == SQLITE_CONSTRAINT) {
 		HAGGLE_DBG("Node %s already in datastore -> replacing...\n", node->getName().c_str());
-		
+
+		if (mergeBloomfilter) {
+			sqlite_int64 node_rowid = getNodeRowId(node);
+
+			if (node_rowid >= 0) {
+				NodeRef& existing_node = getNodeFromRowId(node_rowid);
+
+				if (existing_node) {
+					HAGGLE_DBG("Merging bloomfilter of node %s\n", node->getName().c_str());
+					node->getBloomfilter()->merge(*existing_node->getBloomfilter());
+				}
+			}
+		}
 		ret = _deleteNode(node);
 		
 		if (ret < 0) {

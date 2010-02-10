@@ -84,7 +84,7 @@ protected:
 
 	// These functions work through the task Queue
 	// - insert implements update functionality
-	int _insertNode(NodeRef& node, const EventCallback<EventHandler> *callback = NULL);
+	int _insertNode(NodeRef& node, const EventCallback<EventHandler> *callback = NULL, bool mergeBloomfilter = false);
 	int _deleteNode(NodeRef& node);
 	int _retrieveNode(NodeRef& node, const EventCallback<EventHandler> *callback, bool forceCallback);
 	int _retrieveNode(NodeType_t type, const EventCallback<EventHandler> *callback);

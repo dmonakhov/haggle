@@ -1321,14 +1321,15 @@ void DataObject::calcIdStr()
         }
 }
 
-bool operator<(const DataObject & a, const DataObject & b)
-{
-        return 0;
-}
-
 bool operator==(const DataObject&a, const DataObject&b)
 {
-        return strcmp(a.getIdStr(), b.getIdStr()) == 0;
+        return memcmp(a.id, b.id, sizeof(DataObjectId_t)) == 0;
+}
+
+
+bool operator!=(const DataObject&a, const DataObject&b)
+{
+        return memcmp(a.id, b.id, sizeof(DataObjectId_t)) != 0;
 }
 
 /*
@@ -1489,12 +1490,3 @@ void DataObject::print(FILE *fp) const
 	}
 }
 
-bool lt_dataobj_p::operator() (const DataObject * _int1, const DataObject * _int2) const
-{
-        return 0;
-}
-
-bool cmp_dataobj(DataObject * o1, DataObject * o2)
-{
-        return lt_dataobj_p()(o1, o2);
-}

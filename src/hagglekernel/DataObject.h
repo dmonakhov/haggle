@@ -455,15 +455,9 @@ public:
                 return localIface;
         }
 	void print(FILE *fp = stdout) const;
-        friend bool operator< (const DataObject&a, const DataObject&b);
+
         friend bool operator==(const DataObject&a, const DataObject&b);
+        friend bool operator!=(const DataObject&a, const DataObject&b);
 };
-
-struct lt_dataobj_p {
-    public:
-        bool operator()(const DataObject* o1, const DataObject* o2) const;
-};
-
-bool cmp_dataobj(DataObject* o1, DataObject* o2);
 
 #endif /* _DATAOBJECT_H */

@@ -51,6 +51,13 @@ QueueElement::QueueElement(const QueueElement &qe) :
 {
 }
 
+bool operator==(const QueueElement& q1, const QueueElement& q2)
+{
+	if (q1.type == QE_DataObject && q2.type == QE_DataObject) {
+		return (q1.dObj == q2.dObj && q1.node == q2.node && q1.iface == q2.iface);
+	}
+	return false;
+}
 /*
 	Destructor: does nothing
 */

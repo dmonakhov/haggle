@@ -15,6 +15,11 @@ namespace LuckyGUI
 {
         public partial class MainWindow : Form
         {
+                [DllImport("coredll.dll", EntryPoint = "ShowWindow")]
+                static extern int ShowWindow(IntPtr hWnd, int nCmdShow);
+                const int SW_MINIMIZED = 6;
+                const int SW_SHOW = 5;
+
                 public MainWindow()
                 {
                         InitializeComponent();
@@ -25,12 +30,14 @@ namespace LuckyGUI
                 {
                         Debug.WriteLine("main_window: onNeighborUpdate() stage=" + LuckyMe.testStageString());
                         numNeighborsLabel.Text = LuckyMeLib.getNumberOfNeighbors() + " neighbors";
+                        ShowWindow(this.Handle, SW_SHOW);
                         this.Refresh();
                 }
                 public void onNewDataObject()
                 {
                         Debug.WriteLine("main_window: onNewDataObject stage=" + LuckyMe.testStageString());
                         numDataObjectsLabel.Text = LuckyMeLib.getNumberOfDOsReceived() + " data objects received";
+                        ShowWindow(this.Handle, SW_SHOW);
                         this.Refresh();
                 }
                 public void onDataObjectGenerated()
@@ -57,6 +64,36 @@ namespace LuckyGUI
                         this.Refresh();
                 }
 
+                private void updateLockStatus()
+                {
+                        int lock_status = -1;
+                        string driverFileName = Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\\System\\State", "Lock", "1").ToString();
+                        lock_status = Int32.Parse(driverFileName);
+                        switch (lock_status)
+                        {
+                                case 0:
+                                        lockStatusLabel.Text = "Phone is unlocked";
+                                        lockButton.Enabled = true;
+                                        break;
+
+                                case 1:
+                                        lockStatusLabel.Text = "Phone is locked (pw)";
+                                        lockButton.Enabled = false;
+                                        break;
+
+                                case 2:
+                                        lockStatusLabel.Text = "Phone is locked";
+                                        lockButton.Enabled = false;
+                                        ShowWindow(this.Handle, SW_SHOW);
+                                        break;
+
+                                default:
+                                        lockStatusLabel.Text = "Phone locked(?)";
+                                        lockButton.Enabled = false;
+                                        break;
+                        }
+                        this.Refresh();
+                }
                 public void updateWindowStatus()
                 {
                         Debug.WriteLine("main_window: updating status");
@@ -81,32 +118,7 @@ namespace LuckyGUI
                                         break;
                         }
 
-                        int lock_status = -1;
-                        string driverFileName = Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\\System\\State", "Lock", "1").ToString();
-                        lock_status = Int32.Parse(driverFileName);
-                        switch (lock_status)
-                        {
-                                case 0:
-                                        lockStatusLabel.Text = "Phone is unlocked";
-                                        lockButton.Enabled = false;
-                                        break;
-
-                                case 1:
-                                        lockStatusLabel.Text = "Phone is locked (pw)";
-                                        lockButton.Enabled = false;
-                                        break;
-
-                                case 2:
-                                        lockStatusLabel.Text = "Phone is locked";
-                                        lockButton.Enabled = false;
-                                        ShowWindow(this.Handle, SW_SHOW);
-                                        break;
-
-                                default:
-                                        lockStatusLabel.Text = "Phone locked(?)";
-                                        lockButton.Enabled = false;
-                                        break;
-                        }
+                        updateLockStatus();
 
                         if (LuckyMeLib.isLuckyMeRunning())
                         {
@@ -150,10 +162,6 @@ namespace LuckyGUI
                         }
                 }
 
-                [DllImport("coredll.dll", EntryPoint = "ShowWindow")]
-                static extern int ShowWindow(IntPtr hWnd, int nCmdShow);
-                const int SW_MINIMIZED = 6;
-                const int SW_SHOW = 5;
                 private void menuHide_Click(object sender, EventArgs e)
                 {
                         /*
@@ -162,7 +170,7 @@ namespace LuckyGUI
                          * avoid having users quitting the application accidentally during 
                          * the test.
                          * 
-                         * To actually quit the application, press the "terminate" button
+                         * To actually quit the application, press the "shutdown" button
                          * in the test controls window.
                         */
                         ShowWindow(this.Handle, SW_MINIMIZED);
@@ -189,7 +197,7 @@ namespace LuckyGUI
                         {
                                 System.Diagnostics.Debug.WriteLine("Unable to lock!");
                         }
-                        onStatusUpdate();
+                        updateLockStatus();
                 }
 
                 private void neighborsButton_Click(object sender, EventArgs e)

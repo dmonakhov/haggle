@@ -83,13 +83,19 @@ public:
 		
 		Returns: true iff the given element was inserted.
 	*/
-	bool insert(T qe)
+	bool insert(T qe, bool unique = false)
 	{
 		Mutex::AutoLocker l(mutex);
 		
 		if (isClosed)
 			return false;
 		
+		if (unique) {
+			for (List<T>::iterator it = lst.begin(); it != lst.end(); it++) {
+				if (qe == *it)
+					return false;
+			}
+		}
 		lst.push_back(qe);
 		
 		// Signal that there is something in the list:

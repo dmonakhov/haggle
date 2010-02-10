@@ -677,6 +677,8 @@ static struct dataobject *create_control_dataobject(haggle_handle_t hh, const co
 	
 	if (!dobj)
 		return NULL;
+
+	haggle_dataobject_set_createtime(dobj, NULL);
 	
 	/* Control data objects are non-persistent, i.e., should not
 	 * be added to the data store */

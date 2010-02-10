@@ -427,8 +427,10 @@ bool Protocol::sendDataObject(const DataObjectRef& dObj, const NodeRef& peer, co
 	if (!qe)
 		return false;
 
-	if (!q->insert(qe)) {
+	if (!q->insert(qe, true)) {
 		delete qe;
+		HAGGLE_DBG("Data object [%s] already in protocol send queue for node %s [%s]\n", 
+			dObj->getIdStr(), peer->getName().c_str(), peer->getIdStr());
 		return false;
 	}
 	

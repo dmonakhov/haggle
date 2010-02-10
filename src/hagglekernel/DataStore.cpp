@@ -395,11 +395,11 @@ DataStore::~DataStore()
 	}
 }
 
-void DataStore::insertNode(NodeRef& node, const EventCallback<EventHandler> *callback)
+void DataStore::insertNode(NodeRef& node, const EventCallback<EventHandler> *callback, bool mergeBloomfilters)
 {
 	Mutex::AutoLocker l(mutex);
 
-	taskQ.insert(new DataStoreTask(node, TASK_INSERT_NODE, callback));
+	taskQ.insert(new DataStoreTask(node, TASK_INSERT_NODE, callback, mergeBloomfilters));
 
 	cond.signal();
 }
@@ -685,7 +685,7 @@ bool DataStore::run()
 			_ageDataObjects(*task->age, task->callback);
 			break;
 		case TASK_INSERT_NODE:
-			_insertNode(*task->node, task->callback);
+			_insertNode(*task->node, task->callback, task->boolParameter);
 			break;
 		case TASK_DELETE_NODE:
 			_deleteNode(*task->node);
