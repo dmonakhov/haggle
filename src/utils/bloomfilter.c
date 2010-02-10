@@ -288,7 +288,7 @@ out:
 
 int bloomfilter_merge(struct bloomfilter *bf, const struct bloomfilter *bf_merge)
 {
-	int i;
+	unsigned int i;
 	
 	if (!bf || !bf_merge)
 		return MERGE_RESULT_ERROR;

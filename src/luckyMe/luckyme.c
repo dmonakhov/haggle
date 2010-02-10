@@ -56,25 +56,27 @@
 
 #include <string.h>
 #include <math.h>
-
 #include <stdlib.h>
 #include <stdio.h>
-
 
 unsigned long grid_size = 0;						// overwrite by -g
 char *filename = "\\luckyme.png";					// overwrite by -f
 char *single_source_name = NULL;					// overwrite by -s
-unsigned long create_data_interval = 30;			// overwrite by -t
+unsigned long create_data_interval = 30;				// overwrite by -t
 unsigned long repeatableSeed = 0;					// overwrite by -r
-unsigned long useNodeNumber = 0;					// overwrite by -n
+unsigned long use_node_number = 0;					// overwrite by -n
 
-unsigned long attribute_pool_size = 100;			// overwrite by -A
+#if defined(OS_WINDOWS_MOBILE)
+unsigned long attribute_pool_size = 1;
+unsigned long num_dataobject_attributes = 1;
+unsigned long variance_interest_attributes = 0;
+#else
+unsigned long attribute_pool_size = 100;		// overwrite by -A
 unsigned long num_dataobject_attributes = 3;		// overwrite by -d
 unsigned long variance_interest_attributes = 2;		// overwrite by -i
-unsigned long numDataObjects = -1;					// overwrite by -N
+#endif
 
 unsigned long node_number = 0;
-
 
 #define APP_NAME "LuckyMe"
 
@@ -376,11 +378,6 @@ int luckyme_start(void)
 
 	if (luckyme_is_running())
 		return 0;
-	
-	/* Set values we use on Windows mobile */
-	attribute_pool_size = 1;
-	num_dataobject_attributes = 1;
-	variance_interest_attributes = 0;
 		
 	luckyme_thread_handle = CreateThread(NULL, 0, luckyme_run, (void *)NULL, 0, 0);
 	
@@ -787,7 +784,7 @@ int on_interests(haggle_event_t *e, void* nix)
 		LIBHAGGLE_DBG("No existing interests, generating new ones\n");
 
 		// No old interests: Create new interests.
-		if (useNodeNumber == 1) {
+		if (use_node_number == 1) {
 			create_interest_node_number();
 		} else if (grid_size > 0) {
 			create_interest_grid();
@@ -853,7 +850,7 @@ static void parse_commandline(int argc, char **argv)
 					repeatableSeed = 1;
 					break;
 				case 'n':
-					useNodeNumber = 1;
+					use_node_number = 1;
 					break;
 				case 's':
 					single_source_name = optarg;

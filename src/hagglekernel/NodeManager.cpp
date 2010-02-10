@@ -219,11 +219,6 @@ void NodeManager::onRetrieveThisNode(Event *e)
 			// Success! update the hagglekernel's reference, too.
 			kernel->setThisNode(node);
 	}
-	// FIXME: set these to better values.
-	// FIXME: respond to (?) and set this accordingly.
-	kernel->getThisNode()->setMatchingThreshold(0);
-	// FIXME: respond to the resource manager, and set this value accordingly.
-	kernel->getThisNode()->setMaxDataObjectsInMatch(10);
 	// Update create time to mark the freshness of the thisNode node description
 	kernel->getThisNode()->setCreateTime();
 }
