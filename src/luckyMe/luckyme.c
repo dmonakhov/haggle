@@ -67,13 +67,13 @@ unsigned long repeatableSeed = 0;					// overwrite by -r
 unsigned long use_node_number = 0;					// overwrite by -n
 
 #if defined(OS_WINDOWS_MOBILE)
-unsigned long attribute_pool_size = 1;
-unsigned long num_dataobject_attributes = 1;
-unsigned long num_interest_attributes = 0;
+unsigned long attribute_pool_size = 100;
+unsigned long num_dataobject_attributes = 4; 
+unsigned long num_interest_attributes = 10;
 #else
-unsigned long attribute_pool_size = 100;		// overwrite by -A
-unsigned long num_dataobject_attributes = 3;	// overwrite by -d
-unsigned long num_interest_attributes = 6;		// overwrite by -i
+unsigned long attribute_pool_size = 100;	// overwrite by -A
+unsigned long num_dataobject_attributes = 4;	// overwrite by -d
+unsigned long num_interest_attributes = 10;	// overwrite by -i
 #endif
 
 unsigned long node_number = 0;
@@ -154,15 +154,14 @@ static inline void mutex_unlock(mutex_t *m)
 #endif
 }
 
-static double fac(int n)
+static double fac(unsigned long n)
 {
-	double t = 1;
-	int i;
+	unsigned long i, t = 1;
 	
 	for (i = n; i > 1; i--)
 		t *= i;
 	
-	return t;
+	return (double)t;
 }
 
 static const char *ulong_to_str(unsigned long n)
@@ -466,7 +465,7 @@ int set_callback(callback_function_t _callback)
  */
 int create_interest_binomial() 
 {
-	int i = 0;
+	unsigned long i = 0;
 	struct attributelist *al;	
 	const unsigned long luck = luckyme_prng_uint32() % attribute_pool_size;
 	// use binomial distribution to approximate normal distribution (sum of weights = 100)
@@ -482,7 +481,7 @@ int create_interest_binomial()
 	unsigned long u = (unsigned long)(n * p);
 	
 	LIBHAGGLE_DBG("create interest (luck=%ld)\n", luck);
-	printf("binomial distribution  n=%lu, p=%f\n", n, p);
+	LIBHAGGLE_DBG("binomial distribution  n=%lu, p=%lf\n", n, p);
 	
 	al = haggle_attributelist_new();
 	
@@ -492,12 +491,17 @@ int create_interest_binomial()
 	// calculate P(X=i) = (n over i) p^i (1-p)^(n-i) as weight
 	// in our case P(X=i) = (n over i) 0.5^n
 	for (i = 0; (unsigned long)i <= n; i++) {
+		struct attribute *attr;
+		unsigned long interest, weight;
 		// create n interests, take the highest weight for luck (i=u)
-		unsigned long interest = (luck + i - u + attribute_pool_size) % attribute_pool_size;
-		unsigned long weight = (unsigned long)(100 * fac(n)/(fac(n-i)*fac(i))*pow(p,i)*pow(1-p,n-i));
+		interest = (luck + i - u + attribute_pool_size) % attribute_pool_size;
+		weight = (unsigned long)(100 * fac(n)/(fac(n-i)*fac(i))*pow(p,i)*pow(1-p,n-i));
+
 		// do not add interest with weight < 1 (corresponds to P(X=i) < 0.01)
-		if (weight < 1) weight = 1;
-		struct attribute *attr = haggle_attribute_new_weighted(APP_NAME, ulong_to_str(interest), weight);
+		if (weight < 1) 
+			weight = 1;
+
+		attr = haggle_attribute_new_weighted(APP_NAME, ulong_to_str(interest), weight);
 		haggle_attributelist_add_attribute(al, attr);
 		LIBHAGGLE_DBG("   %s=%s:%lu\n", haggle_attribute_get_name(attr), haggle_attribute_get_value(attr), haggle_attribute_get_weight(attr));
 	}

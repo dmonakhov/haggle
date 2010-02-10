@@ -78,7 +78,7 @@ typedef enum {
 #define NODE_METADATA_BLOOMFILTER "Bloomfilter"
 
 #define NODE_DEFAULT_DATAOBJECTS_PER_MATCH 10
-#define NODE_DEFAULT_MATCH_THRESHOLD 50
+#define NODE_DEFAULT_MATCH_THRESHOLD 10
 
 typedef unsigned char NodeId_t[NODE_ID_LEN];
 
