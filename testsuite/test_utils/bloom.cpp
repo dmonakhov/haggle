@@ -36,45 +36,55 @@
 // reasonably avoid accidental collisions:
 #define NUMBER_OF_DATA_OBJECTS 100
 // This must be less than NUMBER_OF_DATA_OBJECTS for the tests to work:
-#define NUMBER_OF_DATA_OBJECTS_INSERTED	75
+#define NUMBER_OF_DATA_OBJECTS_1	75
 #ifdef COUNTING_BLOOMFILTER
-#define NUMBER_OF_DATA_OBJECTS_REMOVED	25
+#define NUMBER_OF_DATA_OBJECTS_2	25
 #endif
 #define DATA_OBJECT_BYTES				1024
 char data_object[NUMBER_OF_DATA_OBJECTS][DATA_OBJECT_BYTES];
 long data_object_len[NUMBER_OF_DATA_OBJECTS];
 
 // Returns boolean true/false actually:
-int check_for_data_objects(struct bloomfilter *bf)
+int check_for_data_objects_1(struct bloomfilter *bf)
 {
-	long	i;
+	long i;
 	
 	// Check for presence of inserted objects:
-	for(i = 0;
-		i < NUMBER_OF_DATA_OBJECTS_INSERTED
-#ifdef COUNTING_BLOOMFILTER
-			- NUMBER_OF_DATA_OBJECTS_REMOVED
-#endif
-			;
-		i++)
-		if(	bloomfilter_check(
-				bf, 
-				data_object[i], 
-				data_object_len[i]) == 0)
+	for (i = 0; i < NUMBER_OF_DATA_OBJECTS_1; i++)
+		if (bloomfilter_check(bf, data_object[i], data_object_len[i]) == 0)
 			return 0;
 	
 	// Check for non-presence of non-inserted objects:
-	for(i = NUMBER_OF_DATA_OBJECTS_INSERTED
-#ifdef COUNTING_BLOOMFILTER
-			- NUMBER_OF_DATA_OBJECTS_REMOVED
-#endif
-			; 
-		i < NUMBER_OF_DATA_OBJECTS;
-		i++)
-		if(	bloomfilter_check(
-				bf, 
-				data_object[i], 
-				data_object_len[i]) != 0)
+	for (i = NUMBER_OF_DATA_OBJECTS_1; i < NUMBER_OF_DATA_OBJECTS; i++)
+		if (bloomfilter_check(bf, data_object[i], data_object_len[i]) != 0)
+			return 0;
+	
+	return 1;
+}
+
+int check_for_data_objects_2(struct bloomfilter *bf)
+{
+	long i;
+	
+	// Check for presence of inserted objects:
+	for (i = NUMBER_OF_DATA_OBJECTS_1; i < NUMBER_OF_DATA_OBJECTS; i++)
+		if (bloomfilter_check(bf, data_object[i], data_object_len[i]) == 0)
+			return 0;
+	
+	// Check for non-presence of non-inserted objects:
+	for (i = 0; i < NUMBER_OF_DATA_OBJECTS_1; i++)
+		if (bloomfilter_check(bf, data_object[i], data_object_len[i]) != 0)
+			return 0;
+	
+	return 1;
+}
+int check_for_data_objects_all(struct bloomfilter *bf)
+{
+	long i;
+	
+	// Check for presence of inserted objects:
+	for (i = 0; i < NUMBER_OF_DATA_OBJECTS; i++)
+		if (bloomfilter_check(bf, data_object[i], data_object_len[i]) == 0)
 			return 0;
 	
 	return 1;
@@ -86,102 +96,108 @@ int haggle_test_bloom(void)
 int main(int argc, char *argv[])
 #endif
 {
-	struct bloomfilter	*my_filter, *filter_copy;
-	char				*b64_filter_copy_1, *b64_filter_copy_2;
-	long				i,j;
-	int					success = (1==1), tmp_succ;
+	struct bloomfilter *bf1, *bf2, *bf_copy;
+	char *b64_bf_copy_1, *b64_bf_copy_2;
+	long i,j;
+	int success = (1==1), tmp_succ;
 	
 	prng_init();
 	
 	print_over_test_str_nl(0, "Bloomfilter test: ");
 	// Create random data objects:
-	for(i = 0; i < NUMBER_OF_DATA_OBJECTS; i++)
-	{
+	for (i = 0; i < NUMBER_OF_DATA_OBJECTS; i++) {
 		data_object_len[i] = 
 			((prng_uint8() << 8) | prng_uint8()) % DATA_OBJECT_BYTES;
-		for(j = 0; j < data_object_len[i]; j++)
+		for (j = 0; j < data_object_len[i]; j++)
 			data_object[i][j] = prng_uint8();
 	}
 	
 	print_over_test_str(1, "Create bloomfilter: ");
-	my_filter = bloomfilter_new((float)0.01, 1000);
+	bf1 = bloomfilter_new((float)0.01, 1000);
+	bf2 = bloomfilter_copy(bf1);
 	
 	// Check that it worked
-	if(my_filter == NULL)
+	if (bf1 == NULL)
 		return 1;
 	
+	if (bf2 == NULL) {
+		bloomfilter_free(bf1);
+                return 1;
+        }
+	
 	print_passed();
-	print_over_test_str(1, "Add data objects: ");
+	print_over_test_str(1, "Add data objects to filter 1: ");
+
 	// Insert objects:
-	for(i = 0; i < NUMBER_OF_DATA_OBJECTS_INSERTED; i++)
-		bloomfilter_add(my_filter, data_object[i], data_object_len[i]);
-	
-#ifdef COUNTING_BLOOMFILTER
-	print_passed();
-	print_over_test_str(1, "Remove data objects: ");
-	// Remove some objects:
-	for(i = NUMBER_OF_DATA_OBJECTS_INSERTED - NUMBER_OF_DATA_OBJECTS_REMOVED;
-		i < NUMBER_OF_DATA_OBJECTS_INSERTED;
-		i++)
-		bloomfilter_remove(my_filter, data_object[i], data_object_len[i]);
-#endif
+	for (i = 0; i < NUMBER_OF_DATA_OBJECTS_1; i++)
+		bloomfilter_add(bf1, data_object[i], data_object_len[i]);
 	
 	print_passed();
-	print_over_test_str(1, "Contains those data objects: ");
+
+	print_over_test_str(1, "Add data objects to filter 2: ");
+	// Add some other data objects:
+	for (i = NUMBER_OF_DATA_OBJECTS_1; i < NUMBER_OF_DATA_OBJECTS; i++)
+		bloomfilter_add(bf2, data_object[i], data_object_len[i]);
+	
+	print_passed();
+
+	print_over_test_str(1, "Filters contain those data objects: ");
 	// Check filter contents:
-	tmp_succ = check_for_data_objects(my_filter);
+	tmp_succ = check_for_data_objects_1(bf1);
+	success &= tmp_succ;
+	tmp_succ = check_for_data_objects_2(bf2);
 	success &= tmp_succ;
 	print_pass(tmp_succ);
 	
 	print_over_test_str(1, "Copy: ");
-	filter_copy = bloomfilter_copy(my_filter);
+	bf_copy = bloomfilter_copy(bf1);
 	
 	// Check that it worked
-	if(filter_copy == NULL)
+	if(bf_copy == NULL)
 		return 1;
 	
 	print_passed();
 	print_over_test_str(1, "Copy contains data objects: ");
 	// Check filter contents:
-	tmp_succ = check_for_data_objects(filter_copy);
+	tmp_succ = check_for_data_objects_1(bf_copy);
 	success &= tmp_succ;
 	print_pass(tmp_succ);
 	
-	bloomfilter_free(filter_copy);
+	bloomfilter_free(bf_copy);
 	
 	
 	print_over_test_str(1, "To Base64: ");
-	b64_filter_copy_1 = bloomfilter_to_base64(my_filter);
+	b64_bf_copy_1 = bloomfilter_to_base64(bf1);
 	
 	// Check that it worked
-	if(b64_filter_copy_1 == NULL)
+	if(b64_bf_copy_1 == NULL)
 		return 1;
 	
 	print_passed();
 	print_over_test_str(1, "From Base64: ");
-	filter_copy = 
+	bf_copy = 
 		base64_to_bloomfilter(
-			b64_filter_copy_1, 
-			strlen(b64_filter_copy_1));
+			b64_bf_copy_1, 
+			strlen(b64_bf_copy_1));
 	
 	// Check that it worked
-	if(filter_copy == NULL)
+	if(bf_copy == NULL)
 		return 1;
 	
 	print_passed();
 	print_over_test_str(1, "To Base64 match: ");
-	b64_filter_copy_2 = bloomfilter_to_base64(filter_copy);
+	b64_bf_copy_2 = bloomfilter_to_base64(bf_copy);
 	
 	// Check that it worked
-	if(b64_filter_copy_2 == NULL)
+	if (b64_bf_copy_2 == NULL)
 		return 1;
 	
 	// Check that the lengths are the same:
-	if(strlen(b64_filter_copy_2) != strlen(b64_filter_copy_1))
+	if (strlen(b64_bf_copy_2) != strlen(b64_bf_copy_1))
 		tmp_succ = (1==0);
-	else{
+	else {
 		// Check that they are equal:
-		if(strcmp(b64_filter_copy_2, b64_filter_copy_1) != 0)
+		if (strcmp(b64_bf_copy_2, b64_bf_copy_1) != 0)
 			tmp_succ = (1==0);
 	}
 	
@@ -189,14 +205,27 @@ int main(int argc, char *argv[])
 	print_pass(tmp_succ);
 	print_over_test_str(1, "Copy contains data objects: ");
 	// Check filter contents:
-	tmp_succ = check_for_data_objects(filter_copy);
+	tmp_succ = check_for_data_objects_1(bf_copy);
+	success &= tmp_succ;
+	print_pass(tmp_succ);
+
+	print_over_test_str(1, "Merge filters 1 & 2: ");
+	// Check filter contents:
+	tmp_succ = (bloomfilter_merge(bf1, bf2) == MERGE_RESULT_OK);
+	success &= tmp_succ;
+	print_pass(tmp_succ);
+        
+        print_over_test_str(1, "Merged filter contains all data objects: ");
+	// Check filter contents:
+	tmp_succ = check_for_data_objects_all(bf1);
 	success &= tmp_succ;
 	print_pass(tmp_succ);
 
 	print_over_test_str(1, "Release: ");
-	bloomfilter_free(filter_copy);
+	bloomfilter_free(bf_copy);
 	
-	bloomfilter_free(my_filter);
+	bloomfilter_free(bf1);
+	bloomfilter_free(bf2);
 	
 	print_passed();
 	print_over_test_str(1, "Total: ");

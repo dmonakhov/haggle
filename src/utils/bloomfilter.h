@@ -101,6 +101,16 @@ static inline int bloomfilter_add(struct bloomfilter *bf, const char *key, const
 {
 	return bloomfilter_operation(bf, key, len, BF_OP_ADD);
 }
+	
+enum {
+	MERGE_RESULT_ERROR = -3,
+	MERGE_RESULT_SALTS_ERROR,
+	MERGE_RESULT_PARAM_ERROR,
+	MERGE_RESULT_OK
+};
+	
+int bloomfilter_merge(struct bloomfilter *bf, const struct bloomfilter *bf_merge);
+
 #ifdef DEBUG
 void bloomfilter_print(struct bloomfilter *bf);
 #endif

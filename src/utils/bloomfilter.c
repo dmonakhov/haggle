@@ -80,15 +80,16 @@ struct bloomfilter *bloomfilter_copy(const struct bloomfilter *bf)
 void bloomfilter_print(struct bloomfilter *bf)
 {
 	unsigned int i, j;
+	bin_t *bins;
 	
 	if (!bf)
 		return;
+	
+	bins = BLOOMFILTER_GET_FILTER(bf);
 
 	printf("Bloomfilter m=%u k=%u n=%u\n", bf->m, bf->k, bf->n);
 
 	for (i = 0; i < bf->m / VALUES_PER_BIN; i++) {
-		bin_t *bins = BLOOMFILTER_GET_FILTER(bf);
-
                 for (j = 0; j < VALUES_PER_BIN; j++) {
                         printf("%d", bins[i] & (1 << (i % VALUES_PER_BIN)) ? 1 : 0);
                         
@@ -283,6 +284,36 @@ out:
 	free(buf);
 
 	return res;
+}
+
+int bloomfilter_merge(struct bloomfilter *bf, const struct bloomfilter *bf_merge)
+{
+	int i;
+	
+	if (!bf || !bf_merge)
+		return MERGE_RESULT_ERROR;
+	
+	if (bf->m != bf_merge->m || bf->k != bf_merge->k) {
+		//fprintf(stderr, "filter parameters are not the same\n");
+		return MERGE_RESULT_PARAM_ERROR;
+	}
+	
+	if (memcmp(BLOOMFILTER_GET_SALTS(bf), BLOOMFILTER_GET_SALTS(bf_merge), SALTS_LEN(bf)) != 0) {
+		fprintf(stderr, "filter salts are not the same\n");
+		return MERGE_RESULT_SALTS_ERROR;
+	}
+	
+	for (i = 0; i < bf->m / VALUES_PER_BIN; i++) {
+		BLOOMFILTER_GET_FILTER(bf)[i] |= BLOOMFILTER_GET_FILTER(bf_merge)[i];
+	}
+	
+	/* 
+	 NOTE: The resulting n value will probably be wrong when adding them this way, because there is no
+	 way to tell how many objects common objects there are in the two filters. 
+	 */
+	bf->n += bf_merge->n;
+	
+	return MERGE_RESULT_OK;
 }
 
 void bloomfilter_free(struct bloomfilter *bf)

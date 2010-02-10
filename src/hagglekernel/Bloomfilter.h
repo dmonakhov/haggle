@@ -35,11 +35,21 @@ class Bloomfilter : public LeakMonitor
 class Bloomfilter
 #endif
 {
+public:
+	typedef enum {
+		BF_TYPE_NORMAL,
+		BF_TYPE_COUNTING
+	} BloomfilterType_t;
 private:
+	BloomfilterType_t type;
 	float error_rate;
 	unsigned int capacity;
-	struct bloomfilter *non_counting;
-	struct counting_bloomfilter *counting;
+	const unsigned long init_n;
+	union {
+		struct bloomfilter *bf;
+		struct counting_bloomfilter *cbf;
+		unsigned char *raw;
+	};
 	Bloomfilter(float _error_rate, unsigned int _capacity, struct bloomfilter *bf);
 	Bloomfilter(float _error_rate, unsigned int _capacity, struct counting_bloomfilter *cbf);
 public:
@@ -60,6 +70,7 @@ public:
 	*/
 	~Bloomfilter();
 	
+	BloomfilterType_t getType() const { return type; }
 	/**
 		Adds the given data object to the bloomfilter.
 	*/
@@ -73,6 +84,9 @@ public:
 	/**
 		Returns true iff the data object is in the bloomfilter.
 	*/
+	
+	bool merge(const Bloomfilter& bf_merge);
+	
 	bool has(const DataObjectRef &dObj) const;
 	/**
 		Returns a newly allocated non counting bloomfilter based

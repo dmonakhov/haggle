@@ -22,158 +22,164 @@ Bloomfilter::Bloomfilter(float _error_rate, unsigned int _capacity, bool _counti
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_BLOOMFILTER),
 #endif
+	type(_counting ? BF_TYPE_COUNTING : BF_TYPE_NORMAL),
 	error_rate(_error_rate),
 	capacity(_capacity),
-	non_counting(NULL),
-	counting(NULL)
+	init_n(0),
+	raw(NULL)
 {
 	if (_counting) {
-		counting = counting_bloomfilter_new(error_rate, capacity);
+		cbf = counting_bloomfilter_new(error_rate, capacity);
 	} else {
-		non_counting = bloomfilter_new(error_rate, capacity);
+		bf = bloomfilter_new(error_rate, capacity);
 	}
 }
-Bloomfilter::Bloomfilter(float _error_rate, unsigned int _capacity, struct bloomfilter *bf) :
+Bloomfilter::Bloomfilter(float _error_rate, unsigned int _capacity, struct bloomfilter *_bf) :
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_BLOOMFILTER),
 #endif
+	type(BF_TYPE_NORMAL),
 	error_rate(_error_rate),
 	capacity(_capacity),
-	non_counting(bf),
-	counting(NULL)
+	init_n(_bf->n),
+	bf(_bf)
 {
 }
 
-Bloomfilter::Bloomfilter(float _error_rate, unsigned int _capacity, struct counting_bloomfilter *cbf) :
+Bloomfilter::Bloomfilter(float _error_rate, unsigned int _capacity, struct counting_bloomfilter *_cbf) :
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_BLOOMFILTER),
 #endif
+	type(BF_TYPE_COUNTING),
 	error_rate(_error_rate),
 	capacity(_capacity),
-	non_counting(NULL),
-	counting(cbf)
+	init_n(_cbf->n),
+	cbf(_cbf)
 {
 }
-Bloomfilter::Bloomfilter(const unsigned char *bf, size_t len) :
+Bloomfilter::Bloomfilter(const unsigned char *_bf, size_t len) :
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_BLOOMFILTER),
 #endif
+	type(BF_TYPE_NORMAL),
 	error_rate(0),
 	capacity(0),
-	non_counting(NULL),
-	counting(NULL)
+	init_n(((struct bloomfilter *)_bf)->n),
+	raw(NULL)
 {
-	if (BLOOMFILTER_TOT_LEN((struct bloomfilter *)bf) == len) {
-		non_counting = bloomfilter_copy((struct bloomfilter*)bf);
-		counting = NULL;
-		HAGGLE_DBG("Bloomfilter is non-counting and contains %lu objects\n", bloomfilter_get_n(non_counting)); 
-	} else if (COUNTING_BLOOMFILTER_TOT_LEN((struct counting_bloomfilter *)bf) == len){
-		non_counting = NULL;
-		counting = counting_bloomfilter_copy((struct counting_bloomfilter*)bf);
-		HAGGLE_DBG("Bloomfilter is counting and contains %lu objects\n", counting_bloomfilter_get_n(counting)); 
+	if (BLOOMFILTER_TOT_LEN((struct bloomfilter *)_bf) == len) {
+		bf = bloomfilter_copy((struct bloomfilter*)_bf);
+		type = BF_TYPE_NORMAL;
+		HAGGLE_DBG("Bloomfilter is non-counting and contains %lu objects\n", bloomfilter_get_n(bf)); 
+	} else if (COUNTING_BLOOMFILTER_TOT_LEN((struct counting_bloomfilter *)_bf) == len){
+		cbf = counting_bloomfilter_copy((struct counting_bloomfilter*)_bf);
+		type = BF_TYPE_COUNTING;
+		HAGGLE_DBG("Bloomfilter is counting and contains %lu objects\n", counting_bloomfilter_get_n(cbf)); 
 	} else {
 		HAGGLE_ERR("bloomfilter is neither counting nor non-counting\n");
 	}
 }
 
-Bloomfilter::Bloomfilter(const Bloomfilter &bf) :
+Bloomfilter::Bloomfilter(const Bloomfilter &_bf) :
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_BLOOMFILTER),
 #endif
-	error_rate(bf.error_rate),
-	capacity(bf.capacity)
+	type(_bf.type),
+	error_rate(_bf.error_rate),
+	capacity(_bf.capacity),
+	init_n(_bf.init_n),
+	raw(NULL)
 {
-	if (bf.non_counting != NULL) {
-		non_counting = bloomfilter_copy(bf.non_counting);
-		counting = NULL;
-	} else if (counting != NULL) {
-		non_counting = NULL;
-		counting = counting_bloomfilter_copy(bf.counting);
+	if (type == BF_TYPE_NORMAL) {
+		bf = bloomfilter_copy(_bf.bf);
 	} else {
-		HAGGLE_ERR("Tried to add to bloomfilter which is neither counting or "
-                           "non-counting!\n");
-	}
+		cbf = counting_bloomfilter_copy(_bf.cbf);
+	} 
 }
 
 Bloomfilter::~Bloomfilter()
 {
-	if (non_counting != NULL)
-		bloomfilter_free(non_counting);
-	if (counting != NULL)
-		counting_bloomfilter_free(counting);
+	if (raw) {
+		if (type == BF_TYPE_NORMAL)
+			bloomfilter_free(bf);
+		else
+			counting_bloomfilter_free(cbf);
+	}
 }
 
 void Bloomfilter::add(const DataObjectRef &dObj)
 {
-	if (non_counting != NULL) {
-		bloomfilter_add(non_counting, (const char *)dObj->getId(), DATAOBJECT_ID_LEN);
-	} else if (counting != NULL) {
-		counting_bloomfilter_add(counting, (const char *)dObj->getId(), DATAOBJECT_ID_LEN);
-	} else{
-		HAGGLE_ERR("Tried to add to bloomfilter which is neither counting or non-counting!\n");
+	if (type == BF_TYPE_NORMAL) {
+		bloomfilter_add(bf, (const char *)dObj->getId(), DATAOBJECT_ID_LEN);
+	} else {
+		counting_bloomfilter_add(cbf, (const char *)dObj->getId(), DATAOBJECT_ID_LEN);
 	}
 }
 
 void Bloomfilter::remove(const DataObjectRef &dObj)
 {
-	if (non_counting != NULL){
-		// Ignored
-	} else if (counting != NULL) {
-		counting_bloomfilter_remove(counting, (const char *)dObj->getId(), DATAOBJECT_ID_LEN);
-	} else {
-		HAGGLE_ERR("Tried to remove from bloomfilter which is neither counting or non-counting!\n");
-	}
+	if (type == BF_TYPE_COUNTING) {
+		counting_bloomfilter_remove(cbf, (const char *)dObj->getId(), DATAOBJECT_ID_LEN);
+	} 
+}
+
+bool Bloomfilter::merge(const Bloomfilter& bf_merge)
+{
+	if (type == BF_TYPE_NORMAL && bf_merge.type == BF_TYPE_NORMAL){
+		// Cannot merge a counting bloomfilter
+		bool res = bloomfilter_merge(bf, bf_merge.bf) == MERGE_RESULT_OK;
+		
+		bf->n -= init_n;
+		return res;
+	} 
+	return false;
 }
 
 bool Bloomfilter::has(const DataObjectRef &dObj) const
 {
-	if (non_counting != NULL) {
-		return bloomfilter_check(non_counting, (const char *)dObj->getId(), DATAOBJECT_ID_LEN) != 0;
-	} else if (counting != NULL) {
-		return counting_bloomfilter_check(counting, (const char *)dObj->getId(), DATAOBJECT_ID_LEN) != 0;
+	if (type == BF_TYPE_NORMAL) {
+		return bloomfilter_check(bf, (const char *)dObj->getId(), DATAOBJECT_ID_LEN) != 0;
+	} else {
+		return counting_bloomfilter_check(cbf, (const char *)dObj->getId(), DATAOBJECT_ID_LEN) != 0;
 	}
-	
-	HAGGLE_ERR("Tried to check bloomfilter which is neither counting or non-counting!\n");
-	
-	return false;
 }
 
 Bloomfilter *Bloomfilter::to_noncounting() const
 {
-	struct bloomfilter *bf;
+	struct bloomfilter *bf_copy;
 
-	if (non_counting) {
+	if (type == BF_TYPE_NORMAL) {
 		return new Bloomfilter(*this);	
 	} 
 
-	bf = counting_bloomfilter_to_noncounting(counting);
+	bf_copy = counting_bloomfilter_to_noncounting(cbf);
 
-	if (!bf)
+	if (!bf_copy)
 		return NULL;
 
-	return new Bloomfilter(error_rate, capacity, bf);
+	return new Bloomfilter(error_rate, capacity, bf_copy);
 }
 
 string Bloomfilter::toBase64(void) const
 {
 	string retval;
 	
-	if (non_counting != NULL) {
-		char *tmp = bloomfilter_to_base64(non_counting);
-		if (tmp != NULL) {
-			retval = tmp;
-			free(tmp);
-		}
-	} else if (counting != NULL) {
-		char *tmp = counting_bloomfilter_to_base64(counting);
+	if (type == BF_TYPE_NORMAL) {
+		char *tmp = bloomfilter_to_base64(bf);
 		
 		if (tmp != NULL) {
 			retval = tmp;
 			free(tmp);
 		}
-	} else {
-		HAGGLE_ERR("Tried to convert bloomfilter which is neither counting or non-counting!\n");
-	}
+	} else  {
+		char *tmp = counting_bloomfilter_to_base64(cbf);
+		
+		if (tmp != NULL) {
+			retval = tmp;
+			free(tmp);
+		}
+	} 
+	
 	return retval;
 }
 
@@ -181,116 +187,93 @@ void Bloomfilter::fromBase64(const string &b64)
 {
 	// FIXME: how to determine if the b64 string contains a counting or 
 	// non-counting bf? The base64_to_* functions don't.
-	if (non_counting != NULL) {
+	if (type == BF_TYPE_NORMAL) {
 		struct bloomfilter *tmp;
 		tmp = base64_to_bloomfilter(b64.c_str(), b64.length());
 		if (tmp == NULL) {
 			HAGGLE_ERR("Bloomfilter assignment failed!\n");
 		} else {
-			bloomfilter_free(non_counting);
-			non_counting = tmp;
+			bloomfilter_free(bf);
+			bf = tmp;
 		}
-	} else if (counting != NULL) {
+	} else {
 		struct counting_bloomfilter *tmp;
 		tmp = base64_to_counting_bloomfilter(b64.c_str(), b64.length());
 		if (tmp == NULL) {
 			HAGGLE_ERR("Bloomfilter assignment failed!\n");
 		} else {
-			counting_bloomfilter_free(counting);
-			counting = tmp;
+			counting_bloomfilter_free(cbf);
+			cbf = tmp;
 		}
-	} else {
-		HAGGLE_ERR("Tried to assign bloomfilter which is neither counting or non-counting!\n");
-	}
+	} 
 }
 
 string Bloomfilter::toBase64NonCounting(void) const
 {
 	string retval;
 	
-	if (non_counting != NULL) {
+	if (type == BF_TYPE_NORMAL) {
 		return toBase64();
-	} else if (counting != NULL) {
-		char *tmp = counting_bloomfilter_to_noncounting_base64(counting);
+	} else {
+		char *tmp = counting_bloomfilter_to_noncounting_base64(cbf);
 		if (tmp != NULL) {
 			retval = tmp;
 			free(tmp);
 		}
-	} else {
-		HAGGLE_ERR("Tried to assign bloomfilter which is neither counting or non-counting!\n");
-	}
+	} 
 	return retval;
 }
 
 unsigned long Bloomfilter::numObjects(void) const
 {
-	if (non_counting != NULL) {
-		return bloomfilter_get_n(non_counting);
-	} else if (counting != NULL) {
-		return counting_bloomfilter_get_n(counting);
+	if (type == BF_TYPE_NORMAL) {
+		return bloomfilter_get_n(bf);
+	} else {
+		return counting_bloomfilter_get_n(cbf);
 	}
-	
-	HAGGLE_ERR("Tried to get the number of data objects in bloomfilter which is neither counting or non-counting!\n");
-	
-	return 0;
 }
 
 const unsigned char *Bloomfilter::getRaw(void) const
 {
-	if (non_counting != NULL) {
-		return (unsigned char *)non_counting;
-	} else if (counting != NULL) {
-		return (unsigned char *)counting;
-	} 
-		
-	HAGGLE_ERR("Tried to get raw bloomfilter which is neither counting or non-counting!\n");
-
-	return NULL;
+	return raw;
 }
 
 size_t Bloomfilter::getRawLen(void) const
 {
-	if (non_counting != NULL) {
-		return (unsigned long)BLOOMFILTER_TOT_LEN(non_counting);
-	} else if (counting != NULL) {
-		return (unsigned long)COUNTING_BLOOMFILTER_TOT_LEN(counting);
+	if (type == BF_TYPE_NORMAL) {
+		return (unsigned long)BLOOMFILTER_TOT_LEN(bf);
+	} else {
+		return (unsigned long)COUNTING_BLOOMFILTER_TOT_LEN(cbf);
 	}
-	
-	HAGGLE_ERR("Tried to get length of bloomfilter which is neither counting or non-counting!\n");
-	
-	return 0;
 }
 
-void Bloomfilter::setRaw(const unsigned char *bf)
+void Bloomfilter::setRaw(const unsigned char *_bf)
 {
-	if (non_counting != NULL) {
-		if (BLOOMFILTER_TOT_LEN(non_counting) != BLOOMFILTER_TOT_LEN((struct bloomfilter *)bf)) {
+	if (type == BF_TYPE_NORMAL) {
+		if (BLOOMFILTER_TOT_LEN(bf) != BLOOMFILTER_TOT_LEN((struct bloomfilter *)_bf)) {
 			HAGGLE_ERR("Old and new bloomfilter differ in length!\n");
 		} else {
-			memcpy(non_counting, bf, BLOOMFILTER_TOT_LEN(non_counting));
-		}
-	} else if (counting != NULL) {
-		if (COUNTING_BLOOMFILTER_TOT_LEN(counting) != COUNTING_BLOOMFILTER_TOT_LEN((struct bloomfilter *)bf)) {
-			HAGGLE_ERR("Old and new bloomfilter differ in length!\n");
-		} else {
-			memcpy(counting, bf, COUNTING_BLOOMFILTER_TOT_LEN(counting));
+			memcpy(bf, _bf, BLOOMFILTER_TOT_LEN(bf));
 		}
 	} else {
-		HAGGLE_ERR("Tried to set bloomfilter which is neither counting or non-counting!\n");
+		if (COUNTING_BLOOMFILTER_TOT_LEN(cbf) != COUNTING_BLOOMFILTER_TOT_LEN((struct bloomfilter *)_bf)) {
+			HAGGLE_ERR("Old and new bloomfilter differ in length!\n");
+		} else {
+			memcpy(cbf, _bf, COUNTING_BLOOMFILTER_TOT_LEN(cbf));
+		}
 	}
 }
 
 void Bloomfilter::reset()
 {
-	if (non_counting != NULL) {
-		bloomfilter_free(non_counting);
-		non_counting = bloomfilter_new(error_rate, capacity);
-		counting = NULL;
-	} else if (counting != NULL) {
-		counting_bloomfilter_free(counting);
-		counting = counting_bloomfilter_new(error_rate, capacity);
-		non_counting = NULL;
+	if (!raw)
+		return;
+	
+	if (type == BF_TYPE_NORMAL) {
+		bloomfilter_free(bf);
+		bf = bloomfilter_new(error_rate, capacity);
 	} else {
-		HAGGLE_ERR("Tried to reset bloomfilter which is neither counting or non-counting!\n");
+		counting_bloomfilter_free(cbf);
+		cbf = counting_bloomfilter_new(error_rate, capacity);
 	}
 }
