@@ -2062,7 +2062,7 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 			sqlite_int64 node_rowid = getNodeRowId(node);
 
 			if (node_rowid >= 0) {
-				NodeRef& existing_node = getNodeFromRowId(node_rowid);
+				NodeRef existing_node = getNodeFromRowId(node_rowid);
 
 				if (existing_node) {
 					HAGGLE_DBG("Merging bloomfilter of node %s\n", node->getName().c_str());

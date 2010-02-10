@@ -64,7 +64,7 @@ protected:
 	const string name;
 	Mutex mutex;
 	Signal signal;
-	List <T>lst;
+	List<T> lst;
 	// Set to true iff no more inserts is allowed.
 	bool isClosed;
 public:
@@ -91,7 +91,7 @@ public:
 			return false;
 		
 		if (unique) {
-			for (List<T>::iterator it = lst.begin(); it != lst.end(); it++) {
+			for (typename List<T>::iterator it = lst.begin(); it != lst.end(); it++) {
 				if (qe == *it)
 					return false;
 			}

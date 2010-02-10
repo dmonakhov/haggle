@@ -541,7 +541,7 @@ int haggle_dataobject_calculate_id(const struct dataobject *dobj, dataobject_id_
 	if (dobj->createtime.tv_sec != 0) {
 		char buf[20];
 
-		snprintf(buf, 20, CREATETIME_ASSTRING_FORMAT, dobj->createtime.tv_sec, dobj->createtime.tv_usec);
+		snprintf(buf, 20, CREATETIME_ASSTRING_FORMAT, (long)dobj->createtime.tv_sec, (long)dobj->createtime.tv_usec);
 		SHA1_Update(&ctxt, (unsigned char *)buf, strlen(buf));
 	}
 
