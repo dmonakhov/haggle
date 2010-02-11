@@ -266,7 +266,7 @@ public:
 #endif
         void onInsertConnectivity(Event *e);
         void onDeleteConnectivity(Event *e);
-        void onReceivedDataObject(Event *e);
+        void onIncomingDataObject(Event *e);
         void onFailedToSendDataObject(Event *e);
         void onNewPolicy(Event *e);
 

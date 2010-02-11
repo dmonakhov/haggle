@@ -53,7 +53,7 @@ bool ConnectivityManager::init_derived()
 #define __CLASS__ ConnectivityManager
 	CM_DBG("Initializing\n");
 	
-	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_RECEIVED, onReceivedDataObject);
+	ret = setEventHandler(EVENT_TYPE_DATAOBJECT_INCOMING, onIncomingDataObject);
 
 	if (ret < 0) {
 		HAGGLE_ERR("Could not register event interest\n");
@@ -522,7 +522,7 @@ InterfaceStatus_t ConnectivityManager::report_interface(InterfaceRef& found, con
  with Bluetooth, but can also happen with WiFi due to periodic neighbor 
  discovery).
 */
-void ConnectivityManager::onReceivedDataObject(Event *e)
+void ConnectivityManager::onIncomingDataObject(Event *e)
 {
 	if (!e || !e->hasData())
 		return;
@@ -546,8 +546,8 @@ void ConnectivityManager::onReceivedDataObject(Event *e)
 	/* Check that there is a receive interface set and that it is
 	 * not from an application socket */
 	if (!remoteIface->isApplication()) {
-		CM_IFACE_DBG("%s - DataObject received on interface [%s] from neighbor with interface [%s]\n", 
-			   getName(), localIface->getIdentifierStr(), 
+		CM_IFACE_DBG("%s - DataObject [%s] incoming on interface [%s] from neighbor with interface [%s]\n", 
+			   getName(), dObj->getIdStr(), localIface->getIdentifierStr(), 
 			   remoteIface->getIdentifierStr());
 
 		// Check whether this interface is already registered or not
