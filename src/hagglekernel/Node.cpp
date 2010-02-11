@@ -835,7 +835,7 @@ bool Node::isAvailable() const
 
 bool Node::isNeighbor() const
 {
-	return ((type == NODE_TYPE_PEER) || (type == NODE_TYPE_UNDEF)) && isAvailable();
+	return ((type == NODE_TYPE_PEER) || (type == NODE_TYPE_UNDEF) || (type == NODE_TYPE_GATEWAY)) && isAvailable();
 }
 
 DataObjectRef Node::getDataObject(bool withBloomfilter) const

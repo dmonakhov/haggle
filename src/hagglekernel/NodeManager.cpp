@@ -33,7 +33,6 @@ using namespace haggle;
 #define MERGE_BLOOMFILTERS
 
 #define FILTER_KEYWORD NODE_DESC_ATTR
-//#define FILTER_NODEDESCRIPTION FILTER_KEYWORD "=true"
 #define FILTER_NODEDESCRIPTION FILTER_KEYWORD "=" ATTR_WILDCARD
 
 NodeManager::NodeManager(HaggleKernel * _haggle) : 
@@ -125,14 +124,6 @@ bool NodeManager::init_derived()
 		return false;
 	}
 	
-	/*
-	ret = setEventHandler(EVENT_TYPE_NEIGHBOR_INTERFACE_DOWN, onNeighborInterfaceDown);
-
-	if (ret < 0) {
-		HAGGLE_ERR("Could not register event handler\n");
-		return false;
-	}
-	*/
 	filterQueryCallback = newEventCallback(onFilterQueryResult);
 
 	onRetrieveNodeCallback = newEventCallback(onRetrieveNode);
@@ -229,6 +220,16 @@ void NodeManager::onRetrieveThisNode(Event *e)
 	kernel->getThisNode()->setCreateTime();
 }
 
+bool NodeManager::isInSendList(const NodeRef& node, const DataObjectRef& dObj)
+{
+	for (SendList_t::iterator it = sendList.begin(); it != sendList.end(); it++) {
+		if ((*it).first == node && (*it).second.dObj == dObj) {
+			return true;
+		}
+	}
+	return false;
+}
+
 int NodeManager::sendNodeDescription(NodeRefList& neighList)
 {
 	NodeRefList targetList;
@@ -245,12 +246,17 @@ int NodeManager::sendNodeDescription(NodeRefList& neighList)
 	
 		if (neigh->getBloomfilter()->has(dObj)) {
 			HAGGLE_DBG("Neighbor %s already has our most recent node description\n", neigh->getName().c_str());
-		} else {
-			HAGGLE_DBG("Sending node description [id=%s] to \'%s\', bloomfilter #objs=%lu\n", 
+		} else if (!isInSendList(neigh, dObj)) {
+			HAGGLE_DBG("Sending node description [%s] to \'%s\', bloomfilter #objs=%lu\n", 
 				   dObj->getIdStr(), neigh->getName().c_str(), kernel->getThisNode()->getBloomfilter()->numObjects());
 			targetList.push_back(neigh);
+
+			SendEntry_t se = { dObj, 0 };
 			// Remember that we tried to send our node description to this node:
-			nodeExchangeList.push_back(Pair<NodeRef, DataObjectRef>(neigh, dObj));
+			sendList.push_back(Pair<NodeRef, SendEntry_t>(neigh, se));
+		} else {
+			HAGGLE_DBG("Node description [%s] is already in send list for neighbor %s\n",
+				dObj->getIdStr(), neigh->getName().c_str());
 		}
 	}
 	
@@ -264,37 +270,49 @@ int NodeManager::sendNodeDescription(NodeRefList& neighList)
 	return 1;
 }
 
-void NodeManager::onSendResult(Event * e)
+void NodeManager::onSendResult(Event *e)
 {
-	NodeRef &node = e->getNode();
-	NodeRef neigh = kernel->getNodeStore()->retrieve(node, false);
+	NodeRef neigh = kernel->getNodeStore()->retrieve(e->getNode(), false);
 	DataObjectRef &dObj = e->getDataObject();
 	
+	if (!neigh) {
+		neigh = e->getNode();
+
+		if (!neigh) {
+			HAGGLE_ERR("No node in send result\n");
+			return;
+		}
+	}
 	// Go through all our data regarding current node exchanges:
-	for (NodeExchangeList::iterator it = nodeExchangeList.begin();
-             it != nodeExchangeList.end(); it++) {
+	for (SendList_t::iterator it = sendList.begin(); it != sendList.end(); it++) {
 		// Is this the one?
-		if ((*it).first == node && (*it).second == dObj) {
+		if ((*it).first == neigh && (*it).second.dObj == dObj) {
 			// Yes.
 			
 			// Was the exchange successful?
 			if (e->getType() == EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL) {
 				// Yes. Set the flag.
-				if (neigh)
-					neigh->setExchangedNodeDescription(true);
-				else
-					node->setExchangedNodeDescription(true);
+				neigh->setExchangedNodeDescription(true);
+				sendList.erase(it);
 			} else if (e->getType() == EVENT_TYPE_DATAOBJECT_SEND_FAILURE) {
 				// No. Unset the flag.
-				if (neigh)
-					neigh->setExchangedNodeDescription(false);
-				else
-					node->setExchangedNodeDescription(false);
-				// FIXME: retry?
+				neigh->setExchangedNodeDescription(false);
+
+				(*it).second.retries++;
+
+				// Retry
+				if ((*it).second.retries < 3 && neigh->isNeighbor()) {
+					HAGGLE_DBG("Sending node description [%s] to neighbor %s [%s], retry=%lu\n", 
+						dObj->getIdStr(), neigh->getName().c_str(), neigh->getIdStr(), (*it).second.retries);
+					// Retry and delay for two seconds.
+					kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, neigh, 0, 2.0));
+				} else {
+					// Remove this entry from the list:
+					HAGGLE_DBG("FAILED to send node description to neighbor %s [%s] after %lu retries...\n",
+						neigh->getName().c_str(), neigh->getIdStr(), (*it).second.retries);
+					sendList.erase(it);
+				}
 			}
-			// Remove this entry from the list:
-			nodeExchangeList.erase(it);
-			
 			// Done, no need to look further.
 			return;
 		}

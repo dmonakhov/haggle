@@ -396,6 +396,11 @@ ProtocolEvent Protocol::startTxRx()
    the protocol is in idle mode, i.e., it was just created. */
 bool Protocol::sendDataObject(const DataObjectRef& dObj, const NodeRef& peer, const InterfaceRef& iface)
 {
+	if (mode == PROT_MODE_DONE || mode == PROT_MODE_GARBAGE) {
+		HAGGLE_DBG("Protocol %s is no longer valid\n", getName());
+		return false;
+	}
+
 	Queue *q = getQueue();
 
 	if (!q) {
@@ -1226,6 +1231,8 @@ void Protocol::unregisterWithManager()
 void Protocol::shutdown()
 {
 	HAGGLE_DBG("Shutting down protocol: %s\n", getName());
+
+        setMode(PROT_MODE_DONE);
 
 	hookShutdown();
 	

@@ -597,5 +597,10 @@ const char *ProtocolSocket::getProtocolErrorStr()
 
 	return unknownErrStr;
 }
+
+void ProtocolSocket::hookShutdown()
+{
+	closeConnection();
+}
 #endif /* OS_LINUX OS_MACOSX */
 

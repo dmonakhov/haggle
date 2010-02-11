@@ -27,21 +27,27 @@ class NodeManager;
 #include "Manager.h"
 #include "Filter.h"
 
-typedef List< Pair<NodeRef, DataObjectRef> > NodeExchangeList;
 
 /** */
 class NodeManager : public Manager
-{
+{	
+	typedef struct {
+		DataObjectRef dObj;
+		unsigned long retries;
+	} SendEntry_t;
+	typedef List< Pair<NodeRef, SendEntry_t> > SendList_t;
+
 	long thumbnail_size;
 	char *thumbnail;
 	unsigned long sequence_number;
-	NodeExchangeList nodeExchangeList;
+	SendList_t sendList;
         EventCallback<EventHandler> *filterQueryCallback;
 	EventCallback<EventHandler> *onRetrieveNodeCallback;
 	EventCallback<EventHandler> *onRetrieveThisNodeCallback;
 	EventCallback<EventHandler> *onRetrieveNodeDescriptionCallback;
 	EventCallback<EventHandler> *onInsertedNodeCallback;
         EventType nodeDescriptionEType;
+	bool isInSendList(const NodeRef& node, const DataObjectRef& dObj);
         int sendNodeDescription(NodeRefList& neighList);
         void onFilterQueryResult(Event *e);
         void onApplicationFilterMatchEvent(Event *e);

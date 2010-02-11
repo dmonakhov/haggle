@@ -93,6 +93,7 @@ class ProtocolSocket : public Protocol
 
 	virtual ~ProtocolSocket();
 	bool hasWatchable(const Watchable &wbl);
+	void hookShutdown();
 };
 
 #endif /* _PROTOCOL_H */
