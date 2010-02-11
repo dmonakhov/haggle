@@ -478,6 +478,11 @@ ProtocolEvent ProtocolSocket::waitForEvent(DataObjectRef &dObj, Timeval *timeout
 	return PROT_EVENT_ERROR;
 }
 
+void ProtocolSocket::hookShutdown()
+{
+	closeConnection();
+}
+
 #if defined(OS_LINUX) || defined (OS_MACOSX)
 ProtocolError ProtocolSocket::getProtocolError()
 {
@@ -596,11 +601,6 @@ const char *ProtocolSocket::getProtocolErrorStr()
 	} 
 
 	return unknownErrStr;
-}
-
-void ProtocolSocket::hookShutdown()
-{
-	closeConnection();
 }
 #endif /* OS_LINUX OS_MACOSX */
 

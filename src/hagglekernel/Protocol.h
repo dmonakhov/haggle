@@ -316,9 +316,8 @@ protected:
 	/** 
 		A derived class can override this hook in order to
 		implement protocol specific shutdown code. The hook is
-		called automatically from shutdown(). Should return
-		PROT_EVENT_SUCCESS on success.
-	*/
+		called automatically from shutdown(). 
+	 */
 	virtual void hookShutdown() {}
 	
 	/**

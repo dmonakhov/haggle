@@ -588,7 +588,7 @@ metadata_t *haggle_dataobject_to_metadata(struct dataobject *dobj)
 	
 	if (dobj->createtime.tv_sec != 0) {
 		char createtime[32];
-		sprintf(createtime, CREATETIME_ASSTRING_FORMAT, dobj->createtime.tv_sec, dobj->createtime.tv_usec);
+		sprintf(createtime, CREATETIME_ASSTRING_FORMAT, (long)dobj->createtime.tv_sec, (long)dobj->createtime.tv_usec);
 		metadata_set_parameter(dobj->m, DATAOBJECT_CREATE_TIME_PARAM, createtime);
 	}
 	

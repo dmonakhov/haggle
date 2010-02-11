@@ -86,6 +86,7 @@ class ProtocolSocket : public Protocol
 	ProtocolEvent sendData(const void *buf, size_t len, const int flags, size_t *bytes);
 	ProtocolError getProtocolError();
 	const char *getProtocolErrorStr();
+	void hookShutdown();
     public:
 	ProtocolSocket(const ProtType_t _type, const char *_name, InterfaceRef _localIface = NULL,
                        InterfaceRef _peerIface = NULL, const int _flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL, 
@@ -93,7 +94,6 @@ class ProtocolSocket : public Protocol
 
 	virtual ~ProtocolSocket();
 	bool hasWatchable(const Watchable &wbl);
-	void hookShutdown();
 };
 
 #endif /* _PROTOCOL_H */
