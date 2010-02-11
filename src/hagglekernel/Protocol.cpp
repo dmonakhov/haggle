@@ -1023,7 +1023,7 @@ bool Protocol::run()
 
 	while (!isDone() && !shouldExit()) {
 
-		while (!isConnected()) {
+		while (!isConnected() && !shouldExit() && !isDone()) {
                         
 			HAGGLE_DBG("Protocol %s connecting to %s\n", getName(), peerDescription().c_str());
 			if (connectToPeer() == PROT_EVENT_SUCCESS) {

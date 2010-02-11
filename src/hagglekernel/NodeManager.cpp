@@ -478,7 +478,8 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 			continue;
 		}
 
-                HAGGLE_DBG("Node description of node %s [%s] received\n", node->getName().c_str(), node->getIdStr());
+                HAGGLE_DBG("Node description [%s] of node %s [%s] received\n", 
+			dObj->getIdStr(), node->getName().c_str(), node->getIdStr());
 
 		if (node == kernel->getThisNode()) {
 			HAGGLE_ERR("Node description is my own. Ignoring and deleting from data store\n");
@@ -686,8 +687,8 @@ void NodeManager::onInsertedNode(Event *e)
 		// Therefore, we might get here for neighbor nodes as well, but in that case
 		// there is not much more to do until we discover the node properly
 		
-		HAGGLE_DBG("Got a node description for node %s [id=%s], which is not a previously discovered neighbor.\n", 
-			   node->getName().c_str(), node->getIdStr());
+		HAGGLE_DBG("Got a node description [%s] for node %s [id=%s], which is not a previously discovered neighbor.\n", 
+			node->getDataObject()->getIdStr(), node->getName().c_str(), node->getIdStr());
 		
 		// Sync the node's interfaces with those in the interface store. This
 		// makes sure all active interfaces are marked as 'up'.
