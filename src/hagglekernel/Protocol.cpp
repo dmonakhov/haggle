@@ -893,7 +893,7 @@ ProtocolEvent Protocol::sendDataObjectNow(const DataObjectRef& dObj)
 					break;
 								  
 				} else if (pEvent != PROT_EVENT_WRITEABLE) {
-					HAGGLE_ERR("Protocol was not writeable\n");
+					HAGGLE_ERR("Protocol was not writeable, event=%d\n", pEvent);
                                         break;
 				}
 				

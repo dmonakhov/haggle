@@ -107,6 +107,10 @@ for dev in $DEVICES; do
     $ADB -s $dev push sbin/luckyme /$BIN_PATH_PREFIX/luckyme
     $ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/luckyme
 
+    echo "    clitool"
+    $ADB -s $dev push sbin/clitool /$BIN_PATH_PREFIX/clitool
+    $ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/clitool
+
     # Install libraries
     echo
     echo "Installing library files"

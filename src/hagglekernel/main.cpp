@@ -126,7 +126,7 @@ static void resettty()
 
 static void daemonize()
 {
-        int i, fd;
+        int i, sid;
 
         /* check if already a daemon */
 	if (getppid()==1) 
@@ -140,17 +140,29 @@ static void daemonize()
                 exit(0); /* parent exits */
 
 	/* new child (daemon) continues here */
-
-	setsid();  /* obtain a new process group */
-         
-        /* close all open descriptors */
-	for (i = getdtablesize();i>=0;--i) 
-                close(i);
-
-        /* Redirect stdin, stdout and stderr to /dev/null */
-	fd = open("/dev/null", O_RDWR); /* open stdin */
-        i = dup(fd); /* stdout */
-        i = dup(fd); /* stderr */
+	
+	/* Change the file mode mask */
+	umask(0);
+	
+	/* Create a new SID for the child process */
+	sid = setsid();
+	
+	if (sid < 0) {
+		exit(EXIT_FAILURE);
+	}
+	
+	/* 
+	 Change the current working directory. This prevents the current
+	 directory from being locked; hence not being able to remove it. 
+	 */
+	if ((chdir("/")) < 0) {
+		exit(EXIT_FAILURE);
+	}
+	
+	/* Redirect standard files to /dev/null */
+	freopen("/dev/null", "r", stdin);
+	freopen("/dev/null", "w", stdout);
+	freopen("/dev/null", "w", stderr);
 }
 
 
