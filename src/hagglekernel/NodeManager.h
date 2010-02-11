@@ -41,7 +41,6 @@ class NodeManager : public Manager
 	char *thumbnail;
 	unsigned long sequence_number;
 	SendList_t sendList;
-        EventCallback<EventHandler> *filterQueryCallback;
 	EventCallback<EventHandler> *onRetrieveNodeCallback;
 	EventCallback<EventHandler> *onRetrieveThisNodeCallback;
 	EventCallback<EventHandler> *onRetrieveNodeDescriptionCallback;
@@ -49,7 +48,6 @@ class NodeManager : public Manager
         EventType nodeDescriptionEType;
 	bool isInSendList(const NodeRef& node, const DataObjectRef& dObj);
         int sendNodeDescription(NodeRefList& neighList);
-        void onFilterQueryResult(Event *e);
         void onApplicationFilterMatchEvent(Event *e);
         void onSendNodeDescription(Event *e);
         void onReceiveNodeDescription(Event *e);

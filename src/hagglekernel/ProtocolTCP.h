@@ -32,7 +32,7 @@ class ProtocolTCPServer;
 
 
 /* Configurable parameters */
-#define TCP_BACKLOG_SIZE 10
+#define TCP_BACKLOG_SIZE 15
 #define TCP_DEFAULT_PORT 9697
 
 /** */

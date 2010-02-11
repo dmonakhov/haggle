@@ -44,9 +44,6 @@ NodeManager::NodeManager(HaggleKernel * _haggle) :
 
 NodeManager::~NodeManager()
 {
-	if (filterQueryCallback)
-		delete filterQueryCallback;
-	
 	if (onRetrieveNodeCallback)
 		delete onRetrieveNodeCallback;
 	
@@ -123,8 +120,6 @@ bool NodeManager::init_derived()
 		HAGGLE_ERR("Could not register event handler\n");
 		return false;
 	}
-	
-	filterQueryCallback = newEventCallback(onFilterQueryResult);
 
 	onRetrieveNodeCallback = newEventCallback(onRetrieveNode);
 	onRetrieveThisNodeCallback = newEventCallback(onRetrieveThisNode);
@@ -294,6 +289,8 @@ void NodeManager::onSendResult(Event *e)
 				// Yes. Set the flag.
 				neigh->setExchangedNodeDescription(true);
 				sendList.erase(it);
+				HAGGLE_DBG("Successfully sent node description [%s] to neighbor %s [%s], after %lu retries\n",
+					dObj->getIdStr(), neigh->getName().c_str(), neigh->getIdStr(), (*it).second.retries);
 			} else if (e->getType() == EVENT_TYPE_DATAOBJECT_SEND_FAILURE) {
 				// No. Unset the flag.
 				neigh->setExchangedNodeDescription(false);
@@ -305,7 +302,7 @@ void NodeManager::onSendResult(Event *e)
 					HAGGLE_DBG("Sending node description [%s] to neighbor %s [%s], retry=%lu\n", 
 						dObj->getIdStr(), neigh->getName().c_str(), neigh->getIdStr(), (*it).second.retries);
 					// Retry and delay for two seconds.
-					kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, neigh, 0, 2.0));
+					kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, neigh, 0, 5.0));
 				} else {
 					// Remove this entry from the list:
 					HAGGLE_DBG("FAILED to send node description to neighbor %s [%s] after %lu retries...\n",
@@ -317,10 +314,6 @@ void NodeManager::onSendResult(Event *e)
 			return;
 		}
 	}
-}
-
-void NodeManager::onFilterQueryResult(Event * e)
-{
 }
 
 void NodeManager::onLocalInterfaceUp(Event * e)
