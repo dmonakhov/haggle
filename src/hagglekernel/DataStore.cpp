@@ -156,7 +156,7 @@ DataStoreTask::DataStoreTask(DataObjectRef& _dObj, TaskType _type, const EventCa
 	}
 }
 DataStoreTask::DataStoreTask(const DataObjectId_t _id, TaskType _type, const EventCallback<EventHandler> *_callback) :
-	HeapItem(), type(_type), priority(TASK_PRIORITY_LOW), num(totNum++), timestamp(Timeval::now()), callback(_callback), boolParameter(true) 
+	HeapItem(), type(_type), priority(TASK_PRIORITY_HIGH), num(totNum++), timestamp(Timeval::now()), callback(_callback), boolParameter(true) 
 {
 	if (type == TASK_DELETE_DATAOBJECT) {
 		memcpy(id, _id, sizeof(DataObjectId_t));
@@ -231,8 +231,9 @@ DataStoreTask::DataStoreTask(DataStoreNodeQuery *q, TaskType _type) :
 DataStoreTask::DataStoreTask(DataStoreRepositoryQuery *q, TaskType _type) :
 	HeapItem(), type(_type), priority(TASK_PRIORITY_LOW), num(totNum++), timestamp(Timeval::now()), RepositoryQuery(q), callback(NULL) 
 {
-	if (type == TASK_INSERT_REPOSITORY ||
-		type == TASK_READ_REPOSITORY ||
+	if (type == TASK_INSERT_REPOSITORY) {
+		priority = TASK_PRIORITY_HIGH;
+	} else if(type == TASK_READ_REPOSITORY ||
 		type == TASK_DELETE_REPOSITORY) {
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
@@ -668,6 +669,7 @@ bool DataStore::run()
 #endif
 		mutex.unlock();
 
+
 		//HAGGLE_DBG("Executing task with priority=%u timestamp=%s\n", 
 		//	   task->getPriority(), task->getTimestamp().getAsString().c_str());
 		
@@ -706,16 +708,20 @@ bool DataStore::run()
 			_deleteFilter(*static_cast<long *>(task->data));
 			break;
 		case TASK_FILTER_QUERY:
-			_doFilterQuery(task->query);
+			if (!shouldExit())
+				_doFilterQuery(task->query);
 			break;
 		case TASK_DATAOBJECT_QUERY:
-			_doDataObjectQuery(task->DOQuery);
+			if (!shouldExit())
+				_doDataObjectQuery(task->DOQuery);
 			break;
 		case TASK_DATAOBJECT_FOR_NODES_QUERY:
-			_doDataObjectForNodesQuery(task->DOForNodesQuery);
+			if (!shouldExit())
+				_doDataObjectForNodesQuery(task->DOForNodesQuery);
 			break;
 		case TASK_NODE_QUERY:
-			_doNodeQuery(task->NodeQuery);
+			if (!shouldExit())
+				_doNodeQuery(task->NodeQuery);
 			break;
 		case TASK_INSERT_REPOSITORY:
 			_insertRepository(task->RepositoryQuery);
@@ -746,6 +752,8 @@ bool DataStore::run()
 			 delete task;
 			 return false;
 			 */
+			LOG_ADD("%s DATA STORE EXIT TASK - number of tasks left=%lu\n", 
+				Timeval::now().getAsString().c_str(), taskQ.size());
 			break;
 		default:
 			HAGGLE_DBG("Undefined data store task\n");
@@ -753,7 +761,8 @@ bool DataStore::run()
 		}
 		delete task;
 	}
-	HAGGLE_DBG("DataStore exits\n");
+	HAGGLE_DBG("DataStore exits...\n");
+	LOG_ADD("%s DATA STORE EXIT\n", Timeval::now().getAsString().c_str());
 	return false;
 }
 

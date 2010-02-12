@@ -859,7 +859,11 @@ NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 		node->setMaxDataObjectsInMatch((unsigned int)sqlite3_column_int(in_stmt, table_nodes_resolution_max_matching_dataobjects));
 		node->setMatchingThreshold((unsigned int)sqlite3_column_int(in_stmt, table_nodes_resolution_threshold));
 		// set bloomfilter
-		node->getBloomfilter()->setRaw((unsigned char *)sqlite3_column_blob(in_stmt, table_nodes_bloomfilter));
+		if (!node->getBloomfilter()->setRaw((unsigned char *)sqlite3_column_blob(in_stmt, table_nodes_bloomfilter), 
+			(size_t)sqlite3_column_bytes(in_stmt, table_nodes_bloomfilter))) {
+			HAGGLE_ERR("Could not set bloomfilter from information in data store.\n");
+			return NULL;
+		}
 	}
 
 	node_rowid = sqlite3_column_int64(in_stmt, table_nodes_rowid);
@@ -914,7 +918,6 @@ NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 			const unsigned char *identifier = (const unsigned char *)sqlite3_column_blob(stmt, table_interfaces_mac);
 			InterfaceType_t type = (InterfaceType_t) sqlite3_column_int(stmt, table_interfaces_type);
 
-			
 			// Try to find the interface from the interface store:
 			InterfaceRef iface = kernel->getInterfaceStore()->retrieve(type, identifier);
 			

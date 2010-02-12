@@ -139,7 +139,7 @@ public:
 	
 	/**
 	*/
-	void setRaw(const unsigned char *bf);
+	bool setRaw(const unsigned char *bf, size_t bf_len);
 	
 	/**
 		Clears the bloomfilter.

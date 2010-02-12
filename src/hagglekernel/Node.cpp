@@ -80,6 +80,9 @@ inline bool Node::init_node(const unsigned char *_id)
 #endif
 			0.01, 
 			MAX_RECV_DATAOBJECTS);
+
+		if (!doBF)
+			return false;
 	}
 
 	if (createdFromNodeDescription) {

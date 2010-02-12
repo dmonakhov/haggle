@@ -247,21 +247,29 @@ size_t Bloomfilter::getRawLen(void) const
 	}
 }
 
-void Bloomfilter::setRaw(const unsigned char *_bf)
+bool Bloomfilter::setRaw(const unsigned char *_bf, size_t _bf_len)
 {
+	if (!_bf)
+		return false;
+
 	if (type == BF_TYPE_NORMAL) {
-		if (BLOOMFILTER_TOT_LEN(bf) != BLOOMFILTER_TOT_LEN((struct bloomfilter *)_bf)) {
-			HAGGLE_ERR("Old and new bloomfilter differ in length!\n");
+		if (BLOOMFILTER_TOT_LEN(bf) != _bf_len) {
+			HAGGLE_ERR("Old and new bloomfilter differ in length: %lu vs. %lu!\n",
+				BLOOMFILTER_TOT_LEN(bf), (unsigned long)_bf_len);
+			return false;
 		} else {
-			memcpy(bf, _bf, BLOOMFILTER_TOT_LEN(bf));
+			memcpy(bf, _bf, _bf_len);
 		}
 	} else {
-		if (COUNTING_BLOOMFILTER_TOT_LEN(cbf) != COUNTING_BLOOMFILTER_TOT_LEN((struct bloomfilter *)_bf)) {
-			HAGGLE_ERR("Old and new bloomfilter differ in length!\n");
+		if (COUNTING_BLOOMFILTER_TOT_LEN(cbf) != _bf_len) {
+			HAGGLE_ERR("Old and new bloomfilter differ in length: %lu vs. %lu!!\n",
+				BLOOMFILTER_TOT_LEN(bf), (unsigned long)_bf_len);
+			return false;
 		} else {
-			memcpy(cbf, _bf, COUNTING_BLOOMFILTER_TOT_LEN(cbf));
+			memcpy(cbf, _bf, _bf_len);
 		}
 	}
+	return true;
 }
 
 void Bloomfilter::reset()
