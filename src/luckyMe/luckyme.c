@@ -60,7 +60,7 @@
 #include <stdio.h>
 
 unsigned long grid_size = 0;						// overwrite by -g
-char *filename = "\\luckyme.png";					// overwrite by -f
+char *filename = "\\luckyme.jpg";					// overwrite by -f
 char *single_source_name = NULL;					// overwrite by -s
 unsigned long create_data_interval = 120;				// overwrite by -t
 unsigned long repeatableSeed = 0;					// overwrite by -r
