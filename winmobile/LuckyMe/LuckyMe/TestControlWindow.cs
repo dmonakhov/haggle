@@ -21,6 +21,8 @@ namespace LuckyGUI
                         statusMsgLabel.Text = "";
                         progressBar.Maximum = 60000;
 
+                        if (LuckyMeLib.isHaggleRunning())
+                                start_haggle_button.Enabled = false;
                 }
                 private void updateProgressValue(object sender, EventArgs e)
                 {
@@ -44,8 +46,20 @@ namespace LuckyGUI
                 }
                 public void updateWindowStatus()
                 {
+                        bool haggleIsRunning = false;
                         statusMsgLabel.Text = "";
                         testStageLabel.Text = "Test stage: " + LuckyMe.testStageString();
+
+                        if (LuckyMeLib.isHaggleRunning())
+                        {
+                                start_haggle_button.Enabled = false;
+                                statusMsgLabel.Text = "Haggle is running";
+                                haggleIsRunning = true;
+                        }
+                        else
+                        {
+                                start_haggle_button.Enabled = true;
+                        }
 
                         switch (LuckyMe.getTestStage())
                         {
@@ -66,8 +80,10 @@ namespace LuckyGUI
                                         stop_button.Text = "Stop test";
                                         stop_button.Enabled = false;
                                         shutdown_button.Enabled = false;
+                                        start_haggle_button.Enabled = false;
                                         menuBack.Text = "";
-                                        progressBar.Visible = true;
+                                        if (!haggleIsRunning)
+                                                progressBar.Visible = true;
                                         break;
                                 case LuckyMe.TestStage.RUNNING:
                                         start_button.Text = "Start test";
@@ -78,6 +94,7 @@ namespace LuckyGUI
                                         menuBack.Text = "Back";
                                         updateStartupProgressBar(-1);
                                         progressBar.Visible = false;
+                                        start_haggle_button.Enabled = false;
                                         break;
                                 case LuckyMe.TestStage.STOPPING:
                                         statusMsgLabel.Text = "Stopping test, please wait...";
@@ -89,6 +106,7 @@ namespace LuckyGUI
                                         menuBack.Text = "";
                                         updateStartupProgressBar(-1);
                                         progressBar.Visible = false;
+                                        start_haggle_button.Enabled = false;
                                         break;
                                 case LuckyMe.TestStage.SAVING_LOGS:
                                         statusMsgLabel.Text = "Saving log files, please wait...";
@@ -96,11 +114,13 @@ namespace LuckyGUI
                                         stop_button.Enabled = false;
                                         stop_button.Text = "Please wait...";
                                         shutdown_button.Enabled = false;
+                                        start_haggle_button.Enabled = false;
                                         menuBack.Text = "";
                                         break;
                                 case LuckyMe.TestStage.SHUTDOWN:
                                         progressBar.Visible = false;
                                         statusMsgLabel.Text = "Shutting down...";
+                                        start_haggle_button.Enabled = false;
                                         break;
                         }
                         this.Refresh();
@@ -113,6 +133,7 @@ namespace LuckyGUI
                                 case LuckyMe.TestStage.NOT_RUNNING:
                                         menuBack.Text = "";
                                         start_button.Enabled = false;
+                                        start_haggle_button.Enabled = false;
                                         this.Refresh();
 
                                         if (LuckyMe.startTest())
@@ -256,6 +277,22 @@ namespace LuckyGUI
                 private void progressBar_ParentChanged(object sender, EventArgs e)
                 {
 
+                }
+
+                private void label2_ParentChanged(object sender, EventArgs e)
+                {
+
+                }
+
+                private void button_start_Haggle_Click(object sender, EventArgs e)
+                {
+                        statusMsgLabel.Text = "Starting Haggle...";
+                        start_haggle_button.Enabled = false;
+                        start_button.Enabled = false;
+                        shutdown_button.Enabled = false;
+                        progressBar.Visible = true;
+                        this.Refresh();
+                        LuckyMe.startHaggle();
                 }
         }
 }

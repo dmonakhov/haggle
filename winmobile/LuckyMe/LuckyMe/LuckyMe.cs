@@ -37,14 +37,8 @@ namespace LuckyGUI
                 {
                         return testStageStrings[(int)testStage];
                 }
-
-                public static void setTestStage(TestStage stage)
+                private static void updateWindowStatus()
                 {
-                        if (stage == testStage)
-                                return;
-
-                        testStage = stage;
-
                         if (main_window.InvokeRequired)
                         {
                                 main_window.BeginInvoke(new myDelegate(main_window.updateWindowStatus));
@@ -61,6 +55,15 @@ namespace LuckyGUI
                         {
                                 testcontrol_window.updateWindowStatus();
                         }
+                }
+                public static void setTestStage(TestStage stage)
+                {
+                        if (stage == testStage)
+                                return;
+
+                        testStage = stage;
+
+                        updateWindowStatus();
                 }
                 public static TestStage getTestStage()
                 {
@@ -164,22 +167,13 @@ namespace LuckyGUI
                                 Application.Exit();
                 }
 
-                public static bool startTest()
+                public static bool startHaggle()
                 {
-                        if (testStage != TestStage.NOT_RUNNING)
-                        {
-                                return false;
-                        }
-
-                        // Reset counters
-                        numDataObjectsGenerated = 0;
-
                         // Check Haggle status
                         LuckyMeLib.HaggleStatus status = LuckyMeLib.getHaggleStatus();
 
                         if (status != LuckyMeLib.HaggleStatus.HAGGLE_DAEMON_RUNNING)
                         {
-                                setTestStage(TestStage.STARTING);
 
                                 Debug.WriteLine("Deleting old Haggle files");
                                 // Make sure we delete old haggle files.
@@ -190,7 +184,6 @@ namespace LuckyGUI
                                 if (res < 0)
                                 {
                                         Debug.WriteLine("startTest: startHaggle returned res=" + res);
-                                        setTestStage(TestStage.NOT_RUNNING);
                                         return false;
                                 }
 
@@ -198,14 +191,37 @@ namespace LuckyGUI
 
                                 if (status != LuckyMeLib.HaggleStatus.HAGGLE_DAEMON_RUNNING)
                                 {
-                                        setTestStage(TestStage.NOT_RUNNING);
                                         Debug.WriteLine("startTest: Haggle deamon is not running");
                                         return false;
                                 }
                                 // Let Haggle do its thing for a while before we try to connect
-                                Thread.Sleep(2000);
+                                Thread.Sleep(5000);
                         }
 
+                        // Start status check timer
+                        mCallTimer.Change(1000, 8000);
+
+                        updateWindowStatus();
+
+                        return true;
+                }
+                public static bool startTest()
+                {
+                        if (testStage != TestStage.NOT_RUNNING)
+                        {
+                                return false;
+                        }
+
+                        // Reset counters
+                        numDataObjectsGenerated = 0;
+
+                        setTestStage(TestStage.STARTING);
+
+                        if (!startHaggle())
+                        {
+                                setTestStage(TestStage.NOT_RUNNING);
+                                return false;
+                        }
 
                         // Start LuckyMe thread
                         if (!LuckyMeLib.isLuckyMeRunning())
@@ -232,6 +248,8 @@ namespace LuckyGUI
                                 Debug.WriteLine("LuckyMe already running");
                         }
 
+                        Thread.Sleep(2000);
+
                         if (!LuckyMeLib.isTestRunning())
                         {
                                 Debug.WriteLine("Starting LuckyMe test loop");
@@ -252,9 +270,6 @@ namespace LuckyGUI
                         }
 
                         setTestStage(TestStage.RUNNING);
-
-                        // Start status check timer
-                        mCallTimer.Change(1000, 8000);
 
                         return true;
                 }

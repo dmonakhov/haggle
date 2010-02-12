@@ -38,11 +38,10 @@
                         this.start_button = new System.Windows.Forms.Button();
                         this.stop_button = new System.Windows.Forms.Button();
                         this.label2 = new System.Windows.Forms.Label();
-                        this.label3 = new System.Windows.Forms.Label();
                         this.shutdown_button = new System.Windows.Forms.Button();
-                        this.label4 = new System.Windows.Forms.Label();
                         this.statusMsgLabel = new System.Windows.Forms.Label();
                         this.progressBar = new System.Windows.Forms.ProgressBar();
+                        this.start_haggle_button = new System.Windows.Forms.Button();
                         this.SuspendLayout();
                         // 
                         // mainMenu1
@@ -80,7 +79,7 @@
                         // 
                         // start_button
                         // 
-                        this.start_button.Location = new System.Drawing.Point(41, 86);
+                        this.start_button.Location = new System.Drawing.Point(41, 139);
                         this.start_button.Name = "start_button";
                         this.start_button.Size = new System.Drawing.Size(159, 34);
                         this.start_button.TabIndex = 1;
@@ -90,7 +89,7 @@
                         // stop_button
                         // 
                         this.stop_button.Enabled = false;
-                        this.stop_button.Location = new System.Drawing.Point(41, 157);
+                        this.stop_button.Location = new System.Drawing.Point(41, 183);
                         this.stop_button.Name = "stop_button";
                         this.stop_button.Size = new System.Drawing.Size(159, 34);
                         this.stop_button.TabIndex = 2;
@@ -102,15 +101,9 @@
                         this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
                         this.label2.Location = new System.Drawing.Point(4, 68);
                         this.label2.Name = "label2";
-                        this.label2.Size = new System.Drawing.Size(196, 17);
+                        this.label2.Size = new System.Drawing.Size(232, 19);
                         this.label2.Text = "Clicking \'Start test\' will start a new test";
-                        // 
-                        // label3
-                        // 
-                        this.label3.Location = new System.Drawing.Point(4, 125);
-                        this.label3.Name = "label3";
-                        this.label3.Size = new System.Drawing.Size(218, 31);
-                        this.label3.Text = "Clicking \'Stop test\' will abort the current test and store all logs.";
+                        this.label2.ParentChanged += new System.EventHandler(this.label2_ParentChanged);
                         // 
                         // shutdown_button
                         // 
@@ -120,14 +113,6 @@
                         this.shutdown_button.TabIndex = 5;
                         this.shutdown_button.Text = "Shutdown";
                         this.shutdown_button.Click += new System.EventHandler(this.button_shutdown_Click);
-                        // 
-                        // label4
-                        // 
-                        this.label4.Location = new System.Drawing.Point(3, 196);
-                        this.label4.Name = "label4";
-                        this.label4.Size = new System.Drawing.Size(233, 30);
-                        this.label4.Text = "Clicking \'Shutdown\' will terminate both Haggle and this program.";
-                        this.label4.ParentChanged += new System.EventHandler(this.label4_ParentChanged);
                         // 
                         // statusMsgLabel
                         // 
@@ -145,17 +130,25 @@
                         this.progressBar.Visible = false;
                         this.progressBar.ParentChanged += new System.EventHandler(this.progressBar_ParentChanged);
                         // 
+                        // start_haggle_button
+                        // 
+                        this.start_haggle_button.Location = new System.Drawing.Point(41, 95);
+                        this.start_haggle_button.Name = "start_haggle_button";
+                        this.start_haggle_button.Size = new System.Drawing.Size(159, 35);
+                        this.start_haggle_button.TabIndex = 10;
+                        this.start_haggle_button.Text = "Start Haggle";
+                        this.start_haggle_button.Click += new System.EventHandler(this.button_start_Haggle_Click);
+                        // 
                         // TestControlWindow
                         // 
                         this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
                         this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
                         this.AutoScroll = true;
                         this.ClientSize = new System.Drawing.Size(240, 268);
+                        this.Controls.Add(this.start_haggle_button);
                         this.Controls.Add(this.progressBar);
                         this.Controls.Add(this.statusMsgLabel);
-                        this.Controls.Add(this.label4);
                         this.Controls.Add(this.shutdown_button);
-                        this.Controls.Add(this.label3);
                         this.Controls.Add(this.label2);
                         this.Controls.Add(this.stop_button);
                         this.Controls.Add(this.start_button);
@@ -171,10 +164,8 @@
 		#endregion
 
 		private System.Windows.Forms.MenuItem menuBack;
-		private System.Windows.Forms.Button stop_button;
-		private System.Windows.Forms.Label label3;
-		private System.Windows.Forms.Button shutdown_button;
-		private System.Windows.Forms.Label label4;
+                private System.Windows.Forms.Button stop_button;
+                private System.Windows.Forms.Button shutdown_button;
 		public System.Windows.Forms.Label testStageLabel;
 		public System.Windows.Forms.Button start_button;
 		public System.Windows.Forms.Label label2;
@@ -183,5 +174,6 @@
                 private System.Windows.Forms.MenuItem menuItemKillHaggle;
                 private System.Windows.Forms.MenuItem menuItemQuitLuckyMe;
                 private System.Windows.Forms.ProgressBar progressBar;
+                private System.Windows.Forms.Button start_haggle_button;
 	}
 }

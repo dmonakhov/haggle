@@ -1264,7 +1264,8 @@ SQLDataStore::SQLDataStore(const bool _recreate, const string _filepath, const s
 
 SQLDataStore::~SQLDataStore()
 {
-	sqlite3_close(db);
+	if (db)
+		sqlite3_close(db);
 }
 
 bool SQLDataStore::init()
@@ -2056,13 +2057,14 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 	sqlite3_finalize(stmt);
 
 	if (ret == SQLITE_CONSTRAINT) {
+		NodeRef existing_node = node;
 		HAGGLE_DBG("Node %s already in datastore -> replacing...\n", node->getName().c_str());
 
 		if (mergeBloomfilter) {
 			sqlite_int64 node_rowid = getNodeRowId(node);
 
 			if (node_rowid >= 0) {
-				NodeRef existing_node = getNodeFromRowId(node_rowid);
+				existing_node = getNodeFromRowId(node_rowid);
 
 				if (existing_node) {
 					HAGGLE_DBG("Merging bloomfilter of node %s\n", node->getName().c_str());
@@ -2070,7 +2072,8 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 				}
 			}
 		}
-		ret = _deleteNode(node);
+
+		ret = _deleteNode(existing_node);
 		
 		if (ret < 0) {
 			HAGGLE_ERR("Could not delete node %s\n", node->getName().c_str());
