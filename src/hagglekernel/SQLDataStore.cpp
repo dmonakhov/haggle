@@ -151,7 +151,7 @@ using namespace haggle;
 
 // Create tables for Dataobjects, Nodes, Attributes, Filters, Interfaces
 //------------------------------------------
-#define SQL_CREATE_TABLE_DATAOBJECTS_CMD "CREATE TABLE IF NOT EXISTS " TABLE_DATAOBJECTS " (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, id BLOB UNIQUE ON CONFLICT ROLLBACK, xmlhdr TEXT, filepath TEXT, filename TEXT, datalen INTEGER, datastate INTEGER, datahash BLOB, num_attributes INTEGER DEFAULT 0, signaturestatus INTEGER, signee TEXT, signature BLOB, siglen INTEGER, createtime INTEGER, receivetime INTEGER, rxtime INTEGER, source_iface_rowid INTEGER, timestamp DATE);"
+#define SQL_CREATE_TABLE_DATAOBJECTS_CMD "CREATE TABLE IF NOT EXISTS " TABLE_DATAOBJECTS " (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, id BLOB UNIQUE ON CONFLICT ROLLBACK, xmlhdr TEXT, filepath TEXT, filename TEXT, datalen INTEGER, datastate INTEGER, datahash BLOB, num_attributes INTEGER DEFAULT 0, signaturestatus INTEGER, signee TEXT, signature BLOB, siglen INTEGER, createtime INTEGER, receivetime INTEGER, rxtime INTEGER, source_iface_rowid INTEGER, node_id TEXT, timestamp DATE);"
 enum {
 	table_dataobjects_rowid	= 0,
 	table_dataobjects_id,
@@ -170,6 +170,7 @@ enum {
 	table_dataobjects_receivetime, // The receive time in milliseconds (local time)
 	table_dataobjects_rxtime, // The transfer time in milliseconds 
 	table_dataobjects_source_iface_rowid,
+	table_dataobjects_node_id, // node_id if node description
 	table_dataobjects_timestamp
 };
 
@@ -226,6 +227,11 @@ enum {
 #define SQL_CREATE_TRIGGER_FILTER_TABLE_CMD "CREATE TRIGGER insert_" TABLE_FILTERS "_timestamp AFTER INSERT ON " TABLE_FILTERS " BEGIN UPDATE " TABLE_FILTERS " SET timestamp = STRFTIME('%s', 'NOW') WHERE ROWID = NEW.ROWID; END;"
 //------------------------------------------
 #define SQL_CREATE_TRIGGER_TABLE_INTERFACES_CMD "CREATE TRIGGER insert_" TABLE_INTERFACES "_timestamp AFTER INSERT ON " TABLE_INTERFACES " BEGIN UPDATE " TABLE_INTERFACES " SET timestamp = STRFTIME('%s', 'NOW') WHERE ROWID = NEW.ROWID; END;"
+
+// Trigger to remove old node descriptions
+//------------------------------------------
+#define SQL_CREATE_TRIGGER_TABLE_DATAOBJECTS_NODEDESCRIPTION_CMD "CREATE TRIGGER insert_" TABLE_DATAOBJECTS "_nodedescription BEFORE INSERT ON " TABLE_DATAOBJECTS " BEGIN DELETE FROM " TABLE_DATAOBJECTS " WHERE node_id NOT NULL AND node_id = NEW.node_id AND rowid != (SELECT rowid FROM " TABLE_DATAOBJECTS " WHERE node_id = NEW.node_id ORDER BY createtime decsc) ; END;"
+
 
 /*
 	Link Tables
@@ -511,6 +517,7 @@ enum {
 
 static const char *tbl_cmds[] = {
 	SQL_CREATE_TABLE_DATAOBJECTS_CMD,
+	SQL_CREATE_TRIGGER_TABLE_DATAOBJECTS_NODEDESCRIPTION_CMD,
 	SQL_CREATE_TRIGGER_TABLE_DATAOBJECTS_CMD,
 	SQL_CREATE_TABLE_INTERFACES_CMD,
 	SQL_CREATE_TRIGGER_TABLE_INTERFACES_CMD,
@@ -560,7 +567,7 @@ static const char *tbl_cmds[] = {
 
 static char sqlcmd[SQL_MAX_CMD_SIZE];
 
-static inline string SQL_INSERT_DATAOBJECT_CMD(const char *metadata, const sqlite_int64 ifaceRowId, const DataObjectRef dObj)
+static inline string SQL_INSERT_DATAOBJECT_CMD(const char *metadata, const sqlite_int64 ifaceRowId, const DataObjectRef dObj, const char *node_id)
 {
 	string cmd;
 	
@@ -571,11 +578,11 @@ static inline string SQL_INSERT_DATAOBJECT_CMD(const char *metadata, const sqlit
 		query suffers from a risk of SQL injection. See the haggle trac page,
 		ticket #139.
 	*/
-	int ret = stringprintf(cmd, "INSERT INTO %s (id,xmlhdr,filepath,filename,datalen,datastate,datahash,signaturestatus,signee,signature,siglen,createtime,receivetime,rxtime,source_iface_rowid) VALUES(?,\'%s\',\'%s\',\'%s\',%lu,%lu,?,%lu,\'%s\',?,%lu," INT64_FORMAT "," INT64_FORMAT ",%lu," INT64_FORMAT ");", 
+	int ret = stringprintf(cmd, "INSERT INTO %s (id,xmlhdr,filepath,filename,datalen,datastate,datahash,signaturestatus,signee,signature,siglen,createtime,receivetime,rxtime,source_iface_rowid,node_id) VALUES(?,\'%s\',\'%s\',\'%s\',%lu,%lu,?,%lu,\'%s\',?,%lu," INT64_FORMAT "," INT64_FORMAT ",%lu," INT64_FORMAT ",'%s');", 
                            TABLE_DATAOBJECTS, metadata, dObj->getFilePath().c_str(), dObj->getFileName().c_str(), 
                            (unsigned long)dObj->getDataLen(), dObj->getDataState(), dObj->getSignatureStatus(), dObj->getSignee().c_str(),
 			   dObj->getSignatureLength(), dObj->getCreateTime().getTimeAsMilliSeconds(), 
-			   dObj->getReceiveTime().getTimeAsMilliSeconds(), dObj->getRxTime(), ifaceRowId);
+			   dObj->getReceiveTime().getTimeAsMilliSeconds(), dObj->getRxTime(), ifaceRowId, node_id);
 
         if (ret < 0) {
                 HAGGLE_ERR("SQL_INSERT_DATAOBJECT_CMD: stringprintf failed\n");
@@ -2354,6 +2361,8 @@ int SQLDataStore::_insertDataObject(DataObjectRef& dObj, const EventCallback<Eve
 	sqlite_int64 dataobject_rowid;
 	sqlite_int64 attr_rowid;
 	sqlite_int64 ifaceRowId = -1;
+	char *node_id;
+	char dummy_node_id = 0x00;
 	const Attributes *attrs;
 
 	if (!dObj) {
@@ -2374,7 +2383,18 @@ int SQLDataStore::_insertDataObject(DataObjectRef& dObj, const EventCallback<Eve
 	if (dObj->getRemoteInterface())
 		ifaceRowId = getInterfaceRowId(dObj->getRemoteInterface());
 
-	sql_cmd_str = SQL_INSERT_DATAOBJECT_CMD(metadata, ifaceRowId, dObj);
+	node_id = &dummy_node_id;
+	if (dObj->isNodeDescription()) {
+		attrs = dObj->getAttributes();
+		for (Attributes::const_iterator it = attrs->begin(); it != attrs->end(); it++) {
+			const Attribute& a = (*it).second;
+			if (a.getName() == NODE_DESC_ATTR) {
+				node_id = (char*)a.getValue().c_str();
+			}
+		}		
+	}
+	
+	sql_cmd_str = SQL_INSERT_DATAOBJECT_CMD(metadata, ifaceRowId, dObj, node_id);
 	sql_cmd = (char *) sql_cmd_str.c_str();
 
 	ret = sqlite3_prepare_v2(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
@@ -2476,7 +2496,6 @@ int SQLDataStore::_insertDataObject(DataObjectRef& dObj, const EventCallback<Eve
 			HAGGLE_ERR("SQLite insert of dataobject-attribute link failed!\n");
 			goto out_insertDataObject_err;
 		}
-
 	}
 
 	dObj.unlock();
