@@ -37,7 +37,6 @@ libhagglekernel_a_SOURCES = \
 	Forwarder.cpp \
 	ForwarderAsynchronous.cpp \
 	ForwarderProphet.cpp \
-	ForwarderRank.cpp \
 	Connectivity.cpp \
 	ConnectivityLocal.cpp \
 	ConnectivityManager.cpp \
@@ -90,10 +89,8 @@ EXTRA_DIST= Attribute.h \
 	ConnectivityEthernet.h \
 	ConnectivityMedia.h \
 	Forwarder.h \
-	ForwarderEmpty.h \
 	ForwarderProphet.h \
 	ForwarderAsynchronous.h \
-	ForwarderRank.h \
 	DataManager.h \
 	DataObject.h \
 	DataStore.h \

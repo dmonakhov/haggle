@@ -15,9 +15,7 @@
  
 #include <libcpphaggle/Platform.h>
 #include "ForwardingManager.h"
-#include "ForwarderEmpty.h"
 #include "ForwarderProphet.h"
-#include "ForwarderRank.h"
 
 ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 	Manager("ForwardingManager", _kernel), 
@@ -182,7 +180,7 @@ void ForwardingManager::onPrepareShutdown()
 	}
 }
 
-void ForwardingManager::setForwardingModule(Forwarder *forw)
+void ForwardingManager::setForwardingModule(Forwarder *f, bool deRegisterEvents)
 {
 	// Is there a current forwarding module?
 	if (forwardingModule) {
@@ -193,7 +191,7 @@ void ForwardingManager::setForwardingModule(Forwarder *forw)
 		delete forwardingModule;
 	}
 	// Change forwarding module:
-	forwardingModule = forw;
+	forwardingModule = f;
 	
 	// Is there a new forwarding module?
 	if (forwardingModule) {
@@ -204,8 +202,28 @@ void ForwardingManager::setForwardingModule(Forwarder *forw)
 		 */
 		kernel->getDataStore()->readRepository(new RepositoryEntry(forwardingModule->getName()), repositoryCallback);
 		HAGGLE_DBG("Set new forwarding module to \'%s'\n", forwardingModule->getName());
+		
+		/* Register callbacks */
+		if (!getEventInterest(EVENT_TYPE_DATAOBJECT_NEW)) {
+			setEventHandler(EVENT_TYPE_DATAOBJECT_NEW, onNewDataObject);
+		}
+		if (!getEventInterest(EVENT_TYPE_NODE_UPDATED)) {
+			setEventHandler(EVENT_TYPE_NODE_UPDATED, onNodeUpdated);
+		}
+		if (!getEventInterest(EVENT_TYPE_NODE_CONTACT_NEW)) {
+			setEventHandler(EVENT_TYPE_NODE_CONTACT_NEW, onNewNeighbor);
+		}
 	} else {
 		HAGGLE_DBG("Set new forwarding module to \'NULL'\n");
+		
+		if (deRegisterEvents) {
+			
+			HAGGLE_DBG("Deregistering events EVENT_TYPE_DATAOBJECT_NEW EVENT_TYPE_NODE_UPDATED EVENT_TYPE_NODE_CONTACT_NEW\n");
+			// remove interest in new data objects to avoid resolution
+			removeEventHandler(EVENT_TYPE_DATAOBJECT_NEW);
+			removeEventHandler(EVENT_TYPE_NODE_UPDATED);
+			removeEventHandler(EVENT_TYPE_NODE_CONTACT_NEW);
+		}
 	}
 }
 
@@ -882,7 +900,7 @@ void ForwardingManager::onSendRoutingInformation(Event * e)
  handled configurations:
  - <ForwardingModule>noForward</ForwardingModule>	(no resolution, nothing!)
  - <ForwardingModule>Prophet</ForwardingModule>		(Prophet)
- - <ForwardingModule>...</ForwardingModule>			(else: ForwarderEmpty)
+ - <ForwardingModule>...</ForwardingModule>		(else: no forwarding)
  */ 
 void ForwardingManager::onConfig(DataObjectRef& dObj)
 {
@@ -904,35 +922,20 @@ void ForwardingManager::onConfig(DataObjectRef& dObj)
 	Metadata *tmp = NULL;
 	
 	if ((tmp = m->getMetadata("ForwardingModule"))) {
-		String moduleName = tmp->getContent();
-		HAGGLE_DBG("config Forwarding Module > %s\n", moduleName.c_str());
+		string moduleName = tmp->getContent();
+		HAGGLE_DBG("Forwarding module \'%s\'\n", moduleName.c_str());
 
 		// handle new configuration
 		if (moduleName.compare("noForward") == 0) {
-			HAGGLE_DBG("remove interest in events for new data objects and nodes\n");
 			// clean up current forwardingModule
-			setForwardingModule(NULL);
-			// remove interest in new data objects to avoid resolution
-			removeEventHandler(EVENT_TYPE_DATAOBJECT_NEW);
-			removeEventHandler(EVENT_TYPE_NODE_UPDATED);
-			removeEventHandler(EVENT_TYPE_NODE_CONTACT_NEW);
+			setForwardingModule(NULL, true);
 		} else {
-			// make sure the necessary event interests for triggering resolution are set
-			HAGGLE_DBG("add interest in events for new data objects and nodes\n");
-			if (!getEventInterest(EVENT_TYPE_DATAOBJECT_NEW)) {
-				setEventHandler(EVENT_TYPE_DATAOBJECT_NEW, onNewDataObject);
-			}
-			if (!getEventInterest(EVENT_TYPE_NODE_UPDATED)) {
-				setEventHandler(EVENT_TYPE_NODE_UPDATED, onNodeUpdated);
-			}
-			if (!getEventInterest(EVENT_TYPE_NODE_CONTACT_NEW)) {
-				setEventHandler(EVENT_TYPE_NODE_CONTACT_NEW, onNewNeighbor);
-			}
+			// make sure the necessary event interests for triggering resolution are set			
 			// instantiate new forwarding module
 			if (moduleName.compare("Prophet") == 0) {
 				setForwardingModule(new ForwarderProphet(this));
 			} else {
-				setForwardingModule(new ForwarderEmpty(this));
+				setForwardingModule(NULL);
 			}
 		}
 	} 

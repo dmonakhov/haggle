@@ -72,7 +72,7 @@ class ForwardingManager : public Manager
 		This function takes possession of the given forwarding module, and will
 		take responsibility for releasing it.
 	*/
-	void setForwardingModule(Forwarder *forw);
+	void setForwardingModule(Forwarder *f, bool deRegisterEvents = false);
 	bool init_derived();
 public:
 	ForwardingManager(HaggleKernel *_kernel = haggleKernel);
