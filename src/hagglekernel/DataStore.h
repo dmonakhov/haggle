@@ -16,7 +16,7 @@
 #define _DATASTORE_H
 
 #include <libcpphaggle/Platform.h>
-#include <libcpphaggle/Heap.h>
+#include <libcpphaggle/List.h>
 /*
 	Forward declarations of all data types declared in this file. This is to
 	avoid circular dependencies. If/when a data type is added to this file,
@@ -262,7 +262,7 @@ typedef enum {
 } TaskType;
 
 /** */
-class DataStoreTask : public HeapItem
+class DataStoreTask
 {
 	/*
 	 The priority decides how a task is sorted in the data store's task queue.
@@ -322,9 +322,6 @@ public:
 	// getKey() is overridden from the HeapItem class and decides how the task
 	// is sorted in the task queue.
 	const Timeval& getTimestamp() const { return timestamp; }
-	
-	bool compare_less(const HeapItem& i) const;
-	bool compare_greater(const HeapItem& i) const;
 };
 
 
@@ -338,7 +335,12 @@ class DataStore :
 	public Runnable
 {
         // The runnable class's mutex protects the task Queue
-	Heap taskQ;
+	class TaskQueue : public List<DataStoreTask *> {
+	public:
+		TaskQueue() {}
+		~TaskQueue() {}
+		void insert(DataStoreTask *task);
+	} taskQ;
         // run() is the function executed by the thread
         bool run();
         // cleanup() is called when the thread is stopped or cancelled
@@ -439,6 +441,10 @@ public:
 	void insertRepository(RepositoryEntryRef re);
 	void readRepository(RepositoryEntryRef re, EventCallback < EventHandler > *callback);
 	void deleteRepository(RepositoryEntryRef re);
+
+	// Query cancel functions. Returns the number of queries removed, or -1 on error.
+	int cancelDataObjectQueries(const NodeRef& node);
+
 };
 
 #endif /* _DATASTORE_H */

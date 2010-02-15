@@ -652,7 +652,7 @@ void ForwardingManager::onNewNeighbor(Event *e)
 	// the update, we should only do the query once using the updated information.
 	
 	pendingQueryList.push_back(node);
-	kernel->addEvent(new Event(delayedDataObjectQueryCallback, node, 3));
+	kernel->addEvent(new Event(delayedDataObjectQueryCallback, node, 5));
 	
 	HAGGLE_DBG("%s - new node contact with %s [id=%s]. Delaying data object query in case there is an incoming node description for the node\n", 
 		   getName(), node->getName().c_str(), node->getIdStr());
@@ -663,9 +663,24 @@ void ForwardingManager::onEndNeighbor(Event *e)
 	if (e->getNode()->getType() == NODE_TYPE_UNDEF)
 		return;
 	
-	// Tell the forwarding module that we've got a new neighbor:
+	NodeRef node = e->getNode();
+
+	// Tell the forwarding module that the neighbor went away
 	if (forwardingModule)
-		forwardingModule->endNeighbor(e->getNode());
+		forwardingModule->endNeighbor(node);
+
+	// Cancel any queries for this node in the data store since they are no longer
+	// needed
+	kernel->getDataStore()->cancelDataObjectQueries(node);
+
+	// Also remove from pending query list so that onDelayedDataObjectQuery won't generate a delayed
+	// query after the node went away
+	for (List<NodeRef>::iterator it = pendingQueryList.begin(); it != pendingQueryList.end(); it++) {
+		if (node == *it) {
+			pendingQueryList.erase(it);
+			break;
+		}
+	}
 }
 
 void ForwardingManager::onNodeUpdated(Event *e)

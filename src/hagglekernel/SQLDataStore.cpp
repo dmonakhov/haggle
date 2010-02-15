@@ -175,7 +175,7 @@ enum {
 };
 
 //------------------------------------------
-#define SQL_CREATE_TABLE_NODES_CMD "CREATE TABLE IF NOT EXISTS " TABLE_NODES " (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, type INTEGER, id BLOB UNIQUE ON CONFLICT ROLLBACK, id_str TEXT, name TEXT, bloomfilter BLOB, num_attributes INTEGER DEFAULT 0, sum_weights INTEGER DEFAULT 0, resolution_max_matching_dataobjects INTEGER, resolution_threshold INTEGER, timestamp DATE);"
+#define SQL_CREATE_TABLE_NODES_CMD "CREATE TABLE IF NOT EXISTS " TABLE_NODES " (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, type INTEGER, id BLOB UNIQUE ON CONFLICT ROLLBACK, id_str TEXT, name TEXT, bloomfilter BLOB, nodedescription_createtime INTEGER DEFAULT -1, num_attributes INTEGER DEFAULT 0, sum_weights INTEGER DEFAULT 0, resolution_max_matching_dataobjects INTEGER, resolution_threshold INTEGER, timestamp DATE);"
 enum {
 	table_nodes_rowid = 0,
 	table_nodes_type,
@@ -183,10 +183,11 @@ enum {
 	table_nodes_id_str,
 	table_nodes_name,
 	table_nodes_bloomfilter,
+	table_nodes_nodedescription_createtime,
 	table_nodes_num_attributes,
 	table_nodes_sum_weights,
-	table_nodes_resolution_max_matching_dataobjects,	// resolution: max number of data object that a node is willing to recieve
-	table_nodes_resolution_threshold,					// resolution: relation threshold (only relations with a higher ratio will be considered)
+	table_nodes_resolution_max_matching_dataobjects, // resolution: max number of data object that a node is willing to recieve
+	table_nodes_resolution_threshold, // resolution: relation threshold (only relations with a higher ratio will be considered)
 	table_nodes_timestamp
 };
 
@@ -227,10 +228,6 @@ enum {
 #define SQL_CREATE_TRIGGER_FILTER_TABLE_CMD "CREATE TRIGGER insert_" TABLE_FILTERS "_timestamp AFTER INSERT ON " TABLE_FILTERS " BEGIN UPDATE " TABLE_FILTERS " SET timestamp = STRFTIME('%s', 'NOW') WHERE ROWID = NEW.ROWID; END;"
 //------------------------------------------
 #define SQL_CREATE_TRIGGER_TABLE_INTERFACES_CMD "CREATE TRIGGER insert_" TABLE_INTERFACES "_timestamp AFTER INSERT ON " TABLE_INTERFACES " BEGIN UPDATE " TABLE_INTERFACES " SET timestamp = STRFTIME('%s', 'NOW') WHERE ROWID = NEW.ROWID; END;"
-
-// Trigger to remove old node descriptions
-//------------------------------------------
-#define SQL_CREATE_TRIGGER_TABLE_DATAOBJECTS_NODEDESCRIPTION_CMD "CREATE TRIGGER insert_" TABLE_DATAOBJECTS "_nodedescription BEFORE INSERT ON " TABLE_DATAOBJECTS " BEGIN DELETE FROM " TABLE_DATAOBJECTS " WHERE node_id NOT NULL AND node_id = NEW.node_id AND rowid != (SELECT rowid FROM " TABLE_DATAOBJECTS " WHERE node_id = NEW.node_id ORDER BY createtime decsc) ; END;"
 
 
 /*
@@ -517,7 +514,6 @@ enum {
 
 static const char *tbl_cmds[] = {
 	SQL_CREATE_TABLE_DATAOBJECTS_CMD,
-	SQL_CREATE_TRIGGER_TABLE_DATAOBJECTS_NODEDESCRIPTION_CMD,
 	SQL_CREATE_TRIGGER_TABLE_DATAOBJECTS_CMD,
 	SQL_CREATE_TABLE_INTERFACES_CMD,
 	SQL_CREATE_TRIGGER_TABLE_INTERFACES_CMD,
@@ -691,9 +687,9 @@ static inline char *SQL_IFACE_FROM_ROWID_CMD(const sqlite_int64 iface_rowid)
 
 // -- NODE
 
-static inline char *SQL_INSERT_NODE_CMD(const int type, const char *idStr, const char *name, const unsigned int maxmatchingdos, const unsigned int threshold)
+static inline char *SQL_INSERT_NODE_CMD(const NodeRef& node)
 {
-	snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "INSERT INTO " TABLE_NODES " (type,id,id_str,name,bloomfilter,resolution_max_matching_dataobjects,resolution_threshold) VALUES (%d,?,\'%s\',\'%s\',?,%d,%d);", type, idStr, name, maxmatchingdos, threshold);
+	snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "INSERT INTO " TABLE_NODES " (type,id,id_str,name,bloomfilter,resolution_max_matching_dataobjects,resolution_threshold) VALUES (%d,?,\'%s\',\'%s\',?," INT64_FORMAT ",%u,%u);", node->getType(), node->getIdStr(), node->getName().c_str(), node->getNodeDescriptionCreateTime().getTimeAsMilliSeconds(), node->getMaxDataObjectsInMatch(), node->getMatchingThreshold());
 
 	return sqlcmd;
 }
@@ -845,18 +841,24 @@ NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 	NodeRef node = NULL;
 	int num_match = 0;
 	NodeId_t node_id;
+	Timeval nodedescription_createtime = -1;
 
 	if (!in_stmt)
 		return node;
 
 	memcpy(node_id, sqlite3_column_blob(in_stmt, table_nodes_id), sizeof(NodeId_t));
 
+	sqlite_int64 nodedescription_createtime_millisecs = sqlite3_column_int64(in_stmt, table_nodes_nodedescription_createtime);
+	
+	if (nodedescription_createtime_millisecs != -1 && nodedescription_createtime_millisecs != 0)
+		nodedescription_createtime = Timeval((long)(nodedescription_createtime_millisecs / 1000), (long)((nodedescription_createtime_millisecs - (nodedescription_createtime_millisecs / 1000)*1000) * 1000));
+
 	// First try to retrieve the node from the node store
 	node = kernel->getNodeStore()->retrieve(node_id);
 
 	if (!node) {
 		node = Node::create_with_id((NodeType_t)sqlite3_column_int(in_stmt, table_nodes_type), 
-			node_id, (char *)sqlite3_column_text(in_stmt, table_nodes_name));
+			node_id, (char *)sqlite3_column_text(in_stmt, table_nodes_name), nodedescription_createtime);
 
 		if (!node) {
 			HAGGLE_ERR("Could not create node from data store information\n");
@@ -1389,6 +1391,7 @@ int SQLDataStore::createTables()
 
 		if (ret == SQLITE_ERROR) {
 			HAGGLE_ERR("Could not create table error: %s\n", sqlite3_errmsg(db));
+			fprintf(stderr, "SQL command: %s\n", tbl_cmds[i]);
 			sqlite3_close(db);
                         return -1;
 		}
@@ -2035,8 +2038,7 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 
 //	sqlQuery(SQL_BEGIN_TRANSACTION_CMD);
 
-	sql_cmd = SQL_INSERT_NODE_CMD((const int) node->getType(), node->getIdStr(), 
-		node->getName().c_str(), node->getMaxDataObjectsInMatch(), node->getMatchingThreshold());
+	sql_cmd = SQL_INSERT_NODE_CMD(node);
 
 	HAGGLE_DBG("SQLcmd: %s\n", sql_cmd);
 

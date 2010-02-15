@@ -71,7 +71,7 @@ private:
 	class container : public list_head {
 	public:
 		TT obj;
-		container(const TT& _obj, list_head *_prev = 0) : list_head(_prev, _prev ? _prev->next : NULL), obj(_obj) {}
+		container(const TT& _obj, list_head *_next = NULL) : list_head(_next ? _next->prev : NULL, _next), obj(_obj) {}
                 ~container() {}
 	};
 
@@ -142,11 +142,11 @@ public:
 		return end();
 	}
 	void push_front (const T& obj) { 
-		if (new container<T>(obj, &head))
+		if (new container<T>(obj, head.next))
 			_size++;	      
 	}
 	void push_back (const T& obj) { 
-		if (new container<T>(obj, head.prev))
+		if (new container<T>(obj, &head))
 			_size++;	
 	}
 	void pop_front() { 

@@ -145,7 +145,7 @@ const char *DataStoreTask::taskName[_TASK_MAX] = {
 unsigned long DataStoreTask::totNum = 0;
 
 DataStoreTask::DataStoreTask(DataObjectRef& _dObj, TaskType _type, const EventCallback<EventHandler> *_callback) : 
-	HeapItem(), type(_type), priority(TASK_PRIORITY_LOW), num(totNum++), timestamp(Timeval::now()), dObj(_dObj.copy()), 
+	type(_type), priority(TASK_PRIORITY_LOW), num(totNum++), timestamp(Timeval::now()), dObj(_dObj.copy()), 
 	callback(_callback), boolParameter(false) 
 {
 	if (type == TASK_INSERT_DATAOBJECT) {
@@ -156,7 +156,7 @@ DataStoreTask::DataStoreTask(DataObjectRef& _dObj, TaskType _type, const EventCa
 	}
 }
 DataStoreTask::DataStoreTask(const DataObjectId_t _id, TaskType _type, const EventCallback<EventHandler> *_callback) :
-	HeapItem(), type(_type), priority(TASK_PRIORITY_HIGH), num(totNum++), timestamp(Timeval::now()), callback(_callback), boolParameter(true) 
+	type(_type), priority(TASK_PRIORITY_HIGH), num(totNum++), timestamp(Timeval::now()), callback(_callback), boolParameter(true) 
 {
 	if (type == TASK_DELETE_DATAOBJECT) {
 		memcpy(id, _id, sizeof(DataObjectId_t));
@@ -165,7 +165,7 @@ DataStoreTask::DataStoreTask(const DataObjectId_t _id, TaskType _type, const Eve
 	}
 }
 DataStoreTask::DataStoreTask(const NodeRef& _node, TaskType _type, const EventCallback<EventHandler> *_callback, bool _boolParameter) :
-	HeapItem(), type(_type), priority(TASK_PRIORITY_LOW), num(totNum++), timestamp(Timeval::now()), node(_node.copy()), callback(_callback), boolParameter(_boolParameter) 
+	type(_type), priority(TASK_PRIORITY_LOW), num(totNum++), timestamp(Timeval::now()), node(_node.copy()), callback(_callback), boolParameter(_boolParameter) 
 {
 	if (type == TASK_INSERT_NODE ||
 		type == TASK_RETRIEVE_NODE) {
@@ -177,7 +177,7 @@ DataStoreTask::DataStoreTask(const NodeRef& _node, TaskType _type, const EventCa
 	}
 }
 DataStoreTask::DataStoreTask(NodeType_t _nodeType, TaskType _type, const EventCallback<EventHandler> *_callback) :
-	HeapItem(), type(_type), priority(TASK_PRIORITY_MEDIUM), num(totNum++), timestamp(Timeval::now()), nodeType(_nodeType), callback(_callback), boolParameter(false) 
+	type(_type), priority(TASK_PRIORITY_MEDIUM), num(totNum++), timestamp(Timeval::now()), nodeType(_nodeType), callback(_callback), boolParameter(false) 
 {
 	if (type == TASK_RETRIEVE_NODE_BY_TYPE) {
 	} else {
@@ -185,7 +185,7 @@ DataStoreTask::DataStoreTask(NodeType_t _nodeType, TaskType _type, const EventCa
 	}
 }
 DataStoreTask::DataStoreTask(const InterfaceRef& _iface, TaskType _type, const EventCallback<EventHandler> *_callback, bool _boolParameter) :
-HeapItem(), type(_type), priority(TASK_PRIORITY_HIGH), num(totNum++), timestamp(Timeval::now()), iface(_iface.copy()), callback(_callback), boolParameter(_boolParameter) 
+	type(_type), priority(TASK_PRIORITY_HIGH), num(totNum++), timestamp(Timeval::now()), iface(_iface.copy()), callback(_callback), boolParameter(_boolParameter) 
 {
 	if (type != TASK_RETRIEVE_NODE_BY_INTERFACE) {
 		priority = TASK_PRIORITY_LOW;
@@ -193,7 +193,7 @@ HeapItem(), type(_type), priority(TASK_PRIORITY_HIGH), num(totNum++), timestamp(
 	}
 }
 DataStoreTask::DataStoreTask(DataStoreFilterQuery *q, TaskType _type) :
-	HeapItem(), type(_type), priority(TASK_PRIORITY_MEDIUM), num(totNum++), timestamp(Timeval::now()), query(q), callback(NULL), boolParameter(false) 
+	type(_type), priority(TASK_PRIORITY_MEDIUM), num(totNum++), timestamp(Timeval::now()), query(q), callback(NULL), boolParameter(false) 
 {
 	if (type == TASK_FILTER_QUERY) {
 	} else {
@@ -202,7 +202,7 @@ DataStoreTask::DataStoreTask(DataStoreFilterQuery *q, TaskType _type) :
 }
 
 DataStoreTask::DataStoreTask(DataStoreDataObjectQuery *q, TaskType _type) :
-	HeapItem(), type(_type), priority(TASK_PRIORITY_MEDIUM), num(totNum++), timestamp(Timeval::now()), DOQuery(q), callback(NULL), boolParameter(false) 
+	type(_type), priority(TASK_PRIORITY_MEDIUM), num(totNum++), timestamp(Timeval::now()), DOQuery(q), callback(NULL), boolParameter(false) 
 {
 	if (type == TASK_DATAOBJECT_QUERY) {
 	} else {
@@ -211,7 +211,7 @@ DataStoreTask::DataStoreTask(DataStoreDataObjectQuery *q, TaskType _type) :
 }
 
 DataStoreTask::DataStoreTask(DataStoreDataObjectForNodesQuery *q, TaskType _type) :
-	HeapItem(), type(_type), priority(TASK_PRIORITY_MEDIUM), num(totNum++), timestamp(Timeval::now()), DOForNodesQuery(q), callback(NULL), boolParameter(false) 
+	type(_type), priority(TASK_PRIORITY_MEDIUM), num(totNum++), timestamp(Timeval::now()), DOForNodesQuery(q), callback(NULL), boolParameter(false) 
 {
 	if (type == TASK_DATAOBJECT_FOR_NODES_QUERY) {
 	} else {
@@ -220,7 +220,7 @@ DataStoreTask::DataStoreTask(DataStoreDataObjectForNodesQuery *q, TaskType _type
 }
 
 DataStoreTask::DataStoreTask(DataStoreNodeQuery *q, TaskType _type) :
-	HeapItem(), type(_type), priority(TASK_PRIORITY_MEDIUM), num(totNum++), timestamp(Timeval::now()), NodeQuery(q), callback(NULL), boolParameter(false) 
+	type(_type), priority(TASK_PRIORITY_MEDIUM), num(totNum++), timestamp(Timeval::now()), NodeQuery(q), callback(NULL), boolParameter(false) 
 {
 	if (type == TASK_NODE_QUERY) {
 	} else {
@@ -229,7 +229,7 @@ DataStoreTask::DataStoreTask(DataStoreNodeQuery *q, TaskType _type) :
 }
 
 DataStoreTask::DataStoreTask(DataStoreRepositoryQuery *q, TaskType _type) :
-	HeapItem(), type(_type), priority(TASK_PRIORITY_LOW), num(totNum++), timestamp(Timeval::now()), RepositoryQuery(q), callback(NULL) 
+	type(_type), priority(TASK_PRIORITY_LOW), num(totNum++), timestamp(Timeval::now()), RepositoryQuery(q), callback(NULL) 
 {
 	if (type == TASK_INSERT_REPOSITORY) {
 		priority = TASK_PRIORITY_HIGH;
@@ -241,7 +241,7 @@ DataStoreTask::DataStoreTask(DataStoreRepositoryQuery *q, TaskType _type) :
 }
 
 DataStoreTask::DataStoreTask(const Filter& _f, TaskType _type, const EventCallback<EventHandler> *_callback, bool _boolParameter) :
-	HeapItem(), type(_type), priority(TASK_PRIORITY_HIGH), num(totNum++), timestamp(Timeval::now()), f(_f.copy()), callback(_callback), boolParameter(_boolParameter) 
+	type(_type), priority(TASK_PRIORITY_HIGH), num(totNum++), timestamp(Timeval::now()), f(_f.copy()), callback(_callback), boolParameter(_boolParameter) 
 {
 	if (type == TASK_ADD_FILTER) {
 	} else {
@@ -250,7 +250,7 @@ DataStoreTask::DataStoreTask(const Filter& _f, TaskType _type, const EventCallba
 }
 
 DataStoreTask::DataStoreTask(TaskType _type, void *_data, const EventCallback<EventHandler> *_callback) : 
-	HeapItem(), type(_type), priority(TASK_PRIORITY_LOW), num(totNum++), timestamp(Timeval::now()), data(_data), callback(_callback), boolParameter(false) 
+	type(_type), priority(TASK_PRIORITY_LOW), num(totNum++), timestamp(Timeval::now()), data(_data), callback(_callback), boolParameter(false) 
 {
 	if (type == TASK_EXIT) {
 		priority = TASK_PRIORITY_LOW;
@@ -273,34 +273,12 @@ DataStoreTask::DataStoreTask(TaskType _type, void *_data, const EventCallback<Ev
 }
 
 DataStoreTask::DataStoreTask(const Timeval &_age, TaskType _type, const EventCallback<EventHandler> *callback) :
-	HeapItem(), type(_type), priority(TASK_PRIORITY_LOW), num(totNum++), timestamp(Timeval::now()), age(new Timeval(_age)), callback(callback), boolParameter(false) 
+	type(_type), priority(TASK_PRIORITY_LOW), num(totNum++), timestamp(Timeval::now()), age(new Timeval(_age)), callback(callback), boolParameter(false) 
 {
 	if (type == TASK_AGE_DATAOBJECTS) {
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
 	}
-}
-
-
-bool DataStoreTask::compare_less(const HeapItem& i) const
-{
-	if (priority < static_cast<const DataStoreTask&>(i).priority)
-		return true;
-	else if (priority == static_cast<const DataStoreTask&>(i).priority && 
-		 timestamp < static_cast<const DataStoreTask&>(i).timestamp)
-		return true;
-	
-	return false;
-}
-bool DataStoreTask::compare_greater(const HeapItem& i) const
-{
-	if (priority > static_cast<const DataStoreTask&>(i).priority)
-		return true;
-	else if (priority == static_cast<const DataStoreTask&>(i).priority && 
-		 timestamp > static_cast<const DataStoreTask&>(i).timestamp) 
-		return true;
-	
-	return false;
 }
 
 DataStoreTask::~DataStoreTask()
@@ -393,6 +371,42 @@ DataStore::~DataStore()
 		taskQ.pop_front();
 		
 		delete task;
+	}
+}
+
+void DataStore::TaskQueue::insert(DataStoreTask *task)
+{
+	if (!task)
+		return;
+
+	//HAGGLE_DBG("New task %u %s\n", task->getPriority(), task->getTimestamp().getAsString());
+	
+	TaskQueue::iterator it = begin();
+
+	while (it != end()) {
+		DataStoreTask *q_task = *it;
+		//HAGGLE_DBG("Task %u %s\n", q_task->getPriority(), q_task->getTimestamp().getAsString());
+		if (task->getPriority() < q_task->getPriority()) {
+			break;
+		} else if (task->getPriority() == q_task->getPriority() && task->getTimestamp() < q_task->getTimestamp()) {
+			break;
+		}
+		it++;
+	}
+
+	if (it != end()) {
+		it = List<DataStoreTask *>::insert(it, task);
+
+		/*
+		HAGGLE_DBG("inserted task %u %s\n", (*it)->getPriority(), (*it)->getTimestamp().getAsString());
+		it++;
+		if (it != end()) {
+			HAGGLE_DBG("next task %u %s\n", (*it)->getPriority(), (*it)->getTimestamp().getAsString());
+		}
+		*/
+
+	} else {
+		push_back(task);
 	}
 }
 
@@ -606,6 +620,41 @@ void DataStore::deleteRepository(RepositoryEntryRef re)
 	
 	cond.signal();
 }
+
+/*
+ This function will cancel all queries that concern a specific node, 
+ for both the roles of target and delegate.
+*/
+int DataStore::cancelDataObjectQueries(const NodeRef& node)
+{
+	int count = 0;
+	Mutex::AutoLocker l(mutex);
+	
+	if (!node)
+		return -1;
+	
+	TaskQueue::iterator it = taskQ.begin();
+
+	while (it != taskQ.end()) {
+		if ((*it)->getType() == TASK_DATAOBJECT_QUERY) {
+			if ((*it)->DOQuery->getNode() == node) {
+				it = taskQ.erase(it);	
+				count++;
+				continue;
+			}
+		} else if ((*it)->getType() == TASK_DATAOBJECT_FOR_NODES_QUERY) {
+			if ((*it)->DOForNodesQuery->getNode() == node) {
+				it = taskQ.erase(it);	
+				count++;
+				continue;
+			}
+		}
+		it++;
+	}
+
+	return count;
+}
+
 
 void DataStore::dump(const EventCallback<EventHandler> *callback)
 {

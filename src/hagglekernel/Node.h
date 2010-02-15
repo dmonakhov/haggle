@@ -188,16 +188,16 @@ class Node
         bool createdFromNodeDescription;
 	long filterEventId;
 	inline bool init_node(const NodeId_t _id);
-	
+	Timeval nodeDescriptionCreateTime;
 	unsigned long matchThreshold;
 	unsigned long numberOfDataObjectsPerMatch;
 
-        Node(NodeType_t _type, const string name = "Unnamed node");
+        Node(NodeType_t _type, const string name = "Unnamed node", Timeval _nodeDescriptionCreateTime = -1);
 public:
 	static Node *create(NodeType_t type, const DataObjectRef& dObj);
-	static Node *create(NodeType_t type = NODE_TYPE_UNDEF, const string name = "Unnamed node");
-	static Node *create_with_id(NodeType_t type, const NodeId_t id, const string name = "Unnamed node");
-	static Node *create_with_id(NodeType_t type, const char *idStr, const string name = "Unnamed node");
+	static Node *create(NodeType_t type = NODE_TYPE_UNDEF, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
+	static Node *create_with_id(NodeType_t type, const NodeId_t id, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
+	static Node *create_with_id(NodeType_t type, const char *idStr, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
 
         Node(const Node &n); // Copy constructor
         Node& operator=(const Node &);
@@ -312,11 +312,11 @@ public:
 		significantly (such as when the bloomfilter is changed, or the interests
 		of the node is changed).
 	*/
-	void setCreateTime(Timeval t = Timeval::now());
+	void setNodeDescriptionCreateTime(Timeval t = Timeval::now());
 	/**
 		Returns the create time of the node description.
 	*/
-	Timeval getCreateTime() const;
+	Timeval getNodeDescriptionCreateTime() const;
 
         // Operators
         // friend bool operator<(const Node &n1, const Node &n2);

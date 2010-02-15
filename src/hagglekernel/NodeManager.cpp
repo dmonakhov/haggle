@@ -49,10 +49,10 @@ NodeManager::~NodeManager()
 	
 	if (onRetrieveThisNodeCallback)
 		delete onRetrieveThisNodeCallback;
-	
+/*	
 	if (onRetrieveNodeDescriptionCallback)
 		delete onRetrieveNodeDescriptionCallback;
-
+*/
 	if (onInsertedNodeCallback)
 		delete onInsertedNodeCallback;
 }
@@ -123,7 +123,6 @@ bool NodeManager::init_derived()
 
 	onRetrieveNodeCallback = newEventCallback(onRetrieveNode);
 	onRetrieveThisNodeCallback = newEventCallback(onRetrieveThisNode);
-	onRetrieveNodeDescriptionCallback = newEventCallback(onRetrieveNodeDescription);
 	onInsertedNodeCallback = newEventCallback(onInsertedNode);
 
 	kernel->getDataStore()->retrieveNode(kernel->getThisNode(), onRetrieveThisNodeCallback);
@@ -212,7 +211,7 @@ void NodeManager::onRetrieveThisNode(Event *e)
 			kernel->setThisNode(node);
 	}
 	// Update create time to mark the freshness of the thisNode node description
-	kernel->getThisNode()->setCreateTime();
+	kernel->getThisNode()->setNodeDescriptionCreateTime();
 }
 
 bool NodeManager::isInSendList(const NodeRef& node, const DataObjectRef& dObj)
@@ -468,6 +467,7 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 	DataObjectRefList& dObjs = e->getDataObjectList();
 
 	while (dObjs.size()) {
+		bool fromThirdParty = false;
 
 		DataObjectRef dObj = dObjs.pop();
 
@@ -488,6 +488,10 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 			continue;
 		}
 		
+		// Retrieve any existing neighbor nodes that might match the newly received 
+		// node description.
+		NodeRef neighbor = kernel->getNodeStore()->retrieve(node, true);
+
 		// Make sure at least the interface of the remote node is set to up
 		// this 
 		if (dObj->getRemoteInterface()) {
@@ -500,9 +504,9 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 				node->setInterfaceUp(dObj->getRemoteInterface());				
 			} else {
 				// Node description was received from third party.
-				// Ignore the node description if the node it describes
-				// is a current neighbor. We trust such a neighbor to give
-				// us the its latest node description when necessary.
+				
+				fromThirdParty = true;
+
 				NodeRef peer = kernel->getNodeStore()->retrieve(dObj->getRemoteInterface(), true);
 				
 				if  (peer) {
@@ -513,8 +517,9 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 						   node->getName().c_str(), dObj->getRemoteInterface()->getIdentifierStr());
 				}
 
-				NodeRef neighbor = kernel->getNodeStore()->retrieve(node, true);
-
+				// Ignore the node description if the node it describes
+				// is a current neighbor. We trust such a neighbor to give
+				// us its latest node description when necessary.
 				if (neighbor) {
 					HAGGLE_DBG("Node description of %s received from third party describes a neighbor -- ignoring!\n",
 						   node->getName().c_str());
@@ -526,146 +531,58 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 				   node->getName().c_str(), node->getIdStr());
 		}
 	
-		// The received node description may be older than one that we already have stored. Therefore, we
-		// need to retrieve any stored node descriptions before we accept this one.
-		char filterString[255];
-		sprintf(filterString, "%s=%s", NODE_DESC_ATTR, node->getIdStr());
+		// If the existing neighbor node was undefined, we merge the bloomfilters
+		// of the undefined node and the node created from the node description
+		if (neighbor) {
+			if (neighbor->getType() == NODE_TYPE_UNDEF) {
+				HAGGLE_DBG("Merging bloomfilter of node %s with its previously undefined node\n", 
+					node->getName().c_str());
+				node->getBloomfilter()->merge(*neighbor->getBloomfilter());
+			} else {
+				if (node->getNodeDescriptionCreateTime() <= neighbor->getNodeDescriptionCreateTime()) {
+					HAGGLE_DBG("Node description create time is NOT greater than on existing neighbor node. IGNORING node description\n");
+					// Delete old node descriptions from data store
+					if (node->getNodeDescriptionCreateTime() < neighbor->getNodeDescriptionCreateTime())
+						kernel->getDataStore()->deleteDataObject(dObj);
 
-		kernel->getDataStore()->doFilterQuery(new Filter(filterString, 0), onRetrieveNodeDescriptionCallback);
-	}
-}
-/* 
-	callback to clean-up outdated nodedescriptions in the DataStore
+					continue;
+				}
+			}
+		} 
 
-	call in NodeManager::onReceiveNodeDescription through filterQuery
-*/
-void NodeManager::onRetrieveNodeDescription(Event *e)
-{
-	if (!e || !e->hasData())
-		return;
-	
-	DataStoreQueryResult *qr = static_cast < DataStoreQueryResult * >(e->getData());
+		HAGGLE_DBG("New node description from node %s -- createTime %s receiveTime %s, bloomfilter #objs=%lu\n", 
+			node->getName().c_str(), 
+			dObj->getCreateTime().getAsString().c_str(), 
+			dObj->getReceiveTime().getAsString().c_str(),
+			node->getBloomfilter()->numObjects());
 
-	DataObjectRef dObj_tmp;
-	DataObjectRef dObj = qr->detachFirstDataObject();
-	Timeval receiveTime = dObj->getReceiveTime();
-	/*
-	HAGGLE_DBG("Node description id=%s\n", dObj->getIdStr());
-
-	HAGGLE_DBG("Node description createTime %lf receiveTime %lf\n",
-		   dObj->getCreateTime().getTimeAsSecondsDouble(),
-		   receiveTime.getTimeAsSecondsDouble());
-	*/
-
-	while ((dObj_tmp = qr->detachFirstDataObject())) {
-
-		HAGGLE_DBG("Node description createTime %lf receiveTime %lf\n",
-			   dObj_tmp->getCreateTime().getTimeAsSecondsDouble(),
-			   dObj_tmp->getReceiveTime().getTimeAsSecondsDouble());
-		/*   
-		HAGGLE_DBG("Time difference between node descriptions: receiveTime: %lf, createTime: %lf\n",
-			   receiveTime.getTimeAsSecondsDouble() -
-			   dObj_tmp->getReceiveTime().getTimeAsSecondsDouble(),
-			   dObj->getCreateTime().getTimeAsSecondsDouble() -
-			   dObj_tmp->getCreateTime().getTimeAsSecondsDouble());
-		*/
-		if (dObj_tmp->getReceiveTime() > dObj->getReceiveTime()) {
-			receiveTime = dObj_tmp->getReceiveTime();
-		}
-		if (dObj_tmp->getCreateTime() > dObj->getCreateTime()) {
-			// This node description was newer than the last "newest":
-			
-			HAGGLE_DBG("Found newer node description, deleting id=%s with createTime %lf\n",
-				   dObj->getIdStr(), dObj->getCreateTime().getTimeAsSecondsDouble());
-			// Delete the old "newest" data object:
-			kernel->getDataStore()->deleteDataObject(dObj);
-			// FIXME: we should really remove the data object from the 
-			// "this" node's bloomfilter here.
-			
-			dObj = dObj_tmp;
-		} else {
-			// This node description was not newer than the last "newest":
-			/*
-			HAGGLE_DBG("Found older node description, deleting id=%s with createTime %lf\n",
-				   dObj_tmp->getIdStr(), dObj_tmp->getCreateTime().getTimeAsSecondsDouble());
-			*/
-			// Delete it:
-			kernel->getDataStore()->deleteDataObject(dObj_tmp);
-			// FIXME: we should really remove the data object from the 
-			// "this" node's bloomfilter here.
-		}
-	}
-
-	/*
-		If the greatest receive time is not equal to the one in the
-		latest created node description, then we received an old node description 
-		(i.e., we had a more recent one in the data store).
-	*/
-	if (receiveTime != dObj->getReceiveTime()) {
-		HAGGLE_DBG("Received node description is not the latest, ignoring... latest: %s - dObj: %s\n", 
-			receiveTime.getAsString().c_str(), dObj->getReceiveTime().getAsString().c_str());
-
-		// The most recently received node description must have been received from a third party,
-		// so we ignore it.
-		delete qr;
-		return;
-	} 
-	
-	NodeRef node = Node::create(NODE_TYPE_PEER, dObj);
-	
-	if (!node) {
-		HAGGLE_DBG("Could not create node from node description\n");
-		delete qr;
-		return;
-	}
-
-	// Add the node description to the node's bloomfilter
-	node->getBloomfilter()->add(dObj);
-	
-	HAGGLE_DBG("New node description from node %s -- creating node: createTime %s receiveTime %s, bloomfilter #objs=%lu\n", 
-		   node->getName().c_str(), 
-		   dObj->getCreateTime().getAsString().c_str(), 
-		   receiveTime.getAsString().c_str(),
-		   node->getBloomfilter()->numObjects());
-		
-	// insert node into DataStore, merge bloomfilters with the one in the data store
-	// if the node description was received from third party node
-	bool mergeBloomfilter = false;
-
+		// Here we have a fast path and a slow path depending on whether the node description
+		// was received directly from the node it describes or not. In the case the node description 
+		// was received directly from the node it describes, then we trust it to contain the latest 
+		// information, and an updated bloomfilter. In this case we take the fast path. In the case we received
+		// the node description from a third party node, we cannot trust the bloomfilter to be up-to-date
+		// with all the data objects we have previously sent the node. Therefore, we should merge
+		// the received bloomfilter with the one we have in the data store. This requires first a 
+		// call to the data store to retrieve the 
+		if (fromThirdParty) {
 #if defined(MERGE_BLOOMFILTERS)
-	if (kernel->getNodeStore()->retrieve(node, true)) {
-		// Currently not a neighbor, which means that the node description
-		// we receive might not represent the latest state of the node.
-		// Therefore we merge the bloomfilter with what we have stored
-		// already
-		mergeBloomfilter = true;
-	}
+			// Slow path, wait for callback from data store before proceeding
+			kernel->getDataStore()->insertNode(node, onInsertedNodeCallback, true);
+#else
+			// Do fast path also here if we do not want to merge bloomfilters
+			kernel->getDataStore()->insertNode(node);
+			nodeUpdate(node);
 #endif
-	kernel->getDataStore()->insertNode(node, onInsertedNodeCallback, mergeBloomfilter);
-	
-	// Continue processing when the node has been inserted in onInsertedNode()
-	// This is because we might want to make sure that the node exists in the data store
-	// before we announce it as updated. The data store might also have to merge the bloomfilter
-	// of the node with an already existing one
-	
-	delete qr;
+		} else {
+			// Fast path, without callback
+			kernel->getDataStore()->insertNode(node);
+			nodeUpdate(node);
+		}
+	}
 }
 
-void NodeManager::onInsertedNode(Event *e)
+void NodeManager::nodeUpdate(NodeRef& node)
 {
-	if (!e || !e->hasData())
-		return;
-	
-	NodeRef& node = e->getNode();
-
-	if (!node) {
-		HAGGLE_ERR("No node in callback\n");
-		return;
-	}
-
-	HAGGLE_DBG("Node %s [%s] was successfully inserted into data store\n", 
-		node->getName().c_str(), node->getIdStr());
-
 	NodeRefList nl;
 	
 	// See if this node is already an active neighbor but in an uninitialized state
@@ -693,6 +610,7 @@ void NodeManager::onInsertedNode(Event *e)
 		// Sync the node's interfaces with those in the interface store. This
 		// makes sure all active interfaces are marked as 'up'.
 		node.lock();
+
 		const InterfaceRefList *ifl = node->getInterfaces();
 		
 		for (InterfaceRefList::const_iterator it = ifl->begin(); it != ifl->end(); it++) {
@@ -723,4 +641,22 @@ void NodeManager::onInsertedNode(Event *e)
 	// if they are not neighbors. This is because we want to match data objects against the node although
 	// we might not have direct connectivity to it.
 	kernel->addEvent(new Event(EVENT_TYPE_NODE_UPDATED, node, nl));
+}
+
+void NodeManager::onInsertedNode(Event *e)
+{
+	if (!e || !e->hasData())
+		return;
+	
+	NodeRef& node = e->getNode();
+
+	if (!node) {
+		HAGGLE_ERR("No node in callback\n");
+		return;
+	}
+
+	HAGGLE_DBG("Node %s [%s] was successfully inserted into data store\n", 
+		node->getName().c_str(), node->getIdStr());
+
+	nodeUpdate(node);
 }

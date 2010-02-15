@@ -43,7 +43,6 @@ class NodeManager : public Manager
 	SendList_t sendList;
 	EventCallback<EventHandler> *onRetrieveNodeCallback;
 	EventCallback<EventHandler> *onRetrieveThisNodeCallback;
-	EventCallback<EventHandler> *onRetrieveNodeDescriptionCallback;
 	EventCallback<EventHandler> *onInsertedNodeCallback;
         EventType nodeDescriptionEType;
 	bool isInSendList(const NodeRef& node, const DataObjectRef& dObj);
@@ -58,10 +57,9 @@ class NodeManager : public Manager
         void onNewNodeContact(Event *e);
 	void onSendResult(Event *e);
 	void onRetrieveNode(Event *e);
-	void onRetrieveNodeDescription(Event *e);
-	//int onNodeContactEnd(Event *e);
 	void onRetrieveThisNode(Event *e);
 	void onNodeInformation(Event *e);
+	void nodeUpdate(NodeRef& node);
 	void onInsertedNode(Event *e);
 
 #if defined(ENABLE_METADAPARSER)
