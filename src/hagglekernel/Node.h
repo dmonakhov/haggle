@@ -186,9 +186,9 @@ class Node
 	*/
 	bool stored;
         bool createdFromNodeDescription;
+	Timeval nodeDescriptionCreateTime;
 	long filterEventId;
 	inline bool init_node(const NodeId_t _id);
-	Timeval nodeDescriptionCreateTime;
 	unsigned long matchThreshold;
 	unsigned long numberOfDataObjectsPerMatch;
 

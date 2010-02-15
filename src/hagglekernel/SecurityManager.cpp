@@ -285,7 +285,7 @@ void SecurityHelper::doTask(SecurityTask *task)
 			task->cert = getManager()->retrieveCertificate(task->dObj->getSignee());
 			
 			if (task->cert) {
-				HAGGLE_DBG("Verifying data object\n");
+				HAGGLE_DBG("Verifying data object [%s]\n", task->dObj->getIdStr());
 				verifyDataObject(task->dObj, task->cert);
 			} else {
 				HAGGLE_DBG("Could not verify data object due to lack of certificate\n");

@@ -321,13 +321,11 @@ public:
                         if (k == (*it).first) {
                                 // find the last occurence of this same key
                                 while (it != table[index].end() && k == (*it).first) {
-                                        it_insert = it;
-                                        it++;
+                                        it_insert = ++it;
                                 }
                                 break;
 			}
-                        it_insert = it;
-                        it++;
+                        it_insert = ++it;
                 }
 		_size++;
 

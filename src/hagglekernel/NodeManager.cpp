@@ -206,9 +206,10 @@ void NodeManager::onRetrieveThisNode(Event *e)
 	// If we found a "this node" in the data store:
 	if (node) {
 		// try to update the node store with that node:
-		if (kernel->getNodeStore()->update(node))
+		if (kernel->getNodeStore()->update(node)) {
 			// Success! update the hagglekernel's reference, too.
 			kernel->setThisNode(node);
+		}
 	}
 	// Update create time to mark the freshness of the thisNode node description
 	kernel->getThisNode()->setNodeDescriptionCreateTime();
@@ -255,7 +256,7 @@ int NodeManager::sendNodeDescription(NodeRefList& neighList)
 	}
 	
 	if (targetList.size()) {
-		HAGGLE_DBG("Pushing node description to %lu neighbors\n", targetList.size());
+		HAGGLE_DBG("Pushing node description [%s] to %lu neighbors\n", dObj->getIdStr(), targetList.size());
 		kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, targetList));
 	} else {
 		HAGGLE_DBG("All neighbors already had our most recent node description\n");
@@ -290,6 +291,9 @@ void NodeManager::onSendResult(Event *e)
 				sendList.erase(it);
 				HAGGLE_DBG("Successfully sent node description [%s] to neighbor %s [%s], after %lu retries\n",
 					dObj->getIdStr(), neigh->getName().c_str(), neigh->getIdStr(), (*it).second.retries);
+				
+				//dObj->print();
+				
 			} else if (e->getType() == EVENT_TYPE_DATAOBJECT_SEND_FAILURE) {
 				// No. Unset the flag.
 				neigh->setExchangedNodeDescription(false);
@@ -300,8 +304,8 @@ void NodeManager::onSendResult(Event *e)
 				if ((*it).second.retries < 3 && neigh->isNeighbor()) {
 					HAGGLE_DBG("Sending node description [%s] to neighbor %s [%s], retry=%lu\n", 
 						dObj->getIdStr(), neigh->getName().c_str(), neigh->getIdStr(), (*it).second.retries);
-					// Retry and delay for two seconds.
-					kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, neigh, 0, 5.0));
+					// Retry, but delay for some seconds.
+					kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, neigh, 0, 15.0));
 				} else {
 					// Remove this entry from the list:
 					HAGGLE_DBG("FAILED to send node description to neighbor %s [%s] after %lu retries...\n",
@@ -583,6 +587,7 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 
 void NodeManager::nodeUpdate(NodeRef& node)
 {
+
 	NodeRefList nl;
 	
 	// See if this node is already an active neighbor but in an uninitialized state

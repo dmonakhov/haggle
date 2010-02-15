@@ -58,7 +58,6 @@ private:
 	int evaluateFilters(const DataObjectRef& dObj, sqlite_int64 dataobject_rowid = 0);
 
 	sqlite_int64 getDataObjectRowId(const DataObjectId_t& id);
-	sqlite_int64 getDataObjectRowId(const DataObjectRef& dObj);
 	sqlite_int64 getAttributeRowId(const Attribute* attr);
 	sqlite_int64 getNodeRowId(const NodeRef& node);
 	sqlite_int64 getNodeRowId(const InterfaceRef& iface);

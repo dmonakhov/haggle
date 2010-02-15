@@ -205,6 +205,7 @@ Node::Node(const NodeType_t _type, const string _name, Timeval _nodeDescriptionC
 	filterEventId(-1), matchThreshold(NODE_DEFAULT_MATCH_THRESHOLD), 
 	numberOfDataObjectsPerMatch(NODE_DEFAULT_DATAOBJECTS_PER_MATCH)
 {
+	
 }
 
 Node::Node(const Node& n) :
@@ -387,6 +388,7 @@ Node& Node::operator=(const Node &node)
 	stored = node.stored;
 	interfaces = node.interfaces;
 	createdFromNodeDescription = node.createdFromNodeDescription;
+	nodeDescriptionCreateTime = node.nodeDescriptionCreateTime;
 	filterEventId = node.filterEventId;
 	eventInterests = node.eventInterests;
 	eventid = node.eventid;

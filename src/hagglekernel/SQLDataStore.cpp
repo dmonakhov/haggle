@@ -1441,55 +1441,6 @@ int SQLDataStore::sqlQuery(const char *sql_cmd)
 }
 
 
-
-
-/* ========================================================= */
-/* get rowid for different objects                           */
-/* ========================================================= */
-
-sqlite_int64 SQLDataStore::getDataObjectRowId(const DataObjectRef& dObj)
-{
-	int ret;
-	sqlite3_stmt *stmt;
-	const char *tail;
-	sqlite_int64 rowid = -1;
-
-	if (!dObj)
-		return -1;
-
-	ret = sqlite3_prepare_v2(db, SQL_FIND_DATAOBJECT_CMD, (int) strlen(SQL_FIND_DATAOBJECT_CMD), &stmt, &tail);
-
-
-	if (ret != SQLITE_OK) {
-		HAGGLE_DBG("SQLite command compilation failed! %s\n", SQL_FIND_DATAOBJECT_CMD);
-		return -1;
-	}
-
-	ret = sqlite3_bind_blob(stmt, 1, dObj->getId(), DATAOBJECT_ID_LEN, SQLITE_TRANSIENT);
-
-	if (ret != SQLITE_OK) {
-		HAGGLE_DBG("SQLite could not bind blob!\n");
-		sqlite3_finalize(stmt);
-		return -1;
-	}
-
-	ret = sqlite3_step(stmt);
-
-	if (ret == SQLITE_ROW) {
-		rowid = sqlite3_column_int64(stmt, table_dataobjects_rowid);
-	}
-
-	if (ret == SQLITE_ERROR) {
-		HAGGLE_DBG("Could not insert DO Error: %s\n", sqlite3_errmsg(db));
-		sqlite3_finalize(stmt);
-		return -1;
-	}
-
-	sqlite3_finalize(stmt);
-
-	return rowid;
-}
-
 sqlite_int64 SQLDataStore::getDataObjectRowId(const DataObjectId_t& id)
 {
 	int ret;
@@ -1754,8 +1705,11 @@ int SQLDataStore::evaluateFilters(const DataObjectRef& dObj, sqlite_int64 dataob
 	HAGGLE_DBG("Evaluating filters\n");
 
 	if (dataobject_rowid == 0) {
-		dataobject_rowid = getDataObjectRowId(dObj);
+		dataobject_rowid = getDataObjectRowId(dObj->getId());
 	}
+	
+	if (dataobject_rowid < 0)
+		return -1;
 	
 	/* limit VIEW_MAP_DATAOBJECTS_TO_ATTRIBUTES_VIA_ROWID_DYNAMIC to dataobject in question */
 	setViewLimitedDataobjectAttributes(dataobject_rowid);
@@ -2781,11 +2735,15 @@ int SQLDataStore::_doFilterQuery(DataStoreFilterQuery *q)
 	// insert filter into database (remove after query)
 	filter_rowid = _insertFilter((Filter*)q->getFilter());
 	
+	if (filter_rowid < 0)
+		return -1;
+	
 	/* reset view dataobject>attribute */
 	setViewLimitedDataobjectAttributes();
 
 	/* query */
 	sql_cmd = SQL_FILTER_MATCH_DATAOBJECT_CMD(filter_rowid);
+	
 	ret = sqlite3_prepare(db, sql_cmd, (int)strlen(sql_cmd), &stmt, &tail);
 	
 	if (ret != SQLITE_OK) {
@@ -3026,6 +2984,11 @@ int SQLDataStore::_doNodeQuery(DataStoreNodeQuery *q)
 	DataStoreQueryResult *qr;
 	DataObjectRef dObj = q->getDataObject();
 	
+	if (!dObj) {
+		HAGGLE_ERR("No data object in query\n");
+		return -1;
+	}
+		
 	HAGGLE_DBG("Node query for data object [%s]\n", dObj->getIdStr());
 	
 	qr = new DataStoreQueryResult();
@@ -3039,7 +3002,7 @@ int SQLDataStore::_doNodeQuery(DataStoreNodeQuery *q)
 	qr->setQuerySqlStartTime();
 	qr->setQueryInitTime(q->getQueryInitTime());
 	
-	sqlite_int64 dataobject_rowid = getDataObjectRowId(dObj);
+	sqlite_int64 dataobject_rowid = getDataObjectRowId(dObj->getId());
 	
 	/* limit the dataobject attribute links */
 	setViewLimitedDataobjectAttributes(dataobject_rowid);

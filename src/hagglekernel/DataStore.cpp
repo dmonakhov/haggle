@@ -145,11 +145,10 @@ const char *DataStoreTask::taskName[_TASK_MAX] = {
 unsigned long DataStoreTask::totNum = 0;
 
 DataStoreTask::DataStoreTask(DataObjectRef& _dObj, TaskType _type, const EventCallback<EventHandler> *_callback) : 
-	type(_type), priority(TASK_PRIORITY_LOW), num(totNum++), timestamp(Timeval::now()), dObj(_dObj.copy()), 
+	type(_type), priority(TASK_PRIORITY_HIGH), num(totNum++), timestamp(Timeval::now()), dObj(_dObj.copy()), 
 	callback(_callback), boolParameter(false) 
 {
 	if (type == TASK_INSERT_DATAOBJECT) {
-		priority = TASK_PRIORITY_HIGH;
 	} else if (type == TASK_DELETE_DATAOBJECT) {
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
@@ -165,13 +164,11 @@ DataStoreTask::DataStoreTask(const DataObjectId_t _id, TaskType _type, const Eve
 	}
 }
 DataStoreTask::DataStoreTask(const NodeRef& _node, TaskType _type, const EventCallback<EventHandler> *_callback, bool _boolParameter) :
-	type(_type), priority(TASK_PRIORITY_LOW), num(totNum++), timestamp(Timeval::now()), node(_node.copy()), callback(_callback), boolParameter(_boolParameter) 
+	type(_type), priority(TASK_PRIORITY_HIGH), num(totNum++), timestamp(Timeval::now()), node(_node.copy()), callback(_callback), boolParameter(_boolParameter) 
 {
 	if (type == TASK_INSERT_NODE ||
-		type == TASK_RETRIEVE_NODE) {
-			priority = TASK_PRIORITY_HIGH;
-	} else if (
-		type == TASK_DELETE_NODE) {
+	    type == TASK_RETRIEVE_NODE ||
+	    type == TASK_DELETE_NODE) {
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
 	}
@@ -229,12 +226,11 @@ DataStoreTask::DataStoreTask(DataStoreNodeQuery *q, TaskType _type) :
 }
 
 DataStoreTask::DataStoreTask(DataStoreRepositoryQuery *q, TaskType _type) :
-	type(_type), priority(TASK_PRIORITY_LOW), num(totNum++), timestamp(Timeval::now()), RepositoryQuery(q), callback(NULL) 
+	type(_type), priority(TASK_PRIORITY_MEDIUM), num(totNum++), timestamp(Timeval::now()), RepositoryQuery(q), callback(NULL) 
 {
-	if (type == TASK_INSERT_REPOSITORY) {
+	if (type == TASK_INSERT_REPOSITORY || type == TASK_DELETE_REPOSITORY) {
 		priority = TASK_PRIORITY_HIGH;
-	} else if(type == TASK_READ_REPOSITORY ||
-		type == TASK_DELETE_REPOSITORY) {
+	} else if(type == TASK_READ_REPOSITORY) {
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
 	}
@@ -266,7 +262,7 @@ DataStoreTask::DataStoreTask(TaskType _type, void *_data, const EventCallback<Ev
 		priority = TASK_PRIORITY_HIGH;
 	} else if (type == TASK_DUMP_DATASTORE_TO_FILE ||
 		type == TASK_DELETE_FILTER) {
-		priority = TASK_PRIORITY_LOW;
+		priority = TASK_PRIORITY_HIGH;
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
 	}
