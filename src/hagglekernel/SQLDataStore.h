@@ -73,7 +73,9 @@ private:
 	Interface *getInterfaceFromRowId(const sqlite_int64 ifaceRowId);
 	
 	int findAndAddDataObjectTargets(DataObjectRef& dObj, const sqlite_int64 dataObjectRowId, const long ratio);
+	int deleteDataObjectNodeDescriptions(DataObjectRef ref_dObj, string *node_id);
 
+	
 #ifdef DEBUG_SQLDATASTORE
 	void _print();
 #endif

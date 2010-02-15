@@ -563,7 +563,7 @@ static const char *tbl_cmds[] = {
 
 static char sqlcmd[SQL_MAX_CMD_SIZE];
 
-static inline string SQL_INSERT_DATAOBJECT_CMD(const char *metadata, const sqlite_int64 ifaceRowId, const DataObjectRef dObj, const char *node_id)
+static inline string SQL_INSERT_DATAOBJECT_CMD(const char *metadata, const sqlite_int64 ifaceRowId, const DataObjectRef dObj, const string node_id)
 {
 	string cmd;
 	
@@ -578,7 +578,7 @@ static inline string SQL_INSERT_DATAOBJECT_CMD(const char *metadata, const sqlit
                            TABLE_DATAOBJECTS, metadata, dObj->getFilePath().c_str(), dObj->getFileName().c_str(), 
                            (unsigned long)dObj->getDataLen(), dObj->getDataState(), dObj->getSignatureStatus(), dObj->getSignee().c_str(),
 			   dObj->getSignatureLength(), dObj->getCreateTime().getTimeAsMilliSeconds(), 
-			   dObj->getReceiveTime().getTimeAsMilliSeconds(), dObj->getRxTime(), ifaceRowId, node_id);
+			   dObj->getReceiveTime().getTimeAsMilliSeconds(), dObj->getRxTime(), ifaceRowId, node_id.c_str());
 
         if (ret < 0) {
                 HAGGLE_ERR("SQL_INSERT_DATAOBJECT_CMD: stringprintf failed\n");
@@ -1863,6 +1863,76 @@ int SQLDataStore::evaluateDataObjects(long eventType)
 /*	     (existing objects get replaced)                     */
 /* ========================================================= */
 
+
+// remove old node descriptions
+// return 0 if the node description dObj passed to the function is not the newest one, else 1
+int SQLDataStore::deleteDataObjectNodeDescriptions(DataObjectRef dObj, string *node_id)
+{
+	int ret;
+	sqlite3_stmt *stmt;
+	const char *tail;
+	char *sql_cmd = sqlcmd;
+	DataObjectRefList dObjs;
+	const Attributes *attrs;
+	int result = 1;
+	
+	// get node_id
+	attrs = dObj->getAttributes();
+	for (Attributes::const_iterator it = attrs->begin(); it != attrs->end(); it++) {
+		const Attribute& a = (*it).second;
+		if (a.getName() == NODE_DESC_ATTR) {
+			*node_id = a.getValue();
+		}
+	}
+
+	// retrieve all dataobjects with same node_id
+	sprintf(sql_cmd, "SELECT * FROM %s WHERE node_id='%s' ORDER BY createtime desc", TABLE_DATAOBJECTS, node_id->c_str());
+	
+	ret = sqlite3_prepare_v2(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
+	
+	if (ret != SQLITE_OK) {
+		HAGGLE_DBG("retrieve node descriptions command compilation failed\n");
+		return -1;
+	}
+	
+	unsigned int cntStoredNodeDescriptions = 0;
+	DataObjectRef newest_dObj = dObj;
+	while ((ret = sqlite3_step(stmt)) != SQLITE_DONE) {
+		if (ret == SQLITE_ROW) {
+			cntStoredNodeDescriptions++;
+			sqlite_int64 dObjRowId = sqlite3_column_int64(stmt, table_dataobjects_rowid);
+			
+			// create dObj and push it into list
+			DataObjectRef dObj_tmp = getDataObjectFromRowId(dObjRowId);
+			
+			if (dObj_tmp) {
+				if (dObj_tmp->getCreateTime() < newest_dObj->getCreateTime()) {
+					dObjs.push_back(dObj_tmp);
+				} else {
+					if (newest_dObj != dObj) {
+						dObjs.push_back(newest_dObj);
+					} else {
+						result = 0;
+					}
+					newest_dObj = dObj_tmp;
+				}
+			}
+		}
+	}
+	
+	sqlite3_finalize(stmt);
+
+	HAGGLE_DBG("%u node descriptions from same node [%s] already in datastore\n", cntStoredNodeDescriptions, node_id->c_str());
+	
+	// loop through dObjs list and delete if older createtime
+	for (DataObjectRefList::iterator it = dObjs.begin(); it != dObjs.end(); it++) {
+		_deleteDataObject(*it, true); // delete and report as event
+	}
+		
+	return result;
+}
+
+
 int SQLDataStore::_deleteFilter(long eventtype)
 {
 	int ret;
@@ -2363,8 +2433,7 @@ int SQLDataStore::_insertDataObject(DataObjectRef& dObj, const EventCallback<Eve
 	sqlite_int64 dataobject_rowid;
 	sqlite_int64 attr_rowid;
 	sqlite_int64 ifaceRowId = -1;
-	char *node_id;
-	char dummy_node_id = 0x00;
+	string node_id;
 	const Attributes *attrs;
 
 	if (!dObj) {
@@ -2382,19 +2451,20 @@ int SQLDataStore::_insertDataObject(DataObjectRef& dObj, const EventCallback<Eve
 		return -1;
 	}
 
+	// adding node_id for node descriptions to refer to the corresponding node 
+	// and simplifying to delete old node descriptions
+	if (dObj->isNodeDescription()) {
+		ret = deleteDataObjectNodeDescriptions(dObj, &node_id);
+		if (ret == 0) {
+			// this is an old node description, ignore it.
+			HAGGLE_DBG("There are already newer node descriptions for the same node [%s] in the data store. Data object will not be inserted\n", node_id.c_str());
+			dObj.unlock();
+			return -1;
+		}
+	}
+	
 	if (dObj->getRemoteInterface())
 		ifaceRowId = getInterfaceRowId(dObj->getRemoteInterface());
-
-	node_id = &dummy_node_id;
-	if (dObj->isNodeDescription()) {
-		attrs = dObj->getAttributes();
-		for (Attributes::const_iterator it = attrs->begin(); it != attrs->end(); it++) {
-			const Attribute& a = (*it).second;
-			if (a.getName() == NODE_DESC_ATTR) {
-				node_id = (char*)a.getValue().c_str();
-			}
-		}		
-	}
 	
 	sql_cmd_str = SQL_INSERT_DATAOBJECT_CMD(metadata, ifaceRowId, dObj, node_id);
 	sql_cmd = (char *) sql_cmd_str.c_str();
