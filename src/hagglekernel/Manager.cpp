@@ -158,6 +158,11 @@ void Manager::_onConfig(Event *e)
 
 	while (dObjs.size()) {
                 DataObjectRef dObj = dObjs.pop();
-		onConfig(dObj);
+		// Get the metadata matching the manager
+		Metadata *m = dObj->getMetadata()->getMetadata(this->getName());
+
+		if (m) {
+			onConfig(m);
+		}
 	}
 }

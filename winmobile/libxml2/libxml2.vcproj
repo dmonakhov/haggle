@@ -417,7 +417,7 @@
 				Name="VCCLCompilerTool"
 				ExecutionBucket="7"
 				Optimization="2"
-				FavorSizeOrSpeed="2"
+				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="&quot;..\..\extlibs\libxml2-2.6.31\win32&quot;;&quot;..\..\extlibs\libxml2-2.6.31\win32\wince&quot;;&quot;..\..\extlibs\libxml2-2.6.31\include&quot;"
 				PreprocessorDefinitions="HAVE_WIN32_THREADS;_REENTRANT;NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;$(PLATFORMDEFINES);WINCE;_WINDOWS;_USRDLL;LIBXML2_EXPORTS;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
 				RuntimeLibrary="0"
@@ -476,7 +476,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory=""
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\Haggle"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>
@@ -570,7 +570,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory=""
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\Haggle"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>
@@ -664,7 +664,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory=""
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\Haggle"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>
@@ -758,7 +758,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory=""
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\Haggle"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>
@@ -1871,7 +1871,7 @@
 				Name="VCCLCompilerTool"
 				ExecutionBucket="7"
 				Optimization="2"
-				FavorSizeOrSpeed="2"
+				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="&quot;..\..\extlibs\libxml2-2.6.31\win32&quot;;&quot;..\..\extlibs\libxml2-2.6.31\win32\wince&quot;;&quot;..\..\extlibs\libxml2-2.6.31\include&quot;"
 				PreprocessorDefinitions="HAVE_WIN32_THREADS;_REENTRANT;NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;$(PLATFORMDEFINES);WINCE;_WINDOWS;_USRDLL;LIBXML2_EXPORTS;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
 				RuntimeLibrary="0"

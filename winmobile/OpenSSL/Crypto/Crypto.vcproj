@@ -974,7 +974,7 @@
 				Name="VCCLCompilerTool"
 				ExecutionBucket="7"
 				Optimization="2"
-				FavorSizeOrSpeed="2"
+				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\crypto&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\inc32&quot;;&quot;$(ProjectDir)..\Compat&quot;"
 				PreprocessorDefinitions="NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;$(PLATFORMDEFINES);WINCE;_WINDOWS;_USRDLL;OPENSSL_EXPORTS;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE;PLATFORM=&quot;$(CEPlatform)&quot;;MK1MF_BUILD;WIN32_LEAN_AND_MEAN;OPENSSL_SYSNAME_WINCE;OPENSSL_SYSNAME_WIN32;OPENSSL_NO_CAMELLIA;OPENSSL_NO_SEED;OPENSSL_NO_RC5;OPENSSL_NO_MDC2;OPENSSL_NO_CMS;OPENSSL_NO_JPAKE;OPENSSL_NO_CAPIENG;OPENSSL_NO_KRB5;OPENSSL_NO_STATIC_ENGINE;OPENSSL_BUILD_SHLIBCRYPTO;NO_SYS_TYPES_H;NO_CHMOD"
 				RuntimeLibrary="0"
@@ -3955,11 +3955,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\extlibs\openssl-0.9.8j\crypto\crypto.h"
+				RelativePath="..\..\..\extlibs\openssl-0.9.8j\inc32\openssl\crypto.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\extlibs\openssl-0.9.8j\inc32\openssl\crypto.h"
+				RelativePath="..\..\..\extlibs\openssl-0.9.8j\crypto\crypto.h"
 				>
 			</File>
 			<File

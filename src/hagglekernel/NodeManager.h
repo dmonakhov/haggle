@@ -37,9 +37,10 @@ class NodeManager : public Manager
 	} SendEntry_t;
 	typedef List< Pair<NodeRef, SendEntry_t> > SendList_t;
 
-	long thumbnail_size;
+	size_t thumbnail_size;
 	char *thumbnail;
-	unsigned long sequence_number;
+	unsigned long nodeDescriptionRetries;
+	double nodeDescriptionRetryWait;
 	SendList_t sendList;
 	EventCallback<EventHandler> *onRetrieveNodeCallback;
 	EventCallback<EventHandler> *onRetrieveThisNodeCallback;
@@ -68,6 +69,7 @@ class NodeManager : public Manager
 	
 	void onPrepareShutdown();
 	bool init_derived();
+	void onConfig(Metadata *m);
 public:
         NodeManager(HaggleKernel *_haggle = haggleKernel);
         ~NodeManager();

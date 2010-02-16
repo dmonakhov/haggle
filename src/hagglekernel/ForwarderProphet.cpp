@@ -103,7 +103,7 @@ prophet_metric_t& ForwarderProphet::age_metric(prophet_metric_t& metric, bool fo
 		return metric;
 	}
 		
-	unsigned int K = (now - metric.second).getSeconds() / PROPHET_AGING_TIME_UNIT;
+	int K = (now - metric.second).getSeconds() / PROPHET_AGING_TIME_UNIT;
 	
 	if (K > 0) {
 		double &P_ab = metric.first;

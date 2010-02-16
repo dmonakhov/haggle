@@ -151,31 +151,14 @@ ConnectivityManager::~ConnectivityManager()
 	Event::unregisterType(deleteConnectivityEType);
 }
 
-void ConnectivityManager::onConfig(DataObjectRef& dObj)
+void ConnectivityManager::onConfig(Metadata *m)
 {
-	if (!dObj) {
-		HAGGLE_ERR("no data object!\n");
-		return;
-	}
-	
-	if (!isValidConfigDataObject(dObj)) {
-		HAGGLE_ERR("Received INVALID config data object\n");
-		return;
-	}
-	
-	Metadata *mc = dObj->getMetadata()->getMetadata("ConnectivityManager");
-	
-	if (!mc) {
-		HAGGLE_ERR("No connectivity manager metadata in data object\n");
-		return;
-	}
-	
 #if defined(ENABLE_BLUETOOTH)
 	/*
 	 Check for bluetooth module blacklisting/whitelisting data. For formatting
 	 information, see ConnectivityBluetoothBase::updateSDPList().
 	 */
-	Metadata *bt = mc->getMetadata("Bluetooth");
+	Metadata *bt = m->getMetadata("Bluetooth");
 	
 	if (bt) {
 		ConnectivityBluetoothBase::updateSDPLists(bt);

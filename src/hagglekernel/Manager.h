@@ -27,6 +27,7 @@ class Manager;
 #include <libcpphaggle/Watch.h>
 
 #include "Event.h"
+#include "Metadata.h"
 #include "MetadataParser.h"
 #include "HaggleKernel.h"
 #include "ManagerModule.h"
@@ -122,7 +123,7 @@ protected:
 	 If implemented, the Manager might read the metadata to regrieve configuration
 	 information. 
 	 */
-	virtual void onConfig(DataObjectRef& dObj) { }
+	virtual void onConfig(Metadata *m) { }
 
 	bool unregisterWithKernel();
 	bool registerWithKernel(); 

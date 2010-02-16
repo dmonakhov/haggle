@@ -123,7 +123,7 @@ class ConnectivityManager : public Manager
 	void spawn_connectivity(const InterfaceRef& iface);
         bool init_derived();
 protected:
-	void onConfig(DataObjectRef& dObj);
+	void onConfig(Metadata *m);
 public:	
 	EventType deleteConnectivityEType;
 

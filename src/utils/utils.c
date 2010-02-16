@@ -70,17 +70,18 @@
 /* A wrapper for gettimeofday so that it can be used on Windows platforms. */
 int gettimeofday(struct timeval *tv, void *tz)
 {
-	DWORD tickcount, tickcount_diff; // In milliseconds
-#ifdef WINCE
-	/* In Windows CE, GetSystemTime() returns a time accurate only to the second.
-	For higher performance timers we need to use something better. */
-	
 	// This holds the base time, i.e. the estimated time of boot. This value plus
 	// the value the high-performance timer/GetTickCount() provides gives us the
 	// right time.
 	static struct timeval base_time = { 0, 0};
-	static DWORD base_tickcount = 0;
 
+#ifdef WINCE
+	/* In Windows CE, GetSystemTime() returns a time accurate only to the second.
+	For higher performance timers we need to use something better. */
+	DWORD tickcount, tickcount_diff; // In milliseconds
+	
+	static DWORD base_tickcount = 0;
+	
 	if (!tv) 
 		return (-1);
 

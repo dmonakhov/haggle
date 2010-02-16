@@ -230,9 +230,10 @@
 				ExecutionBucket="7"
 				Optimization="2"
 				FavorSizeOrSpeed="2"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..\..\extlibs\libxml2-2.6.31\include&quot;;&quot;$(ProjectDir)\..\..\..\src\libhaggle\include&quot;;&quot;$(ProjectDir)\..\..\..\src\libcpphaggle\include&quot;;&quot;$(ProjectDir)\..\..\..\src\utils&quot;"
 				PreprocessorDefinitions="NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;$(PLATFORMDEFINES);WINCE;_WINDOWS;_USRDLL;LUCKYME_EXPORTS;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
 				RuntimeLibrary="0"
-				UsePrecompiledHeader="2"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="1"
@@ -255,6 +256,7 @@
 				AdditionalDependencies="ws2.lib libhaggle.lib iphlpapi.lib"
 				OutputFile="$(OutDir)/luckymelib.dll"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="$(OutDir)"
 				DelayLoadDLLs="$(NOINHERIT)"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/LuckyMeLib.pdb"
@@ -287,7 +289,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory=""
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\Haggle"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>
@@ -321,10 +323,11 @@
 				Name="VCCLCompilerTool"
 				ExecutionBucket="7"
 				Optimization="2"
-				FavorSizeOrSpeed="2"
+				FavorSizeOrSpeed="1"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..\..\extlibs\libxml2-2.6.31\include&quot;;&quot;$(ProjectDir)\..\..\..\src\libhaggle\include&quot;;&quot;$(ProjectDir)\..\..\..\src\libcpphaggle\include&quot;;&quot;$(ProjectDir)\..\..\..\src\utils&quot;"
 				PreprocessorDefinitions="NDEBUG;_WIN32_WCE=$(CEVER);UNDER_CE;$(PLATFORMDEFINES);WINCE;_WINDOWS;_USRDLL;LUCKYME_EXPORTS;$(ARCHFAM);$(_ARCHFAM_);_UNICODE;UNICODE"
 				RuntimeLibrary="0"
-				UsePrecompiledHeader="2"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="1"
@@ -347,6 +350,7 @@
 				AdditionalDependencies="ws2.lib libhaggle.lib iphlpapi.lib"
 				OutputFile="$(OutDir)/luckymelib.dll"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="$(OutDir)"
 				DelayLoadDLLs="$(NOINHERIT)"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/LuckyMeLib.pdb"
@@ -380,7 +384,7 @@
 			/>
 			<DeploymentTool
 				ForceDirty="-1"
-				RemoteDirectory=""
+				RemoteDirectory="%CSIDL_PROGRAM_FILES%\Haggle"
 				RegisterOutput="0"
 				AdditionalFiles=""
 			/>

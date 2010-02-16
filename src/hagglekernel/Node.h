@@ -282,11 +282,11 @@ public:
 
         DataObjectRef getDataObject(bool withBloomfilter = true) const;
 		
-	unsigned int getMatchingThreshold() const { return matchThreshold; }
-	unsigned int getMaxDataObjectsInMatch() const { return numberOfDataObjectsPerMatch; }
+	unsigned long getMatchingThreshold() const { return matchThreshold; }
+	unsigned long getMaxDataObjectsInMatch() const { return numberOfDataObjectsPerMatch; }
 
-	void setMatchingThreshold(unsigned int value) { matchThreshold = value; }
-	void setMaxDataObjectsInMatch(unsigned int value) { numberOfDataObjectsPerMatch = value; }
+	void setMatchingThreshold(unsigned long value) { matchThreshold = value; }
+	void setMaxDataObjectsInMatch(unsigned long value) { numberOfDataObjectsPerMatch = value; }
 
         // Wrappers for adding, removing and updating attributes in
         // the node description associated with this node

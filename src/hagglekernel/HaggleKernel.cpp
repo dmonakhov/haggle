@@ -43,9 +43,10 @@ bool HaggleKernel::init()
 {
 	char hostname[HOSTNAME_LEN];
 
-#if defined(OS_WINDOWS_MOBILE) || defined(OS_ANDROID)
-	if (!Trace::trace.enableFileTrace())
+#if defined(DEBUG) && (defined(OS_WINDOWS_MOBILE) || defined(OS_ANDROID))
+	if (!Trace::trace.enableFileTrace()) {
 		HAGGLE_ERR("Could not enable file tracing\n");
+	}
 #endif
 
 #ifdef OS_WINDOWS
@@ -288,20 +289,16 @@ void HaggleKernel::shutdown()
 // TODO: Allow us to read an XML file from stdin
 bool HaggleKernel::readStartupDataObject(FILE *fp)
 {
-	long i, len;
+	long len;
 	ssize_t	k;
-	size_t j;
+	size_t i, j, items, total_bytes_read = 0;
 	char *data;
 	bool ret = false;
 	
-	// Not using a ref here, because it's faster not to, and no other thread
-	// could possibly see this data object before we put it into an event,
-	// at which time it will be made into a data object reference anyway.
-	DataObject *theDO = NULL;
-	
-	if (!fp)
+	if (!fp) {
+		HAGGLE_ERR("Invalid file pointer\n");
 		return false;
-	
+	}
 	// Figure out how large the file is.
 	fseek(fp, 0, SEEK_END);
 	// No, this does not handle files larger than 2^31 bytes, but that 
@@ -309,43 +306,59 @@ bool HaggleKernel::readStartupDataObject(FILE *fp)
 	len = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
 	
-	// Allocate space to put the data in:
-	data = (char *) malloc(sizeof(char) * len);
+	// Allocate space to put the data in. +1 byte 
+	// so that we make sure we read until EOF in 
+	// the read loop.
+	data = new char[++len];
 	
-	if (!data)
+	if (!data) {
+		HAGGLE_ERR("Could not allocate data\n");
 		return false;
-	
+	}
 	// Read the data:
-	if (fread(data, len, 1, fp) == 1) {
+	do {
+		items = fread(data + total_bytes_read, 1, len - total_bytes_read, fp);
+		total_bytes_read += items;
+	} while (items != 0 && total_bytes_read < (size_t)len);
+
+	if (ferror(fp) != 0) {
+		HAGGLE_ERR("File error when reading configuration\n");
+		goto out;
+	}
+
+	// Check that we reached EOF
+	if (feof(fp) != 0) {
+		DataObject *dObj = NULL;
+	
 		// Success! Now create data object(s):
 		i = 0;
 		
-		while (i < len) {
-			if (theDO == NULL)
-				theDO = DataObject::create_for_putting();
+		while (i < total_bytes_read) {
+			if (!dObj)
+				dObj = DataObject::create_for_putting();
 			
-			if (!theDO) {
+			if (!dObj) {
+				HAGGLE_ERR("Could not create data object for putting\n");
 				ret = false;
 				goto out;
 			}
 
-			k = theDO->putData(&(data[i]), len - i, &j);
+			k = dObj->putData(&(data[i]), total_bytes_read - i, &j);
 			
 			// Check return value:
 			if (k < 0) {
 				// Error occured, stop everything:
 				HAGGLE_ERR("Error parsing startup data object "
-					   "(byte %ld of %ld)\n", i, len);
-				i = len;
+					   "(byte %ld of %ld)\n", i, total_bytes_read);
+				i = total_bytes_read;
 			} else {
 				// No error, check if we're done:
 				if (k == 0 || j == 0) {
 					// Done with this data object:
-					addEvent(new Event(EVENT_TYPE_DATAOBJECT_RECEIVED, 
-							   DataObjectRef(theDO)));
+					addEvent(new Event(EVENT_TYPE_DATAOBJECT_RECEIVED, DataObjectRef(dObj)));
 					// Should absolutely not deallocate this, since it 
 					// is in the event queue:
-					theDO = NULL;
+					dObj = NULL;
 					// These bytes have been consumed:
 					i += k;
 					ret = true;
@@ -356,12 +369,12 @@ bool HaggleKernel::readStartupDataObject(FILE *fp)
 			}
 		}
 		// Clean up:
-		if (theDO) {
-			delete theDO;
+		if (dObj) {
+			delete dObj;
 		}
 	}
 out:
-	free(data);
+	delete [] data;
 	
 	return ret;
 }
@@ -374,7 +387,9 @@ bool HaggleKernel::readStartupDataObjectFile(string cfgObjPath)
 	
 	// Open file, try two paths for backwards compatibility
 	do {	
-		fp = fopen(cfgObjPath.c_str(), "r");
+		HAGGLE_DBG("Trying to read configuration from \'%s\'\n", cfgObjPath.c_str());
+
+		fp = fopen(cfgObjPath.c_str(), "rb");
 		
 		// Did we succeed?
 		if (fp)
@@ -388,6 +403,13 @@ bool HaggleKernel::readStartupDataObjectFile(string cfgObjPath)
 	
 	ret = readStartupDataObject(fp);
 
+#ifdef DEBUG
+	if (ret) {
+		HAGGLE_DBG("Successfully read configuration\n");
+	} else {
+		HAGGLE_DBG("Could not read configuration\n");
+	}
+#endif
 	// Close the file:
 	fclose(fp);
 	

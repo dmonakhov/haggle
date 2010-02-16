@@ -290,6 +290,8 @@ Global
 		{39C5C1D2-5598-4FC2-B22E-4323B64A4759}.Release|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).ActiveCfg = Release|Any CPU
 		{39C5C1D2-5598-4FC2-B22E-4323B64A4759}.Release|Windows Mobile 5.0 Smartphone SDK (ARMV4I).ActiveCfg = Release|Any CPU
 		{39C5C1D2-5598-4FC2-B22E-4323B64A4759}.Release|Windows Mobile 6 Professional SDK (ARMV4I).ActiveCfg = Release|Any CPU
+		{39C5C1D2-5598-4FC2-B22E-4323B64A4759}.Release|Windows Mobile 6 Professional SDK (ARMV4I).Build.0 = Release|Any CPU
+		{39C5C1D2-5598-4FC2-B22E-4323B64A4759}.Release|Windows Mobile 6 Professional SDK (ARMV4I).Deploy.0 = Release|Any CPU
 		{39C5C1D2-5598-4FC2-B22E-4323B64A4759}.Release|Windows Mobile 6 Standard SDK (ARMV4I).ActiveCfg = Release|Any CPU
 		{0397D0B5-1531-403A-9E63-C15E009D3399}.Benchmark|Any CPU.ActiveCfg = Release|Windows Mobile 6 Professional SDK (ARMV4I)
 		{0397D0B5-1531-403A-9E63-C15E009D3399}.Benchmark|Mixed Platforms.ActiveCfg = Release|Windows Mobile 6 Professional SDK (ARMV4I)

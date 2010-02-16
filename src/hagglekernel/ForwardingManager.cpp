@@ -202,6 +202,7 @@ void ForwardingManager::setForwardingModule(Forwarder *f, bool deRegisterEvents)
 		 */
 		kernel->getDataStore()->readRepository(new RepositoryEntry(forwardingModule->getName()), repositoryCallback);
 		HAGGLE_DBG("Set new forwarding module to \'%s'\n", forwardingModule->getName());
+		LOG_ADD("# ForwardingManager: forwarding module is \'%s'\n", forwardingModule->getName());
 		
 		/* Register callbacks */
 		if (!getEventInterest(EVENT_TYPE_DATAOBJECT_NEW)) {
@@ -215,6 +216,7 @@ void ForwardingManager::setForwardingModule(Forwarder *f, bool deRegisterEvents)
 		}
 	} else {
 		HAGGLE_DBG("Set new forwarding module to \'NULL'\n");
+		LOG_ADD("# ForwardingManager: forwarding module is \'NULL'\n");
 		
 		if (deRegisterEvents) {
 			
@@ -902,23 +904,8 @@ void ForwardingManager::onSendRoutingInformation(Event * e)
  - <ForwardingModule>Prophet</ForwardingModule>		(Prophet)
  - <ForwardingModule>...</ForwardingModule>		(else: no forwarding)
  */ 
-void ForwardingManager::onConfig(DataObjectRef& dObj)
+void ForwardingManager::onConfig(Metadata *m)
 {
-	if (!dObj) 
-		return;
-	
-	// extract metadata
-	Metadata *m = dObj->getMetadata();
-	
-	if (!m) 
-		return;
-
-	// extract metadata relevant for ForwardingManager
-	m = m->getMetadata(this->getName());
-	
-	if (!m) 
-		return;
-
 	Metadata *tmp = NULL;
 	
 	if ((tmp = m->getMetadata("ForwardingModule"))) {

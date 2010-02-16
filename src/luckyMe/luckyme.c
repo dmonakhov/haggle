@@ -13,7 +13,6 @@
  * limitations under the License.
  */ 
 
-
 /*
  LuckyMe challenges your luck. 
  How many random dataobjects floating around in the Haggle network
@@ -26,8 +25,6 @@
  Think creative, why not use puzzle parts as random objects? Make a 
  competition with you buddies to collect as many objects as possible. 
  */
-
-
 #include <libhaggle/haggle.h>
 #include "luckyme.h"
 

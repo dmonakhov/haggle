@@ -35,10 +35,14 @@ using namespace haggle;
 #define FILTER_KEYWORD NODE_DESC_ATTR
 #define FILTER_NODEDESCRIPTION FILTER_KEYWORD "=" ATTR_WILDCARD
 
+#define DEFAULT_NODE_DESCRIPTION_RETRY_WAIT (10.0) // Seconds
+#define DEFAULT_NODE_DESCRIPTION_RETRIES (3)
+
 NodeManager::NodeManager(HaggleKernel * _haggle) : 
 	Manager("NodeManager", _haggle), 
-	thumbnail_size(0), thumbnail(NULL), 
-	sequence_number(0)
+	thumbnail_size(0), thumbnail(NULL),
+	nodeDescriptionRetries(DEFAULT_NODE_DESCRIPTION_RETRIES),
+	nodeDescriptionRetryWait(DEFAULT_NODE_DESCRIPTION_RETRY_WAIT)
 {
 }
 
@@ -49,10 +53,7 @@ NodeManager::~NodeManager()
 	
 	if (onRetrieveThisNodeCallback)
 		delete onRetrieveThisNodeCallback;
-/*	
-	if (onRetrieveNodeDescriptionCallback)
-		delete onRetrieveNodeDescriptionCallback;
-*/
+
 	if (onInsertedNodeCallback)
 		delete onInsertedNodeCallback;
 }
@@ -167,10 +168,7 @@ bool NodeManager::init_derived()
 	} else {
 		HAGGLE_DBG("Found avatar image. Will attach to all node descriptions\n");
 	}
-	// add node information to trace
-//	Event nodeInfoEvent(onRetrieveThisNodeCallback, kernel->getThisNode());
-//	LOG_ADD("%s: %s NodeManager thisNode information\n", Timeval::now().getAsString().c_str(), nodeInfoEvent.getDescription().c_str());
-
+	
 	return true;
 }
 
@@ -301,14 +299,14 @@ void NodeManager::onSendResult(Event *e)
 				(*it).second.retries++;
 
 				// Retry
-				if ((*it).second.retries < 3 && neigh->isNeighbor()) {
-					HAGGLE_DBG("Sending node description [%s] to neighbor %s [%s], retry=%lu\n", 
+				if ((*it).second.retries <= nodeDescriptionRetries && neigh->isNeighbor()) {
+					HAGGLE_DBG("Sending node description [%s] to neighbor %s [%s], retry=%u\n", 
 						dObj->getIdStr(), neigh->getName().c_str(), neigh->getIdStr(), (*it).second.retries);
 					// Retry, but delay for some seconds.
-					kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, neigh, 0, 15.0));
+					kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, neigh, 0, nodeDescriptionRetryWait));
 				} else {
 					// Remove this entry from the list:
-					HAGGLE_DBG("FAILED to send node description to neighbor %s [%s] after %lu retries...\n",
+					HAGGLE_DBG("FAILED to send node description to neighbor %s [%s] after %u retries...\n",
 						neigh->getName().c_str(), neigh->getIdStr(), (*it).second.retries);
 					sendList.erase(it);
 				}
@@ -664,4 +662,63 @@ void NodeManager::onInsertedNode(Event *e)
 		node->getName().c_str(), node->getIdStr());
 
 	nodeUpdate(node);
+}
+
+void NodeManager::onConfig(Metadata *m)
+{
+	Metadata *nm = m->getMetadata("MatchingThreshold");
+
+	if (nm) {
+		char *endptr = NULL;
+		unsigned long matchingThreshold = strtoul(nm->getContent().c_str(), &endptr, 10);
+
+		if (endptr && endptr != nm->getContent().c_str()) {
+			HAGGLE_DBG("Setting matching threshold to %lu\n", matchingThreshold);
+			kernel->getThisNode()->setMatchingThreshold(matchingThreshold);
+			LOG_ADD("# NodeManager: matching threshold=%lu\n", matchingThreshold);
+		}
+	}
+
+	nm = m->getMetadata("MaxDataObjectsInMatch");
+
+	if (nm) {
+		char *endptr = NULL;
+		unsigned long maxDataObjectsInMatch = strtoul(nm->getContent().c_str(), &endptr, 10);
+
+		if (endptr && endptr != nm->getContent().c_str()) {
+			HAGGLE_DBG("Setting max data objects in match to %lu\n", maxDataObjectsInMatch);
+			kernel->getThisNode()->setMaxDataObjectsInMatch(maxDataObjectsInMatch);
+			LOG_ADD("# NodeManager: max data objects in match=%lu\n", maxDataObjectsInMatch);
+		}
+	}
+
+	nm = m->getMetadata("NodeDescriptionRetry");
+
+	if (nm) {
+		char *endptr = NULL;
+		const char *param = nm->getParameter("retries");
+
+		if (param) {
+			unsigned long retries = strtoul(param, &endptr, 10);
+
+			if (endptr && endptr != param) {
+				HAGGLE_DBG("Setting node description retries to %lu\n", retries);
+				nodeDescriptionRetries = retries;
+				LOG_ADD("# NodeManager: node description retries=%lu\n", nodeDescriptionRetries);
+			}
+		}
+
+		param = nm->getParameter("retry_wait");
+
+		if (param) {
+			char *endptr = NULL;
+			double retry_wait = strtod(param, &endptr);
+
+			if (endptr && endptr != param) {
+				HAGGLE_DBG("Setting node description retry wait to %lf\n", retry_wait);
+				nodeDescriptionRetryWait = retry_wait;
+				LOG_ADD("# NodeManager: node description retry wait=%lf\n", nodeDescriptionRetryWait);
+			}
+		}
+	}
 }

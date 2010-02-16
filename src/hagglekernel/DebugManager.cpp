@@ -568,4 +568,25 @@ SOCKET openSocket(int port)
 
 	return sock;
 }
+
+void DebugManager::onConfig(Metadata *m)
+{
+	Metadata *dm = m->getMetadata("DebugTrace");
+
+	if (dm) {
+		const char *parm = dm->getParameter("enable");
+
+		if (parm) {
+			if (strcmp(parm, "true") == 0) {
+				HAGGLE_DBG("Enabling debug trace\n");
+				Trace::trace.enableFileTrace();
+			} else if (strcmp(parm, "false") == 0) {
+				HAGGLE_DBG("Disabling debug trace\n");
+				Trace::trace.disableFileTrace();
+				fclose(stdout);
+				fclose(stderr);
+			}
+		}
+	}
+}
 #endif

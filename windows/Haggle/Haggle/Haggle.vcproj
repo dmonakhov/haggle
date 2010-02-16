@@ -262,6 +262,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\hagglekernel\Forwarder.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\hagglekernel\ForwarderAsynchronous.cpp"
 				>
 			</File>
@@ -291,10 +295,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\hagglekernel\Manager.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\hagglekernel\ManagerModule.cpp"
 				>
 			</File>
 			<File
@@ -481,10 +481,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\hagglekernel\ForwarderAsynchronous.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\hagglekernel\ForwarderEmpty.h"
 				>
 			</File>
 			<File

@@ -85,6 +85,7 @@ public:
         void onDumpDataStore(Event *e);
 	
 	void onShutdown();
+	void onConfig(Metadata *m);
 };
 
 #endif
