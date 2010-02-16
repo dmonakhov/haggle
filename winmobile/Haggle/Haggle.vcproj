@@ -34,6 +34,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -108,7 +112,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -125,6 +129,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -198,7 +206,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -215,6 +223,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -288,7 +300,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -305,6 +317,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -380,7 +396,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -397,6 +413,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -473,7 +493,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -490,6 +510,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -565,7 +589,7 @@
 				ForceDirty="-1"
 				RemoteDirectory="%CSIDL_PROGRAM_FILES%\Haggle"
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -582,6 +606,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -658,7 +686,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -675,6 +703,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -753,7 +785,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -770,6 +802,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -847,7 +883,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -864,6 +900,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -940,7 +980,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -957,6 +997,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -1033,7 +1077,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -1050,6 +1094,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -1125,7 +1173,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -1142,6 +1190,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -1219,7 +1271,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -1236,6 +1288,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -1314,7 +1370,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -1331,6 +1387,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -1408,7 +1468,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -1425,6 +1485,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -1501,7 +1565,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -1518,6 +1582,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -1593,7 +1661,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -1610,6 +1678,10 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy config.xml to root dir for deployment"
+				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
+				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -1685,7 +1757,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
