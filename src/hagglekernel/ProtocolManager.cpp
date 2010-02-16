@@ -32,7 +32,8 @@
 #define PROTOCOL_GARBAGE_COLLECT_INTERVAL 30.0
 
 ProtocolManager::ProtocolManager(HaggleKernel * _kernel) :
-	Manager("ProtocolManager", _kernel)
+	Manager("ProtocolManager", _kernel), tcpServerPort(TCP_DEFAULT_PORT), 
+	tcpBacklog(TCP_BACKLOG_SIZE)
 {	
 }
 
@@ -432,7 +433,7 @@ Protocol *ProtocolManager::getServerProtocol(const ProtType_t type, const Interf
                                 break;
 #endif
                         case PROT_TYPE_TCP:
-                                p = new ProtocolTCPServer(iface, this);
+                                p = new ProtocolTCPServer(iface, this, tcpServerPort, tcpBacklog);
                                 break;
                                 
 #if defined(ENABLE_MEDIA)
@@ -906,4 +907,35 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 	HAGGLE_DBG("Scheduled %d data objects for sending\n", numTx);
 
 	delete targets;
+}
+
+void ProtocolManager::onConfig(Metadata *m)
+{
+	Metadata *pm = m->getMetadata("TCPServer");
+
+	if (pm) {
+		const char *param = pm->getParameter("port");
+
+		if (param) {
+			char *endptr = NULL;
+			unsigned short port = (unsigned short)strtoul(param, &endptr, 10);
+			
+			if (endptr && endptr != param) {
+				tcpServerPort = port;
+				LOG_ADD("# ProtocolManager: setting TCP server port to %u\n", tcpServerPort);
+			}
+		}
+
+		param = pm->getParameter("backlog");
+
+		if (param) {
+			char *endptr = NULL;
+			int backlog = (int)strtol(param, &endptr, 10);
+			
+			if (endptr && endptr != param && backlog > 0) {
+				tcpBacklog = backlog;
+				LOG_ADD("# ProtocolManager: setting TCP backlog to %d\n", tcpBacklog);
+			}
+		}
+	}
 }

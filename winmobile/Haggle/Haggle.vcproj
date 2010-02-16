@@ -108,7 +108,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -198,7 +198,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -288,7 +288,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -380,7 +380,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -473,7 +473,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -565,7 +565,7 @@
 				ForceDirty="-1"
 				RemoteDirectory="%CSIDL_PROGRAM_FILES%\Haggle"
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -658,7 +658,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -753,7 +753,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -847,7 +847,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -940,7 +940,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -1033,7 +1033,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -1125,7 +1125,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -1219,7 +1219,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -1314,7 +1314,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -1408,7 +1408,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -1501,7 +1501,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -1593,7 +1593,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -1685,7 +1685,7 @@
 				ForceDirty="-1"
 				RemoteDirectory=""
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="config.xml|$(ProjectDir)\..\..\resources|\Application Data\Haggle|0"
 			/>
 			<DebuggerTool
 			/>
@@ -2191,6 +2191,10 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath="..\..\resources\config.xml"
+				>
+			</File>
 			<File
 				RelativePath=".\Haggle.ico"
 				>

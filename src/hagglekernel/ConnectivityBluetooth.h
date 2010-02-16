@@ -42,12 +42,13 @@ class ConnectivityBluetoothBase;
 	}
 
 // All these are in seconds:
-#define BASE_TIME_BETWEEN_SCANS	(120) //(80)
-#define RANDOM_TIME_AMOUNT (60)
+#define DEFAULT_BASE_TIME_BETWEEN_SCANS	(120) //(80)
+#define DEFAULT_RANDOM_TIME_BETWEEN_SCANS (60)
 
 // The time to wait. (BASE_TIME_BETWEEN_SCANS +- RANDOM_TIME_AMOUNT)
-#define TIME_TO_WAIT				\
-	(BASE_TIME_BETWEEN_SCANS - RANDOM_TIME_AMOUNT + RANDOM_INT(2*RANDOM_TIME_AMOUNT))
+#define TIME_TO_WAIT (ConnectivityBluetoothBase::baseTimeBetweenScans - \
+	ConnectivityBluetoothBase::randomTimeBetweenScans +  \
+		RANDOM_INT(2*ConnectivityBluetoothBase::randomTimeBetweenScans))
 
 #define TIME_TO_WAIT_MSECS (TIME_TO_WAIT * 1000)
 
@@ -63,6 +64,8 @@ private:
 	static InterfaceRefList sdpBlackList;
 	static bool ignoreNonListedInterfaces;
 public:
+	static unsigned long baseTimeBetweenScans;
+	static unsigned long randomTimeBetweenScans;
 	/**
 	FIXME: I couldn't come up with a better name for this function. It 
 	should be renamed.

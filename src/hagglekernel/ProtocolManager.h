@@ -59,6 +59,8 @@ private:
         EventType delete_protocol_event;
         EventType add_protocol_event;
         EventType send_data_object_actual_event;
+	unsigned short tcpServerPort;
+	int tcpBacklog;
 	bool registerProtocol(Protocol *p);
         // Event processing
         void onSendDataObject(Event *e);
@@ -100,6 +102,7 @@ private:
 	
         void onShutdown();
 	bool init_derived();
+	void onConfig(Metadata *m);
 public:
         ProtocolManager(HaggleKernel *_kernel = haggleKernel);
         ~ProtocolManager();

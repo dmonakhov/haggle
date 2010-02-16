@@ -23,9 +23,7 @@ ConnectivityBluetooth::ConnectivityBluetooth(ConnectivityManager *m, const Inter
 	ConnectivityBluetoothBase(m, iface, "Bluetooth connectivity")
 {
 	LOG_ADD("%s: Bluetooth connectivity starting. Scan time: %ld +- %ld seconds\n",
-		Timeval::now().getAsString().c_str(),
-		BASE_TIME_BETWEEN_SCANS,
-		RANDOM_TIME_AMOUNT);
+		Timeval::now().getAsString().c_str(), baseTimeBetweenScans, randomTimeBetweenScans);
 }
 
 ConnectivityBluetooth::~ConnectivityBluetooth()
@@ -48,6 +46,8 @@ Mutex ConnectivityBluetoothBase::sdpListMutex;
 InterfaceRefList ConnectivityBluetoothBase::sdpWhiteList;
 InterfaceRefList ConnectivityBluetoothBase::sdpBlackList;
 bool ConnectivityBluetoothBase::ignoreNonListedInterfaces = false;
+unsigned long ConnectivityBluetoothBase::baseTimeBetweenScans = DEFAULT_BASE_TIME_BETWEEN_SCANS;
+unsigned long ConnectivityBluetoothBase::randomTimeBetweenScans = DEFAULT_RANDOM_TIME_BETWEEN_SCANS;
 
 int ConnectivityBluetoothBase::classifyAddress(const Interface &iface)
 {
@@ -86,6 +86,30 @@ void ConnectivityBluetoothBase::clearSDPLists(void)
 void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 {
 	Mutex::AutoLocker l(sdpListMutex);
+
+	const char *param = md->getParameter("scan_base_time");
+
+	if (param) {
+		char *endptr = NULL;
+		unsigned long base_time = strtoul(param, &endptr, 10);
+
+		if (endptr && endptr != param) {
+			baseTimeBetweenScans = base_time;
+			LOG_ADD("# ConnectivityManager: setting Bluetooth scan base time %lu\n", baseTimeBetweenScans);
+		}
+	}
+
+	param = md->getParameter("scan_random_time");
+
+	if (param) {
+		char *endptr = NULL;
+		unsigned long random_time = strtoul(param, &endptr, 10);
+
+		if (endptr && endptr != param) {
+			randomTimeBetweenScans = random_time;
+			LOG_ADD("# ConnectivityManager: setting Bluetooth scan random time %lu\n", randomTimeBetweenScans);
+		}
+	}
 	/*
 	 Check bluetooth module blacklisting/whitelisting data. Formatted like so:
 	 
@@ -126,26 +150,55 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 		Metadata *iface = bl->getMetadata("Interface");
 		
 		while (iface) {
-			Address a(iface->getContent().c_str());
-			if (a.getType() == AddressType_BTMAC) {
-				i = new Interface(IFTYPE_BLUETOOTH, a.getRaw(), &a);
-				sdpBlackList.push_back(i);
-				iface = bl->getNextMetadata();
+			const char *type = iface->getParameter("type");
+			const char *name = iface->getParameter("name") ? iface->getParameter("name") : "noname";
+
+			if (!type) {
+				HAGGLE_ERR("No type specified for interface \'%s\'... ignoring\n", name);
+			} else if (strcmp(type, "bluetooth") != 0) {
+				HAGGLE_ERR("Interface type is \'%s\', and not \'bluetooth\'\n", type);
+			} else {			
+				Address a(iface->getContent().c_str());
+				if (a.getType() == AddressType_BTMAC) {
+					i = new Interface(IFTYPE_BLUETOOTH, a.getRaw(), &a);
+
+					if (i) {
+						sdpBlackList.push_back(i);
+						LOG_ADD("# ConnectivityManager: black-listing interface [type=%s identifier=%s name=%s]\n", 
+							type, i->getIdentifierStr(), name);
+					}
+				}
 			}
+			iface = bl->getNextMetadata();
 		}
 	}
-	
+
 	if (wl) {
 		InterfaceRef i;
 		Metadata *iface = wl->getMetadata("Interface");
 		
 		while (iface) {
-			Address a(iface->getContent().c_str());
-			if (a.getType() == AddressType_BTMAC) {
-				i = new Interface(IFTYPE_BLUETOOTH, a.getRaw(), &a);
-				sdpWhiteList.push_back(i);
-				iface = wl->getNextMetadata();
+			const char *type = iface->getParameter("type");
+			const char *name = iface->getParameter("name") ? iface->getParameter("name") : "noname";
+
+			if (!type) {
+				HAGGLE_ERR("No type specified for interface \'%s\'... ignoring\n", name);
+			} else if (strcmp(type, "bluetooth") != 0) {
+				HAGGLE_ERR("Interface type is \'%s\', and not \'bluetooth\'\n", type);
+			} else {
+				Address a(iface->getContent().c_str());
+				if (a.getType() == AddressType_BTMAC) {
+					i = new Interface(IFTYPE_BLUETOOTH, a.getRaw(), &a);
+
+					if (i) {
+						sdpWhiteList.push_back(i);
+
+						LOG_ADD("# ConnectivityManager: white-listing interface [type=%s address=%s name=%s]\n", 
+							type, i->getIdentifierStr(), name);
+					}
+				}
 			}
+			iface = wl->getNextMetadata();
 		}
 	}
 	
@@ -154,28 +207,10 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 			ignoreNonListedInterfaces = true;
 		else if(ignore->getContent() == "no")
 			ignoreNonListedInterfaces = false;
-		else
+		else {
 			HAGGLE_ERR("IgnoreNonListedInterfaces content wrong. Must be yes/no.\n");
+		}
 	}
-	
-	// For debugging purposes:
-	/*
-	 HAGGLE_DBG("Whitelist:\n");
-	 for(InterfaceRefList::iterator it = sdpWhiteList.begin();
-	 it != sdpWhiteList.end();
-	 it++)
-	 {
-	 HAGGLE_DBG("    %s\n", (*it)->getIdentifierStr());
-	 }
-	 HAGGLE_DBG("Blacklist:\n");
-	 for(InterfaceRefList::iterator it = sdpBlackList.begin();
-	 it != sdpBlackList.end();
-	 it++)
-	 {
-	 HAGGLE_DBG("    %s\n", (*it)->getIdentifierStr());
-	 }
-	 HAGGLE_DBG("Ignore non-listed: %s\n", ignoreNonListedInterfaces?"yes":"no");
-	 */
 }
 
 #endif

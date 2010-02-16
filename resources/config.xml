@@ -1,0 +1,57 @@
+<Haggle persistent="no">
+	<Attr name="ManagerConfiguration">*</Attr>
+	<ForwardingManager>
+		<ForwardingModule/>
+	</ForwardingManager>
+	<DebugManager>
+		<DebugTrace enable="false"/>
+	</DebugManager>
+	<NodeManager>
+		<MatchingThreshold>10</MatchingThreshold>
+		<MaxDataObjectsInMatch>10</MaxDataObjectsInMatch>
+		<NodeDescriptionRetry retries="3" retry_wait="10.0"/>
+	</NodeManager>
+	<ProtocolManager>
+		<TCPServer port="9697" backlog="30"/>
+	</ProtocolManager>
+	<ConnectivityManager>
+		<Bluetooth scan_base_time="120" scan_random_time="60">
+			<ClearBlacklist/>
+			<ClearWhitelist/>
+			<Blacklist>
+				<Interface name="Lego robot" type="bluetooth">bt://00:16:53:0d:f5:7E</Interface>
+			</Blacklist>
+			<Whitelist>
+				<Interface name="LG-01" type="bluetooth">bt://00:1e:75:15:78:82</Interface>
+				<Interface name="LG-02" type="bluetooth">bt://00:1c:62:fa:ec:ee</Interface>
+				<Interface name="LG-03" type="bluetooth">bt://00:1c:62:fb:c0:b9</Interface>
+				<Interface name="LG-04" type="bluetooth">bt://61:0F:D0:0D:20:7D</Interface>
+				<Interface name="LG-05" type="bluetooth">bt://00:1e:75:00:42:90</Interface>
+				<Interface name="LG-06" type="bluetooth">bt://00:1e:75:00:c8:e5</Interface>
+				<Interface name="LG-07" type="bluetooth">bt://00:1c:62:fe:62:1f</Interface>
+				<Interface name="LG-08" type="bluetooth">bt://00:1e:75:00:1e:86</Interface>
+				<Interface name="LG-09" type="bluetooth">bt://00:1e:75:00:79:f0</Interface>
+				<Interface name="LG-10" type="bluetooth">bt://00:1e:75:29:92:08</Interface>
+				<Interface name="LG-11" type="bluetooth">bt://00:1c:62:ff:0e:2b</Interface>
+				<Interface name="LG-12" type="bluetooth">bt://00:1e:75:00:4e:0c</Interface>
+				<Interface name="LG-13" type="bluetooth">bt://00:1e:75:3f:39:43</Interface>
+				<Interface name="LG-14" type="bluetooth">bt://00:1e:75:0d:4f:f6</Interface>
+				<Interface name="LG-15" type="bluetooth">bt://00:1e:75:0c:ef:d5</Interface>
+				<Interface name="LG-16" type="bluetooth">bt://00:1c:62:fd:ed:7c</Interface>
+				<Interface name="LG-17" type="bluetooth">bt://00:1c:62:fb:15:92</Interface>
+				<Interface name="LG-18" type="bluetooth">bt://00:1c:62:ff:f9:af</Interface>
+				<Interface name="LG-19" type="bluetooth">bt://00:1c:62:ff:95:d4</Interface>
+				<Interface name="LG-20" type="bluetooth">bt://00:1e:75:0d:16:e7</Interface>
+				<Interface name="LG-21" type="bluetooth">bt://00:1c:62:ff:e7:3f</Interface>
+				<Interface name="LG-22" type="bluetooth">bt://00:1e:75:0c:69:f9</Interface>
+				<Interface name="LG-23" type="bluetooth">bt://00:1c:62:fc:4c:e9</Interface>
+				<Interface name="LG-24" type="bluetooth">bt://00:1c:62:fb:36:14</Interface>
+				<Interface name="LG-25" type="bluetooth">bt://00:1e:75:0f:bd:c5</Interface>
+				<Interface name="LG-26" type="bluetooth">bt://00:1c:62:fd:d0:ad</Interface>
+				<Interface name="Magic 2" type="bluetooth">bt://00:22:15:c0:5c:5a</Interface>
+				<Interface name="Daniels Mac" type="bluetooth">bt://00:1e:52:e7:19:ac</Interface>
+			</Whitelist>
+			<IgnoreNonListedInterfaces>yes</IgnoreNonListedInterfaces>
+		</Bluetooth>
+	</ConnectivityManager>
+</Haggle>
