@@ -493,7 +493,8 @@ namespace LuckyGUI
                                                 // Delete all files that are not libhaggle.txt (because it's open) and
                                                 // startup.do, because we want it to stay put.
                                                 if (!(System.IO.Path.GetFileName(file[i]).Equals("libhaggle.txt") ||
-                                                        System.IO.Path.GetFileName(file[i]).Equals("startup.do")))
+                                                        System.IO.Path.GetFileName(file[i]).Equals("startup.do") ||
+                                                        System.IO.Path.GetFileName(file[i]).Equals("config.xml")))
                                                 {
                                                         Debug.WriteLine("Delete: " + file[i]);
                                                         System.IO.File.Delete(file[i]);
@@ -532,7 +533,8 @@ namespace LuckyGUI
                                                 for (i = 0; i < file.Length; i++)
                                                 {
                                                         if (!(System.IO.Path.GetFileName(file[i]).Equals("libhaggle.txt") ||
-                                                                System.IO.Path.GetFileName(file[i]).Equals("startup.do")))
+                                                                System.IO.Path.GetFileName(file[i]).Equals("startup.do") ||
+                                                                System.IO.Path.GetFileName(file[i]).Equals("config.xml")))
                                                         {
                                                                 Debug.WriteLine("Delete: " + file[i]);
                                                                 System.IO.File.Delete(file[i]);
