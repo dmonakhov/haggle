@@ -689,7 +689,7 @@ static inline char *SQL_IFACE_FROM_ROWID_CMD(const sqlite_int64 iface_rowid)
 
 static inline char *SQL_INSERT_NODE_CMD(const NodeRef& node)
 {
-	snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "INSERT INTO " TABLE_NODES " (type,id,id_str,name,bloomfilter,nodedescription_createtime,resolution_max_matching_dataobjects,resolution_threshold) VALUES (%d,?,\'%s\',\'%s\',?," INT64_FORMAT ",%u,%u);", node->getType(), node->getIdStr(), node->getName().c_str(), node->getNodeDescriptionCreateTime().getTimeAsMilliSeconds(), node->getMaxDataObjectsInMatch(), node->getMatchingThreshold());
+	snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "INSERT INTO " TABLE_NODES " (type,id,id_str,name,bloomfilter,nodedescription_createtime,resolution_max_matching_dataobjects,resolution_threshold) VALUES (%d,?,\'%s\',\'%s\',?," INT64_FORMAT ",%lu,%lu);", node->getType(), node->getIdStr(), node->getName().c_str(), node->getNodeDescriptionCreateTime().getTimeAsMilliSeconds(), node->getMaxDataObjectsInMatch(), node->getMatchingThreshold());
 
 	return sqlcmd;
 }
