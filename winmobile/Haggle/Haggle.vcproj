@@ -35,7 +35,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy config.xml to root dir for deployment"
-				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
 				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
@@ -130,7 +130,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy config.xml to root dir for deployment"
-				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
 				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
@@ -224,7 +224,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy config.xml to root dir for deployment"
-				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
 				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
@@ -318,7 +318,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy config.xml to root dir for deployment"
-				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
 				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
@@ -414,7 +414,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy config.xml to root dir for deployment"
-				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
 				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
@@ -511,7 +511,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy config.xml to root dir for deployment"
-				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
 				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
@@ -607,7 +607,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy config.xml to root dir for deployment"
-				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
 				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
@@ -704,7 +704,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy config.xml to root dir for deployment"
-				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
 				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
@@ -803,7 +803,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy config.xml to root dir for deployment"
-				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
 				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
@@ -901,7 +901,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy config.xml to root dir for deployment"
-				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
 				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
@@ -998,7 +998,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy config.xml to root dir for deployment"
-				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
 				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
@@ -1095,7 +1095,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy config.xml to root dir for deployment"
-				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
 				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
@@ -1191,7 +1191,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy config.xml to root dir for deployment"
-				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
 				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
@@ -1388,7 +1388,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy config.xml to root dir for deployment"
-				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
 				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
@@ -1486,7 +1486,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy config.xml to root dir for deployment"
-				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
 				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
@@ -1583,7 +1583,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy config.xml to root dir for deployment"
-				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
 				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
@@ -1679,7 +1679,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy config.xml to root dir for deployment"
-				CommandLine="copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
+				CommandLine="IF NOT EXIST &quot;$(ProjectDir)..\..\config.xml&quot; copy &quot;$(ProjectDir)..\..\resources\config.xml&quot; &quot;$(ProjectDir)..\..\config.xml&quot; "
 				AdditionalDependencies="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 				Outputs="&quot;$(ProjectDir)\..\..\config.xml&quot;"
 			/>
