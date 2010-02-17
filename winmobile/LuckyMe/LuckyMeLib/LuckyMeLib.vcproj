@@ -105,7 +105,7 @@
 				ForceDirty="-1"
 				RemoteDirectory="%CSIDL_PROGRAM_FILES%\Haggle"
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="luckyme.jpg|$(ProjectDir)..\|\|0"
 			/>
 			<DebuggerTool
 			/>
@@ -198,7 +198,7 @@
 				ForceDirty="-1"
 				RemoteDirectory="%CSIDL_PROGRAM_FILES%\Haggle"
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="luckyme.jpg|$(ProjectDir)..\|\|0"
 			/>
 			<DebuggerTool
 			/>
@@ -291,7 +291,7 @@
 				ForceDirty="-1"
 				RemoteDirectory="%CSIDL_PROGRAM_FILES%\Haggle"
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="luckyme.jpg|$(ProjectDir)..\|\|0"
 			/>
 			<DebuggerTool
 			/>
@@ -386,7 +386,7 @@
 				ForceDirty="-1"
 				RemoteDirectory="%CSIDL_PROGRAM_FILES%\Haggle"
 				RegisterOutput="0"
-				AdditionalFiles=""
+				AdditionalFiles="luckyme.jpg|$(ProjectDir)..\|\|0"
 			/>
 			<DebuggerTool
 			/>

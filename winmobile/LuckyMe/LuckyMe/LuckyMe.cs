@@ -130,7 +130,7 @@ namespace LuckyGUI
                                         testcontrol_window.BeginInvoke(new myDelegate(testcontrol_window.onShutdown));
                                         uint n = 0;
                                         // Wait for Haggle to shutdown
-                                        while (LuckyMeLib.isHaggleRunning() && n++ < 20)
+                                        while (LuckyMeLib.isHaggleRunning() && n++ < 120)
                                         {
                                                 Debug.WriteLine("Waiting for Haggle to exit...");
                                                 Thread.Sleep(1000);
@@ -462,11 +462,7 @@ namespace LuckyGUI
                                 Debug.WriteLine("archiveHaggleFiles(): Test is still running...");
                                 return false;
                         }
-                        if (LuckyMeLib.isHaggleRunning())
-                        {
-                                Debug.WriteLine("archiveHaggleFiles(): Haggle still running....");
-                                return false;
-                        }
+                       
                         int i;
 
                         // 2) store haggle folder on SD card:
