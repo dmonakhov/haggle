@@ -583,8 +583,12 @@ int create_interest_node_number()
 int create_dataobject_random() 
 {
 	unsigned int i = 0;
+	unsigned long *values;
 	struct dataobject *dobj = NULL;
 	
+	if (num_dataobject_attributes == 0)
+		return -1;
+
 	if (filename) {
 		dobj = haggle_dataobject_new_from_file(filename);
 		
@@ -601,12 +605,37 @@ int create_dataobject_random()
 	
 	LIBHAGGLE_DBG("create data object %lu\n", num_dobj_created);
 	
-	// todo: get unique attributes
-	for (i = 0; i < num_dataobject_attributes; i++) {
+	values = (unsigned long *)malloc(sizeof(unsigned long) * num_dataobject_attributes);
+
+	if (!values) {
+		haggle_dataobject_free(dobj);
+		return -1;
+	}
+
+	i = 0;
+
+	while (i < num_dataobject_attributes) {
+		unsigned int j, have_value = 0;
 		unsigned long value = luckyme_prng_uint32() % attribute_pool_size;
+		
+		// Check if we alread generated this attribute
+		for (j = 0; j < i; j++) {
+			if (value == values[j]) {
+				have_value = 1;
+			}
+		}
+
+		// see if the value was found, and in that case try again
+		if (have_value)
+			continue;
+
 		haggle_dataobject_add_attribute(dobj, APP_NAME, ulong_to_str(value));
 		printf("   %s=%s\n", APP_NAME, ulong_to_str(value));
+		values[i] = value;
+		i++;
 	}
+
+	free(values);
 
 	luckyme_dataobject_set_createtime(dobj);
 	haggle_ipc_publish_dataobject(hh, dobj);
@@ -759,8 +788,8 @@ int read_dataobject_from_trace(struct dataobject **dobj, struct timeval *timeout
 		return -1;
 	
 	while (1) {
-		long off_start, i = 0;
-		unsigned long bytes_read = 0;
+		long off_start;
+		unsigned long i = 0, bytes_read = 0;
 		
 		off_start = ftell(data_trace_fp);
 		

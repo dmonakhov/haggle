@@ -148,10 +148,6 @@ wchar_t *strtowstr_alloc(const char *str)
 
 #endif /* OS_WINDOWS */
 
-#if defined(WIN32) || defined(WINCE)
-#define OS_WINDOWS
-#endif
-
 #include <time.h>
 
 #if defined(OS_MACOSX) || defined(OS_LINUX)
@@ -164,10 +160,12 @@ void prng_init(void)
 	// No need for initialization
 #elif defined(OS_LINUX)
 	srandom(time(NULL));
+#elif defined(OS_WINDOWS_MOBILE)
+	srand(GetTickCount());
 #elif defined(OS_WINDOWS)
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-	srand(tv.tv_usec);
+	srand(tv.tv_sec + tv.tv_usec);
 #endif
 }
 
@@ -195,9 +193,12 @@ unsigned long prng_uint32(void)
 		(((unsigned long)(random() & 0xFFFF)) << 0);
 #elif defined(OS_WINDOWS)
 		// rand() returns a 15-bit random number:
+		/*
 		(((unsigned long) (rand() & 0xFF)) << 24) |
 		(((unsigned long) (rand() & 0xFFF)) << 12) |
 		(((unsigned long) (rand() & 0xFFF)) << 0);
+		*/
+		Random();
 #endif
 }
 
