@@ -922,7 +922,7 @@ void ProtocolManager::onConfig(Metadata *m)
 			
 			if (endptr && endptr != param) {
 				tcpServerPort = port;
-				LOG_ADD("# ProtocolManager: setting TCP server port to %u\n", tcpServerPort);
+				LOG_ADD("# %s: setting TCP server port to %u\n", getName(), tcpServerPort);
 			}
 		}
 
@@ -934,7 +934,7 @@ void ProtocolManager::onConfig(Metadata *m)
 			
 			if (endptr && endptr != param && backlog > 0) {
 				tcpBacklog = backlog;
-				LOG_ADD("# ProtocolManager: setting TCP backlog to %d\n", tcpBacklog);
+				LOG_ADD("# %s: setting TCP backlog to %d\n", getName(), tcpBacklog);
 			}
 		}
 	}

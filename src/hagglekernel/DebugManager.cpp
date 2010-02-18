@@ -445,6 +445,9 @@ void DebugManager::onWatchableEvent(const Watchable& wbl)
 				kernel->getDataStore()->print();
 				break;
 #endif
+			case 'u':
+				kernel->getThisNode()->getDataObject()->print();
+				break;
 			case 'i':
 				// Interface list
 				//dbgCmdRef = DebugCmdRef(new DebugCmd(DBG_CMD_PRINT_INTERNAL_STATE), "PrintInterfacesDebugCmd");

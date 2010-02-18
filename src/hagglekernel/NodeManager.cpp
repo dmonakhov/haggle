@@ -666,29 +666,32 @@ void NodeManager::onInsertedNode(Event *e)
 
 void NodeManager::onConfig(Metadata *m)
 {
-	Metadata *nm = m->getMetadata("MatchingThreshold");
+	Metadata *nm = m->getMetadata("Node");
 
 	if (nm) {
 		char *endptr = NULL;
-		unsigned long matchingThreshold = strtoul(nm->getContent().c_str(), &endptr, 10);
+		const char *param = nm->getParameter("matching_threshold");
+		
+		if (param) {
+			unsigned long matchingThreshold = strtoul(param, &endptr, 10);
 
-		if (endptr && endptr != nm->getContent().c_str()) {
-			HAGGLE_DBG("Setting matching threshold to %lu\n", matchingThreshold);
-			kernel->getThisNode()->setMatchingThreshold(matchingThreshold);
-			LOG_ADD("# NodeManager: matching threshold=%lu\n", matchingThreshold);
+			if (endptr && endptr != param) {
+				HAGGLE_DBG("Setting matching threshold to %lu\n", matchingThreshold);
+				kernel->getThisNode()->setMatchingThreshold(matchingThreshold);
+				LOG_ADD("# %s: matching threshold=%lu\n", getName(), matchingThreshold);
+			}
 		}
-	}
-
-	nm = m->getMetadata("MaxDataObjectsInMatch");
-
-	if (nm) {
-		char *endptr = NULL;
-		unsigned long maxDataObjectsInMatch = strtoul(nm->getContent().c_str(), &endptr, 10);
-
-		if (endptr && endptr != nm->getContent().c_str()) {
-			HAGGLE_DBG("Setting max data objects in match to %lu\n", maxDataObjectsInMatch);
-			kernel->getThisNode()->setMaxDataObjectsInMatch(maxDataObjectsInMatch);
-			LOG_ADD("# NodeManager: max data objects in match=%lu\n", maxDataObjectsInMatch);
+		
+		param = nm->getParameter("max_dataobjects_in_match");
+		
+		if (param) {
+			unsigned long maxDataObjectsInMatch = strtoul(param, &endptr, 10);
+			
+			if (endptr && endptr != param) {
+				HAGGLE_DBG("Setting max data objects in match to %lu\n", maxDataObjectsInMatch);
+				kernel->getThisNode()->setMaxDataObjectsInMatch(maxDataObjectsInMatch);
+				LOG_ADD("# %s: max data objects in match=%lu\n", getName(), maxDataObjectsInMatch);
+			}
 		}
 	}
 
@@ -704,7 +707,7 @@ void NodeManager::onConfig(Metadata *m)
 			if (endptr && endptr != param) {
 				HAGGLE_DBG("Setting node description retries to %lu\n", retries);
 				nodeDescriptionRetries = retries;
-				LOG_ADD("# NodeManager: node description retries=%lu\n", nodeDescriptionRetries);
+				LOG_ADD("# %s: node description retries=%lu\n", getName(), nodeDescriptionRetries);
 			}
 		}
 
@@ -717,7 +720,7 @@ void NodeManager::onConfig(Metadata *m)
 			if (endptr && endptr != param) {
 				HAGGLE_DBG("Setting node description retry wait to %lf\n", retry_wait);
 				nodeDescriptionRetryWait = retry_wait;
-				LOG_ADD("# NodeManager: node description retry wait=%lf\n", nodeDescriptionRetryWait);
+				LOG_ADD("# %s: node description retry wait=%lf\n", getName(), nodeDescriptionRetryWait);
 			}
 		}
 	}

@@ -527,38 +527,43 @@ void DataManager::onAging(Event *e)
 	kernel->getDataStore()->ageDataObjects(Timeval(agingMaxAge, 0), onAgedDataObjectsCallback);
 }
 
-void DataManager::onConfig(DataObjectRef& dObj)
+void DataManager::onConfig(Metadata *m)
 {
-	if (!dObj) 
-		return;
-	
-	// extract metadata
-	Metadata *m = dObj->getMetadata();
-	
-	if (!m) 
-		return;
-	
-	// extract metadata relevant for ForwardingManager
-	m = m->getMetadata(this->getName());
-	
-	if (!m) 
-		return;
-	
 	bool agingHasChanged = false;
 	
-	Metadata *tmp = NULL;
+	Metadata *dm = m->getMetadata("Aging");
 
-	if ((tmp = m->getMetadata("AgingPeriod"))) {
-		agingPeriod = atoi(tmp->getContent().c_str());
-		HAGGLE_DBG("config agingPeriod=%d\n", agingPeriod);
-		agingHasChanged = true;
+	if (dm) {
+		const char *param = dm->getParameter("period");
+		
+		if (param) {
+			char *endptr = NULL;
+			unsigned long period = strtoul(param, &endptr, 10);
+			
+			if (endptr && endptr != param) {
+				agingPeriod = period;
+				HAGGLE_DBG("config agingPeriod=%lu\n", agingPeriod);
+				LOG_ADD("# %s: agingPeriod=%lu\n", getName(), agingPeriod);
+				agingHasChanged = true;
+			}
+		}
+		
+		param = dm->getParameter("max_age");
+		
+		if (param) {
+			char *endptr = NULL;
+			unsigned long period = strtoul(param, &endptr, 10);
+			
+			if (endptr && endptr != param) {
+				agingMaxAge = period;
+				HAGGLE_DBG("config agingMaxAge=%lu\n", agingMaxAge);
+				LOG_ADD("# %s: agingMaxAge=%lu\n", getName(), agingPeriod);
+				agingHasChanged = true;
+			}
+		}
+		
 	}
-	if ((tmp = m->getMetadata("AgingMaxAge"))) {
-		agingMaxAge = atoi(tmp->getContent().c_str());
-		HAGGLE_DBG("config agingMaxAge=%d\n", agingMaxAge);
-		agingHasChanged = true;
-	}
-
+	
 	if (agingHasChanged)
 		onAging(NULL);
 }

@@ -77,8 +77,8 @@ class DataManager : public Manager
 	 */
 	Bloomfilter *localBF;
 	bool setCreateTimeOnBloomfilterUpdate;
-	unsigned int agingMaxAge;
-	unsigned int agingPeriod;
+	unsigned long agingMaxAge;
+	unsigned long agingPeriod;
 public:
         DataManager(HaggleKernel *_haggle = haggleKernel, bool setCreateTimeOnBloomfilterUpdate = false);
         ~DataManager();
@@ -95,7 +95,7 @@ private:
 	void onAgedDataObjects(Event *e);
 	void onAging(Event *e);
 	void onShutdown();
-	void onConfig(DataObjectRef& dObj);
+	void onConfig(Metadata *m);
 #if defined(ENABLE_METADAPARSER)
         bool onParseMetadata(Metadata *m);
 #endif

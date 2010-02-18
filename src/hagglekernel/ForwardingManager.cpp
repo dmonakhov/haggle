@@ -202,7 +202,7 @@ void ForwardingManager::setForwardingModule(Forwarder *f, bool deRegisterEvents)
 		 */
 		kernel->getDataStore()->readRepository(new RepositoryEntry(forwardingModule->getName()), repositoryCallback);
 		HAGGLE_DBG("Set new forwarding module to \'%s'\n", forwardingModule->getName());
-		LOG_ADD("# ForwardingManager: forwarding module is \'%s'\n", forwardingModule->getName());
+		LOG_ADD("# %s: forwarding module is \'%s'\n", getName(), forwardingModule->getName());
 		
 		/* Register callbacks */
 		if (!getEventInterest(EVENT_TYPE_DATAOBJECT_NEW)) {
@@ -216,7 +216,7 @@ void ForwardingManager::setForwardingModule(Forwarder *f, bool deRegisterEvents)
 		}
 	} else {
 		HAGGLE_DBG("Set new forwarding module to \'NULL'\n");
-		LOG_ADD("# ForwardingManager: forwarding module is \'NULL'\n");
+		LOG_ADD("# %s: forwarding module is \'NULL'\n", getName());
 		
 		if (deRegisterEvents) {
 			

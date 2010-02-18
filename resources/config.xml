@@ -7,13 +7,15 @@
 		<DebugTrace enable="false"/>
 	</DebugManager>
 	<NodeManager>
-		<MatchingThreshold>10</MatchingThreshold>
-		<MaxDataObjectsInMatch>10</MaxDataObjectsInMatch>
+		<Node matching_threshold="10" max_dataobjects_in_match="10"/>
 		<NodeDescriptionRetry retries="3" retry_wait="10.0"/>
 	</NodeManager>
 	<ProtocolManager>
 		<TCPServer port="9697" backlog="30"/>
 	</ProtocolManager>
+	<DataManager>
+		<Aging period="3600" max_age="86400"/>
+	</DataManager>
 	<ConnectivityManager>
 		<Bluetooth scan_base_time="120" scan_random_time="60">
 			<ClearBlacklist/>
