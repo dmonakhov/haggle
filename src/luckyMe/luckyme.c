@@ -466,7 +466,13 @@ int create_interest_binomial()
 {
 	unsigned long i = 0;
 	struct attributelist *al;	
-	const unsigned long luck = luckyme_prng_uint32() % attribute_pool_size;
+	const unsigned long luck;
+	
+	if (use_node_number != 1) {
+		luck = luckyme_prng_uint32() % attribute_pool_size;
+	} else {
+		luck = node_number;
+	}
 	// use binomial distribution to approximate normal distribution (sum of weights = 100)
 	// mean = u = np, variance = np(1-p)
 
@@ -1022,9 +1028,7 @@ int on_interests(haggle_event_t *e, void* nix)
 			// Read interests
 			while (read_interest_from_trace() > 0) {}
 		} else {
-			if (use_node_number == 1) {
-				create_interest_node_number();
-			} else if (grid_size > 0) {
+			if (grid_size > 0) {
 				create_interest_grid();
 			} else {
 				create_interest_binomial();
