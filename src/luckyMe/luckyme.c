@@ -466,13 +466,15 @@ int create_interest_binomial()
 {
 	unsigned long i = 0;
 	struct attributelist *al;	
-	const unsigned long luck;
+	unsigned long luck = 0;
 	
-	if (use_node_number != 1) {
-		luck = luckyme_prng_uint32() % attribute_pool_size;
-	} else {
+	// define luck (mean of binomial distribution)
+	if (use_node_number == 1) {
 		luck = node_number;
+	} else {
+		luck = luckyme_prng_uint32() % attribute_pool_size;
 	}
+
 	// use binomial distribution to approximate normal distribution (sum of weights = 100)
 	// mean = u = np, variance = np(1-p)
 
