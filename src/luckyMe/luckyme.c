@@ -1074,7 +1074,7 @@ static void parse_commandline(int argc, char **argv)
 	// Parse command line options using getopt.
 	
 	do {
-		ch = getopt(argc, argv, "A:d:i:t:g:nrs:f:l:");
+		ch = getopt(argc, argv, "A:d:i:t:g:nrs:f:l:N:");
 		if (ch != -1) {
 			switch (ch) {
 				case 'A':
