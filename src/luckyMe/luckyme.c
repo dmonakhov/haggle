@@ -64,6 +64,7 @@ char *single_source_name = NULL;		// overwrite with -s
 unsigned long create_data_interval = 120000;	// milliseconds, overwrite with -t (given in seconds)
 unsigned long repeatableSeed = 0;		// overwrite with -r
 unsigned long use_node_number = 0;		// overwrite with -n
+unsigned long num_dataobjects = 0;		// overwrite with -N
 
 #if defined(OS_WINDOWS_MOBILE)
 unsigned long attribute_pool_size = 100;
@@ -1107,6 +1108,9 @@ static void parse_commandline(int argc, char **argv)
 				case 'l':
 					data_trace_filename = optarg;
 					break;
+				case 'N':
+					num_dataobjects = strtoul(optarg, NULL, 10);
+					break;
 				default:
 					print_usage();
 					exit(1);
@@ -1213,7 +1217,7 @@ void test_loop() {
 				if (dobj) {
 					haggle_ipc_publish_dataobject(hh, dobj);
 					haggle_dataobject_free(dobj);
-				} else {
+				} else if ((num_dataobjects > 0) && (num_dobj_created < num_dataobjects)) {
 					if (grid_size > 0) {
 						create_dataobject_grid();
 					} else {
