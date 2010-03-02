@@ -1051,12 +1051,13 @@ int on_interests(haggle_event_t *e, void* nix)
 static void print_usage()
 {	
 	fprintf(stderr, 
-		"Usage: ./%s [-A num] [-d num] [-i num] [-t interval] [-n] [-g gridSize] [-s hostname] [-f path] [-l data_trace]\n", 
+		"Usage: ./%s [-A num] [-d num] [-i num] [-t interval] [-n] [-g gridSize] [-N num] [-s hostname] [-f path] [-l data_trace]\n", 
 		APP_NAME);
 	fprintf(stderr, "          -A attribute pool (default %lu)\n", attribute_pool_size);
 	fprintf(stderr, "          -d number of attributes per data object (default %lu)\n", num_dataobject_attributes);
 	fprintf(stderr, "          -i number of interests (default %lu)\n", num_interest_attributes);
 	fprintf(stderr, "          -t interval to create data objects [s] (default %lu)\n", create_data_interval);
+	fprintf(stderr, "          -N number of data objects to be generated (no limit: 0, default %lu)\n", num_dataobjects);
 	fprintf(stderr, "          -s singe source (create data objects only on node 'name', default off)\n");
 	fprintf(stderr, "          -f data file to be sent (default off)\n");
 	fprintf(stderr, "          -n use node number as interest (default off)\n");
@@ -1178,6 +1179,7 @@ void test_loop() {
 			}
 		} else {
 			milliseconds_to_timeval(&timeout, create_data_interval);
+			t = &timeout;
 		}
 #if defined(OS_WINDOWS)
 		wait = test_is_running ? create_data_interval : INFINITE;
@@ -1201,6 +1203,7 @@ void test_loop() {
 				break;
 		}
 #else
+		
 		FD_ZERO(&readfds);
 		FD_SET(test_loop_event[0], &readfds);
 		
@@ -1212,16 +1215,18 @@ void test_loop() {
 				stop_now = 1;
 			}
 		} else if (result == 0) {
-			if (single_source_name == NULL || strcmp(hostname, single_source_name) == 0) {
-				LIBHAGGLE_DBG("Creating data object\n");
-				if (dobj) {
-					haggle_ipc_publish_dataobject(hh, dobj);
-					haggle_dataobject_free(dobj);
-				} else if ((num_dataobjects > 0) && (num_dobj_created < num_dataobjects)) {
-					if (grid_size > 0) {
-						create_dataobject_grid();
+			if ((num_dataobjects == 0) || (num_dobj_created < num_dataobjects)) {
+				if (single_source_name == NULL || strcmp(hostname, single_source_name) == 0) {
+					LIBHAGGLE_DBG("Creating data object\n");
+					if (dobj) {
+						haggle_ipc_publish_dataobject(hh, dobj);
+						haggle_dataobject_free(dobj);
 					} else {
-						create_dataobject_random();
+						if (grid_size > 0) {
+						create_dataobject_grid();
+						} else {
+							create_dataobject_random();
+						}
 					}
 				}
 #if defined(OS_WINDOWS_MOBILE)
