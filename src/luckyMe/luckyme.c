@@ -734,7 +734,7 @@ int read_interest_from_trace()
 		}
 		
 		off_end = ftell(data_trace_fp);
-		
+
 		if (line[0] != '#') {
 			// if what we read is not what we were looking for,
 			// reset the stream to the position before the read.
@@ -1029,7 +1029,8 @@ int on_interests(haggle_event_t *e, void* nix)
 		// Read interests from file, if trace filename is set
 		if (data_trace_filename) {
 			// Read interests
-			while (read_interest_from_trace() > 0) {}
+// christian: had to do a hack because the callback on_interest is too late.
+			// while (read_interest_from_trace() > 0) {}
 		} else {
 			if (grid_size > 0) {
 				create_interest_grid();
@@ -1153,6 +1154,13 @@ void test_loop() {
 	unsigned int nfds = test_loop_event[0] + 1;
 	fd_set readfds;
 #endif
+
+	if (data_trace_filename) {
+		// Read interests
+		while (read_interest_from_trace() > 0) {}
+	}
+
+
 	while (!stop_now) {
 		struct dataobject *dobj = NULL;
 		struct timeval *t = NULL, timeout = { 0, 0 };
