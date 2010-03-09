@@ -744,7 +744,9 @@ int read_interest_from_trace()
 		}
 		
 		// skip lines that do not match our hostname
-		if (strncmp(hostname, &line[2], strlen(hostname)) != 0)
+		if (strlen(hostname) != strlen(&line[2]))
+			continue;
+		if (strncmp(hostname, &line[2], strlen(hostname)) != 0) 
 			continue;
 		
 		break;
@@ -831,7 +833,9 @@ int read_dataobject_from_trace(struct dataobject **dobj, struct timeval *timeout
 		i++;
 		
 		// Skip lines that do not match our hostname
-		if (strncmp(hostname, &line[i], strlen(hostname)) != 0)
+		if (strlen(hostname) != strlen(&line[i]))
+			continue;
+		if (strncmp(hostname, &line[i], strlen(hostname)) != 0) 
 			continue;
 		
 		break;
@@ -1231,7 +1235,7 @@ void test_loop() {
 						haggle_dataobject_free(dobj);
 					} else {
 						if (grid_size > 0) {
-						create_dataobject_grid();
+							create_dataobject_grid();
 						} else {
 							create_dataobject_random();
 						}
