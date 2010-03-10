@@ -743,10 +743,16 @@ int read_interest_from_trace()
 			return 0;
 		}
 		
+		// read until first whitespace -- there we should find the end of the node name
+		int pos = 2;
+		while (line[pos] != ' ' && pos < strlen(line)) {
+			pos++;
+		}
+
 		// skip lines that do not match our hostname
-		if (strlen(hostname) != strlen(&line[2]))
+		if (strlen(hostname) != pos-2)								// different length
 			continue;
-		if (strncmp(hostname, &line[2], strlen(hostname)+1) != 0) 
+		if (strncmp(&line[2], hostname, strlen(hostname)) != 0)		// different name
 			continue;
 		
 		break;
