@@ -746,7 +746,7 @@ int read_interest_from_trace()
 		// skip lines that do not match our hostname
 		if (strlen(hostname) != strlen(&line[2]))
 			continue;
-		if (strncmp(hostname, &line[2], strlen(hostname)) != 0) 
+		if (strncmp(hostname, &line[2], strlen(hostname)+1) != 0) 
 			continue;
 		
 		break;
