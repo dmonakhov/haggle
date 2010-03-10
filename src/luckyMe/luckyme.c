@@ -835,11 +835,18 @@ int read_dataobject_from_trace(struct dataobject **dobj, struct timeval *timeout
 			i++;
 		}
 		
+	
 		// skip whitespace
 		i++;
+
+		int pos = i;
+		while (line[pos] != ' ' && pos < strlen(line)) {
+			pos++;
+		}
+		
 		
 		// Skip lines that do not match our hostname
-		if (strlen(hostname) != strlen(&line[i]))
+		if (strlen(hostname) != pos-i)
 			continue;
 		if (strncmp(hostname, &line[i], strlen(hostname)) != 0) 
 			continue;
