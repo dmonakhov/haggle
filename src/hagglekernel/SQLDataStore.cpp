@@ -3409,21 +3409,24 @@ static int dumpTable(xmlNodePtr root_node, sqlite3 *db, const char* name)
 	int ret = 0;
 	char* sql_cmd = &sqlcmd[0];
 
-	if (!root_node || !db || !name)
+	if (!root_node || !db || !name) {
+		HAGGLE_ERR("Parameter error\n");
 		return -1;
+	}
 
 	sprintf(sql_cmd, "SELECT * FROM %s;", name);
 	ret = sqlite3_prepare_v2(db, sql_cmd, (int)strlen(sql_cmd), &stmt, &tail);
 	
 	if (ret != SQLITE_OK) {
-		HAGGLE_DBG("SQLite command compilation failed! %s\n", sql_cmd);
-		HAGGLE_DBG("%s\n", sqlite3_errmsg(db));
+		HAGGLE_ERR("SQLite command compilation failed! %s\n", sql_cmd);
+		HAGGLE_ERR("%s\n", sqlite3_errmsg(db));
 		return -1;
 	}
 	
 	xmlNodePtr node = xmlNewNode(NULL, BAD_CAST name);
 	
 	if (!node) {
+		HAGGLE_ERR("Could not allocate new XML child node\n");
 		goto xml_alloc_fail;
 	}
 
@@ -3432,13 +3435,14 @@ static int dumpTable(xmlNodePtr root_node, sqlite3 *db, const char* name)
 	}
 
 	if (ret != SQLITE_DONE) {
-		HAGGLE_DBG("SQLite statement evaluation failed! %s\n", sql_cmd);
-		HAGGLE_DBG("%s\n", sqlite3_errmsg(db));
+		HAGGLE_ERR("SQLite statement evaluation failed! %s\n", sql_cmd);
+		HAGGLE_ERR("%s\n", sqlite3_errmsg(db));
                 return -1;
 	}
 	
 	if (!xmlAddChild(root_node, node)) {
 		xmlFreeNode(node);
+		HAGGLE_ERR("Could not add XML child node\n");
 		goto xml_alloc_fail;
 	}
 
@@ -3453,45 +3457,60 @@ xmlDocPtr SQLDataStore::dumpToXML()
 {
 	xmlDocPtr doc = NULL;
 	xmlNodePtr root_node = NULL;
-
+	
 	HAGGLE_DBG("Dumping data base to XML\n");
-
+	
 	doc = xmlNewDoc(BAD_CAST "1.0");
-
+	
 	if (!doc) {
 		HAGGLE_ERR("Could not allocate new XML document\n");
 		return NULL;
 	}
+	
 	root_node = xmlNewNode(NULL, BAD_CAST "HaggleDump");
-
+	
 	if (!root_node) {
+		HAGGLE_ERR("Could not allocate new XML root node\n");
 		goto xml_alloc_fail;
 	}
 	
-	if (!xmlDocSetRootElement(doc, root_node))
+	xmlDocSetRootElement(doc, root_node);
+	
+	if (dumpTable(root_node, db, TABLE_ATTRIBUTES) < 0) {
+		HAGGLE_ERR("Could not dump %s\n", TABLE_ATTRIBUTES);
 		goto xml_alloc_fail;
-
-	if (!dumpTable(root_node, db, TABLE_ATTRIBUTES))
+	}
+	
+	if (dumpTable(root_node, db, TABLE_DATAOBJECTS) < 0) {
+		HAGGLE_ERR("Could not dump %s\n", TABLE_DATAOBJECTS);
 		goto xml_alloc_fail;
-
-	if (!dumpTable(root_node, db, TABLE_DATAOBJECTS))
+	}
+	
+	if (dumpTable(root_node, db, TABLE_NODES) < 0) {
+		HAGGLE_ERR("Could not dump %s\n", TABLE_NODES);
 		goto xml_alloc_fail;
-
-	if (!dumpTable(root_node, db, TABLE_NODES))
+	}
+	
+	if (dumpTable(root_node, db, TABLE_FILTERS) < 0) {
+		HAGGLE_ERR("Could not dump %s\n", TABLE_FILTERS);
 		goto xml_alloc_fail;
-
-	if (!dumpTable(root_node, db, TABLE_FILTERS))
+	}
+	
+	if (dumpTable(root_node, db, TABLE_MAP_DATAOBJECTS_TO_ATTRIBUTES_VIA_ROWID) < 0) {
+		HAGGLE_ERR("Could not dump %s\n", TABLE_MAP_DATAOBJECTS_TO_ATTRIBUTES_VIA_ROWID);
 		goto xml_alloc_fail;
-
-	if (!dumpTable(root_node, db, TABLE_MAP_DATAOBJECTS_TO_ATTRIBUTES_VIA_ROWID))
-		goto xml_alloc_fail;	
-
-	if (!dumpTable(root_node, db, TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID))
+	}
+	
+	if (dumpTable(root_node, db, TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID) < 0) {
+		HAGGLE_ERR("Could not dump %s\n", TABLE_MAP_NODES_TO_ATTRIBUTES_VIA_ROWID);
 		goto xml_alloc_fail;
-
-	if (!dumpTable(root_node, db, TABLE_MAP_FILTERS_TO_ATTRIBUTES_VIA_ROWID))
+	}
+	
+	if (dumpTable(root_node, db, TABLE_MAP_FILTERS_TO_ATTRIBUTES_VIA_ROWID) < 0) {
+		HAGGLE_ERR("Could not dump %s\n", TABLE_MAP_FILTERS_TO_ATTRIBUTES_VIA_ROWID);
 		goto xml_alloc_fail;
-
+	}
+	
 //	setViewLimitedDataobjectAttributes();
 //	dumpTable(root_node, db, VIEW_MATCH_DATAOBJECTS_AND_NODES_AS_RATIO);
 //	dumpTable(root_node, db, VIEW_MATCH_FILTERS_AND_DATAOBJECTS_AS_RATIO);
