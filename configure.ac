@@ -500,7 +500,7 @@ have_jni=no;
 AC_ARG_VAR([JAVA_HOME], [Java Runtime Environment (JRE) location])
 
 dnl Default to some qualified path guessing...
-java_dirs="/usr /usr/local /usr/lib/jvm/java-5-sun /usr/lib/jvm/java-6-sun /usr/lib/jvm/java /System/Library/Frameworks/JavaVM.framework/Versions/Current /opt /mingw"
+java_dirs="/usr /usr/local /usr/lib/jvm/java-5-sun /usr/lib/jvm/java-6-sun  /usr/lib/jvm/java-6-openjdk /usr/lib/jvm/java /System/Library/Frameworks/JavaVM.framework/Versions/Current /opt /mingw"
 java_inc_dirs="include include/libgcj Headers"
 
 dnl Allow the user to set the JAVA_HOME dir?
