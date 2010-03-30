@@ -28,17 +28,22 @@
 #include <string.h>
 #include <search.h>
 #include <signal.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <unistd.h>
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFString.h>
 #include <CoreServices/CoreServices.h>
+#include <ApplicationServices/ApplicationServices.h>
 
 #include <libhaggle/haggle.h>
 
 
 static haggle_handle_t hh;
 
-#define HAGGLE_FOLDER_PATH_DEFAULT "/Users/chrohner/Desktop/HaggleDrop"
+#define HAGGLE_FOLDER_PATH_DEFAULT "Desktop/HaggleDrop"
 
 static void cleanup(int signal)
 {
@@ -55,51 +60,197 @@ static void cleanup(int signal)
 	}
 }
 
-void printAttributes(char* path) 
+static int create_image_thumbnail(char *imgpath, char **buf, size_t *buflen)
+{
+	CGImageRef tn;
+	CFURLRef img_url;
+	CFStringRef filepath;
+	CGImageSourceRef img_src;
+	CFDictionaryRef opts;
+	CFTypeRef keys[3], values[3]; 
+	float dpi = 60;
+	CFMutableDataRef jpeg_data;
+	CGImageDestinationRef dest;
+	
+	*buflen = 0;
+	
+	filepath = CFStringCreateWithCString(NULL, imgpath, kCFStringEncodingMacRoman);
+	
+	if (!filepath)
+		return -1;
+	
+	img_url = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, filepath, kCFURLPOSIXPathStyle, FALSE);
+	
+	CFRelease(filepath);
+	
+	if (!img_url) {
+		return -1;
+	}
+	/* Set properties for dictionary. */
+	keys[0] = kCGImageSourceCreateThumbnailFromImageAlways;
+	values[0] = kCFBooleanTrue;
+	keys[1] = kCGImageSourceThumbnailMaxPixelSize;
+	values[1] = CFNumberCreate(kCFAllocatorDefault, kCFNumberFloatType, &dpi);
+	keys[2] = kCGImageSourceCreateThumbnailWithTransform;
+	values[2] = kCFBooleanTrue;
+	
+	opts = CFDictionaryCreate(kCFAllocatorDefault, (const void **)keys, (const void **)values, 
+				   3, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+
+	CFRelease(values[1]);
+
+	if (!opts) {
+		fprintf(stderr, "Could not create options dictionary\n");
+		return -1;	
+	}
+	
+	img_src = CGImageSourceCreateWithURL(img_url, opts);
+		
+	CFRelease(img_url);
+	
+	if (!img_src) {
+		CFRelease(opts);
+		return -1;
+	}
+	
+	tn = CGImageSourceCreateThumbnailAtIndex(img_src, 0, opts);
+	
+	CFRelease(img_src);
+	CFRelease(opts);
+	
+	if (tn == NULL) {
+		fprintf(stderr, "Could not create thumbnail image\n");
+		return -1;
+	}
+	
+	printf("thumbnail height/width %lu/%lu\n", CGImageGetHeight(tn), CGImageGetWidth(tn));
+	
+	/* Create new data reference to write our JPEG to */
+	jpeg_data = CFDataCreateMutable(kCFAllocatorDefault, 0);
+	
+	if (!jpeg_data) {		
+		fprintf(stderr, "Could not create data reference for JPEG image\n");
+		CGImageRelease(tn);
+		return -1;
+	}
+	
+	dest = CGImageDestinationCreateWithData(jpeg_data, CFSTR("public.jpeg"), 1, NULL);
+	
+	if (!dest) {
+		fprintf(stderr, "Could not create data reference for JPEG image\n");
+		CFRelease(jpeg_data);
+		CGImageRelease(tn);
+		return -1;
+	}
+	
+	/* Add image and finalize */
+	CGImageDestinationAddImage(dest, tn, NULL);
+	CGImageDestinationFinalize(dest);
+		
+	CFRelease(dest);
+	CGImageRelease(tn);
+	
+	/* Write the raw data to our destination buffer */
+	*buflen = CFDataGetLength(jpeg_data);
+	
+	*buf = malloc(*buflen);
+	
+	if (!*buf) {
+		fprintf(stderr, "Could allocate out buffer to write JPEG to\n");
+		CFRelease(jpeg_data);
+		return -1;
+	}
+	
+	CFDataGetBytes(jpeg_data, CFRangeMake(0, CFDataGetLength(jpeg_data)), (unsigned char *)*buf); 
+	
+	CFRelease(jpeg_data);
+	
+	return 0;
+}
+
+void parse_file_metadata(char* path) 
 {
 	CFStringRef inPath = CFStringCreateWithCString(NULL, path, kCFStringEncodingMacRoman);
-	
 	MDItemRef item = (MDItemRef)MDItemCreate(NULL, inPath);
-	if (item != NULL) {
-		/*
-		 CFArrayRef attributeNames = MDItemCopyAttributeNames(item);
-		 CFDictionaryRef attributes = MDItemCopyAttributes(item, attributeNames);
-		 */
+	CFIndex count;
+	CFDictionaryRef attributes;
+	CFArrayRef *values = NULL;
+	int i;
+	haggle_dobj_t *dobj;
+	size_t tn_len;
+	char *tn; // Thumbnail
+	
+	CFRelease(inPath);
+	
+	if (item == NULL)
+		return;
+	
+	attributes = MDItemCopyAttributeList(item, kMDItemKeywords, NULL);
+	
+	CFRelease(item);
+	
+	if (!attributes)
+		return;
+	
+	count = CFDictionaryGetCount(attributes);
+	
+	if (count <= 0) {
+		CFRelease(attributes);
+		return;
+	}
+	
+	values = (CFArrayRef*) malloc(count * sizeof(CFArrayRef));
+	
+	if (!values) {
+		CFRelease(attributes);
+		return;
+	}
+	
+	dobj = haggle_dataobject_new_from_file(path);
+	
+	if (!dobj) {
+		CFRelease(attributes);
+		free(values);
+		return;
+	}
 		
-		CFDictionaryRef attributes = MDItemCopyAttributeList(item, kMDItemKeywords, NULL);
-		CFStringRef *keys = (CFStringRef*) malloc(CFDictionaryGetCount(attributes) * sizeof(CFStringRef));
-		CFArrayRef *values = (CFArrayRef*) malloc(CFDictionaryGetCount(attributes) * sizeof(CFArrayRef));
+	CFDictionaryGetKeysAndValues(attributes, NULL, (const void**)values);
+	
+	for (i = 0; i < count; i++) {
+		char cValue[100];
+		int k;
+		CFArrayRef keywords;
+		CFIndex num_keywords;
 		
-		if (CFDictionaryGetCount(attributes) > 0) {
+		keywords = (CFArrayRef)values[i];
+		num_keywords = CFArrayGetCount(keywords);
+		
+		for (k = 0; k < num_keywords; k++) {
+			CFStringGetCString((CFStringRef)CFArrayGetValueAtIndex(keywords,k), cValue, 100, kCFStringEncodingISOLatin1);
+			// haggle_dataobject_add_attribute(dobj, cKey, cValue);
+			// for demo purposes, add Picture=... attribute
+			haggle_dataobject_add_attribute(dobj, "Picture", cValue);
+			printf("  attr: %s=%s\n", "Picture", cValue);
 			
-			haggle_dobj_t *dobj;
-			
-			dobj = haggle_dataobject_new_from_file(path);
-			
-			CFDictionaryGetKeysAndValues(attributes, (const void**)keys, (const void**)values);
-			
-			int i;
-			for (i=0; i<CFDictionaryGetCount(attributes); i++) {
-				char cKey[100];
-				char cValue[100];
-				CFStringGetCString((CFStringRef)keys[i], cKey, 100, kCFStringEncodingISOLatin1);
-				
-				CFArrayRef keywords = (CFArrayRef)values[i];
-				int k;
-				for (k=0; k<CFArrayGetCount(keywords); k++) {
-					CFStringGetCString((CFStringRef)CFArrayGetValueAtIndex(keywords,k), cValue, 100, kCFStringEncodingISOLatin1);
-					// haggle_dataobject_add_attribute(dobj, cKey, cValue);
-					// for demo purposes, add Picture=... attribute
-					haggle_dataobject_add_attribute(dobj, "Picture", cValue);
-					printf("  attr: %s=%s\n", "Picture", cValue);
-				}
-			}
-
-			haggle_dataobject_add_hash(dobj);
-			haggle_ipc_publish_dataobject(hh, dobj);
-			haggle_dataobject_free(dobj);
+			// Also add attribute as interest
+			haggle_ipc_add_application_interest(hh, "Picture", cValue);
 		}
 	}
+	
+	CFRelease(attributes);
+	
+	haggle_dataobject_add_hash(dobj);
+	
+	/* Set thumbnail */
+	if (create_image_thumbnail(path, &tn, &tn_len) == 0) {
+		haggle_dataobject_set_thumbnail(dobj, tn, tn_len);
+		free(tn);		
+	} else {
+		fprintf(stderr, "Could not create image thumbnail\n");
+	}
+	
+	haggle_ipc_publish_dataobject(hh, dobj);
+	haggle_dataobject_free(dobj);
 }
 
 
@@ -129,7 +280,7 @@ void checkChange(char* path)
 			char buf[2048];
 			printf("New File: %s\n", current[i]->d_name);
 			sprintf(buf, "%s%s", path, current[i]->d_name);
-			printAttributes(buf);
+			parse_file_metadata(buf);
 		}
 		tsearch(&current[i]->d_ino, &treeCurrent, &cmp);
 	}
@@ -190,13 +341,42 @@ int main(int argc, const char *argv[])
 	FSEventStreamRef _stream;
 	CFStringRef cfPath;
 	const char *path;
+	char buf[256];
 	
 	if (argc > 1) {
 		path = argv[1];
 	} else {
-		path = HAGGLE_FOLDER_PATH_DEFAULT;
+		struct passwd *pw;
+		
+		pw = getpwuid(getuid());
+		
+		if (pw) {
+			snprintf(buf, 256, "%s/%s", pw->pw_dir, HAGGLE_FOLDER_PATH_DEFAULT);
+			path = buf;
+		} else {
+			fprintf(stderr, "Could not figure out path to drop folder\n");
+			return -1;
+		}
 	}
 	
+	if (mkdir(path, 0777) == -1) {
+		switch (errno) {
+			case EACCES:
+				fprintf(stderr, "Permission denied for %s\n", path);
+				break;
+			case EEXIST:
+				goto get_haggle_handle;
+			default:
+				fprintf(stderr, "Error: %s : %s\n", strerror(errno), path);
+				break;
+		}
+		
+		return -1;		
+	}
+	
+	printf("Drop file into '%s'\n", path);
+	
+get_haggle_handle:
 	if (haggle_handle_get("Filedrop Mac OS X", &hh) != HAGGLE_NO_ERROR) {
 		fprintf(stderr, "Could not get Haggle handle\n");
 		return -1;
