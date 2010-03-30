@@ -1782,8 +1782,13 @@ int SQLDataStore::evaluateDataObjects(long eventType)
 
 			HAGGLE_DBG("Data object with rowid " INT64_FORMAT " matches!\n", do_rowid);
 			
-			dObjs.push_back(DataObjectRef(getDataObjectFromRowId(do_rowid)));
-                        
+			DataObjectRef dObj = getDataObjectFromRowId(do_rowid);
+			
+			if (dObj) {
+				dObjs.push_back(dObj);
+                        } else {
+				HAGGLE_ERR("Could not create data object from row id " INT64_FORMAT "\n", do_rowid);
+			}
 			// FIXME: Set a limit on how many data objects to match when registering
 			// a filter. If there are many data objects, the matching will take too long time
 			// and Haggle will become unresponsive.

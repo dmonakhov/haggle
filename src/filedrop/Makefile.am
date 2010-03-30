@@ -8,7 +8,7 @@ endif
 if OS_MACOSX
 bin_PROGRAMS=filedrop
 filedrop_SOURCES=filedropMacOSX.c
-LDFLAGS += -framework CoreServices
+LDFLAGS += -framework CoreServices -framework ApplicationServices
 endif
 
 CPPFLAGS += -I$(top_builddir)/src/libhaggle/include
