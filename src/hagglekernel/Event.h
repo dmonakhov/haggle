@@ -426,7 +426,7 @@ public:
         const Event& operator=(const Event &);
         ~Event();
 
-        const EventType getType() const {
+	EventType getType() const {
                 return type;
         }
 	

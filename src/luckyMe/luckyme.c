@@ -1332,6 +1332,8 @@ int luckyme_run()
 		}
 #ifdef OS_WINDOWS_MOBILE
 		Sleep(5000);
+#else
+		sleep(1);
 #endif
 	} while (ret != HAGGLE_NO_ERROR && retry-- != 0);
 	

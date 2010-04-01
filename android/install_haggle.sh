@@ -12,7 +12,15 @@ DATA_DIR=/data/local
 ADB=adb
 ADB_PARAMS=
 ANDROID_DIR=$SCRIPT_DIR/../../../
-PRODUCT_DIR=out/target/product/dream
+PRODUCT_DIR=out/target/product/$TARGET_PRODUCT
+
+if [ -z $TARGET_PRODUCT ]; then
+        echo "There is no TARGET_PRODUCT environment variable set."
+	echo "Please make sure that the Android build environment"
+	echo "is configured by running \'source build/env-setup-sh\'."
+	echo
+	exit
+fi
 
 # Restart adb with root permissions
 adb root

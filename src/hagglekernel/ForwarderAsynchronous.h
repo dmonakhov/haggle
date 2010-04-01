@@ -78,7 +78,7 @@ public:
 	RepositoryEntryList *getRepositoryEntryList() { return rel; }
 	NodeRefList *getNodeList() { return nodes; }
 	void setRepositoryEntryList(RepositoryEntryList *_rel) { if (!rel) {rel = _rel;} }
-	const ForwardingTaskType_t getType() const { return type; }
+	ForwardingTaskType_t getType() const { return type; }
 	~ForwardingTask() { if (rel) delete rel; if (nodes) delete nodes; }
 };
 

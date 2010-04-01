@@ -2,12 +2,20 @@
 
 BASEPATH=`dirname $0`
 
-IPHONEOS_VER=2.2
+IPHONEOS_VER=3.0
 SDKBASE=/Developer/Platforms/iPhoneOS.platform/Developer
 
 if [ ! -z $1 ]; then
     SDKBASE=$1;
 fi
+
+echo "This script will configure the Haggle build system to compile against iPhoneOS version $IPHONEOS_VER."
+echo "Make sure this version matches the SDKs installed on the host system."
+echo "To change the version of iPhoneOS, edit this script."
+echo
+echo "Press any key to continue, or ctrl-c to cancel."
+
+read
 
 SDKROOT=$SDKBASE/SDKs/iPhoneOS$IPHONEOS_VER.sdk
 SDKBIN=$SDKBASE/usr/bin

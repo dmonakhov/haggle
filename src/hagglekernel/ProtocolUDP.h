@@ -45,7 +45,7 @@ public:
 	bool isReceiver();
 	bool sendDataObject(const DataObjectRef& dObj, const NodeRef& peer, const InterfaceRef& _peerIface);
 
-	const unsigned short getPort() const {
+	unsigned short getPort() const {
 		return port;
 	}
 	const char* getAddress() const {

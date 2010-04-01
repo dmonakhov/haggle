@@ -83,9 +83,14 @@ LOCAL_C_INCLUDES += \
 	system/core/include \
 	hardware/libhardware_legacy/include \
 	external/sqlite/dist \
-	external/bluez/libs/include \
 	external/openssl/include \
 	external/dbus 
+
+#ifeq ($LOCAL_SDK_VERSION),
+#LOCAL_C_INCLUDES += external/bluez/libs/include
+#else
+LOCAL_C_INCLUDES += external/bluetooth/bluez/include
+#endif
 
 LOCAL_SHARED_LIBRARIES := \
 	libsqlite \

@@ -32,11 +32,22 @@ In order to set all paths, etc. It might also be necessary to run the
 normal Haggle configure process in order to generate the config.h
 header file before Haggle can be built for Android.
 
-If Android didn't build libbluetooth.so for your configuration, you
-first need to build it by entering 'external/bluez/libs/' and type
-'mm'. You may also need to install this library onto your Android
-device.
+Haggle depends on the presence of Bluetooth and WiFi support in the
+Android build configuration. Make sure that the board configuration
+of your Android configuration includes Bluetooth and WiFi (tiwlan)
+support. This is typically the case when building for a specific 
+phone, such as Dream or Sapphire. But, when building for, e.g.,
+"generic" there is no such support in the configuration. This can
+be added by creating a new configuration, or editing an existing, and 
+adding the following to BoardConfig.mk:
 
+BOARD_HAVE_BLUETOOTH := true                                                                                                                        
+BOARD_WLAN_TI_STA_DK_ROOT := system/wlan/ti/sta_dk_4_0_4_32     
+
+For example, for the "generic" configuration the BoardConfig.mk is 
+found at build/target/board/generic/BoardConfig.mk. Note that the 
+path to the wlan source may change with newer Android source versions.
+ 
 When everything is setup, enter 'external/haggle' and type 'mm'. This
 should build Haggle for Android. The binaries will end up as part of
 the Android system in 'out/target/product/dream/system' (you might
