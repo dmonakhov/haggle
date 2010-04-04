@@ -71,6 +71,7 @@ protected:
 	FILE *traceFile;
 	Timeval startTime;
 	bool enabled;
+	static bool stdout_enabled;
 
 	/*
 	 Do not allow anyone to create trace objects of their own. See below.
@@ -84,6 +85,7 @@ public:
 	 solution.
 	 */
 	static Trace trace;
+	static void disableStdout() { stdout_enabled = false; }
 	int write(const TraceType_t type, const char *func, const char *fmt, ...);
 	int writeWithoutTimestamp(const char *fmt, ...);
 	bool enableFileTrace(const string path = DEFAULT_LOG_STORAGE_PATH);

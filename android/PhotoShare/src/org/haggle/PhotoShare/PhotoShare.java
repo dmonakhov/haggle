@@ -22,7 +22,7 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 	public static final int STATUS_SPAWN_DAEMON_FAILED = -3;
 
 	static final int ADD_INTEREST_REQUEST = 0;
-	static final int TAKE_PICTURE_REQUEST = 1;
+	static final int IMAGE_CAPTURE_REQUEST = 1;
 	static final int ADD_PICTURE_ATTRIBUTES_REQUEST = 2;
 
 	private PhotoView pv = null;
@@ -31,13 +31,11 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 	private android.os.Vibrator vibrator = null;
 	private long lastNeighborVibrateTime = -1, lastDataObjectVibrateTime = -1;
 	
-	@Override
 	public void onConfigurationChanged(Configuration newConfig) {
 		// TODO Auto-generated method stub
 		super.onConfigurationChanged(newConfig);
 	}
 
-	@Override
 	public void onCreate() {
 		// TODO Auto-generated method stub
 		super.onCreate();
@@ -72,14 +70,12 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
     	vibrator = (android.os.Vibrator)getSystemService(VIBRATOR_SERVICE);
 	}
 
-	@Override
 	public void onLowMemory() {
 		// TODO Auto-generated method stub
 		super.onLowMemory();
     	Log.d(PhotoShare.LOG_TAG, "PhotoShare:onLowMemory()");	
 	}
 
-	@Override
 	public void onTerminate() {
 		// TODO Auto-generated method stub
 		super.onTerminate();

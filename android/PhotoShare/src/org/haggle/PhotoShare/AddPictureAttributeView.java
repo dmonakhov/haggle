@@ -27,7 +27,6 @@ public class AddPictureAttributeView extends Activity {
 	private String filepath;
 	private ListView attributeListView;
 	
-	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
@@ -78,12 +77,10 @@ public class AddPictureAttributeView extends Activity {
         registerForContextMenu(attributeListView);
 	}   
 	
-	@Override
 	protected void onStop() {
 		super.onStop();
 	} 
 	
-	@Override
 	protected void onDestroy() {
 		super.onDestroy();
 	}
@@ -123,14 +120,14 @@ public class AddPictureAttributeView extends Activity {
     	e.clear();
 	}
 	
-	@Override
+	
 	public boolean onContextItemSelected(MenuItem item) {
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
 
 		removeAttribute(info.position);
 		return super.onContextItemSelected(item);     
 	}
-	@Override
+	
 	public void onCreateContextMenu(ContextMenu menu, View v,
 			ContextMenuInfo menuInfo) {
 		//super.onCreateContextMenu(menu, v, menuInfo);
@@ -141,7 +138,6 @@ public class AddPictureAttributeView extends Activity {
 	}
 
 	
-	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		switch (keyCode) {
 		

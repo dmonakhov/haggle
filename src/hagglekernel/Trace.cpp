@@ -20,19 +20,22 @@
 #include <stdarg.h>
 
 Trace Trace::trace;
+bool Trace::stdout_enabled = true;
 
 Trace::Trace(TraceType_t _type, bool _enabled) :
 	type(_type), traceFile(NULL), startTime(Timeval::now()), enabled(_enabled)
 {
        	set_trace_timestamp_base(startTime.getTimevalStruct());
+	
+	HAGGLE_DBG("Initializing trace\n");
 }
 
 Trace::~Trace()
 {
 	if (traceFile) {
 		fclose(traceFile);
+		traceFile = NULL;
 	}
-	traceFile = NULL;
 }
 
 
@@ -89,7 +92,7 @@ int Trace::write(const TraceType_t _type, const char *func, const char *fmt, ...
 #endif
 	va_end(args);
 
-	if (stream)
+	if (stdout_enabled && stream)
 		fprintf(stream, "%.3lf:[%s]{%s}:%s", t.getTimeAsSecondsDouble(), thread_id, func, buf);
 
 	if (traceFile)

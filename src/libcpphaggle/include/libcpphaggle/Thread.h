@@ -320,12 +320,6 @@ public:
 		Returns true if two thread references refer to the same thread, otherwise false.
 	 */
         static bool equal(const Thread &thr1, const Thread &thr2);
-
-	class ThreadException : public Exception
-        {
-        public:
-                ThreadException(const char* data = "Thread Error", const int err = 0) : Exception(err, data) {}
-        };
 };
 
 /**

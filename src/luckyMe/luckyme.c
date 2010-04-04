@@ -718,6 +718,7 @@ int read_interest_from_trace()
 	LIBHAGGLE_DBG("Reading interest\n");
 	
 	while (1) {
+		unsigned long pos;
 		off_start = ftell(data_trace_fp);
 		
 		// Read entire line into buffer
@@ -744,7 +745,8 @@ int read_interest_from_trace()
 		}
 		
 		// read until first whitespace -- there we should find the end of the node name
-		int pos = 2;
+		pos = 2;
+		
 		while (line[pos] != ' ' && pos < strlen(line)) {
 			pos++;
 		}
@@ -806,7 +808,7 @@ int read_dataobject_from_trace(struct dataobject **dobj, struct timeval *timeout
 	
 	while (1) {
 		long off_start;
-		unsigned long i = 0, bytes_read = 0;
+		unsigned long i = 0, bytes_read = 0, pos;
 		
 		off_start = ftell(data_trace_fp);
 		
@@ -835,11 +837,11 @@ int read_dataobject_from_trace(struct dataobject **dobj, struct timeval *timeout
 			i++;
 		}
 		
-	
 		// skip whitespace
 		i++;
 
-		int pos = i;
+		pos = i;
+		
 		while (line[pos] != ' ' && pos < strlen(line)) {
 			pos++;
 		}

@@ -19,7 +19,11 @@
 #define LIBHAGGLE_INTERNAL
 #include <libhaggle/haggle.h>
 
-#if defined(WINCE)
+#if defined(WINCE) || defined(OS_ANDROID)
+#define TRACE_TO_FILE 1
+#endif
+
+#if defined(TRACE_TO_FILE)
 FILE *tr_out = NULL;
 FILE *tr_err = NULL;
 #else
@@ -36,7 +40,7 @@ void set_trace_level(int level)
 
 int libhaggle_debug_init()
 {
-#ifdef WINCE
+#ifdef TRACE_TO_FILE
 	const char *path = platform_get_path(PLATFORM_PATH_PRIVATE, "/libhaggle.txt");
 
 	if (!path || tr_out || tr_err)
@@ -48,13 +52,14 @@ int libhaggle_debug_init()
 		fprintf(stderr, "Could not open file %s\n", path);
 		return -1;
 	}
+	
 #endif
 	return 0;
 }
 
 void libhaggle_debug_fini()
 {
-#ifdef WINCE
+#ifdef TRACE_TO_FILE
 	if (tr_out)
 		fclose(tr_out);
 #endif
@@ -69,6 +74,10 @@ int libhaggle_trace(int err, const char *func, const char *fmt, ...)
 	if (trace_level == 0 || (trace_level == 1 && err == 0))
 		return 0;
 
+#if defined(OS_ANDROID)
+	if (tr_out == NULL)
+		libhaggle_debug_init();
+#endif
 	gettimeofday(&now, NULL);
 
 	va_start(args, fmt);
@@ -84,4 +93,3 @@ int libhaggle_trace(int err, const char *func, const char *fmt, ...)
 
 	return 0;
 }
-

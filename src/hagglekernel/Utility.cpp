@@ -514,7 +514,7 @@ bool create_path(const char *p)
 	return true;
 }
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && defined(ENABLE_TI_WIFI)
 
 #include <sys/ioctl.h>
 #include <net/if.h>

@@ -140,26 +140,32 @@ static int add_service(sdp_session_t *session, uint32_t *handle)
 
 static int del_service(sdp_session_t *session, uint32_t handle)
 {
-	uint32_t range = 0x0000ffff;
-	sdp_list_t *attr;
 	sdp_record_t *rec;
+	
+	CM_DBG("Deleting Service Record.\n");
 	
 	if (!session) {
 		CM_DBG("Bad local SDP session!\n");
 		return -1;
 	}
-
-	attr = sdp_list_append(0, &range);
-	rec = sdp_service_attr_req(session, handle, SDP_ATTR_REQ_RANGE, attr);
-	sdp_list_free(attr, 0);
-
-	if (!rec) {
-		CM_DBG("Service Record not found.\n");
+	
+	rec = sdp_record_alloc();
+	
+	if (rec == NULL) {
 		return -1;
 	}
+	
+	rec->handle = handle;
 
-	if (sdp_device_record_unregister(session, &bdaddr_local, rec)) {
-		CM_DBG("Failed to unregister service record: %s\n", strerror(errno));
+	if (sdp_device_record_unregister(session, &bdaddr_local, rec) != 0) {
+		/* 
+		 If Bluetooth is shut off, the sdp daemon will not be running and it is
+		 therefore common that this function will fail in that case. This is fine
+		 since the record is removed when the daemon shuts down. We only have
+		 to free our record handle here then....
+		 */
+		//CM_DBG("Failed to unregister service record: %s\n", strerror(errno));
+		sdp_record_free(rec);
 		return -1;
 	}
 
@@ -349,9 +355,10 @@ void ConnectivityBluetooth::hookCleanup()
 {
 	HAGGLE_DBG("Removing SDP service\n");
 
-	del_service(session, service);
-	
-	sdp_close(session);
+	if (session) {
+		del_service(session, service);
+		sdp_close(session);
+	}
 }
 
 void ConnectivityBluetooth::cancelDiscovery(void)
@@ -363,6 +370,13 @@ void ConnectivityBluetooth::cancelDiscovery(void)
 bool ConnectivityBluetooth::run()
 {
         CM_DBG("Bluetooth connectivity detector started for %s\n", rootInterface->getIdentifierStr());
+	
+	/* 
+	 When the Bluetooth interface is brought up, for example on Android, it takes
+	 a while for the SDP service daemon to start. Therefore, we sleep here a while so
+	 that we can successfully register.
+	 */
+	cancelableSleep(5000);
 
 	session = sdp_connect(0, &bdaddr_local, SDP_RETRY_IF_BUSY);
 

@@ -24,7 +24,6 @@ LOCAL_SRC_FILES := \
 	ConnectivityEthernet.cpp \
 	ConnectivityInterfacePolicy.cpp \
 	ConnectivityLocal.cpp \
-	ConnectivityLocalAndroid.cpp \
 	ConnectivityManager.cpp \
 	Bloomfilter.cpp \
 	Certificate.cpp \
@@ -66,6 +65,15 @@ LOCAL_SRC_FILES := \
 	Metadata.cpp \
 	XMLMetadata.cpp 
 
+ifneq ($(BOARD_WLAN_TI_STA_DK_ROOT),)
+# This Connectivity is specific for tiwlan driver
+LOCAL_SRC_FILES += ConnectivityLocalAndroid.cpp
+else
+# This Connectivity is a generic Linux one which uses wireless extensions to
+# discover local interfaces.
+LOCAL_SRC_FILES += ConnectivityLocalLinux.cpp
+endif
+
 # Includes for the TI wlan driver API
 TI_STA_INCLUDES := \
 	system/wlan/ti/sta_dk_4_0_4_32/common/src/hal/FirmwareApi \
@@ -101,22 +109,22 @@ LOCAL_SHARED_LIBRARIES := \
 # library provided in Android does not have the configured options we need.
 LOCAL_LDLIBS := -lpthread -lsqlite -lcrypto -ldbus -lhaggle-xml2 -lbluetooth -lhardware_legacy -lwpa_client -lcutils
 
-ifeq ($(TARGET_OS)-$(TARGET_SIMULATOR),linux-true)
-LOCAL_LDLIBS += -ldl -lstdc++
-endif
-ifneq ($(TARGET_SIMULATOR),true)
 LOCAL_SHARED_LIBRARIES += libdl libstdc++ libsqlite libcrypto libdbus libhaggle-xml2 libbluetooth libhardware_legacy libwpa_client libcutils
 
-LOCAL_STATIC_LIBRARIES += libcpphaggle libWifiApi
-endif
+LOCAL_STATIC_LIBRARIES += libcpphaggle
 
 LOCAL_CFLAGS:=-O2 -g
-LOCAL_CFLAGS+=-DHAVE_CONFIG -DOS_ANDROID -DHAVE_EXCEPTION=0 -DENABLE_ETHERNET -DENABLE_TI_WIFI -DENABLE_BLUETOOTH -DDEBUG -DDEBUG_LEAKS
+LOCAL_CFLAGS +=-DHAVE_CONFIG -DOS_ANDROID -DHAVE_EXCEPTION=0 -DENABLE_ETHERNET -DENABLE_BLUETOOTH -DDEBUG -DDEBUG_LEAKS
+
+ifneq ($(BOARD_WLAN_TI_STA_DK_ROOT),)
+LOCAL_STATIC_LIBRARIES += libWifiApi
+LOCAL_CFLAGS +=-DENABLE_TI_WIFI
+endif
 
 LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE := haggle
 
-LOCAL_UNSTRIPPED_PATH := $(TARGET_ROOT_OUT_SBIN_UNSTRIPPED)
+# LOCAL_UNSTRIPPED_PATH := $(TARGET_ROOT_OUT_SBIN_UNSTRIPPED)
 
 include $(BUILD_EXECUTABLE)
 

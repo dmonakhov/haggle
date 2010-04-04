@@ -11,8 +11,7 @@ PUSH_DIR=/sdcard
 DATA_DIR=/data/local
 ADB=adb
 ADB_PARAMS=
-ANDROID_DIR=$SCRIPT_DIR/../../../
-PRODUCT_DIR=out/target/product/$TARGET_PRODUCT
+ANDROID_DIR=$ANDROID_BUILD_TOP
 
 if [ -z $TARGET_PRODUCT ]; then
         echo "There is no TARGET_PRODUCT environment variable set."
@@ -25,18 +24,11 @@ fi
 # Restart adb with root permissions
 adb root
 
-
 pushd $ANDROID_DIR
 
-if [ ! -d $PRODUCT_DIR ]; then
-	# in later versions of Android, the dream dir has been renamed to
-	# dream-open, so lets try that before bailing out.
-	PRODUCT_DIR=$PRODUCT_DIR-open
-
-	if [ ! -d $PRODUCT_DIR ]; then
-	echo "Cannot find product directory $PRODUCT_DIR"
-	exit
-	fi
+if [ ! -d $ANDROID_PRODUCT_OUT ]; then
+    echo "Cannot find product directory $ANDROID_PRODUCT_OUT"
+    exit
 fi
 
 popd
@@ -86,11 +78,12 @@ FRAMEWORK_FILES="haggle.jar"
 LIB_PATH_PREFIX="system/lib"
 LIBS="libhaggle.so libhaggle_jni.so libhaggle-xml2.so"
 
+BIN_HOST_PREXIF=
 BIN_PATH_PREFIX="system/bin"
 HAGGLE_BIN="haggle"
 
 pushd $ANDROID_DIR
-pushd $PRODUCT_DIR
+pushd $ANDROID_PRODUCT_OUT
 
 echo $PWD
 
@@ -108,15 +101,15 @@ for dev in $DEVICES; do
     echo
     echo "Installing binaries"
     echo "    $HAGGLE_BIN"
-    $ADB -s $dev push sbin/$HAGGLE_BIN /$BIN_PATH_PREFIX/$HAGGLE_BIN
+    $ADB -s $dev push $BIN_PATH_PREFIX/$HAGGLE_BIN /$BIN_PATH_PREFIX/$HAGGLE_BIN
     $ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/$HAGGLE_BIN
 
     echo "    luckyMe"
-    $ADB -s $dev push sbin/luckyme /$BIN_PATH_PREFIX/luckyme
+    $ADB -s $dev push $BIN_PATH_PREFIX/luckyme /$BIN_PATH_PREFIX/luckyme
     $ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/luckyme
 
     echo "    clitool"
-    $ADB -s $dev push sbin/clitool /$BIN_PATH_PREFIX/clitool
+    $ADB -s $dev push $BIN_PATH_PREFIX/clitool /$BIN_PATH_PREFIX/clitool
     $ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/clitool
 
     # Install libraries

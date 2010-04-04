@@ -2350,8 +2350,10 @@ int SQLDataStore::_ageDataObjects(const Timeval& minimumAge, const EventCallback
 	while (dObjs.size() < DATASTORE_MAX_DATAOBJECTS_AGED_AT_ONCE && (ret = sqlite3_step(stmt)) != SQLITE_DONE) {
 		if (ret == SQLITE_ROW) {
 			DataObjectRef dObj = createDataObject(stmt);
-			dObj->setStored(false);
-			dObjs.push_back(dObj);
+			if (dObj) {
+				dObj->setStored(false);
+				dObjs.push_back(dObj);
+			}
 		} else if (ret == SQLITE_ERROR) {
 			HAGGLE_DBG("Could not age data object - Error: %s\n", sqlite3_errmsg(db));
 			sqlite3_finalize(stmt);

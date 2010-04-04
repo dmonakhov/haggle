@@ -10,9 +10,13 @@ classes.list: $(SUBDIRS) $(CLASSFILES)
 	@echo $(CLASSFILES)
 	(cd java; find . -name "*.class" -print > ../$@)
 
-$(JARFILE): classes.list $(MANIFEST)
+sources.list: $(SUBDIRS) $(SOURCEFILES)
+	@echo $(SOURCEFILES)
+	(cd java; find . -name "*.java" -print > ../$@)
+
+$(JARFILE): classes.list sources.list $(MANIFEST)
 	@echo "Creating Jar file"
-	(cd java; jar cfm ../$@ ../$(MANIFEST) @../$<)
+	(cd java; jar cfm ../$@ ../$(MANIFEST) @../classes.list @../sources.list)
 	cp -f $@ $(top_srcdir)/lib/
 
 clean-local:

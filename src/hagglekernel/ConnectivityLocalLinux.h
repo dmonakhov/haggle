@@ -70,6 +70,10 @@ private:
 #endif
 #if defined(ENABLE_BLUETOOTH)
         struct hci_handle hcih;
+#if defined(OS_ANDROID)
+        bool set_piscan_mode;
+        int dev_id;
+#endif	
         int read_hci();
         void findLocalBluetoothInterfaces();
 #endif

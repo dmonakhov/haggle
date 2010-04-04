@@ -127,23 +127,28 @@ static void resettty()
 static void daemonize()
 {
         int i, sid;
-
+	
         /* check if already a daemon */
-	if (getppid()==1) 
+	if (getppid() == 1) 
                 return; 
+	
+	i = fork();
 
-	i=fork();
-
-	if (i < 0) 
-                exit(1); /* fork error */
-	if (i > 0) 
-                exit(0); /* parent exits */
-
+	if (i < 0) {
+		fprintf(stderr, "Fork error...\n");
+                exit(EXIT_FAILURE); /* fork error */
+	}
+	if (i > 0) {
+		//printf("Parent done... pid=%u\n", getpid());
+                exit(EXIT_SUCCESS); /* parent exits */
+	}
 	/* new child (daemon) continues here */
+
+	Trace::disableStdout();
 	
 	/* Change the file mode mask */
 	umask(0);
-	
+		
 	/* Create a new SID for the child process */
 	sid = setsid();
 	
@@ -339,6 +344,8 @@ static int shutdown_counter = 0;
 
 static void signal_handler(int signal)
 {
+	fprintf(stderr, "got signal %d\n", signal);
+	
 	switch (signal) {
 #if defined(OS_UNIX)
 	case SIGKILL:
@@ -362,47 +369,6 @@ static void signal_handler(int signal)
 	}
 }
 #endif // !OS_WINDOWS_MOBILE
-
-#if defined(OS_UNIX)
-
-static struct {
-	const char *cmd_short;
-	const char *cmd_long;
-	const char *cmd_desc;
-} cmd[] = {
-	{ "-b", "--benchmark", "run benchmark." },
-	{ "-I", "--non-interactive", "turn off interactive information." },
-	{ "-dd", "--delete-datastore", "delete database file before starting." },
-	{ "-h", "--help", "print this help." },
-	{ "-d", "--daemonize", "run in the background as a daemon." },
-	{ "-f", "--filelog", "write debug output to a file (haggle.log)." },
-	{ "-c", "--create-time-bloomfilter", "set create time in node description on bloomfilter update." },
-	{ "-s", "--security-level", "set security level 0-2 (low, medium, high)" }
-};
-
-static void print_help()
-{	
-	unsigned int i;
-
-	printf("Usage: ./haggle -[hbdfIcs{dd}]\n");
-	
-	for (i = 0; i < sizeof(cmd) / (3*sizeof(char *)); i++) {
-		printf("\t%-4s %-20s %s\n", cmd[i].cmd_short, cmd[i].cmd_long, cmd[i].cmd_desc);
-	}
-}
-
-static int check_cmd(char *input, unsigned int index)
-{
-	if (input == NULL || index >  (sizeof(cmd) / (3*sizeof(char *))))
-		return 0;
-
-	if (strcmp(input, cmd[index].cmd_short) == 0 || strcmp(input, cmd[index].cmd_long) == 0)
-		return 1;
-
-	return 0;	
-}
-
-#endif // OS_UNIX
 
 #if HAVE_EXCEPTION
 #include <libcpphaggle/Exception.h>
@@ -651,6 +617,47 @@ static void set_path(void)
 }
 #endif
 
+#if defined(OS_UNIX)
+
+static struct {
+	const char *cmd_short;
+	const char *cmd_long;
+	const char *cmd_desc;
+} cmd[] = {
+	{ "-b", "--benchmark", "run benchmark." },
+	{ "-I", "--non-interactive", "turn off interactive information." },
+	{ "-dd", "--delete-datastore", "delete database file before starting." },
+	{ "-h", "--help", "print this help." },
+	{ "-d", "--daemonize", "run in the background as a daemon." },
+	{ "-f", "--filelog", "write debug output to a file (haggle.log)." },
+	{ "-c", "--create-time-bloomfilter", "set create time in node description on bloomfilter update." },
+	{ "-s", "--security-level", "set security level 0-2 (low, medium, high)" }
+};
+
+static void print_help()
+{	
+	unsigned int i;
+	
+	printf("Usage: ./haggle -[hbdfIcs{dd}]\n");
+	
+	for (i = 0; i < sizeof(cmd) / (3*sizeof(char *)); i++) {
+		printf("\t%-4s %-20s %s\n", cmd[i].cmd_short, cmd[i].cmd_long, cmd[i].cmd_desc);
+	}
+}
+
+static int check_cmd(char *input, unsigned int index)
+{
+	if (input == NULL || index >  (sizeof(cmd) / (3*sizeof(char *))))
+		return 0;
+	
+	if (strcmp(input, cmd[index].cmd_short) == 0 || strcmp(input, cmd[index].cmd_long) == 0)
+		return 1;
+	
+	return 0;	
+}
+
+#endif // OS_UNIX
+
 #if defined(WINCE)
 int WINAPI WinMain(
     HINSTANCE hInstance, 
@@ -708,15 +715,15 @@ int main(void)
 	while (argc) {
 		if (check_cmd(argv[0], 3)) {
 			print_help();
-			return 0;
+			return EXIT_SUCCESS;
 		} else if (check_cmd(argv[0], 1)) {
 			runAsInteractive = false;
 		} else if (check_cmd(argv[0], 0)) {
 #ifdef BENCHMARK
 			if (!(argv[1] && argv[2] && argv[3] && argv[4]
 			      && argv[5])) {
-				cerr << "Bad number of arguments for benchmark option..." << endl;
-				cerr << "usage: -b doAttr nodeAttr numAttr numDataObject numNode" << endl;
+				fprintf(stderr, "Bad number of arguments for benchmark option...\n");
+				fprintf(stderr, "usage: -b doAttr nodeAttr numAttr numDataObject numNode\n");
 				return -1;
 			}
 			printf("Haggle benchmarking...\n");
@@ -728,7 +735,7 @@ int main(void)
 			Benchmark_Test_Num = atoi(argv[5]);
 #else
 			fprintf(stderr, "-b: Unsupported: no benchmarking compiled in!\n");
-			return -1;
+			return EXIT_FAILURE;
 #endif
 			break;
 		} else if (check_cmd(argv[0], 2)) {
@@ -751,7 +758,7 @@ int main(void)
 		} else {
 			fprintf(stderr, "Unknown command line option: %s\n", argv[0]);
 			print_help();
-			exit(-1);
+			exit(EXIT_FAILURE);
 		}
 		argv++;
 		argc--;
@@ -763,7 +770,7 @@ int main(void)
 	signal(SIGINT, &signal_handler);
 #elif defined(OS_UNIX)
 	sigact.sa_handler = &signal_handler;
-	sigaction(SIGHUP, &sigact, NULL);
+	//sigaction(SIGHUP, &sigact, NULL);
 	sigaction(SIGINT, &sigact, NULL);
 #endif
 

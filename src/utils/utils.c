@@ -780,7 +780,7 @@ int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsig
 	struct sockaddr_inarp *sin2;
 	struct sockaddr_dl *sdl;
 	int res = 0;
-	unsigned long addr;
+	unsigned long addr = 0;
 	
 	switch (saddr->sa_family) {
 		case AF_INET:
@@ -800,6 +800,8 @@ int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsig
 		return -2;
 	}
 	
+	printf("needed = %lu\n", needed);
+	
 	if ((buf = malloc(needed)) == NULL)
 		return -3;
 	
@@ -809,18 +811,24 @@ int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsig
 	}
 	
 	lim = buf + needed;
+	
+	printf("needed2 = %lu\n", needed);
+	
 	for (next = buf; next < lim; next += rtm->rtm_msglen) {
 		rtm = (struct rt_msghdr *)next;
 		sin2 = (struct sockaddr_inarp *)(rtm + 1);
 		sdl = (struct sockaddr_dl*)((char*)sin2 + ROUNDUP(sin2->sin_len));
 		if (addr) {
+			printf("comparing %s and %s\n", ip_to_str(sin2->sin_addr), ip_to_str(((struct sockaddr_in*)saddr)->sin_addr));
 			if (addr != sin2->sin_addr.s_addr)
 				continue;
+		
 			res = 1;
 		}
 
 		if (maclen >= sdl->sdl_alen) {
 			memcpy(mac, LLADDR(sdl), sdl->sdl_alen);
+			res = 1;
 			break;
 		} else {
 			res = -5;

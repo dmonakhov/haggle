@@ -36,7 +36,7 @@ class ConnectivityLocalBase : public Connectivity {
         ~ConnectivityLocalBase();
 };
 
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && defined(ENABLE_TI_WIFI)
 #include "ConnectivityLocalAndroid.h"
 #elif defined(OS_LINUX)
 #include "ConnectivityLocalLinux.h"

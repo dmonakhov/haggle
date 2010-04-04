@@ -14,6 +14,7 @@
  */
 
 #include <libhaggle/haggle.h>
+#include <libhaggle/debug.h>
 
 #include <string.h>
 #include <signal.h>
@@ -87,6 +88,8 @@ int main(int argc, char *argv[])
 	char *file_name = NULL;
 	long attr_weight = 1;
 	bool add_create_time = true;
+	
+	LIBHAGGLE_DBG("clitool: parsing commandline\n");
 	
 	// Parse command-line arguments:
 	for(i = 1; i < argc; i++)
@@ -234,6 +237,8 @@ int main(int argc, char *argv[])
 	if(command != command_start)
 	{
 		// Find Haggle:
+		LIBHAGGLE_DBG("Trying to get Haggle handle\n");
+		
 		retval = haggle_handle_get(progname, &haggle_);
 
 		if(retval != HAGGLE_NO_ERROR)
@@ -402,9 +407,13 @@ int main(int argc, char *argv[])
 			
 		case command_start:
 		{
+			LIBHAGGLE_DBG("Trying to spawn Haggle daemon\n");
+			
 			retval = haggle_daemon_spawn(NULL);
-			if(retval != HAGGLE_NO_ERROR)
-				printf("Haggle error: %d\n", retval);
+			if(retval != HAGGLE_NO_ERROR) {
+				fprintf(stderr, "Haggle error: %d\n", retval);
+				LIBHAGGLE_ERR("Could not spawn daemon, retval=%d\n", retval);
+			}
 			retval = 0;
 		}
 		break;	

@@ -35,7 +35,7 @@ namespace haggle {
 /**
 	This is a minimal implementation of a class that does the same thing as 
 	std::map. It is not a complete implementation of std::map, since the only 
-	things implemented are those things needed in Haggle.
+	things implemented are the ones needed in Haggle.
 */
 template <typename Key, typename Value>
 class BasicMap {
@@ -229,8 +229,7 @@ public:
                         delete the_map[i];
                 
                 delete [] the_map;
-                the_map = NULL;
-                number_of_entries = 0;
+		number_of_entries = 0;
                 map_size = 0;
 	}
 	

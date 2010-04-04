@@ -325,7 +325,14 @@ Thread::Thread(Runnable *r) :
 Thread::~Thread()
 {
 	if (strcmp(name, MAIN_THREAD_NAME) == 0) {
-		registryRemove(id);
+		/* 
+		 For some reason, some Android versions do not like that we remove the
+		 main thread object from the registry here. The application hangs at that
+		 point. It is, however, probably safe to not remove the object here,
+		 since reaching this point means that Haggle is exiting and the registry
+		 will be destroyed anyway.
+		 */
+		//registryRemove(id);
 	} else {
 		/*
 		If the thread is running, we must stop it (cancel, then

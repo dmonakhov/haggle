@@ -760,6 +760,29 @@ static int dbus_init_handle(struct dbus_handle *dbh)
 
 #if defined(ENABLE_BLUETOOTH)
 
+// Code taken from hciconfig
+static int bluetooth_set_scan(int ctl, int hdev, const char *opt)
+{
+	struct hci_dev_req dr;
+	
+	dr.dev_id = hdev;
+	dr.dev_opt = SCAN_DISABLED;
+	
+	if (!strcmp(opt, "iscan"))
+		dr.dev_opt = SCAN_INQUIRY;
+	else if (!strcmp(opt, "pscan"))
+		dr.dev_opt = SCAN_PAGE;
+	else if (!strcmp(opt, "piscan"))
+		dr.dev_opt = SCAN_PAGE | SCAN_INQUIRY;
+	
+	if (ioctl(ctl, HCISETSCAN, (unsigned long) &dr) < 0) {
+		fprintf(stderr, "Can't set scan mode on hci%d: %s (%d)\n",
+                        hdev, strerror(errno), errno);
+		return -1;
+	}
+        return 0;
+}
+
 Interface *hci_get_interface_from_name(const char *ifname)
 {
 	struct hci_dev_info di;
@@ -887,12 +910,30 @@ int ConnectivityLocal::read_hci()
 
 		case HCI_DEV_UP:
 			HAGGLE_DBG("HCI dev %d up\n", sd->dev_id);
-                        iface = hci_get_interface_from_name(di.name);
-                                        
-                        if (iface) {
-                                report_interface(iface, NULL, new ConnectivityInterfacePolicyAgeless());
-                                delete iface;
-                        }
+				
+			iface = hci_get_interface_from_name(di.name);
+				
+			if (iface) {
+#if defined(OS_ANDROID)
+				set_piscan_mode = true;
+				dev_id = sd->dev_id;
+				// Force discoverable mode for Android device
+				HAGGLE_DBG("Forcing piscan mode (discoverable)\n");
+				/* 
+				 Sleep a couple of seconds to let
+				 the interface configure itself
+				 before we try to set the piscan
+				 mode. 
+				 */
+				sleep(3);
+				if (bluetooth_set_scan(hcih.sock, sd->dev_id, "piscan") == -1) {
+					fprintf(stderr, "Could not force discoverable mode for Bluetooth device %s\n", di.name);
+				}
+#endif
+				report_interface(iface, NULL, new ConnectivityInterfacePolicyAgeless());
+				delete iface;
+			}
+                                                
 			break;
 
 		case HCI_DEV_DOWN:
@@ -977,6 +1018,14 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 		}
 
 		name[248] = '\0';
+#if defined(OS_ANDROID)
+                HAGGLE_DBG("Forcing piscan mode (discoverable)\n");
+		
+                // Force discoverable mode for Android device
+                if (bluetooth_set_scan(hcih.sock, hdev, "piscan") == -1) {
+                        fprintf(stderr, "Could not force discoverable mode for Bluetooth device %s\n", devname);
+                }
+#endif
 		
 		Address addy(AddressType_BTMAC, (unsigned char *) macaddr);
 		
@@ -1083,9 +1132,20 @@ bool ConnectivityLocal::run()
 			break;
 		}
 		// This should not happen since we do not have a timeout set
-		if (ret == Watch::TIMEOUT)
+		if (ret == Watch::TIMEOUT) {
+#if defined(OS_ANDROID)
+			/* Android automatically switches off
+			 Bluetooth discoverable mode after 2
+			 minutes, therefore we reset it here every
+			 minute until we find a better solution. 
+			 */
+			HAGGLE_DBG("Resetting Bluetooth piscan mode on interface id %d\n", dev_id);
+			if (set_piscan_mode && bluetooth_set_scan(hcih.sock, dev_id, "piscan") == -1) {
+				fprintf(stderr, "Could not force discoverable mode for Bluetooth device %d\n", dev_id);
+			}
+#endif
 			continue;
-
+		}
 #if defined(ENABLE_ETHERNET)
 		if (w.isSet(nlhIndex)) {
 			read_netlink();

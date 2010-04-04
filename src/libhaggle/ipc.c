@@ -494,17 +494,21 @@ static int spawn_daemon_internal(const char *daemonpath, daemon_spawn_callback_t
 		ret = HAGGLE_ERROR;
 		goto fail_start;
 	}
-
-	snprintf(cmd, PATH_LEN, "%s -d", daemonpath);
 	
-	LIBHAGGLE_DBG("Trying to spawn daemon using %s\n", daemonpath);
-
-	if (system(cmd) != 0) {
-		LIBHAGGLE_ERR("could not start Haggle daemon\n");
+	snprintf(cmd, PATH_LEN, "%s -d -s 0", daemonpath);
+	
+	LIBHAGGLE_DBG("Trying to spawn daemon using %s\n", cmd);
+	
+	ret = system(cmd);
+	
+	if (ret == -1 || ret != EXIT_SUCCESS) {
+		LIBHAGGLE_ERR("could not start Haggle daemon, err=%d\n", ret);
 		ret = HAGGLE_ERROR;
 		goto fail_start;
 	}
-
+	
+	LIBHAGGLE_DBG("Daemon started\n");
+	
 #elif defined(OS_WINDOWS)
 #if defined(OS_WINDOWS_MOBILE) || defined(OS_WINDOWS_VISTA)
 	path = strtowstr_alloc(daemonpath);

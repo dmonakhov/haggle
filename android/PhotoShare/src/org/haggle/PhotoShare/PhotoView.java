@@ -1,6 +1,7 @@
 package org.haggle.PhotoShare;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.DataInputStream;
 import java.util.ArrayList;
@@ -10,9 +11,12 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -66,6 +70,7 @@ public class PhotoView extends Activity implements OnClickListener {
 	private Gallery gallery = null;
 	private TextView neighlistHeader = null;
 	private boolean shouldRegisterWithHaggle = true;
+	private File takenPicture = null;
 	
 	/** Called when the activity is first created. */
     @Override
@@ -139,9 +144,6 @@ public class PhotoView extends Activity implements OnClickListener {
     public void onRestart() {
     	super.onRestart();
     	Log.d(PhotoShare.LOG_TAG, "PhotoView:onRestart()");
-    	// Indicate that we are restarting the dialog and that we shouldn't
-    	// reregister with Haggle
-    	shouldRegisterWithHaggle = false;
     }
 	
     @Override
@@ -177,19 +179,15 @@ public class PhotoView extends Activity implements OnClickListener {
 
     		}  else {
     			Log.d(PhotoShare.LOG_TAG, "Registration with Haggle successful");
+    	    	shouldRegisterWithHaggle = false;
     		}
     	}
-    	shouldRegisterWithHaggle = true;
     }
     
     @Override
     protected void onResume() {
     	super.onResume();
     	Log.d(PhotoShare.LOG_TAG, "PhotoView:onResume()");
-    	/*
-    	imgAdpt.updatePictures(ps.getPictureFilePaths());
-    	nodeAdpt.updateNeighbors(ps.getNeighbors());
-    	*/
 	}
 	@Override
 	protected void onPause() {
@@ -206,7 +204,7 @@ public class PhotoView extends Activity implements OnClickListener {
     protected void onDestroy() {
     	super.onDestroy();
     	Log.d(PhotoShare.LOG_TAG, "PhotoView:onDestroy()");
-    	ps.finiHaggle();
+    	//ps.finiHaggle();
     }
 
     @Override
@@ -215,7 +213,8 @@ public class PhotoView extends Activity implements OnClickListener {
     	case KeyEvent.KEYCODE_BACK:
     	case KeyEvent.KEYCODE_HOME:
     		Log.d(PhotoShare.LOG_TAG,"Key back, exit application and deregister with Haggle");
-    		//ps.finiHaggle();
+    		ps.finiHaggle();
+    		shouldRegisterWithHaggle = true;
     		break;
     	}
     	
@@ -228,6 +227,7 @@ public class PhotoView extends Activity implements OnClickListener {
     }
     
     public void onClick(DialogInterface dialog, int which) {
+    	Log.d(PhotoShare.LOG_TAG,"onClick: call finish()");
         finish();
     }
     
@@ -273,8 +273,32 @@ public class PhotoView extends Activity implements OnClickListener {
     	
     	switch (item.getItemId()) {
     	case MENU_TAKE_PICTURE:
-        	i.setClass(getApplicationContext(), Camera.class);
-        	this.startActivityForResult(i, PhotoShare.TAKE_PICTURE_REQUEST);
+			File dir = new File(Environment.getExternalStorageDirectory() + "/PhotoShare");
+    		final String filename = "photoshare-" + System.currentTimeMillis() + ".jpg";
+    		final String filepath = dir + "/" + filename;
+			
+    		if (!dir.mkdirs()) {
+    			Log.d(PhotoShare.LOG_TAG, "Could not create directory " + dir);
+    		}
+    		
+			Log.d(PhotoShare.LOG_TAG, "filepath is " + filepath);
+			
+			takenPicture = new File(filepath);
+    		Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
+    		intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(takenPicture));
+    		startActivityForResult(intent, PhotoShare.IMAGE_CAPTURE_REQUEST);
+            /*
+ 				The ambition here would be to also insert the picture in the
+ 				gallery.
+ 				
+ 				ContentValues values = new ContentValues();
+                values.put(Images.Media.TITLE, "title");
+                values.put(Images.Media.BUCKET_ID, "test");
+                values.put(Images.Media.DESCRIPTION, "test Image taken");
+                Uri uri = getContentResolver().insert(Media.EXTERNAL_CONTENT_URI, values);
+                Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
+                intent.putExtra("output", uri.getPath());
+        	*/
     		return true;
     	case MENU_INTERESTS:
         	i.setClass(getApplicationContext(), InterestView.class);
@@ -299,96 +323,132 @@ public class PhotoView extends Activity implements OnClickListener {
     	
     	return BitmapFactory.decodeFile(filepath, opts);
 	}
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-    	
-    	if (requestCode == PhotoShare.TAKE_PICTURE_REQUEST) {
-    		if (resultCode == RESULT_OK) {
-    			String takenPictureFilepath = data.getStringExtra("filepath");
-    			
-    			Log.d(PhotoShare.LOG_TAG, "activity result filepath is " + takenPictureFilepath);
 
-            	data.setClass(getApplicationContext(), AddPictureAttributeView.class);
+	private void onPictureAttributesResult(int resultCode, Intent data) {
+		Log.d(PhotoShare.LOG_TAG,
+				"Got result from add picture attributes request");
+		if (resultCode != RESULT_OK)
+			return;
 
-            	this.startActivityForResult(data, PhotoShare.ADD_PICTURE_ATTRIBUTES_REQUEST);
-    		}
-    	} else if (requestCode == PhotoShare.ADD_PICTURE_ATTRIBUTES_REQUEST) {
-    		Log.d(PhotoShare.LOG_TAG, "Got result from add picture attributes request");
-    		
-    		if (resultCode == RESULT_OK) {
-    			String takenPictureFilepath = data.getStringExtra("filepath");
-        		Log.d(PhotoShare.LOG_TAG, "File is " + takenPictureFilepath);
-    			
-    			if (takenPictureFilepath != null) {
-    				String[] attrs = (String [])data.getStringArrayExtra("attributes");
-    				
-    				if (attrs == null)
-    					return;
-    				
-    				try {
-    					DataObject dObj = new DataObject(takenPictureFilepath);
-    					
-    					for (int i = 0; i < attrs.length; i++) {
-    						Log.d(PhotoShare.LOG_TAG, "Picture has attribute " + attrs[i]);
-        					dObj.addAttribute("Picture", attrs[i], 1);
-    					}
-    					
-    					
-    					// TODO move to separate thread...
-    					dObj.addHash();
-    				
-    					Bitmap bmp = scaleImage(dObj.getFilePath(), 32);
-    					ByteArrayOutputStream os = new ByteArrayOutputStream();
-    					bmp.compress(CompressFormat.JPEG, 75, os);
-    					
-    					dObj.setThumbnail(os.toByteArray());
-    					
-						ps.getHaggleHandle().publishDataObject(dObj);
-						
-						ArrayList<Attribute> aa = new ArrayList<Attribute>();
-						
-						for (int i = 0; i < attrs.length; i++) {
-							
-							// Also add to our interest list in the interest view
-							synchronized(InterestView.interests) {
-								if (InterestView.interests.contains(attrs[i]) == false) {
-									InterestView.interests.add(attrs[i]);
-									aa.add(new Attribute("Picture", attrs[i], 1));
-								}
-							}
-						}
-						ps.getHaggleHandle().registerInterests(aa.toArray(new Attribute[aa.size()]));
-						
-					} catch (DataObjectException e) {
-						// TODO Auto-generated catch block
-						Log.d(PhotoShare.LOG_TAG, "Could not create data object for " + takenPictureFilepath);
+		String takenPictureFilepath = data.getStringExtra("filepath");
+		Log.d(PhotoShare.LOG_TAG, "File is " + takenPictureFilepath);
+
+		if (takenPictureFilepath == null)
+			return;
+
+		String[] attrs = (String[]) data.getStringArrayExtra("attributes");
+
+		if (attrs == null)
+			return;
+
+		try {
+			DataObject dObj = new DataObject(takenPictureFilepath);
+
+			for (int i = 0; i < attrs.length; i++) {
+				Log.d(PhotoShare.LOG_TAG, "Picture has attribute " + attrs[i]);
+				dObj.addAttribute("Picture", attrs[i], 1);
+			}
+
+			// TODO move to separate thread...
+			dObj.addHash();
+
+			Bitmap bmp = scaleImage(dObj.getFilePath(), 32);
+			ByteArrayOutputStream os = new ByteArrayOutputStream();
+			bmp.compress(CompressFormat.JPEG, 75, os);
+
+			dObj.setThumbnail(os.toByteArray());
+
+			ps.getHaggleHandle().publishDataObject(dObj);
+
+			ArrayList<Attribute> aa = new ArrayList<Attribute>();
+
+			for (int i = 0; i < attrs.length; i++) {
+
+				// Also add to our interest list in the interest view
+				synchronized (InterestView.interests) {
+					if (InterestView.interests.contains(attrs[i]) == false) {
+						InterestView.interests.add(attrs[i]);
+						aa.add(new Attribute("Picture", attrs[i], 1));
 					}
-    			}
-    		}
-    	} else if (requestCode == PhotoShare.ADD_INTEREST_REQUEST) {
-    		String[] deletedInterests = data.getStringArrayExtra("deleted");
-    		String[] addedInterests = data.getStringArrayExtra("added");
-    		
-    		if (addedInterests != null && addedInterests.length != 0) {
-    			Attribute[] aa = new Attribute[addedInterests.length];
-    			for (int i = 0; i < addedInterests.length; i++) {
-    				aa[i] = new Attribute("Picture", addedInterests[i], 1);
-    				Log.d(PhotoShare.LOG_TAG, "Added interest " + addedInterests[i]);
-    			}
-				ps.getHaggleHandle().registerInterests(aa);
-    		}
+				}
+			}
+			ps.getHaggleHandle().registerInterests(
+					aa.toArray(new Attribute[aa.size()]));
 
-    		if (deletedInterests != null && deletedInterests.length != 0) {
-    			Attribute[] aa = new Attribute[deletedInterests.length];
-    			for (int i = 0; i < deletedInterests.length; i++) {
-    				aa[i] = new Attribute("Picture", deletedInterests[i], 1);
-    				Log.d(PhotoShare.LOG_TAG, "Deleted interest " + deletedInterests[i]);
-    			}
-    			ps.getHaggleHandle().unregisterInterests(aa);
-    		}
-    	} else {
-    		Log.d(PhotoShare.LOG_TAG, "Unknown activity result");
-    	}
+		} catch (DataObjectException e) {
+			// TODO Auto-generated catch block
+			Log.d(PhotoShare.LOG_TAG, "Could not create data object for "
+					+ takenPictureFilepath);
+		}
+	}
+
+	private void onAddInterestResult(int resultCode, Intent data) {
+		String[] deletedInterests = data.getStringArrayExtra("deleted");
+		String[] addedInterests = data.getStringArrayExtra("added");
+		
+		if (addedInterests != null && addedInterests.length != 0) {
+			Attribute[] aa = new Attribute[addedInterests.length];
+			for (int i = 0; i < addedInterests.length; i++) {
+				aa[i] = new Attribute("Picture", addedInterests[i], 1);
+				Log.d(PhotoShare.LOG_TAG, "Added interest " + addedInterests[i]);
+			}
+			ps.getHaggleHandle().registerInterests(aa);
+		}
+
+		if (deletedInterests != null && deletedInterests.length != 0) {
+			Attribute[] aa = new Attribute[deletedInterests.length];
+			for (int i = 0; i < deletedInterests.length; i++) {
+				aa[i] = new Attribute("Picture", deletedInterests[i], 1);
+				Log.d(PhotoShare.LOG_TAG, "Deleted interest " + deletedInterests[i]);
+			}
+			ps.getHaggleHandle().unregisterInterests(aa);
+		}
+	}
+	
+	private void onImageCaptureResult(int resultCode, Intent data) {
+		if (resultCode == Activity.RESULT_CANCELED) {
+			Log.d(PhotoShare.LOG_TAG, "Image capture was canceled!");
+			takenPicture = null;
+			return;
+		}
+		if (resultCode != RESULT_OK) {
+			takenPicture = null;
+			Log.d(PhotoShare.LOG_TAG, "Image capture result was not OK!");
+			return;
+		}
+
+		if (takenPicture == null) {
+			Log.d(PhotoShare.LOG_TAG, "Taken picture path is null");
+			return;
+		}
+		
+		Log.d(PhotoShare.LOG_TAG, "Taken picture: " + takenPicture.getAbsolutePath());
+		
+		data = new Intent();
+		
+		data.putExtra("filepath", takenPicture.getAbsolutePath());
+		data.setClass(getApplicationContext(), AddPictureAttributeView.class);
+
+		this.startActivityForResult(data,
+				PhotoShare.ADD_PICTURE_ATTRIBUTES_REQUEST);		
+	}
+
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+    	
+		switch (requestCode) {
+		case PhotoShare.ADD_PICTURE_ATTRIBUTES_REQUEST:
+			onPictureAttributesResult(resultCode, data);
+			break;
+		case PhotoShare.ADD_INTEREST_REQUEST:
+			onAddInterestResult(resultCode, data);
+			break;
+		case PhotoShare.IMAGE_CAPTURE_REQUEST:
+			onImageCaptureResult(resultCode, data);
+			break;
+		default:
+			Log.d(PhotoShare.LOG_TAG, "Unknown activity result");
+		}
     }
 	@Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
