@@ -353,7 +353,7 @@ public class PhotoView extends Activity implements OnClickListener {
 			// TODO move to separate thread...
 			dObj.addHash();
 
-			Bitmap bmp = scaleImage(dObj.getFilePath(), 32);
+			Bitmap bmp = scaleImage(dObj.getFilePath(), 50);
 			ByteArrayOutputStream os = new ByteArrayOutputStream();
 			bmp.compress(CompressFormat.JPEG, 75, os);
 

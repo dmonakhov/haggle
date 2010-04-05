@@ -40,32 +40,7 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 		// TODO Auto-generated method stub
 		super.onCreate();
 
-    	Log.d(PhotoShare.LOG_TAG, "PhotoShare:onCreate(), thread id=" + Thread.currentThread().getId());	
-		//status = initHaggle();
-    	/*
-    	if(new File("/system/lib/libhaggle.so").exists() == false) {
- 		
-    		if (!copyFile("/data/local/libhaggle.so", "/system/lib/libhaggle.so")) {
-    			Log.d(PhotoShare.LOG_TAG, "Could not copy libhaggle");
-    			return;
-    		}
-    	}
-    	if(new File("/system/lib/libhaggle_jni.so").exists() == false) {
- 		
-    		if (!copyFile("/data/local/libhaggle_jni.so", "/system/lib/libhaggle_jni.so")) {
-    			Log.d(PhotoShare.LOG_TAG, "Could not copy libhaggle_jni");
-    			return;
-    		}
-    	}
-    	if(new File("/system/lib/libhaggle-xml2.so").exists() == false) {
-     		
-    		if (!copyFile("/data/local/libhaggle-xml2.so", "/system/lib/libhaggle-xml2.so")) {
-    			Log.d(PhotoShare.LOG_TAG, "Could not copy libhaggle-xml2");
-    			return;
-    		}
-    	}
-    	*/
-    	
+    	Log.d(PhotoShare.LOG_TAG, "PhotoShare:onCreate(), thread id=" + Thread.currentThread().getId());
     	
     	vibrator = (android.os.Vibrator)getSystemService(VIBRATOR_SERVICE);
 	}
@@ -126,7 +101,7 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 
 		Log.d(PhotoShare.LOG_TAG, "Haggle daemon pid is " + pid);
 
-		int tries = 2;
+		int tries = 1;
 
 		while (tries > 0) {
 			try {
@@ -135,10 +110,11 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 			} catch (Handle.RegistrationFailedException e) {
 				Log.e(PhotoShare.LOG_TAG, "Registration failed : " + e.getMessage());
 
-				if (--tries > 0) {
+				if (e.getError() == Handle.HAGGLE_BUSY_ERROR) {
 					Handle.unregister("PhotoShare");
 					continue;
-				}
+				} else if (--tries > 0) 
+					continue;
 
 				Log.e(PhotoShare.LOG_TAG, "Registration failed, giving up");
 				return STATUS_REGISTRATION_FAILED;

@@ -30,14 +30,15 @@ public class Handle {
 	public native boolean eventLoopStop();
         public native boolean eventLoopIsRunning();
 
-        public static int HAGGLE_ERROR = -100;
-        public static int HAGGLE_NO_ERROR = 0;
+        public static final int HAGGLE_ERROR = -100;
+        public static final int HAGGLE_BUSY_ERROR = -96;
+        public static final int HAGGLE_NO_ERROR = 0;
 
         // Useful for launcing Haggle from an application
-        public static int HAGGLE_DAEMON_ERROR = HAGGLE_ERROR;
-        public static int HAGGLE_DAEMON_NOT_RUNNING = HAGGLE_NO_ERROR;
-        public static int HAGGLE_DAEMON_RUNNING = 1;
-        public static int HAGGLE_DAEMON_CRASHED = 2;
+        public static final int HAGGLE_DAEMON_ERROR = HAGGLE_ERROR;
+        public static final int HAGGLE_DAEMON_NOT_RUNNING = HAGGLE_NO_ERROR;
+        public static final int HAGGLE_DAEMON_RUNNING = 1;
+        public static final int HAGGLE_DAEMON_CRASHED = 2;
         
         public static native long getDaemonPid();
         public static native int getDaemonStatus();
@@ -47,19 +48,38 @@ public class Handle {
         public static native boolean spawnDaemon(String path, LaunchCallback c);
         
 	// Non-native methods follow here
-	public Handle(String name) throws RegistrationFailedException
+	public Handle(String name) throws RegistrationFailedException, AlreadyRegisteredException
         {
-                int ret = getHandle(name);
-
-                if (ret != 0)
-                        throw new RegistrationFailedException("Registration failed with value " + ret);
-
+		int ret = getHandle(name);
+		
+		switch (ret) {
+			case HAGGLE_NO_ERROR:
+				break;
+			case HAGGLE_BUSY_ERROR:
+				throw new AlreadyRegisteredException("Already registered", ret);
+			case HAGGLE_ERROR:
+			default:
+				throw new RegistrationFailedException("Registration failed with value " + ret, ret);
+		}
                 this.name = name;
         }
         public class RegistrationFailedException extends Exception {
-                RegistrationFailedException(String msg)
+		private int err;
+		
+                RegistrationFailedException(String msg, int err)
                 {
                         super(msg);
+			this.err = err;
+                }
+		public int getError() 
+		{
+			return err;
+		}
+        }
+	public class AlreadyRegisteredException extends RegistrationFailedException {
+                AlreadyRegisteredException(String msg, int err)
+                {
+                        super(msg, err);
                 }
         }
         public synchronized void dispose()
