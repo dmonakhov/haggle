@@ -111,6 +111,7 @@ private:
 	void onPrepareShutdown();
 	void onShutdown();
 	bool init_derived();
+	void onConfig(Metadata *m);
 public:
 #ifdef DEBUG
 	void printCertificates();

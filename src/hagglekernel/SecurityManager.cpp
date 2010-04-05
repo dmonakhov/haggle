@@ -18,6 +18,7 @@
 #include "Utility.h"
 
 #include <stdio.h>
+#include <ctype.h>
 #include <openssl/bio.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
@@ -343,7 +344,7 @@ void SecurityHelper::cleanup()
 const char *security_level_names[] = { "LOW", "MEDIUM", "HIGH" };
 
 SecurityManager::SecurityManager(HaggleKernel *_haggle, const SecurityLevel_t slevel) :
-	Manager("Security Manager", _haggle), securityLevel(slevel), etype(EVENT_TYPE_INVALID), helper(NULL), 
+	Manager("SecurityManager", _haggle), securityLevel(slevel), etype(EVENT_TYPE_INVALID), helper(NULL), 
 	myCert(NULL), ca_issuer(CA_ISSUER_NAME), caPrivKey(NULL), caPubKey(NULL), privKey(NULL)
 {
 
@@ -773,3 +774,36 @@ void SecurityManager::onSendDataObject(Event *e)
 		}
 	}	
 }
+
+void SecurityManager::onConfig(Metadata *m)
+{
+	const char *param = m->getParameter("security_level");
+	
+	if (param) {
+		char *level = new char[strlen(param) + 1];
+		size_t i;
+		
+		// Convert string to uppercase
+		for (i = 0; i < strlen(param); i++) {
+			level[i] = toupper(param[i]);
+		}
+		
+		level[i] = '\0';
+		
+		if (strcmp(level, security_level_names[SECURITY_LEVEL_HIGH]) == 0) {
+			securityLevel = SECURITY_LEVEL_HIGH;
+			HAGGLE_DBG("Security level set to %s\n", security_level_names[SECURITY_LEVEL_HIGH]);
+		} else if (strcmp(level, security_level_names[SECURITY_LEVEL_MEDIUM]) == 0) {
+			securityLevel = SECURITY_LEVEL_MEDIUM;
+			HAGGLE_DBG("Security level set to %s\n", security_level_names[SECURITY_LEVEL_MEDIUM]);
+		} else if (strcmp(level, security_level_names[SECURITY_LEVEL_LOW]) == 0) {
+			securityLevel = SECURITY_LEVEL_LOW;
+			HAGGLE_DBG("Security level set to %s\n", security_level_names[SECURITY_LEVEL_LOW]);
+		} else {
+			HAGGLE_ERR("Unrecognized security level '%s'\n", level);
+		}
+		
+		delete [] level;
+	}
+}
+

@@ -204,7 +204,6 @@ public class PhotoView extends Activity implements OnClickListener {
     protected void onDestroy() {
     	super.onDestroy();
     	Log.d(PhotoShare.LOG_TAG, "PhotoView:onDestroy()");
-    	//ps.finiHaggle();
     }
 
     @Override
@@ -215,6 +214,7 @@ public class PhotoView extends Activity implements OnClickListener {
     		Log.d(PhotoShare.LOG_TAG,"Key back, exit application and deregister with Haggle");
     		ps.finiHaggle();
     		shouldRegisterWithHaggle = true;
+    		this.finish();
     		break;
     	}
     	
@@ -305,6 +305,7 @@ public class PhotoView extends Activity implements OnClickListener {
         	this.startActivityForResult(i, PhotoShare.ADD_INTEREST_REQUEST);
     		return true;
     	case MENU_SHUTDOWN_HAGGLE:
+    		shouldRegisterWithHaggle = true;
     		ps.shutdownHaggle();
     		return true;
     	}

@@ -1,10 +1,8 @@
 <Haggle persistent="no">
 	<Attr name="ManagerConfiguration">*</Attr>
-	<ForwardingManager>
-		<ForwardingModule/>
-	</ForwardingManager>
+	<SecurityManager security_level="MEDIUM"/>
 	<DebugManager>
-		<DebugTrace enable="false"/>
+		<DebugTrace enable="true"/>
 	</DebugManager>
 	<NodeManager>
 		<Node matching_threshold="10" max_dataobjects_in_match="10"/>

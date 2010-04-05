@@ -495,7 +495,7 @@ static int spawn_daemon_internal(const char *daemonpath, daemon_spawn_callback_t
 		goto fail_start;
 	}
 	
-	snprintf(cmd, PATH_LEN, "%s -d -s 0", daemonpath);
+	snprintf(cmd, PATH_LEN, "%s -d", daemonpath);
 	
 	LIBHAGGLE_DBG("Trying to spawn daemon using %s\n", cmd);
 	

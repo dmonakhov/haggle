@@ -344,8 +344,6 @@ static int shutdown_counter = 0;
 
 static void signal_handler(int signal)
 {
-	fprintf(stderr, "got signal %d\n", signal);
-	
 	switch (signal) {
 #if defined(OS_UNIX)
 	case SIGKILL:

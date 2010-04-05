@@ -126,7 +126,7 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 
 		Log.d(PhotoShare.LOG_TAG, "Haggle daemon pid is " + pid);
 
-		int tries = 2;
+		int tries = 1;
 
 		while (tries > 0) {
 			try {
@@ -237,6 +237,10 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 
 	public void onShutdown(int reason) {
 		Log.d(PhotoShare.LOG_TAG, "Shutdown event, reason=" + reason);
+		if (hh != null) {
+			hh.dispose();
+			hh = null;
+		}
 		pv.runOnUiThread(new Runnable() {
 			public void run() {
 				AlertDialog.Builder builder = new AlertDialog.Builder(pv);
