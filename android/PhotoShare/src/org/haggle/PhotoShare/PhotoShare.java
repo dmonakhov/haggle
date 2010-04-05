@@ -126,7 +126,7 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 
 		Log.d(PhotoShare.LOG_TAG, "Haggle daemon pid is " + pid);
 
-		int tries = 1;
+		int tries = 2;
 
 		while (tries > 0) {
 			try {

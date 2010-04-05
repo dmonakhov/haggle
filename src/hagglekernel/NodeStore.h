@@ -31,7 +31,65 @@ public:
 	bool operator==(const NodeRef &n) { return node == n; }
 };
 
-/** */
+/** 
+ DEADLOCK WARNING!
+
+ READ CAREFULLY BEFORE USING THE NODE STORE API.
+ 
+ It is forbidden to hold locks on reference objects, i.e., "Reference<MyType> obj" (or
+ other locks for that matter), while accessing the node store.
+ 
+ Holding such locks may cause deadlocks when another thread holding a lock on the same object
+ accesses the node store.
+ 
+ Consider the following scenario:
+ 
+ Thread 1.
+ 
+ obj.lock();
+ 
+ NodeRef node = kernel->getNodeStore()->retreive(iface); 
+ 
+ <--- Context switch on the first line in the retreive function.
+ 
+ Thread 2.
+ 
+ node.lock();
+ 
+ obj.lock() <--- blocked since thread 1 holds this lock.
+
+ <--- Context switch to thread 2.
+ 
+ Thread 2.
+ 
+ (while in NodeStore::retreive() )
+ 
+ node.lock(); (same as calling a dereference, e.g., node->getIdStr()) <--- This will block!
+ 
+ DEADLOCK!!!
+ 
+ 
+ Actually, this type of dual object competition can happen anywhere in the code, but it is
+ just more likely to happen while accessing the node store, for example, by dereferencing an
+ object as NodeStore::retreive() is called as so:
+ 
+ kernel->getNodeStore()->retreive(obj->getInterface());
+ 
+ This is equivalent to:
+
+ obj.lock();
+ iface = obj->getInterface();
+ 
+ NodeRef node = kernel->getNodeStore()->retreive(iface); 
+ 
+ obj.unlock();
+ 
+ 
+ A Good RULE is therefore to never dereference an object in the argument to 
+ NodeStore::retreive(), or any other node store function.
+
+ */
+
 class NodeStore : protected List<NodeRecord *>
 {
 	Mutex mutex;
@@ -71,7 +129,7 @@ public:
 		a neighbor in the store.
 		Returns: boolean indicating whether the node was found or not.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
         bool stored(const NodeRef &node, bool mustBeNeighbor = false);
@@ -81,7 +139,7 @@ public:
 		a neighbor in the store.
 		Returns: boolean indicating whether the node was found or not.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
         bool stored(const Node &node, bool mustBeNeighbor = false);
@@ -91,7 +149,7 @@ public:
 		a neighbor in the store.
 		Returns: boolean indicating whether the node was found or not.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
         bool stored(const NodeId_t id, bool mustBeNeighbor = false);
@@ -101,21 +159,21 @@ public:
 		a neighbor in the store.
 		Returns: boolean indicating whether the node was found or not.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
 	bool stored(const string idStr, bool mustBeNeighbor = false);
 	/**
 		Add a new node to the node store.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
         bool add(NodeRef &node);
 	/**
 		Add a new node to the node store.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
         NodeRef add(Node *node);
@@ -126,7 +184,7 @@ public:
 		Returns: A node reference to the specified node or a null-reference
 		if it was not found in the store.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
         NodeRef retrieve(const NodeRef &node, bool mustBeNeighbor = false);
@@ -136,7 +194,7 @@ public:
 		Returns: A node reference to the specified node or a null-reference
 		if it was not found in the store.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
         NodeRef retrieve(const Node &node, bool mustBeNeighbor = false);
@@ -146,7 +204,7 @@ public:
 		Returns: A node reference to the specified node or a null-reference
 		if it was not found in the store.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
         NodeRef retrieve(const NodeId_t id, bool mustBeNeighbor = false);
@@ -156,7 +214,7 @@ public:
 		Returns: A node reference to the specified node or a null-reference
 		if it was not found in the store.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
 	NodeRef retrieve(const string &id, bool mustBeNeighbor = false);
@@ -166,7 +224,7 @@ public:
 		Returns: A node reference to the specified node or a null-reference
 		if it was not found in the store.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
         NodeRef retrieve(const InterfaceRef &iface, bool mustBeNeighbor = false);
@@ -176,7 +234,7 @@ public:
 		Returns NULL if there are no nodes that match the given criteria.
 		The returned list has to be freed by the caller.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
 	size_type retrieve(const Criteria& crit, NodeRefList& nl);
@@ -185,7 +243,7 @@ public:
 		Returns NULL if there are no nodes that match the given type.
 		The returned list has to be freed by the caller.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
 	size_type retrieve(const NodeType_t type, NodeRefList& nl);
@@ -194,7 +252,7 @@ public:
 		Returns NULL if there are no neighbors. The list has to be freed 
 		by the caller.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
 	size_type retrieveNeighbors(NodeRefList& nl);
@@ -209,7 +267,7 @@ public:
 		Returns true if the node was removed, and false if the node
 		was not located in the store.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
 	bool remove(const NodeRef &node);
@@ -218,7 +276,7 @@ public:
 
 		Returns: The number of nodes removed, or -1 on error.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
         int remove(const NodeType_t type);
@@ -228,7 +286,7 @@ public:
 
 		Returns: A reference to the removed node.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
         NodeRef remove(const InterfaceRef &iface);
@@ -238,7 +296,7 @@ public:
 		against the nodes in the store. If at least one interface given node matches 
 		a node in the store, the stored node will be updated.
 		
-		DEADLOCK WARNING: the calling thread may not hold the lock on a node 
+		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
         bool update(NodeRef &inNode, NodeRefList *nl = NULL);

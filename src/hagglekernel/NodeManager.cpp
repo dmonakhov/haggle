@@ -491,27 +491,29 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 
 		// Make sure at least the interface of the remote node is set to up
 		// this 
-		if (dObj->getRemoteInterface()) {
+		InterfaceRef remoteIface = dObj->getRemoteInterface();
+		
+		if (remoteIface) {
 			
-			if (node->hasInterface(dObj->getRemoteInterface())) {
+			if (node->hasInterface(remoteIface)) {
 				// Node description was received directly from
 				// the node it belongs to
 				
 				// Mark the interface as up in the node.
-				node->setInterfaceUp(dObj->getRemoteInterface());				
+				node->setInterfaceUp(remoteIface);				
 			} else {
 				// Node description was received from third party.
 				
 				fromThirdParty = true;
 
-				NodeRef peer = kernel->getNodeStore()->retrieve(dObj->getRemoteInterface(), true);
+				NodeRef peer = kernel->getNodeStore()->retrieve(remoteIface, true);
 				
 				if  (peer) {
 					HAGGLE_DBG("Received %s's node description from third party node %s [%s]\n",
 						   node->getName().c_str(), peer->getName().c_str(), peer->getIdStr());
 				} else {
 					HAGGLE_DBG("Received %s's node description from third party node with interface %s\n",
-						   node->getName().c_str(), dObj->getRemoteInterface()->getIdentifierStr());
+						   node->getName().c_str(), remoteIface->getIdentifierStr());
 				}
 
 				// Ignore the node description if the node it describes
@@ -580,7 +582,6 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 
 void NodeManager::nodeUpdate(NodeRef& node)
 {
-
 	NodeRefList nl;
 	
 	// See if this node is already an active neighbor but in an uninitialized state

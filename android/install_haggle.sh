@@ -60,6 +60,8 @@ pushd $SCRIPT_DIR
 for dev in $DEVICES; do
     echo "Installing configuration files onto device $dev"
     $ADB -s $dev push $DEVICE_FILES_DIR/tiwlan.ini $DATA_DIR/
+    $ADB -s $dev shell mkdir /data/haggle
+    $ADB -s $dev shell mkdir /sdcard/PhotoShare
 done
 
 FRAMEWORK_PATH_PREFIX="system/framework"
