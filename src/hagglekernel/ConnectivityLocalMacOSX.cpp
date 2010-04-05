@@ -53,7 +53,7 @@
 #define ENABLE_KERNEL_SOCKET_CODE	0
 
 
-static const char *blacklist_device_names[] = { "vmnet", "fw", "lo", "gif", "stf", NULL };
+static const char *blacklist_device_names[] = { "vmnet", "fw", "vboxnet", "lo", "gif", "stf", NULL };
 
 static bool isBlacklistDeviceName(const char *devname)
 {

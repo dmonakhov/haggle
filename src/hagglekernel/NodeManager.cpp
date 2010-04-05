@@ -135,13 +135,8 @@ bool NodeManager::init_derived()
 	/*
 		Search for and (if found) load the avatar image for this node.
 	*/
-#if defined(OS_ANDROID)
-        // This is a ugly hack for Android in order to not store the
-        // Avatar.jpg in /usr/bin
+
 	string str = HAGGLE_DEFAULT_STORAGE_PATH;
-#else
-	string str = HAGGLE_FOLDER_PATH;
-#endif
 	str += PLATFORM_PATH_DELIMITER;
 	str += "Avatar.jpg";
 	FILE *fp = fopen(str.c_str(), "r");
