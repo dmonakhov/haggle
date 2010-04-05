@@ -800,8 +800,6 @@ int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsig
 		return -2;
 	}
 	
-	printf("needed = %lu\n", needed);
-	
 	if ((buf = malloc(needed)) == NULL)
 		return -3;
 	
@@ -811,15 +809,12 @@ int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsig
 	}
 	
 	lim = buf + needed;
-	
-	printf("needed2 = %lu\n", needed);
-	
+		
 	for (next = buf; next < lim; next += rtm->rtm_msglen) {
 		rtm = (struct rt_msghdr *)next;
 		sin2 = (struct sockaddr_inarp *)(rtm + 1);
 		sdl = (struct sockaddr_dl*)((char*)sin2 + ROUNDUP(sin2->sin_len));
 		if (addr) {
-			printf("comparing %s and %s\n", ip_to_str(sin2->sin_addr), ip_to_str(((struct sockaddr_in*)saddr)->sin_addr));
 			if (addr != sin2->sin_addr.s_addr)
 				continue;
 		
@@ -844,7 +839,7 @@ int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsig
 
 int send_file(const char* filename, int fd)
 {
-	#define MAX_SIZE 1400
+#define MAX_SIZE 1400
 	char buf[MAX_SIZE];
 	int sent, tot_sent = 0;
 	char *p;
@@ -855,12 +850,11 @@ int send_file(const char* filename, int fd)
 		printf("fopen error");
 	}
 
-	while(!feof(f) && !ferror(f)) {
+	while (!feof(f) && !ferror(f)) {
 		size_t len = fread(buf, 1, MAX_SIZE, f);
 		
 		if (len == 0)
 			break;
-		
 		
 		p = buf;
 		

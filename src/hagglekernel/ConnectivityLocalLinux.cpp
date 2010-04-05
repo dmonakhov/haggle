@@ -59,7 +59,7 @@ Interface *hci_get_interface_from_name(const char *ifname);
 
 #if defined(ENABLE_ETHERNET)
 
-static const char *blacklist_device_names[] = { "vmnet", "vmaster", "pan", "lo", "wifi", NULL };
+static const char *blacklist_device_names[] = { "vmnet", "vmaster", "rmnet", "pan", "lo", "wifi", NULL };
 
 static bool isBlacklistDeviceName(const char *devname)
 {

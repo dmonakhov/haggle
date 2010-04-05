@@ -11,7 +11,7 @@
 	<ProtocolManager>
 		<TCPServer port="9697" backlog="30"/>
 	</ProtocolManager>
-	<DataManager>
+	<DataManager set_createtime_on_bloomfilter_update="true">
 		<Aging period="3600" max_age="86400"/>
 	</DataManager>
 	<ConnectivityManager>

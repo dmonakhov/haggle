@@ -57,20 +57,10 @@ read
 
 pushd $SCRIPT_DIR
 
-# Depending on how the device is rooted, it might not be possible to
-# write directly to the root partition due to lack of permissions. We
-# therefore write first to the sdcard, and then we run a script on the
-# device as 'root', which copies the files to their correct places.
-
-if [ -f $DEVICE_FILES_DIR/adhoc.sh ]; then
-    for dev in $DEVICES; do
-	echo "Installing configuration files onto device $dev"
-	$ADB -s $dev push $DEVICE_FILES_DIR/adhoc.sh $DATA_DIR/
-	$ADB -s $dev push $DEVICE_FILES_DIR/tiwlan.ini $DATA_DIR/
-	$ADB -s $dev shell chmod 775 $DATA_DIR/adhoc.sh
-    done
-fi
-
+for dev in $DEVICES; do
+    echo "Installing configuration files onto device $dev"
+    $ADB -s $dev push $DEVICE_FILES_DIR/tiwlan.ini $DATA_DIR/
+done
 
 FRAMEWORK_PATH_PREFIX="system/framework"
 FRAMEWORK_FILES="haggle.jar"
@@ -96,6 +86,10 @@ for dev in $DEVICES; do
 
     # Enter directory holding unstripped binaries
     pushd symbols
+
+    # Install ad hoc settings script
+    $ADB -s $dev push $DEVICE_FILES_DIR/adhoc.sh $BIN_PATH_PREFIX/adhoc
+    $ADB -s $dev shell chmod 775 $BIN_PATH_PREFIX/adhoc
 
     # Install Haggle binary
     echo
@@ -134,7 +128,11 @@ for dev in $DEVICES; do
     done
 
     # Cleanup data folder if any
-    $ADB -s $dev shell rm /data/haggle/*
+    $ADB -s $dev shell rm /data/haggle/haggle.db
+    $ADB -s $dev shell rm /data/haggle/haggle.log
+    $ADB -s $dev shell rm /data/haggle/trace.log
+    $ADB -s $dev shell rm /data/haggle/libhaggle.txt
+    $ADB -s $dev shell rm /data/haggle/haggle.pid
 
     # Reset filesystem to read-only
     $ADB -s $dev shell mount -o remount,ro -t yaffs2 /dev/block/mtdblock3 /system

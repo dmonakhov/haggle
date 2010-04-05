@@ -34,9 +34,9 @@ DataTask::DataTask(const DataTaskType_t _type, DataObjectRef _dObj) :
 {
 }
 
- DataTask::~DataTask()
- {
- }
+DataTask::~DataTask()
+{
+}
 
 DataHelper::DataHelper(DataManager *m, const EventType _etype) : 
 	ManagerModule<DataManager>(m, "DataHelper"), taskQ("DataHelper"), etype(_etype)
@@ -530,6 +530,19 @@ void DataManager::onAging(Event *e)
 void DataManager::onConfig(Metadata *m)
 {
 	bool agingHasChanged = false;
+	
+	const char *param = m->getParameter("set_createtime_on_bloomfilter_update");
+	
+	if (param) {
+		if (strcmp(param, "true") == 0) {
+			setCreateTimeOnBloomfilterUpdate = true;
+			HAGGLE_DBG("setCreateTimeOnBloomfilterUpdate set to 'true'\n");
+		}
+		else if (strcmp(param, "false") == 0) {
+			setCreateTimeOnBloomfilterUpdate = false;
+			HAGGLE_DBG("setCreateTimeOnBloomfilterUpdate set to 'false'\n");
+		}
+	}
 	
 	Metadata *dm = m->getMetadata("Aging");
 
