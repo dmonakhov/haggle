@@ -826,6 +826,9 @@ public class PhotoView extends Activity implements OnClickListener {
     		return tv;
     	}
     	public Node getNode(int pos) {
+    		if (pos < 0 || pos > neighbors.length - 1) 
+    			return null;
+    		
     		return neighbors[pos];
     	}
     	public synchronized Node[] getNodes() {
