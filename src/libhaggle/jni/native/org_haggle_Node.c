@@ -43,3 +43,29 @@ JNIEXPORT jobject JNICALL Java_org_haggle_Node_getInterfaceN(JNIEnv *env, jobjec
         
         return java_object_new(env, JCLASS_INTERFACE, haggle_interface_copy(haggle_node_get_interface_n((haggle_node_t *)get_native_handle(env, JCLASS_NODE, obj), n)));
 }
+
+/*
+ * Class:     org_haggle_Node
+ * Method:    getInterfaces
+ * Signature: ()[Lorg/haggle/Interface;
+ */
+JNIEXPORT jobjectArray JNICALL Java_org_haggle_Node_getInterfaces(JNIEnv *env, jobject obj)
+{
+	jobjectArray interfaceArray;
+        list_t *pos;
+	haggle_node_t *node = (haggle_node_t *)get_native_handle(env, JCLASS_NODE, obj);
+        int i = 0;
+        
+	if (!node)
+		return NULL;
+	
+        interfaceArray = (*env)->NewObjectArray(env, node->num_interfaces, java_object_class(JCLASS_INTERFACE), NULL);
+	
+	list_for_each(pos, &node->interfaces) {
+		haggle_interface_t *iface = (haggle_interface_t *)pos;
+		(*env)->SetObjectArrayElement(env, interfaceArray, i++, java_object_new(env, JCLASS_INTERFACE, haggle_interface_copy(iface)));
+	}
+	
+        return interfaceArray;
+}
+

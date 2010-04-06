@@ -24,14 +24,6 @@
 #include "../../config.h"
 #endif
 
-/*
-#ifdef OS_LINUX
-#ifdef HAVE_TRACKER
-#include <glib-2.0/glib.h>
-#include <tracker.h>
-#endif
-#endif
-*/
 #define LIBHAGGLE_INTERNAL
 #include <libhaggle/haggle.h>
 #include "base64.h"

@@ -39,6 +39,14 @@ JNIEXPORT jlong JNICALL Java_org_haggle_Node_getNumInterfaces
 JNIEXPORT jobject JNICALL Java_org_haggle_Node_getInterfaceN
   (JNIEnv *, jobject, jint);
 
+/*
+ * Class:     org_haggle_Node
+ * Method:    getInterfaces
+ * Signature: ()[Lorg/haggle/Interface;
+ */
+JNIEXPORT jobjectArray JNICALL Java_org_haggle_Node_getInterfaces
+  (JNIEnv *, jobject);
+
 #ifdef __cplusplus
 }
 #endif

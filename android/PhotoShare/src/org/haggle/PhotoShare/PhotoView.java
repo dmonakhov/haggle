@@ -467,6 +467,7 @@ public class PhotoView extends Activity implements OnClickListener {
 			NodeAdapter na = (NodeAdapter) lv.getAdapter();
 			*/
 			menu.setHeaderTitle("Node Information");
+			menu.add("Interfaces");
 			menu.add("Cancel");
 		}
 	}
@@ -509,8 +510,32 @@ public class PhotoView extends Activity implements OnClickListener {
         		alertDialog.show();
         	}
         } else {
-        	if (item.getTitle() == "Information") {
-        		Toast.makeText(this, "Feature not implemented... pos =" + info.position, Toast.LENGTH_SHORT).show();
+        	if (item.getTitle() == "Interfaces") {
+        		AlertDialog.Builder builder;
+        		AlertDialog alertDialog;
+
+        		Context mContext = getApplicationContext();
+        		LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(LAYOUT_INFLATER_SERVICE);
+        		View layout = inflater.inflate(R.layout.picture_attributes_dialog,
+        		                               (ViewGroup) findViewById(R.id.layout_root));
+
+        		TextView text = (TextView) layout.findViewById(R.id.text);
+        		String t = "";
+        		Node node = nodeAdpt.getNode(info.position);
+        		
+        		if (node != null) {
+        			Interface[] ifaces = node.getInterfaces();
+        			
+        			for (int i = 0; i < ifaces.length; i++) {
+        				t += ifaces[i].getTypeString() + " " + ifaces[i].getIdentifierString() + " " + ifaces[i].getStatusString() +"\n";
+        			}
+        		}
+        		text.setText(t);
+        		builder = new AlertDialog.Builder(this);
+        		builder.setView(layout);
+        		alertDialog = builder.create();
+        		alertDialog.setTitle("Node Interfaces");
+        		alertDialog.show();
         	}
         }
         return true;
@@ -539,7 +564,6 @@ public class PhotoView extends Activity implements OnClickListener {
         		break;
         	case org.haggle.EventHandler.EVENT_NEW_DATAOBJECT:
         		Log.d(PhotoShare.LOG_TAG, "Event new data object");
-        		
 		        imgAdpt.updatePictures(dObj);
         		break;
         	}
@@ -801,7 +825,12 @@ public class PhotoView extends Activity implements OnClickListener {
     		}
     		return tv;
     	}
-    	
+    	public Node getNode(int pos) {
+    		return neighbors[pos];
+    	}
+    	public synchronized Node[] getNodes() {
+    		return neighbors.clone();
+    	}
     	public String getInformation(int position) {
     		if ((neighbors.length > 0) && (position >= 0)) {
     			Node n = neighbors[position];

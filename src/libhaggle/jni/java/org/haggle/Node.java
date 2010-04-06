@@ -8,7 +8,8 @@ public class Node {
         public native long getNumInterfaces();
         // Return interface number N, or null. TODO: throw exception
         public native Interface getInterfaceN(int n);
-
+	public native Interface[] getInterfaces();
+	
         private Node()
         {
         }

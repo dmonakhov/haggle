@@ -49,6 +49,38 @@ public class Interface {
                         super(msg);
                 }
         }
+	public String getTypeString() {
+		switch (getType()) {
+			case IFTYPE_UNDEF:
+				return "Undef";
+			case IFTYPE_APPLICATION_PORT:
+				return "Application:port";
+			case IFTYPE_APPLICATION_LOCAL:
+				return "Application:local";
+			case IFTYPE_BLUETOOTH:
+				return "Bluetooth";
+			case IFTYPE_ETHERNET:
+				return "Ethernet";
+			case IFTYPE_WIFI:
+				return "WiFi";
+			case IFTYPE_MEDIA:
+				return "Media";
+			default:
+				break;
+		}
+		return "Unknown";
+	}
+	public String getStatusString() {
+		switch (getStatus()) {
+			case IFSTATUS_UP:
+				return "Up";
+			case IFSTATUS_DOWN:
+				return "Down";
+			default:
+				break;
+		}
+		return "Unknown";
+	}
         static {		
                 System.loadLibrary("haggle_jni");
         }
