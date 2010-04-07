@@ -853,34 +853,39 @@ void ForwardingManager::onRoutingInformation(Event *e)
 				// Send out our updated routing information to all neighbors
 				NodeRefList neighbors;
 				NodeRefList trigger_list;
+				NodeRefList notify_list;
 				
 				// Fill in any existing nodes that have been notified by this triggered update
 				fromTriggerListMetadata(dObj->getMetadata()->getMetadata(getName()), trigger_list);
-			
-				// Add the peer we received the update from
-				if (trigger_list.empty())
-					trigger_list.add(peer);
-				
-				// Add ourselves since we are now aware of this update
-				trigger_list.add(kernel->getThisNode());
 				
 				kernel->getNodeStore()->retrieveNeighbors(neighbors);
 			
 				// Figure out which peers have not already received this triggered update
-				while (neighbors.size()) {
+				for (NodeRefList::iterator it = neighbors.begin(); it != neighbors.end(); it++) {
 					bool should_notify = true;
-					NodeRef neighbor = neighbors.pop();
+					NodeRef neighbor = *it;
 				
 					// Do not notify nodes that are already in the list
-					for (NodeRefList::iterator it = trigger_list.begin(); it != trigger_list.end(); it++) {
-						if (neighbor == *it) {
+					for (NodeRefList::iterator jt = trigger_list.begin(); jt != trigger_list.end(); jt++) {
+						if (neighbor == *jt) {
+							HAGGLE_DBG("Neighbor %s [%s] has already received the update\n", 
+								   neighbor->getName().c_str(), neighbor->getIdStr());
 							should_notify = false;
 							break;
 						}
 					}
-					// Generate a routing update for this neighbor, append current notification list
-					if (should_notify)
-						forwardingModule->generateRoutingInformationDataObject(neighbor, &trigger_list);
+					// Generate a routing update for this neighbor
+					if (should_notify) {
+						notify_list.push_back(neighbor);
+						trigger_list.push_back(neighbor);
+					}
+				}
+				// We have the complete list of neighbors that haven't received the update.
+				// Now send our triggered update to them, append the current nodes that have
+				// been part of this triggered routing update
+				while (notify_list.size()) {
+					NodeRef neighbor = notify_list.pop();
+					forwardingModule->generateRoutingInformationDataObject(neighbor, &trigger_list);
 				}
 			}
 		}
