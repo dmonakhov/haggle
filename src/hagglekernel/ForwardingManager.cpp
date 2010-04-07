@@ -858,7 +858,11 @@ void ForwardingManager::onRoutingInformation(Event *e)
 				fromTriggerListMetadata(dObj->getMetadata()->getMetadata(getName()), trigger_list);
 			
 				// Add the peer we received the update from
-				trigger_list.add(peer);
+				if (trigger_list.empty())
+					trigger_list.add(peer);
+				
+				// Add ourselves since we are now aware of this update
+				trigger_list.add(kernel->getThisNode());
 				
 				kernel->getNodeStore()->retrieveNeighbors(neighbors);
 			
