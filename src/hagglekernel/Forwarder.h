@@ -145,7 +145,7 @@ public:
 	*/
 	virtual void generateTargetsFor(const NodeRef &neighbor) {}
 	
-	virtual void generateRoutingInformationDataObject(const NodeRef& neighbor) {}
+	virtual void generateRoutingInformationDataObject(const NodeRef& neighbor, const NodeRefList *trigger_list = NULL) {}
 	
 	virtual size_t getSaveState(RepositoryEntryList& rel) { return 0; }
 	virtual bool setSaveState(RepositoryEntryRef& e) { return false; }

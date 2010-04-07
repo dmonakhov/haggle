@@ -70,8 +70,8 @@ private:
 public:
 	ForwardingTask(const ForwardingTaskType_t _type, const DataObjectRef& _dObj = NULL, const NodeRef& _node = NULL, const NodeRefList *_nodes = NULL) :
 		type(_type), dObj(_dObj), node(_node), nodes(_nodes ? _nodes->copy() : NULL), rel(NULL) {}
-	ForwardingTask(const ForwardingTaskType_t _type, const NodeRef& _node) :
-		type(_type), dObj(NULL), node(_node), nodes(NULL), rel(NULL) {}
+	ForwardingTask(const ForwardingTaskType_t _type, const NodeRef& _node, const NodeRefList *_nodes = NULL) :
+		type(_type), dObj(NULL), node(_node), nodes(_nodes ? _nodes->copy() : NULL), rel(NULL) {}
 	DataObjectRef& getDataObject() { return dObj; }
 	void setDataObject(const DataObjectRef& _dObj) { dObj = _dObj; }
 	NodeRef& getNode() { return node; }
@@ -156,7 +156,7 @@ public:
 	void generateTargetsFor(const NodeRef &neighbor);
 	/** See the parent class function with the same name. */
 	void generateDelegatesFor(const DataObjectRef &dObj, const NodeRef &target, const NodeRefList *other_targets);
-	void generateRoutingInformationDataObject(const NodeRef &neighbor);
+	void generateRoutingInformationDataObject(const NodeRef &neighbor, const NodeRefList *trigger_list = NULL);
 #ifdef DEBUG
 	/** See the parent class function with the same name. */
 	void printRoutingTable(void);

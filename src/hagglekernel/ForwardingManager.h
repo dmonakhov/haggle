@@ -109,6 +109,9 @@ public:
 		that.
 	*/
 	void sendMetric(void);
+	
+	size_t fromTriggerListMetadata(Metadata *m, NodeRefList& trigger_list);
+	Metadata *toTriggerListMetadata(Metadata *m, const NodeRefList& trigger_list);
 };
 
 #endif /* _FORWARDINGMANAGER_H */

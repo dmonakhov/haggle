@@ -281,6 +281,12 @@ void ForwardingManager::onForwardingTaskComplete(Event *e)
 						
 						if (shouldForward(task->getDataObject(), task->getNode())) {
 							if (addToSendList(task->getDataObject(), task->getNode())) {
+								// Check if this is a triggered update, and we have a list
+								// of nodes that have received it already.
+								if (task->getNodeList()) {
+									// Append the list to the data object
+									toTriggerListMetadata(task->getDataObject()->getMetadata(), *task->getNodeList());
+								}
 								kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, 
 											   task->getDataObject(), task->getNode()));
 							}
@@ -775,6 +781,47 @@ void ForwardingManager::findMatchingDataObjectsAndTargets(NodeRef& node)
 	kernel->getDataStore()->doDataObjectQuery(node, 1, dataObjectQueryCallback);
 }
 
+size_t ForwardingManager::fromTriggerListMetadata(Metadata *m, NodeRefList& trigger_list)
+{	
+	if (m->getName() != "TriggerList")
+		return 0;
+	
+	Metadata *tm = m->getMetadata("Node");
+	
+	while (tm) {
+		const char *id = tm->getParameter("node_id");
+		
+		if (id) {
+			NodeRef n = Node::create_with_id(NODE_TYPE_PEER, id);
+			
+			if (n) {
+				trigger_list.add(n);
+			}
+		}
+		
+		tm = m->getNextMetadata();
+	}
+	
+	return trigger_list.size();
+}
+
+Metadata *ForwardingManager::toTriggerListMetadata(Metadata *m, const NodeRefList& trigger_list)
+{
+	Metadata *tm = m->addMetadata("TriggerList");
+	
+	if (!tm)
+		return NULL;
+	
+	for (NodeRefList::const_iterator it = trigger_list.begin(); it != trigger_list.end(); it++) {
+		Metadata *nm = tm->addMetadata("Node");
+		
+		if (nm) {
+			nm->setParameter("node_id", (*it)->getIdStr());
+		}
+	}
+	
+	return tm;
+}
 
 void ForwardingManager::onRoutingInformation(Event *e)
 {
@@ -786,9 +833,48 @@ void ForwardingManager::onRoutingInformation(Event *e)
 	while (dObjs.size()) {
 		DataObjectRef dObj = dObjs.pop();
 
+		// Check if there is a module, and that the information received data object
+		// makes sense to it.
 		if (forwardingModule && forwardingModule->hasRoutingInformation(dObj)) {
+			
+			// Tell our module that it has new routing information
 			forwardingModule->newRoutingInformation(dObj);
-			return;
+
+			// Lookup the peer we received the routing information from
+			InterfaceRef iface = dObj->getRemoteInterface();
+			
+			NodeRef peer = kernel->getNodeStore()->retrieve(iface);
+			
+			if (peer) {
+				// Send out our updated routing information to all neighbors
+				NodeRefList neighbors;
+				NodeRefList trigger_list;
+				
+				// Fill in any existing nodes that have been notified by this triggered update
+				fromTriggerListMetadata(dObj->getMetadata(), trigger_list);
+			
+				// Add the peer we received the update from
+				trigger_list.add(peer);
+				
+				kernel->getNodeStore()->retrieveNeighbors(neighbors);
+			
+				// Figure out which peers have not already received this triggered update
+				while (neighbors.size()) {
+					bool should_notify = true;
+					NodeRef neighbor = neighbors.pop();
+				
+					// Do not notify nodes that are already in the list
+					for (NodeRefList::iterator it = trigger_list.begin(); it != trigger_list.end(); it++) {
+						if (neighbor == *it) {
+							should_notify = false;
+							break;
+						}
+					}
+					// Generate a routing update for this neighbor, append current notification list
+					if (should_notify)
+						forwardingModule->generateRoutingInformationDataObject(neighbor, &trigger_list);
+				}
+			}
 		}
 	}
 }

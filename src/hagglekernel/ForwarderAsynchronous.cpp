@@ -78,15 +78,15 @@ void ForwarderAsynchronous::generateDelegatesFor(const DataObjectRef &dObj, cons
 	taskQ.insert(new ForwardingTask(FWD_TASK_GENERATE_DELEGATES, dObj, target, other_targets));
 }
 
-void ForwarderAsynchronous::generateRoutingInformationDataObject(const NodeRef& node)
+void ForwarderAsynchronous::generateRoutingInformationDataObject(const NodeRef& node, const NodeRefList *trigger_list)
 {
-	taskQ.insert(new ForwardingTask(FWD_TASK_GENERATE_ROUTING_INFO_DATA_OBJECT, node));
+	taskQ.insert(new ForwardingTask(FWD_TASK_GENERATE_ROUTING_INFO_DATA_OBJECT, node, trigger_list));
 }
 
 #ifdef DEBUG
 void ForwarderAsynchronous::printRoutingTable(void)
 {
-	taskQ.insert(new ForwardingTask(FWD_TASK_PRINT_RIB, NULL, NULL));
+	taskQ.insert(new ForwardingTask(FWD_TASK_PRINT_RIB));
 }
 #endif
 
