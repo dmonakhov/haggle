@@ -858,6 +858,9 @@ void ForwardingManager::onRoutingInformation(Event *e)
 				// Fill in any existing nodes that have been notified by this triggered update
 				fromTriggerListMetadata(dObj->getMetadata()->getMetadata(getName()), trigger_list);
 				
+				if (trigger_list.empty())
+				    trigger_list.add(peer);
+				    
 				kernel->getNodeStore()->retrieveNeighbors(neighbors);
 			
 				// Figure out which peers have not already received this triggered update
