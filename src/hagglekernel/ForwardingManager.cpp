@@ -285,7 +285,8 @@ void ForwardingManager::onForwardingTaskComplete(Event *e)
 								// of nodes that have received it already.
 								if (task->getNodeList()) {
 									// Append the list to the data object
-									toTriggerListMetadata(task->getDataObject()->getMetadata(), *task->getNodeList());
+									toTriggerListMetadata(task->getDataObject()->getMetadata()->getMetadata(getName()), 
+											      *task->getNodeList());
 								}
 								kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, 
 											   task->getDataObject(), task->getNode()));
@@ -832,7 +833,15 @@ void ForwardingManager::onRoutingInformation(Event *e)
 
 	while (dObjs.size()) {
 		DataObjectRef dObj = dObjs.pop();
-
+		
+		InterfaceRef iface = dObj->getRemoteInterface();
+		NodeRef peer = kernel->getNodeStore()->retrieve(iface);
+		
+		if (!peer || peer == kernel->getThisNode()) {
+			HAGGLE_DBG("Routing information is our own, ignoring\n");
+			return;
+		}
+		
 		// Check if there is a module, and that the information received data object
 		// makes sense to it.
 		if (forwardingModule && forwardingModule->hasRoutingInformation(dObj)) {
@@ -840,18 +849,13 @@ void ForwardingManager::onRoutingInformation(Event *e)
 			// Tell our module that it has new routing information
 			forwardingModule->newRoutingInformation(dObj);
 
-			// Lookup the peer we received the routing information from
-			InterfaceRef iface = dObj->getRemoteInterface();
-			
-			NodeRef peer = kernel->getNodeStore()->retrieve(iface);
-			
 			if (peer) {
 				// Send out our updated routing information to all neighbors
 				NodeRefList neighbors;
 				NodeRefList trigger_list;
 				
 				// Fill in any existing nodes that have been notified by this triggered update
-				fromTriggerListMetadata(dObj->getMetadata(), trigger_list);
+				fromTriggerListMetadata(dObj->getMetadata()->getMetadata(getName()), trigger_list);
 			
 				// Add the peer we received the update from
 				trigger_list.add(peer);
