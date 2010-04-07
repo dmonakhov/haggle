@@ -784,19 +784,23 @@ void ForwardingManager::findMatchingDataObjectsAndTargets(NodeRef& node)
 
 size_t ForwardingManager::fromTriggerListMetadata(Metadata *m, NodeRefList& trigger_list)
 {	
+	
+	HAGGLE_DBG("Parsing triggerlist\n");
+
 	if (m->getName() != "TriggerList")
 		return 0;
-	
+		
 	Metadata *tm = m->getMetadata("Node");
 	
 	while (tm) {
 		const char *id = tm->getParameter("node_id");
 		
 		if (id) {
+			HAGGLE_DBG("Node id is %s\n", id);
 			NodeRef n = Node::create_with_id(NODE_TYPE_PEER, id);
 			
 			if (n) {
-				trigger_list.add(n);
+				trigger_list.push_back(n);
 			}
 		}
 		
@@ -838,7 +842,7 @@ void ForwardingManager::onRoutingInformation(Event *e)
 		NodeRef peer = kernel->getNodeStore()->retrieve(iface);
 		
 		if (!peer || peer == kernel->getThisNode()) {
-			HAGGLE_DBG("Routing information is our own, ignoring\n");
+			HAGGLE_DBG("Routing information is from ourselves -- ignoring\n");
 			return;
 		}
 		
@@ -848,15 +852,21 @@ void ForwardingManager::onRoutingInformation(Event *e)
 			
 			// Tell our module that it has new routing information
 			forwardingModule->newRoutingInformation(dObj);
-
+			
 			if (peer) {
 				// Send out our updated routing information to all neighbors
 				NodeRefList neighbors;
-				NodeRefList trigger_list;
 				NodeRefList notify_list;
+				NodeRefList trigger_list;
+				size_t n = 0;
+				Metadata *m = dObj->getMetadata()->getMetadata(getName());
 				
 				// Fill in any existing nodes that have been notified by this triggered update
-				fromTriggerListMetadata(dObj->getMetadata()->getMetadata(getName()), trigger_list);
+				if (m) {
+					n = fromTriggerListMetadata(m->getMetadata("TriggerList"), trigger_list);
+				}
+				
+				//HAGGLE_DBG("Trigger list size is " SIZE_T_CONVERSION "\n", n);
 				
 				if (trigger_list.empty())
 				    trigger_list.add(peer);
@@ -867,9 +877,14 @@ void ForwardingManager::onRoutingInformation(Event *e)
 				for (NodeRefList::iterator it = neighbors.begin(); it != neighbors.end(); it++) {
 					bool should_notify = true;
 					NodeRef neighbor = *it;
-				
+					
+					HAGGLE_DBG("Checking if neighbor %s [%s] has already received the update\n", 
+						   neighbor->getName().c_str(), neighbor->getIdStr());
+					
 					// Do not notify nodes that are already in the list
 					for (NodeRefList::iterator jt = trigger_list.begin(); jt != trigger_list.end(); jt++) {
+						HAGGLE_DBG("Comparing %s %s\n", 
+							   neighbor->getIdStr(), (*it)->getIdStr());
 						if (neighbor == *jt) {
 							HAGGLE_DBG("Neighbor %s [%s] has already received the update\n", 
 								   neighbor->getName().c_str(), neighbor->getIdStr());
