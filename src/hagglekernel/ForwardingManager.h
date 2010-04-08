@@ -52,6 +52,9 @@ class ForwardingManager : public Manager
 	forwardingList forwardedObjects;
 	Forwarder *forwardingModule;
 	List<NodeRef> pendingQueryList;
+#if defined(ENABLE_RECURSIVE_ROUTING_UPDATES)
+	bool recursiveRoutingUpdates;
+#endif
 	
 	void onPrepareStartup();
 	void onPrepareShutdown();

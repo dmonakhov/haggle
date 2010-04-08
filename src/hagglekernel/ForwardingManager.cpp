@@ -25,6 +25,9 @@ ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 	moduleEventType(-1),
 	routingInfoEventType(-1),
 	forwardingModule(NULL)
+#if defined(ENABLE_RECURSIVE_ROUTING_UPDATES)
+	, recursiveRoutingUpdates(true)
+#endif
 {
 }
 
@@ -711,8 +714,10 @@ void ForwardingManager::onEndNeighbor(Event *e)
 		}
 	}
 #if defined(ENABLE_RECURSIVE_ROUTING_UPDATES)
-	// Trigger a new routing update to inform our other neighbors about our new metrics
-	recursiveRoutingUpdate(node, NULL);
+	if (recursiveRoutingUpdates) {
+		// Trigger a new routing update to inform our other neighbors about our new metrics
+		recursiveRoutingUpdate(node, NULL);
+	}
 #endif
 }
 
@@ -814,7 +819,6 @@ size_t ForwardingManager::metadataToRecurseList(Metadata *m, NodeRefList& recurs
 		const char *id = tm->getParameter("node_id");
 		
 		if (id) {
-			HAGGLE_DBG("Node id is %s\n", id);
 			NodeRef n = Node::create_with_id(NODE_TYPE_PEER, id);
 			
 			if (n) {
@@ -830,6 +834,9 @@ size_t ForwardingManager::metadataToRecurseList(Metadata *m, NodeRefList& recurs
 
 Metadata *ForwardingManager::recurseListToMetadata(Metadata *m, const NodeRefList& recurse_list)
 {
+	if (!m)
+		return NULL;
+	
 	Metadata *tm = m->addMetadata("RecurseList");
 	
 	if (!tm)
@@ -868,7 +875,7 @@ void ForwardingManager::recursiveRoutingUpdate(NodeRef peer, Metadata *m)
 		n = metadataToRecurseList(m->getMetadata("RecurseList"), recurse_list);
 	}
 	
-	if (recurse_list.empty())
+	if (n == 0)
 		recurse_list.add(peer);
 	
 	kernel->getNodeStore()->retrieveNeighbors(neighbors);
@@ -878,16 +885,13 @@ void ForwardingManager::recursiveRoutingUpdate(NodeRef peer, Metadata *m)
 		bool should_notify = true;
 		NodeRef neighbor = *it;
 		
-		HAGGLE_DBG("Checking if neighbor %s [%s] has already received the update\n", 
-			   neighbor->getName().c_str(), neighbor->getIdStr());
-		
 		// Do not notify nodes that are already in the list
 		for (NodeRefList::iterator jt = recurse_list.begin(); jt != recurse_list.end(); jt++) {
-			HAGGLE_DBG("Comparing %s %s\n", 
-				   neighbor->getIdStr(), (*it)->getIdStr());
 			if (neighbor == *jt) {
-				HAGGLE_DBG("Neighbor %s [%s] has already received the update\n", 
+				/*
+				 HAGGLE_DBG("Neighbor %s [%s] has already received the update\n", 
 					   neighbor->getName().c_str(), neighbor->getIdStr());
+				 */
 				should_notify = false;
 				break;
 			}
@@ -936,7 +940,7 @@ void ForwardingManager::onRoutingInformation(Event *e)
 			forwardingModule->newRoutingInformation(dObj);
 
 #if defined(ENABLE_RECURSIVE_ROUTING_UPDATES)
-			if (peer) {
+			if (recursiveRoutingUpdates && peer) {
 				recursiveRoutingUpdate(peer, dObj->getMetadata()->getMetadata(getName()));
 			}
 #endif
@@ -1059,6 +1063,19 @@ void ForwardingManager::onConfig(Metadata *m)
 {
 	Metadata *tmp = NULL;
 	
+#if defined(ENABLE_RECURSIVE_ROUTING_UPDATES)
+	const char *param = m->getParameter("recursive_routing_updates");
+	
+	if (param) {
+		if (strcmp(param, "true") == 0) {
+			HAGGLE_DBG("Enabling recursive routing updates\n");
+			recursiveRoutingUpdates = true;
+		} else if (strcmp(param, "false") == 0) {
+			HAGGLE_DBG("Disabling recursive routing updates\n");
+			recursiveRoutingUpdates = false;
+		}
+	}
+#endif
 	if ((tmp = m->getMetadata("ForwardingModule"))) {
 		string moduleName = tmp->getContent();
 		HAGGLE_DBG("Forwarding module \'%s\'\n", moduleName.c_str());
@@ -1076,6 +1093,6 @@ void ForwardingManager::onConfig(Metadata *m)
 				setForwardingModule(NULL);
 			}
 		}
-	} 
+	}
 }
 
