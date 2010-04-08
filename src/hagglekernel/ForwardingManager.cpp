@@ -281,6 +281,7 @@ void ForwardingManager::onForwardingTaskComplete(Event *e)
 						
 						if (shouldForward(task->getDataObject(), task->getNode())) {
 							if (addToSendList(task->getDataObject(), task->getNode())) {
+#if defined(ENABLE_TRIGGERED_ROUTING_UPDATES)
 								// Check if this is a triggered update, and we have a list
 								// of nodes that have received it already.
 								if (task->getNodeList()) {
@@ -288,6 +289,7 @@ void ForwardingManager::onForwardingTaskComplete(Event *e)
 									toTriggerListMetadata(task->getDataObject()->getMetadata()->getMetadata(getName()), 
 											      *task->getNodeList());
 								}
+#endif
 								kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, 
 											   task->getDataObject(), task->getNode()));
 							}
@@ -708,6 +710,10 @@ void ForwardingManager::onEndNeighbor(Event *e)
 			break;
 		}
 	}
+#if defined(ENABLE_TRIGGERED_ROUTING_UPDATES)
+	// Trigger a new routing update to inform our other neighbors about our new metrics
+	triggeredRoutingUpdate(node, NULL);
+#endif
 }
 
 void ForwardingManager::onNodeUpdated(Event *e)
@@ -782,6 +788,8 @@ void ForwardingManager::findMatchingDataObjectsAndTargets(NodeRef& node)
 	kernel->getDataStore()->doDataObjectQuery(node, 1, dataObjectQueryCallback);
 }
 
+#if defined(ENABLE_TRIGGERED_ROUTING_UPDATES)
+
 size_t ForwardingManager::fromTriggerListMetadata(Metadata *m, NodeRefList& trigger_list)
 {	
 	if (!m || m->getName() != "TriggerList")
@@ -825,6 +833,63 @@ Metadata *ForwardingManager::toTriggerListMetadata(Metadata *m, const NodeRefLis
 	return tm;
 }
 
+void ForwardingManager::triggeredRoutingUpdate(NodeRef peer, Metadata *m)
+{
+	// Send out our updated routing information to all neighbors
+	NodeRefList neighbors;
+	NodeRefList notify_list;
+	NodeRefList trigger_list;
+	size_t n = 0;
+	
+	// Fill in any existing nodes that have been notified by this triggered update
+	if (m) {
+		n = fromTriggerListMetadata(m->getMetadata("TriggerList"), trigger_list);
+	}
+	
+	//HAGGLE_DBG("Trigger list size is " SIZE_T_CONVERSION "\n", n);
+	
+	if (trigger_list.empty())
+		trigger_list.add(peer);
+	
+	kernel->getNodeStore()->retrieveNeighbors(neighbors);
+	
+	// Figure out which peers have not already received this triggered update
+	for (NodeRefList::iterator it = neighbors.begin(); it != neighbors.end(); it++) {
+		bool should_notify = true;
+		NodeRef neighbor = *it;
+		
+		HAGGLE_DBG("Checking if neighbor %s [%s] has already received the update\n", 
+			   neighbor->getName().c_str(), neighbor->getIdStr());
+		
+		// Do not notify nodes that are already in the list
+		for (NodeRefList::iterator jt = trigger_list.begin(); jt != trigger_list.end(); jt++) {
+			HAGGLE_DBG("Comparing %s %s\n", 
+				   neighbor->getIdStr(), (*it)->getIdStr());
+			if (neighbor == *jt) {
+				HAGGLE_DBG("Neighbor %s [%s] has already received the update\n", 
+					   neighbor->getName().c_str(), neighbor->getIdStr());
+				should_notify = false;
+				break;
+			}
+		}
+		// Generate a routing update for this neighbor
+		if (should_notify) {
+			notify_list.push_back(neighbor);
+			trigger_list.push_back(neighbor);
+		}
+	}
+	// We have the complete list of neighbors that haven't received the update.
+	// Now send our triggered update to them, append the current nodes that have
+	// been part of this triggered routing update
+	while (notify_list.size()) {
+		NodeRef neighbor = notify_list.pop();
+		forwardingModule->generateRoutingInformationDataObject(neighbor, &trigger_list);
+	}	
+	
+}
+
+#endif
+
 void ForwardingManager::onRoutingInformation(Event *e)
 {
 	if (!e || !e->hasData())
@@ -849,60 +914,12 @@ void ForwardingManager::onRoutingInformation(Event *e)
 			
 			// Tell our module that it has new routing information
 			forwardingModule->newRoutingInformation(dObj);
-			
+
+#if defined(ENABLE_TRIGGERED_ROUTING_UPDATES)
 			if (peer) {
-				// Send out our updated routing information to all neighbors
-				NodeRefList neighbors;
-				NodeRefList notify_list;
-				NodeRefList trigger_list;
-				size_t n = 0;
-				Metadata *m = dObj->getMetadata()->getMetadata(getName());
-				
-				// Fill in any existing nodes that have been notified by this triggered update
-				if (m) {
-					n = fromTriggerListMetadata(m->getMetadata("TriggerList"), trigger_list);
-				}
-				
-				//HAGGLE_DBG("Trigger list size is " SIZE_T_CONVERSION "\n", n);
-				
-				if (trigger_list.empty())
-				    trigger_list.add(peer);
-				    
-				kernel->getNodeStore()->retrieveNeighbors(neighbors);
-			
-				// Figure out which peers have not already received this triggered update
-				for (NodeRefList::iterator it = neighbors.begin(); it != neighbors.end(); it++) {
-					bool should_notify = true;
-					NodeRef neighbor = *it;
-					
-					HAGGLE_DBG("Checking if neighbor %s [%s] has already received the update\n", 
-						   neighbor->getName().c_str(), neighbor->getIdStr());
-					
-					// Do not notify nodes that are already in the list
-					for (NodeRefList::iterator jt = trigger_list.begin(); jt != trigger_list.end(); jt++) {
-						HAGGLE_DBG("Comparing %s %s\n", 
-							   neighbor->getIdStr(), (*it)->getIdStr());
-						if (neighbor == *jt) {
-							HAGGLE_DBG("Neighbor %s [%s] has already received the update\n", 
-								   neighbor->getName().c_str(), neighbor->getIdStr());
-							should_notify = false;
-							break;
-						}
-					}
-					// Generate a routing update for this neighbor
-					if (should_notify) {
-						notify_list.push_back(neighbor);
-						trigger_list.push_back(neighbor);
-					}
-				}
-				// We have the complete list of neighbors that haven't received the update.
-				// Now send our triggered update to them, append the current nodes that have
-				// been part of this triggered routing update
-				while (notify_list.size()) {
-					NodeRef neighbor = notify_list.pop();
-					forwardingModule->generateRoutingInformationDataObject(neighbor, &trigger_list);
-				}
+				triggeredRoutingUpdate(peer, dObj->getMetadata()->getMetadata(getName()));
 			}
+#endif
 		}
 	}
 }
