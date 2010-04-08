@@ -180,7 +180,7 @@ void ConnectivityManager::onBlacklistDataObject(Event *e)
 		}
 		HAGGLE_DBG("Received blacklist data object\n");
 
-		Metadata *mc = dObj->getMetadata()->getMetadata("Connectivity");
+		Metadata *mc = dObj->getMetadata()->getMetadata(getName());
 
 		if (!mc) {
 			HAGGLE_ERR("No connectivity metadata in data object\n");
