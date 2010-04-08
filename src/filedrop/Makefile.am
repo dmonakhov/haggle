@@ -1,19 +1,18 @@
 if OS_IPHONEOS
 else
 if OS_LINUX
-bin_PROGRAMS=filedrop
-filedrop_SOURCES=filedrop.c
+bin_PROGRAMS = filedrop
+filedrop_SOURCES = filedrop.c
 endif
+
+filedrop_LDFLAGS =-lhaggle -L$(top_builddir)/src/libhaggle/ -lxml2
+filedrop_CPPFLAGS =-I$(top_builddir)/src/libhaggle/include
 
 if OS_MACOSX
-bin_PROGRAMS=filedrop
-filedrop_SOURCES=filedropMacOSX.c
-LDFLAGS += -framework CoreServices -framework ApplicationServices
+bin_PROGRAMS = filedrop
+filedrop_SOURCES = filedropMacOSX.c
+filedrop_LDFLAGS += -framework CoreServices -framework ApplicationServices
 endif
-
-CPPFLAGS += -I$(top_builddir)/src/libhaggle/include
-LDFLAGS += -lhaggle -L$(top_builddir)/src/libhaggle/
-LDFLAGS +=-lxml2
 
 EXTRA_DIST = filedropMacOSX.c filedrop.c
 

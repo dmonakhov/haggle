@@ -8,17 +8,12 @@ endif
 
 EXTRA_DIST = include base64.h sha1.h sha1_private.h metadata.h metadata_xml.h Android.mk Doxyfile.in
 
-CFLAGS +=-std=gnu99
-LDFLAGS +=-lpthread -lxml2 
-
-if OS_IPHONEOS
-libhaggle_la_LDFLAGS =
-endif
-
-CPPFLAGS +=$(XML_CPPFLAGS) -Iinclude
+libhaggle_la_LDFLAGS =-lpthread -lxml2 
+libhaggle_la_CFLAGS =-std=gnu99
+libhaggle_la_CPPFLAGS =$(XML_CPPFLAGS) -Iinclude
 
 if HAVE_EXTRACTOR
-LDFLAGS += -lextractor
+libhaggle_la_LDFLAGS += -lextractor
 endif
 
 clean-local:

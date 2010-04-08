@@ -11,17 +11,19 @@ EXTRA_DIST = \
 	org_haggle_Handle.h \
 	org_haggle_Handle_RegistrationFailedException.h \
 	org_haggle_Interface.h \
+	org_haggle_LaunchCallback.h \
 	org_haggle_Node.h \
+	org_haggle_Node_NodeException.h \
 	Android.mk
 
-CFLAGS +=
-LDFLAGS += -lhaggle -L$(top_builddir)/src/libhaggle/
+libhaggle_jni_la_CFLAGS =
+libhaggle_jni_la_LDFLAGS = -lhaggle -L$(top_builddir)/src/libhaggle/
 
 # TODO: Should somehow detect the java include path
-CPPFLAGS +=-I$(top_srcdir)/src/libhaggle/include $(JAVA_INCLUDE)
+libhaggle_jni_la_CPPFLAGS =-I$(top_srcdir)/src/libhaggle/include $(JAVA_INCLUDE)
 
 if OS_IPHONEOS
-LDFLAGS +=-Wl,-dylib_install_name libhaggle_jni.dylib
+libhaggle_jni_la_LDFLAGS +=-Wl,-dylib_install_name libhaggle_jni.dylib
 endif
 
 clean-local:

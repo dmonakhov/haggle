@@ -1,15 +1,11 @@
 bin_PROGRAMS=clitool
 clitool_SOURCES=clitool.cpp
 
-CPPFLAGS += -I$(top_builddir)/src/libhaggle/include 
-CPPFLAGS += -I$(top_builddir)/src/utils 
-LDFLAGS += -lhaggle -L$(top_builddir)/src/libhaggle/
-LDFLAGS += -lhaggleutils -L$(top_builddir)/src/utils/
-LDFLAGS +=-lxml2
+clitool_CFLAGS =-std=gnu99
+clitool_CPPFLAGS =-I$(top_builddir)/src/libhaggle/include -I$(top_builddir)/src/utils 
+clitool_LDFLAGS =-lhaggle -L$(top_builddir)/src/libhaggle/ -lhaggleutils -L$(top_builddir)/src/utils/ -lxml2
 
-EXTRA_DIST=
-
-CFLAGS += -std=gnu99
+EXTRA_DIST=Android.mk
 
 all-local:
 
