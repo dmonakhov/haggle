@@ -34,7 +34,7 @@ using namespace haggle;
 #include "Forwarder.h"
 
 #define MAX_NODES_TO_FIND_FOR_NEW_DATAOBJECTS	(10)
-#define ENABLE_TRIGGERED_ROUTING_UPDATES 1
+#define ENABLE_RECURSIVE_ROUTING_UPDATES 1
 
 typedef List< Pair< Pair<const DataObjectRef, const NodeRef>, int> > forwardingList;
 
@@ -100,10 +100,10 @@ class ForwardingManager : public Manager
 #ifdef DEBUG
 	void onDebugCmd(Event *e);
 #endif
-#if defined(ENABLE_TRIGGERED_ROUTING_UPDATES)
-	size_t fromTriggerListMetadata(Metadata *m, NodeRefList& trigger_list);
-	Metadata *toTriggerListMetadata(Metadata *m, const NodeRefList& trigger_list);
-	void triggeredRoutingUpdate(NodeRef peer, Metadata *m);
+#if defined(ENABLE_RECURSIVE_ROUTING_UPDATES)
+	size_t metadataToRecurseList(Metadata *m, NodeRefList& trigger_list);
+	Metadata *recurseListToMetadata(Metadata *m, const NodeRefList& trigger_list);
+	void recursiveRoutingUpdate(NodeRef peer, Metadata *m);
 #endif
 public:
 	ForwardingManager(HaggleKernel *_kernel = haggleKernel);

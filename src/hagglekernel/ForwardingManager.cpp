@@ -281,12 +281,12 @@ void ForwardingManager::onForwardingTaskComplete(Event *e)
 						
 						if (shouldForward(task->getDataObject(), task->getNode())) {
 							if (addToSendList(task->getDataObject(), task->getNode())) {
-#if defined(ENABLE_TRIGGERED_ROUTING_UPDATES)
-								// Check if this is a triggered update, and we have a list
+#if defined(ENABLE_RECURSIVE_ROUTING_UPDATES)
+								// Check if this is a recursive update, and we have a list
 								// of nodes that have received it already.
 								if (task->getNodeList()) {
 									// Append the list to the data object
-									toTriggerListMetadata(task->getDataObject()->getMetadata()->getMetadata(getName()), 
+									recurseListToMetadata(task->getDataObject()->getMetadata()->getMetadata(getName()), 
 											      *task->getNodeList());
 								}
 #endif
@@ -710,9 +710,9 @@ void ForwardingManager::onEndNeighbor(Event *e)
 			break;
 		}
 	}
-#if defined(ENABLE_TRIGGERED_ROUTING_UPDATES)
+#if defined(ENABLE_RECURSIVE_ROUTING_UPDATES)
 	// Trigger a new routing update to inform our other neighbors about our new metrics
-	triggeredRoutingUpdate(node, NULL);
+	recursiveRoutingUpdate(node, NULL);
 #endif
 }
 
@@ -788,11 +788,24 @@ void ForwardingManager::findMatchingDataObjectsAndTargets(NodeRef& node)
 	kernel->getDataStore()->doDataObjectQuery(node, 1, dataObjectQueryCallback);
 }
 
-#if defined(ENABLE_TRIGGERED_ROUTING_UPDATES)
-
-size_t ForwardingManager::fromTriggerListMetadata(Metadata *m, NodeRefList& trigger_list)
+#if defined(ENABLE_RECURSIVE_ROUTING_UPDATES)
+/*
+ 
+ The recurse list is a list of node that a "triggered" update has traversed.
+ 
+ The general idea is that nodes, in the event of a change in a neighbor's status, should
+ be able to tell all their other neighbors about this change.
+ 
+ However, this leads to a risk of circular and never ending routing updates. The idea of the 
+ recurse list is to mitigate such updates by appending a list to the update that indicates 
+ the nodes that have already processed an update. Hence, when a node receives a recursive
+ routing update, it appends all its  neighbors not already in the list and sends forth its
+ updated metrics with this list attached. If a node finds that all its neighbors have
+ processed this update, then the recursive update ends.
+ */
+size_t ForwardingManager::metadataToRecurseList(Metadata *m, NodeRefList& recurse_list)
 {	
-	if (!m || m->getName() != "TriggerList")
+	if (!m || m->getName() != "RecurseList")
 		return 0;
 		
 	Metadata *tm = m->getMetadata("Node");
@@ -805,24 +818,24 @@ size_t ForwardingManager::fromTriggerListMetadata(Metadata *m, NodeRefList& trig
 			NodeRef n = Node::create_with_id(NODE_TYPE_PEER, id);
 			
 			if (n) {
-				trigger_list.push_back(n);
+				recurse_list.push_back(n);
 			}
 		}
 		
 		tm = m->getNextMetadata();
 	}
 	
-	return trigger_list.size();
+	return recurse_list.size();
 }
 
-Metadata *ForwardingManager::toTriggerListMetadata(Metadata *m, const NodeRefList& trigger_list)
+Metadata *ForwardingManager::recurseListToMetadata(Metadata *m, const NodeRefList& recurse_list)
 {
-	Metadata *tm = m->addMetadata("TriggerList");
+	Metadata *tm = m->addMetadata("RecurseList");
 	
 	if (!tm)
 		return NULL;
 	
-	for (NodeRefList::const_iterator it = trigger_list.begin(); it != trigger_list.end(); it++) {
+	for (NodeRefList::const_iterator it = recurse_list.begin(); it != recurse_list.end(); it++) {
 		Metadata *nm = tm->addMetadata("Node");
 		
 		if (nm) {
@@ -833,27 +846,34 @@ Metadata *ForwardingManager::toTriggerListMetadata(Metadata *m, const NodeRefLis
 	return tm;
 }
 
-void ForwardingManager::triggeredRoutingUpdate(NodeRef peer, Metadata *m)
+/* 
+ 
+ This function triggers the node to send its current metrics to all its neighbors
+ modulo the ones already in a recurse list, which is given as a metadata object 
+ from a just received routing update.
+ 
+ If the recursive routing update is triggered by the loss of a neighbor, then
+ the metadata is NULL.
+ */
+void ForwardingManager::recursiveRoutingUpdate(NodeRef peer, Metadata *m)
 {
 	// Send out our updated routing information to all neighbors
 	NodeRefList neighbors;
 	NodeRefList notify_list;
-	NodeRefList trigger_list;
+	NodeRefList recurse_list;
 	size_t n = 0;
 	
-	// Fill in any existing nodes that have been notified by this triggered update
+	// Fill in any existing nodes that have been notified by this recursive update
 	if (m) {
-		n = fromTriggerListMetadata(m->getMetadata("TriggerList"), trigger_list);
+		n = metadataToRecurseList(m->getMetadata("RecurseList"), recurse_list);
 	}
 	
-	//HAGGLE_DBG("Trigger list size is " SIZE_T_CONVERSION "\n", n);
-	
-	if (trigger_list.empty())
-		trigger_list.add(peer);
+	if (recurse_list.empty())
+		recurse_list.add(peer);
 	
 	kernel->getNodeStore()->retrieveNeighbors(neighbors);
 	
-	// Figure out which peers have not already received this triggered update
+	// Figure out which peers have not already received this recursive update
 	for (NodeRefList::iterator it = neighbors.begin(); it != neighbors.end(); it++) {
 		bool should_notify = true;
 		NodeRef neighbor = *it;
@@ -862,7 +882,7 @@ void ForwardingManager::triggeredRoutingUpdate(NodeRef peer, Metadata *m)
 			   neighbor->getName().c_str(), neighbor->getIdStr());
 		
 		// Do not notify nodes that are already in the list
-		for (NodeRefList::iterator jt = trigger_list.begin(); jt != trigger_list.end(); jt++) {
+		for (NodeRefList::iterator jt = recurse_list.begin(); jt != recurse_list.end(); jt++) {
 			HAGGLE_DBG("Comparing %s %s\n", 
 				   neighbor->getIdStr(), (*it)->getIdStr());
 			if (neighbor == *jt) {
@@ -875,15 +895,15 @@ void ForwardingManager::triggeredRoutingUpdate(NodeRef peer, Metadata *m)
 		// Generate a routing update for this neighbor
 		if (should_notify) {
 			notify_list.push_back(neighbor);
-			trigger_list.push_back(neighbor);
+			recurse_list.push_back(neighbor);
 		}
 	}
 	// We have the complete list of neighbors that haven't received the update.
-	// Now send our triggered update to them, append the current nodes that have
-	// been part of this triggered routing update
+	// Now send our recursive update to them, append the current nodes that have
+	// been part of this recursive routing update
 	while (notify_list.size()) {
 		NodeRef neighbor = notify_list.pop();
-		forwardingModule->generateRoutingInformationDataObject(neighbor, &trigger_list);
+		forwardingModule->generateRoutingInformationDataObject(neighbor, &recurse_list);
 	}	
 	
 }
@@ -915,9 +935,9 @@ void ForwardingManager::onRoutingInformation(Event *e)
 			// Tell our module that it has new routing information
 			forwardingModule->newRoutingInformation(dObj);
 
-#if defined(ENABLE_TRIGGERED_ROUTING_UPDATES)
+#if defined(ENABLE_RECURSIVE_ROUTING_UPDATES)
 			if (peer) {
-				triggeredRoutingUpdate(peer, dObj->getMetadata()->getMetadata(getName()));
+				recursiveRoutingUpdate(peer, dObj->getMetadata()->getMetadata(getName()));
 			}
 #endif
 		}
