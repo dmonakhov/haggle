@@ -152,6 +152,8 @@ wchar_t *strtowstr_alloc(const char *str)
 
 #if defined(OS_MACOSX) || defined(OS_LINUX)
 #include <stdlib.h>
+#elif defined(OS_WINDOWS_DESKTOP)
+#include <winsock2.h>
 #endif
 
 void prng_init(void)
@@ -164,7 +166,7 @@ void prng_init(void)
 	srand(GetTickCount());
 #elif defined(OS_WINDOWS)
 	struct timeval tv;
-	gettimeofday(&tv, NULL);
+	libhaggle_gettimeofday(&tv, NULL);
 	srand(tv.tv_sec + tv.tv_usec);
 #endif
 }
@@ -191,20 +193,20 @@ unsigned long prng_uint32(void)
 		// random() returns a 31-bit random number:
 		(((unsigned long)(random() & 0xFFFF)) << 16) |
 		(((unsigned long)(random() & 0xFFFF)) << 0);
+#elif defined(OS_WINDOWS_MOBILE)
+		Random();
 #elif defined(OS_WINDOWS)
 		// rand() returns a 15-bit random number:
-		/*
 		(((unsigned long) (rand() & 0xFF)) << 24) |
 		(((unsigned long) (rand() & 0xFFF)) << 12) |
 		(((unsigned long) (rand() & 0xFFF)) << 0);
-		*/
-		Random();
 #endif
 }
 
+
 #if defined(OS_WINDOWS)
 /* A wrapper for gettimeofday so that it can be used on Windows platforms. */
-int gettimeofday(struct timeval *tv, void *tz)
+int libhaggle_gettimeofday(struct timeval *tv, void *tz)
 {
 #ifdef WINCE
 	DWORD tickcount, tickcount_diff; // In milliseconds
@@ -311,8 +313,8 @@ int gettimeofday(struct timeval *tv, void *tz)
 	date.QuadPart -= adjust.QuadPart;
 
 	// converts back from 100-nanoseconds to seconds and microseconds
-	base_time.tv_sec =  (long)(date.QuadPart / 10000000);
-	adjust.QuadPart = base_time.tv_sec;
+	tv->tv_sec =  (long)(date.QuadPart / 10000000);
+	adjust.QuadPart = tv->tv_sec;
 
 	// convert seconds to 100-nanoseconds
 	adjust.QuadPart *= 10000000;
@@ -323,7 +325,7 @@ int gettimeofday(struct timeval *tv, void *tz)
 	// Convert the remaining 100-nanoseconds to microseconds
 	date.QuadPart /= 10;
 
-	base_time.tv_usec = (long)date.QuadPart;		
+	tv->tv_usec = (long)date.QuadPart;		
 #endif
 	return 0;
 }

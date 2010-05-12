@@ -465,10 +465,10 @@ int set_callback(callback_function_t _callback)
  */
 int create_interest_binomial() 
 {
-	unsigned long i = 0;
-	struct attributelist *al;	
-	unsigned long luck = 0;
-	
+	unsigned long n, u, luck = 0, i = 0;
+	struct attributelist *al;
+	double p;
+
 	// define luck (mean of binomial distribution)
 	if (use_node_number == 1) {
 		luck = node_number;
@@ -484,9 +484,9 @@ int create_interest_binomial()
 	// n is given by num_interest_attributes. variance: n = variance/(p(1-p)) (for p=0.5: variance=n/4)
 	// u is the mean value (u=np, for p=0.5:u=n/2)
 	//   this gives us n interests (note the limitation below)
-	double p = 0.5;
-	unsigned long n = (unsigned long)num_interest_attributes - 1;
-	unsigned long u = (unsigned long)(n * p);
+	p = 0.5;
+	n = num_interest_attributes - 1;
+	u = (unsigned long)(n * p);
 	
 	LIBHAGGLE_DBG("create interest (luck=%ld)\n", luck);
 	LIBHAGGLE_DBG("binomial distribution  n=%lu, p=%lf\n", n, p);

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="testsuite"
 	ProjectGUID="{D927F19C-5D8E-42EC-B297-52D4F01C2561}"
 	RootNamespace="testsuite"
@@ -117,7 +117,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\testsuite&quot;;&quot;$(SolutionDir)\..\..\src\utils&quot;;&quot;$(SolutionDir)\..\..\src\hagglekernel&quot;;&quot;$(SolutionDir)\..\..\src\libhaggle\include&quot;;&quot;$(SolutionDir)\..\..\extlibs\libxml2-2.6.31\include&quot;;.\;&quot;$(SolutionDir)\..\..\src\libcpphaggle\include&quot;;&quot;$(SolutionDir)\..\..\extlibs\sqlite-3.6.6.2&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\testsuite&quot;;&quot;$(SolutionDir)\..\..\src\utils&quot;;&quot;$(SolutionDir)\..\..\src\hagglekernel&quot;;&quot;$(SolutionDir)\..\..\src\libhaggle\include&quot;;&quot;$(SolutionDir)\..\..\extlibs\libxml2-2.6.31\include&quot;;.\;&quot;$(SolutionDir)\..\..\src\libcpphaggle\include&quot;;&quot;$(SolutionDir)\..\..\extlibs\sqlite-3.6.6.2&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\crypto&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\inc32&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -136,7 +136,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="haggleutils.lib libxml2.lib sqlite.lib ws2_32.lib iphlpapi.lib hagglekernel.lib libhaggle.lib"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="$(OutDir)"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -328,6 +330,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\testsuite\test_Queue\timeouttest.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\testsuite\test_libcpphaggle\timeval.cpp"
 				>
 			</File>
 			<File

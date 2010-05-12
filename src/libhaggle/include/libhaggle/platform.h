@@ -165,7 +165,11 @@ typedef DWORD pid_t;
 
 char *strtok_r(char *s, const char *delim, char **last);
 
-HAGGLE_API int gettimeofday(struct timeval *tv, void *tz);
+#if defined(OS_UNIX)
+#define libhaggle_gettimeofday(x, y) gettimeofday(x, y)
+#elif defined(OS_WINDOWS)
+HAGGLE_API int libhaggle_gettimeofday(struct timeval *tv, void *tz);
+#endif
 
 // 'printf' length modifier for size_t on windows
 #define SIZE_T_LMOD "I"

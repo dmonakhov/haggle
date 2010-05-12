@@ -91,12 +91,7 @@ bool BenchmarkManager::init_derived()
 
 	Filter evaluateFilter(FILTER_EVALUATE, evaluateEType);
 
-	ret = kernel->getDataStore()->insertFilter(evaluateFilter);
-
-	if (ret < 0) {
-		HAGGLE_ERR("Could not register EvalFilter Filter...\n");
-		return false;
-	}
+	kernel->getDataStore()->insertFilter(evaluateFilter);
 
 	return true;
 }

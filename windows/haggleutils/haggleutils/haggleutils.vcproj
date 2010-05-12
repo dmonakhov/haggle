@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="haggleutils"
 	ProjectGUID="{0B6CFBC2-AD41-4C95-BB67-CFE3A97593A3}"
 	RootNamespace="haggleutils"
@@ -63,7 +63,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="Winmm.lib iphlpapi.lib libeay32.lib"
+				AdditionalDependencies="Winmm.lib"
 				OutputFile="$(OutDir)/haggleutils.lib"
 				AdditionalLibraryDirectories="$(SolutionDir)$(ConfigurationName)"
 			/>
@@ -110,12 +110,14 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\inc32&quot;"
 				PreprocessorDefinitions="NDEBUG;_LIB;_UNICODE;UNICODE;WIN32"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
+				CompileAs="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -130,7 +132,9 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				AdditionalDependencies="Winmm.lib"
 				OutputFile="$(OutDir)/haggleutils.lib"
+				AdditionalLibraryDirectories="$(SolutionDir)$(ConfigurationName)"
 			/>
 			<Tool
 				Name="VCALinkTool"

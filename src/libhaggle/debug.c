@@ -78,7 +78,7 @@ int libhaggle_trace(int err, const char *func, const char *fmt, ...)
 	if (tr_out == NULL)
 		libhaggle_debug_init();
 #endif
-	gettimeofday(&now, NULL);
+	libhaggle_gettimeofday(&now, NULL);
 
 	va_start(args, fmt);
 #ifdef WINCE

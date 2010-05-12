@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="sqlite3"
 	ProjectGUID="{0E2FC2D8-8340-4291-8DC1-59B79CC3A69C}"
 	RootNamespace="sqlite3"
@@ -110,12 +110,14 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="..\"
 				PreprocessorDefinitions="NDEBUG;_LIB;_UNICODE;UNICODE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
+				CompileAs="1"
 				DisableSpecificWarnings="4267;4244;4018;4311;4996;4312;4311"
 			/>
 			<Tool

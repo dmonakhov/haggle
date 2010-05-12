@@ -840,8 +840,10 @@ int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ig
 	 */	
 	m = haggle_dataobject_get_metadata(dobj_reply, DATAOBJECT_METADATA_APPLICATION);
 
+#if defined(DEBUG)
 	haggle_dataobject_print(stdout, dobj_reply);
-		
+#endif
+
 	if (!m) {
 		haggle_dataobject_free(dobj_reply);
 		LIBHAGGLE_ERR("Error: No application metadata!\n");

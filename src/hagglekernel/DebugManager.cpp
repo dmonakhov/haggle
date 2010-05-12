@@ -50,8 +50,8 @@ SOCKET openSocket(int port);
 #define ADD_LOG_FILE_TO_DATASTORE 0
 
 DebugManager::DebugManager(HaggleKernel * _kernel, bool _interactive) : 
-                Manager("DebugManager", _kernel), onFindRepositoryKeyCallback(NULL), 
-                onDumpDataStoreCallback(NULL), server_sock(-1), interactive(_interactive), console(INVALID_STDIN)
+	Manager("DebugManager", _kernel), onFindRepositoryKeyCallback(NULL), 
+	onDumpDataStoreCallback(NULL), server_sock(-1), interactive(_interactive), console(INVALID_STDIN)
 {
 }
 
@@ -97,6 +97,7 @@ bool DebugManager::init_derived()
 		}
 	}
 #elif defined(OS_WINDOWS_DESKTOP)
+//#if 0 //Disabled
 	if (interactive) {
 		console = GetStdHandle(STD_INPUT_HANDLE);
 
@@ -108,7 +109,10 @@ bool DebugManager::init_derived()
 		// This will reset the console mode so that getchar() returns for 
 		// every character read
 		SetConsoleMode(console, 0);
+		// Flush any existing events on the console
+		FlushConsoleInputBuffer(console);
 	}
+//#endif // Disabled
 #endif
 #ifdef DEBUG_LEAKS
 	debugEType = registerEventType("DebugManager Debug Event", onDebugReport);
@@ -177,9 +181,7 @@ void DebugManager::onFindRepositoryKey(Event *e)
 		// Add node id of local node, to make sure that two logs from different 
 		// nodes don't clash:
 		Attribute b("Node id", kernel->getThisNode()->getIdStr());
-		dObj->addAttribute(b);;
-		
-		
+		dObj->addAttribute(b);
 		
 		// Insert data object:
 		kernel->getDataStore()->insertDataObject(dObj);
@@ -229,7 +231,7 @@ static size_t skipXMLTag(const char *data, size_t len)
 	size_t i = 0;
 	
 	// Skip over the <?xml version="1.0"?> tag:
-	while(strncmp(&(data[i]), "?>", 2) != 0)
+	while (strncmp(&(data[i]), "?>", 2) != 0)
 		i++;
 	i += 2;
 	return i;
@@ -353,7 +355,7 @@ void DebugManager::onShutdown()
 		CLOSE_SOCKET(server_sock);
 	}
 	if (!client_sockets.empty()) {
-		for(List<SOCKET>::iterator it = client_sockets.begin(); it != client_sockets.end(); it++) {
+		for (List<SOCKET>::iterator it = client_sockets.begin(); it != client_sockets.end(); it++) {
 			kernel->unregisterWatchable(*it);
 			CLOSE_SOCKET(*it);
 		}
@@ -408,10 +410,11 @@ void DebugManager::onWatchableEvent(const Watchable& wbl)
 				CLOSE_SOCKET(client_sock);
 				return;
 			}
-			if(client_sockets.empty())
+			if (client_sockets.empty())
 				kernel->getDataStore()->dump(onDumpDataStoreCallback);
+
 			client_sockets.push_back(client_sock);
-		}else{
+		} else {
 			HAGGLE_DBG("accept failed: %ld\n", client_sock);
 		}
 		num = 1;
@@ -421,19 +424,57 @@ void DebugManager::onWatchableEvent(const Watchable& wbl)
 	else if (wbl == console) {
 		char *raw = NULL;
                 size_t rawLen;
-		int res;
+		int res = 0;
 		unsigned char c;
 		DebugCmdRef dbgCmdRef;
+
+#if defined(OS_WINDOWS_DESKTOP)
+		INPUT_RECORD *inrec; 
+		DWORD i, num;
+
+		if (!GetNumberOfConsoleInputEvents(console, &num)) {
+			fprintf(stderr, "Failed to read number of console input events\n");
+			return;
+		}
+
+		inrec = new INPUT_RECORD[num];
+
+		if (!inrec)
+			return;
+
+		if (!ReadConsoleInput(console, inrec, num, &num)) {
+			fprintf(stderr, "Failed to read console input\n");
+			delete[] inrec;
+			return;
+		}
 		
+		for (i = 0; i < num; i++) {
+			switch (inrec[i].EventType) {
+				case KEY_EVENT:
+					c = (char)inrec[i].Event.KeyEvent.uChar.UnicodeChar;
+					res = 1;
+					break;
+				default:
+					// Ignore
+					//printf("unkown event %u\n", inrec[i].EventType);
+					break;
+			}
+		}
+
+		delete[] inrec;
+
+		if (res == 0)
+			return;
+#else
 		res = getchar();
 		c = res;
-
+		
 		if (res < 0) {
 			fprintf(stderr, "Could not read character: %s\n", strerror(errno));
 			return;
 		}
-		
-		//fprintf(stderr,"Character %c pressed\n", c);
+#endif
+		//fprintf(stderr, "Character %c pressed\n", c);
 
 		switch (c) {
 			case 'c':

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="Crypto"
 	ProjectGUID="{C67C0E3E-AD9A-4C2B-B5F7-876B117A7049}"
 	RootNamespace="Crypto"
@@ -122,12 +122,14 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;CRYPTO_EXPORTS"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\crypto&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\inc32&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;CRYPTO_EXPORTS;DSO_WIN32;UNICODE;_UNICODE;OPENSSL_SYSNAME_WIN32;WIN32_LEAN_AND_MEAN;OPENSSL_THREADS;OPENSSL_NO_CAMELLIA;OPENSSL_NO_SEED;OPENSSL_NO_RC5;OPENSSL_NO_MDC2;OPENSSL_NO_CMS;OPENSSL_NO_JPAKE;OPENSSL_NO_CAPIENG;OPENSSL_NO_KRB5;OPENSSL_NO_STATIC_ENGINE;OPENSSL_NO_HW;OPENSSL_NO_HW_AEP;OPENSSL_BUILD_SHLIBCRYPTO;_WINDLL;NO_CHMOD;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
+				CompileAs="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -140,7 +142,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="ws2_32.lib"
+				OutputFile="$(OutDir)/libeay32.dll"
 				LinkIncremental="1"
+				ModuleDefinitionFile="$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\ms\libeay32.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"

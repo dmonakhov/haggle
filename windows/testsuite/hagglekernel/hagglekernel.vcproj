@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="hagglekernel"
 	ProjectGUID="{06DBFA58-1C3C-498E-9A42-10C3A046E48C}"
 	RootNamespace="hagglekernel"
@@ -107,7 +107,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\..\src\utils;..\..\..\src\libhaggle\include;&quot;..\..\..\extlibs\libxml2-2.6.31\include&quot;;.\;&quot;..\..\..\extlibs\sqlite-3.6.6.2&quot;;..\..\..\src\libcpphaggle\include"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\..\..\src\utils&quot;;&quot;$(ProjectDir)..\..\..\src\hagglekernel&quot;;&quot;$(ProjectDir)..\..\..\src\libcpphaggle\include&quot;;&quot;$(ProjectDir)..\..\..\extlibs\libxml2-2.6.31\include&quot;;&quot;$(ProjectDir)..\..\..\extlibs\sqlite-3.6.6.2&quot;;&quot;$(ProjectDir)..\..\..\src\libhaggle\include&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\crypto&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\inc32&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -126,6 +126,8 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				AdditionalDependencies="libcpphaggle.lib"
+				AdditionalLibraryDirectories="$(OutDir)"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -235,6 +237,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\hagglekernel\Forwarder.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\hagglekernel\ForwarderAsynchronous.cpp"
 				>
 			</File>
@@ -260,10 +266,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\hagglekernel\Manager.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\hagglekernel\ManagerModule.cpp"
 				>
 			</File>
 			<File

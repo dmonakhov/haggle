@@ -145,7 +145,7 @@ int haggle_dataobject_set_createtime(struct dataobject *dobj, const struct timev
 		return HAGGLE_PARAM_ERROR;
 
 	if (!createtime) {
-		gettimeofday(&now, NULL);
+		libhaggle_gettimeofday(&now, NULL);
 		createtime = &now;
 	}
 	

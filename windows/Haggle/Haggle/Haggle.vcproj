@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="Haggle"
 	ProjectGUID="{30FF80EB-237C-40BC-A149-FC4D366D4CF9}"
 	RootNamespace="Haggle"
@@ -118,7 +118,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(PROJECT_DIR)..\..\..\src\utils&quot;;&quot;$(PROJECT_DIR)..\..\..\src\hagglekernel&quot;;&quot;$(PROJECT_DIR)..\..\..\src\libcpphaggle\include&quot;;&quot;$(PROJECT_DIR)..\..\..\extlibs\libxml2-2.6.31\include&quot;;&quot;$(PROJECT_DIR)..\..\..\extlibs\sqlite-3.6.6.2&quot;;&quot;$(PROJECT_DIR)..\..\..\src\libhaggle\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\..\..\src\utils&quot;;&quot;$(ProjectDir)..\..\..\src\hagglekernel&quot;;&quot;$(ProjectDir)..\..\..\src\libcpphaggle\include&quot;;&quot;$(ProjectDir)..\..\..\extlibs\libxml2-2.6.31\include&quot;;&quot;$(ProjectDir)..\..\..\extlibs\sqlite-3.6.6.2&quot;;&quot;$(ProjectDir)..\..\..\src\libhaggle\include&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\crypto&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\inc32&quot;"
 				PreprocessorDefinitions="HAVE_EXCEPTION=1;WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"

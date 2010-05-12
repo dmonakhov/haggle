@@ -20,6 +20,7 @@
 
 #if defined(WIN32)
 #define OS_WINDOWS
+#include <stdlib.h>
 #endif
 
 #include <time.h>
@@ -66,14 +67,13 @@ unsigned long prng_uint32(void)
 		// random() returns a 31-bit random number:
 		(((unsigned long)(random() & 0xFFFF)) << 16) |
 		(((unsigned long)(random() & 0xFFFF)) << 0);
+#elif defined(OS_WINDOWS_MOBILE)
+		Random();
 #elif defined(OS_WINDOWS)
 		// rand() returns a 15-bit random number:
-		/*
 		(((unsigned long) (rand() & 0xFF)) << 24) |
 		(((unsigned long) (rand() & 0xFFF)) << 12) |
 		(((unsigned long) (rand() & 0xFFF)) << 0);
-		*/
-		Random();
 #endif
 }
 
