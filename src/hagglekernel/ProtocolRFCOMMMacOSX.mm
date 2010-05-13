@@ -628,7 +628,7 @@ ProtocolEvent ProtocolRFCOMMClient::connectToPeer()
 
 ProtocolEvent ProtocolRFCOMMClient::sendData(const void *buf, size_t len, const int flags, size_t *bytes)
 {
-	if (![mRFCOMMClientInterface sendData:buf length:len bytes:(UInt32*)bytes])
+	if (![mRFCOMMClientInterface sendData:buf length:len bytes:bytes])
 		return PROT_EVENT_ERROR;
 
 	*bytes = len;

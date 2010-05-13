@@ -55,6 +55,10 @@ HINSTANCE g_hInstance;
 #include <signal.h>
 #endif
 
+#if defined(OS_UNIX)
+#include <sys/stat.h>
+#endif
+
 HaggleKernel *kernel;
 static bool shouldCleanupPidFile = true;
 static bool setCreateTimeOnBloomfilterUpdate = false;

@@ -88,7 +88,7 @@ int libhaggle_trace(int err, const char *func, const char *fmt, ...)
 #endif
 	va_end(args);
 
-	fprintf((err ? tr_err : tr_out), "%ld.%06ld %s: %s", now.tv_sec, now.tv_usec, func, buf);
+	fprintf((err ? tr_err : tr_out), "%ld.%06ld %s: %s", (long)now.tv_sec, (long)now.tv_usec, func, buf);
 	fflush(tr_out);
 
 	return 0;

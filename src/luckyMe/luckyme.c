@@ -1024,6 +1024,7 @@ int on_interests(haggle_event_t *e, void* nix)
 	LIBHAGGLE_DBG("Received application interests event\n");
 
 	if (haggle_attributelist_get_attribute_by_name(e->interests, APP_NAME) != NULL) {
+#if defined(DEBUG)
 		list_t *pos;
 
 		LIBHAGGLE_DBG("Checking existing interests\n");
@@ -1033,7 +1034,7 @@ int on_interests(haggle_event_t *e, void* nix)
 		// In the future, we might want to delete the old interests, and
 		// create new ones... depending on the circumstances.
 		// If so, that code would fit here. 
-		
+
 		list_for_each(pos, &e->interests->attributes) {
 			struct attribute *attr = (struct attribute *)pos;
 			LIBHAGGLE_DBG("interest: %s=%s:%lu\n", 
@@ -1041,6 +1042,7 @@ int on_interests(haggle_event_t *e, void* nix)
 			       haggle_attribute_get_value(attr), 
 			       haggle_attribute_get_weight(attr));
 		}
+#endif
 	} else {
 		LIBHAGGLE_DBG("No existing interests, generating new ones\n");
 

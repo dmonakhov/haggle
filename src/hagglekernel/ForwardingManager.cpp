@@ -26,7 +26,7 @@ ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 	routingInfoEventType(-1),
 	forwardingModule(NULL)
 #if defined(ENABLE_RECURSIVE_ROUTING_UPDATES)
-	, recursiveRoutingUpdates(true)
+	, recursiveRoutingUpdates(false)
 #endif
 {
 }
