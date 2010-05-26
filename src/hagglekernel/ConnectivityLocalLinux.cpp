@@ -760,6 +760,7 @@ static int dbus_init_handle(struct dbus_handle *dbh)
 
 #if defined(ENABLE_BLUETOOTH)
 
+#if defined(OS_ANDROID)
 // Code taken from hciconfig
 static int bluetooth_set_scan(int ctl, int hdev, const char *opt)
 {
@@ -782,6 +783,7 @@ static int bluetooth_set_scan(int ctl, int hdev, const char *opt)
 	}
         return 0;
 }
+#endif // OS_ANDROID
 
 Interface *hci_get_interface_from_name(const char *ifname)
 {

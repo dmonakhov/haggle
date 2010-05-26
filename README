@@ -1,6 +1,10 @@
 Haggle Architecture Reference Implementation
 ============================================
 
+NOTE: Always check http://code.google.com/p/haggle/w/list for the most
+up to date information about Haggle, how to compile, supported
+hardware, etc.
+
 See AUTHORS for information on which people are responsible for
 writing this code. You are encouraged to read this file in case you
 are confused about what Haggle is, is not, and who you should contact
@@ -24,6 +28,7 @@ Tested hardware platforms:
 * iPhone (limited functionality, needs jailbreak)
 * T-Mobile G1 (or the Google Android developer phone)
 * HTC Magic (must be rooted)
+* Google Nexus One (must be rooted)
 
 Complete functionality may not be supported on all platforms at all
 times (e.g., Bluetooth or WiFi functionality may differ, or not work

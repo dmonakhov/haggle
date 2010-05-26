@@ -1,11 +1,14 @@
 Building Haggle for Android
 ===========================
 
-Haggle can be built for Google's Android OS (i.e., the G1/Dream , or
-Magic).  Android is Linux based, but it is a very stripped down system
-with a minimal libc (called Bionic) and very basic C++ library
-support. There are no STL classes available on Android, but Haggle is
-built by default using its own STL-like container classes.
+NOTE: Always check http://code.google.com/p/haggle/w/list for the
+latest information on building for Android.
+
+Haggle can be built for Google's Android OS (e.g., the Nexus One).
+Android is Linux based, but it is a very stripped down system with a
+minimal libc (called Bionic) and very basic C++ library support. There
+are no STL classes available on Android, but Haggle is built by
+default using its own STL-like container classes.
 
 To build Haggle for Android, you need an Android toolchain (ARM
 based). There are probably several ways to build Haggle for Android,
@@ -33,13 +36,13 @@ normal Haggle configure process in order to generate the config.h
 header file before Haggle can be built for Android.
 
 Haggle depends on the presence of Bluetooth and WiFi support in the
-Android build configuration. Make sure that the board configuration
-of your Android configuration includes Bluetooth and WiFi (tiwlan)
-support. This is typically the case when building for a specific 
-phone, such as Dream or Sapphire. But, when building for, e.g.,
-"generic" there is no such support in the configuration. This can
-be added by creating a new configuration, or editing an existing, and 
-adding the following to BoardConfig.mk:
+Android build configuration. Make sure that the board configuration of
+your Android configuration includes Bluetooth and WiFi
+support. Support for such hardware is typically included when building
+for a specific phone, such as Dream, Magic or Nexus One. But, when
+building for, e.g., "generic" there is no such support in the
+configuration. This can be added by creating a new configuration, or
+editing an existing, and adding the following to BoardConfig.mk:
 
 BOARD_HAVE_BLUETOOTH := true                                                                                                                        
 BOARD_WLAN_TI_STA_DK_ROOT := system/wlan/ti/sta_dk_4_0_4_32     
@@ -48,6 +51,13 @@ For example, for the "generic" configuration the BoardConfig.mk is
 found at build/target/board/generic/BoardConfig.mk. Note that the 
 path to the wlan source may change with newer Android source versions.
  
+NOTE: Support for the Texas Instrument WiFi driver is only required
+for phones such as HTC's Magic, G1, and Hero. This driver does not
+support the Linux Wireless extensions and therefore require special
+code to detect the wireless interface. The Google Nexus One natively
+supports wireless extensions and therefore it can use the "regular"
+Linux code for detecting interfaces.
+
 When everything is setup, enter 'external/haggle' and type 'mm'. This
 should build Haggle for Android. The binaries will end up as part of
 the Android system in 'out/target/product/dream/system' (you might
@@ -55,9 +65,11 @@ have 'generic' instead of 'dream', depending on what target you built
 for). You may manually transfer the binaries and libraries to your
 Android device using, e.g., the 'adb push' command (or the provided
 'install_haggle.sh' script), or you may create a new system image
-(which now includes Haggle) and then flash your device with it. If 
-you want to compile against another target than 'generic', you may
-have to run, e.g., 'lunch htc_dream-eng' to change target.
+(which now includes Haggle) and then flash your device with it. If you
+want to compile against another target than 'generic', you may have to
+run, e.g., 'lunch htc_dream-eng', or 'lunch generic_passion-eng' (for
+Nexus One) to change target (as of version 0.3, Haggle is by default
+configured to compile against phones with wireless extension support).
 
 The basic components of Haggle that are of interest for Android are
 the Haggle executable ('haggle') and the application programming
@@ -103,6 +115,11 @@ etc.
 
 Setting Ad hoc mode
 -------------------
+
+NOTE: This applies to phones with the TI wlan wireless chip (e.g., G1,
+Magic, Hero). The Nexus One uses the Linux wireless extensions and
+require the wireless tools to set ad hoc mode. These tools have to be
+compiled separately.
 
 At the time of writing of this document, Android has no GUI for
 setting ad hoc mode on the WiFi interface. However, ad hoc mode can be

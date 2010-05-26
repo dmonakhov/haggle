@@ -131,7 +131,8 @@ static void resettty()
 static void daemonize()
 {
         int i, sid;
-	
+	FILE *f;
+
         /* check if already a daemon */
 	if (getppid() == 1) 
                 return; 
@@ -169,9 +170,9 @@ static void daemonize()
 	}
 	
 	/* Redirect standard files to /dev/null */
-	freopen("/dev/null", "r", stdin);
-	freopen("/dev/null", "w", stdout);
-	freopen("/dev/null", "w", stderr);
+	f = freopen("/dev/null", "r", stdin);
+	f = freopen("/dev/null", "w", stdout);
+	f = freopen("/dev/null", "w", stderr);
 }
 
 
