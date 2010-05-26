@@ -3,8 +3,8 @@
 THIS_DIR=$PWD
 SCRIPT_DIR=`dirname $0`
 ANDROID_SRC_DIR=
-PHOTOSHARE_SRC_DIR=$HOME/Documents/workspace/hg/android/PhotoShare
-HAGGLE_VER=0.2
+PHOTOSHARE_SRC_DIR=$HOME/Projects/haggle/android/PhotoShare
+HAGGLE_VER=0.3
 
 function usage() {
     echo "Usage: $0 ANDROID_SRC_DIR [ PHOTOSHARE_SRC_DIR ]"
@@ -24,7 +24,9 @@ if [ ! -z $2 ]; then
 fi
 
 
-ANDROID_BIN_DIR=$ANDROID_SRC_DIR/out/target/product/dream-open/system
+ANDROID_BIN_DIR=$ANDROID_SRC_DIR/out/target/product/passion/system
+IWCONFIG_BIN=$ANDROID_BIN_DIR/xbin/iwconfig
+IWLIST_BIN=$ANDROID_BIN_DIR/xbin/iwlist
 HAGGLE_BIN=$ANDROID_BIN_DIR/bin/haggle
 LIBHAGGLE_SO=$ANDROID_BIN_DIR/lib/libhaggle.so
 LIBHAGGLE_XML2_SO=$ANDROID_BIN_DIR/lib/libhaggle-xml2.so
@@ -47,8 +49,12 @@ mkdir $PACKAGE_DIR
 pushd $PACKAGE_DIR
 
 # Copy all the files we need into our package directory
-for f in "$HAGGLE_BIN $LIBHAGGLE_SO $LIBHAGGLE_XML2_SO $LIBHAGGLE_JNI_SO $HAGGLE_JAR $PHOTOSHARE_APK"; do
-    cp -f $f .
+for f in $HAGGLE_BIN $LIBHAGGLE_SO $LIBHAGGLE_XML2_SO $LIBHAGGLE_JNI_SO $HAGGLE_JAR $PHOTOSHARE_APK $IWCONFIG_BIN $IWLIST_BIN; do
+    echo "Including $f in package"
+
+    if [ -f $f ]; then
+	cp -f $f .
+    fi
 done
 
 # Create install script
@@ -83,30 +89,39 @@ adb root
 for dev in \$DEVICES; do
     echo "Installing onto device \$dev"
     # Remount /system partition in read/write mode
-    adb -s \$dev shell su -c mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system
+    adb -s \$dev shell mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system
     adb -s \$dev push haggle /system/bin/haggle
-    adb -s \$dev shell su -c chmod 4775 /system/bin/haggle
+    adb -s \$dev shell chmod 4775 /system/bin/haggle
+
+    if [ -f iwconfig ]; then
+        adb -s \$dev push iwconfig /system/bin/iwconfig
+        adb -s \$dev shell chmod 4775 /system/bin/iwconfig
+    fi
+    if [ -f iwlist ]; then
+        adb -s \$dev push iwlist /system/bin/iwlist
+        adb -s \$dev shell chmod 4775 /system/bin/iwlist
+    fi
 
     adb -s \$dev push libhaggle.so /system/lib/libhaggle.so
-    adb -s \$dev shell su -c chmod 644 /system/lib/libhaggle.so
+    adb -s \$dev shell chmod 644 /system/lib/libhaggle.so
 
     adb -s \$dev push libhaggle-xml2.so /system/lib/libhaggle-xml2.so
-    adb -s \$dev shell su -c chmod 644 /system/lib/libhaggle-xml2.so
+    adb -s \$dev shell chmod 644 /system/lib/libhaggle-xml2.so
 
     adb -s \$dev push libhaggle_jni.so /system/lib/libhaggle_jni.so
-    adb -s \$dev shell su -c chmod 644 /system/lib/libhaggle_jni.so
+    adb -s \$dev shell chmod 644 /system/lib/libhaggle_jni.so
 
     adb -s \$dev push haggle.jar /system/framework/haggle.jar
-    adb -s \$dev shell su -c chmod 644 /system/framework/haggle.jar
+    adb -s \$dev shell chmod 644 /system/framework/haggle.jar
 
     adb -s \$dev uninstall org.haggle.PhotoShare
     adb -s \$dev install PhotoShare.apk
 
     # Reset /system partition to read-only mode
-    adb -s \$dev shell su -c mount -o remount,ro -t yaffs2 /dev/block/mtdblock3 /system
+    adb -s \$dev shell mount -o remount,ro -t yaffs2 /dev/block/mtdblock3 /system
 
     # Cleanup data folder if any
-    adb -s \$dev shell su -c rm /data/haggle/* &> /dev/null
+    adb -s \$dev shell rm /data/haggle/* &> /dev/null
 done
 
 EOF
