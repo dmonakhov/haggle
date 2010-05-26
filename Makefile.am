@@ -11,7 +11,7 @@ endif
 
 SUBDIRS += doc src
 
-EXTRA_DIST = bin lib extlibs winmobile windows iphone android macosx README Android.mk
+EXTRA_DIST = bin lib extlibs winmobile windows iphone android macosx resources README Android.mk
 DIST_SUBDIRS = $(SUBDIRS) testsuite
 
 dist_doc_DATA = README
