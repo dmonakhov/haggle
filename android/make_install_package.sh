@@ -3,8 +3,8 @@
 THIS_DIR=$PWD
 SCRIPT_DIR=`dirname $0`
 ANDROID_SRC_DIR=
-PHOTOSHARE_SRC_DIR=$HOME/Projects/haggle/android/PhotoShare
-HAGGLE_VER=0.3
+HAGGLE_SRC_DIR=`basename $THIS_DIR`
+HAGGLE_VER="x.y"
 
 function usage() {
     echo "Usage: $0 ANDROID_SRC_DIR [ PHOTOSHARE_SRC_DIR ]"
@@ -23,7 +23,20 @@ if [ ! -z $2 ]; then
     echo "Looking for PhotoShare in $PHOTOSHARE_DIR"
 fi
 
+if [ ! -f $HAGGLE_SRC_DIR/configure.ac ]; then
+    if [ -f $ANDROID_SRC_DIR/external/haggle/configure.ac ]; then
+	HAGGLE_SRC_DIR=$ANDROID_SRC_DIR/external/haggle
+    fi
+fi
 
+if [ ! -f $HAGGLE_SRC_DIR/configure.ac ]; then
+    echo "Could not find Haggle source directory"
+    return;
+fi
+
+HAGGLE_VER=`awk '/AC_INIT/ { l=match($2, /[0-9]/); r=match($2,/\]/); print substr($2,l,r-l) }' $HAGGLE_SRC_DIR/configure.ac`	
+
+PHOTOSHARE_SRC_DIR=$ANDROID_SRC_DIR/external/haggle/android/PhotoShare
 ANDROID_BIN_DIR=$ANDROID_SRC_DIR/out/target/product/passion/system
 IWCONFIG_BIN=$ANDROID_BIN_DIR/xbin/iwconfig
 IWLIST_BIN=$ANDROID_BIN_DIR/xbin/iwlist
@@ -62,6 +75,13 @@ done
 cat > install.sh <<EOF
 #!/bin/bash
 
+if [ -z `which adb` ]; then
+    echo "Unable to find the adb command (Android Debug Bridge)."
+    echo "You need to install and configure the Android SDK."
+    echo "See http://developer.android.com"
+    return;
+fi
+
 echo "This script will install Haggle and PhotoShare on any Android devices connected to this computer."
 echo "Note that the installation will only be successful if you have an Android developer phone,"
 echo "or another device that allows root access."
@@ -90,18 +110,12 @@ for dev in \$DEVICES; do
     echo "Installing onto device \$dev"
     # Remount /system partition in read/write mode
     adb -s \$dev shell mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system
+
+    echo "Installing Haggle binary..."
     adb -s \$dev push haggle /system/bin/haggle
     adb -s \$dev shell chmod 4775 /system/bin/haggle
 
-    if [ -f iwconfig ]; then
-        adb -s \$dev push iwconfig /system/bin/iwconfig
-        adb -s \$dev shell chmod 4775 /system/bin/iwconfig
-    fi
-    if [ -f iwlist ]; then
-        adb -s \$dev push iwlist /system/bin/iwlist
-        adb -s \$dev shell chmod 4775 /system/bin/iwlist
-    fi
-
+    echo "Installing libraries..."
     adb -s \$dev push libhaggle.so /system/lib/libhaggle.so
     adb -s \$dev shell chmod 644 /system/lib/libhaggle.so
 
@@ -111,17 +125,34 @@ for dev in \$DEVICES; do
     adb -s \$dev push libhaggle_jni.so /system/lib/libhaggle_jni.so
     adb -s \$dev shell chmod 644 /system/lib/libhaggle_jni.so
 
+    echo "Installing haggle.jar"
     adb -s \$dev push haggle.jar /system/framework/haggle.jar
     adb -s \$dev shell chmod 644 /system/framework/haggle.jar
 
+    echo "Installing tools..."
+    if [ -f iwconfig ]; then
+        adb -s \$dev push iwconfig /system/bin/iwconfig
+        adb -s \$dev shell chmod 4775 /system/bin/iwconfig
+    fi
+    if [ -f iwlist ]; then
+        adb -s \$dev push iwlist /system/bin/iwlist
+        adb -s \$dev shell chmod 4775 /system/bin/iwlist
+    fi
+
+    echo "Uninstalling PhotoShare application..."
     adb -s \$dev uninstall org.haggle.PhotoShare
+    echo "Installing PhotoShare application..."
     adb -s \$dev install PhotoShare.apk
 
     # Reset /system partition to read-only mode
     adb -s \$dev shell mount -o remount,ro -t yaffs2 /dev/block/mtdblock3 /system
 
+    # Create data folder if it does not exist already
+    adb -s \$dev shell mkdir /data/haggle &>/dev/null
+
     # Cleanup data folder if any
     adb -s \$dev shell rm /data/haggle/* &> /dev/null
+    
 done
 
 EOF
@@ -130,7 +161,8 @@ chmod +x install.sh
 
 cat > README <<EOF
 You need an Android Developer phone, or other Android phone with root access,
-in order to install Haggle.
+in order to install Haggle. You also need to install the Android SDK so that
+you have the Android debug bridge (adb) tool.
 
 To install, connect your Android phone to a computer and run ./install.sh
 

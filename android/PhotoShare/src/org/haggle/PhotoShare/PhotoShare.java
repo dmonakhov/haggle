@@ -8,7 +8,6 @@ import org.haggle.LaunchCallback;
 
 import android.app.AlertDialog;
 import android.app.Application;
-import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
 import android.util.Log;

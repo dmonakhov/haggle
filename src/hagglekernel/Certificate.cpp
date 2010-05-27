@@ -357,8 +357,9 @@ bool Certificate::sign(EVP_PKEY *key)
 	
 	if (X509_sign(x, key, EVP_sha1())) 
 		hasSignature = res = true;
-	else
+	else {
 		writeErrors("");
+	}
 
 	return res;
 }
