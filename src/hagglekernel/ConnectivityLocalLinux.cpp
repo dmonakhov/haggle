@@ -222,7 +222,10 @@ static int nl_parse_addr_info(struct nlmsghdr *nlm, struct if_info *ifinfo)
 	for (rta = IFA_RTA(ifamsg); RTA_OK(rta, attrlen); rta = RTA_NEXT(rta, attrlen)) {
 		if (rta->rta_type == IFA_ADDRESS) {
 			memcpy(&ifinfo->ipaddr.sin_addr, RTA_DATA(rta), RTA_PAYLOAD(rta));
+			memcpy(&ifinfo->ip, RTA_DATA(rta), RTA_PAYLOAD(rta));
 			ifinfo->ipaddr.sin_family = ifamsg->ifa_family;
+		} if (rta->rta_type == IFA_BROADCAST) {
+			memcpy(&ifinfo->broadcast, RTA_DATA(rta), RTA_PAYLOAD(rta));
 		} else if (rta->rta_type == IFA_LOCAL) {
 			if (RTA_PAYLOAD(rta) == ETH_ALEN) {
 			}
@@ -234,7 +237,7 @@ static int nl_parse_addr_info(struct nlmsghdr *nlm, struct if_info *ifinfo)
 	return n;
 }
 
-static int get_ipconf(struct if_info *ifinfo)
+static int fill_in_ipconf(struct if_info *ifinfo)
 {
 	struct ifreq ifr;
 	struct sockaddr_in *sin = (struct sockaddr_in *) &ifr.ifr_addr;
@@ -265,6 +268,28 @@ static int get_ipconf(struct if_info *ifinfo)
 	memcpy(&ifinfo->broadcast, &sin->sin_addr, sizeof(struct in_addr));
 
 	close(sock);
+
+	return 0;
+}
+
+static int fill_in_macaddr(struct if_info *ifinfo)
+{
+	int fd;
+	struct ifreq ifr;
+	
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	
+	ifr.ifr_addr.sa_family = AF_INET;
+	strncpy(ifr.ifr_name, ifinfo->ifname, IFNAMSIZ-1);
+	
+	if (ioctl(fd, SIOCGIFHWADDR, &ifr) < 0) {
+		close(fd);
+		return -1;
+	}
+	
+	close(fd);
+
+	memcpy(ifinfo->mac, ifr.ifr_hwaddr.sa_data, 6);
 
 	return 0;
 }
@@ -312,10 +337,16 @@ int ConnectivityLocal::read_netlink()
 		case RTM_NEWLINK:
 			ret = nl_parse_link_info(nlm, &ifinfo);
 
+			//CM_DBG("RTM NEWLINK %s [%s]\n", ifinfo.ifname, eth_to_str(ifinfo.mac));
+
+			// Ignore new link messages... listen to NEWADDR instead
+			break;
+
 			/* TODO: Should find a good way to sort out unwanted interfaces. */
-			if (ifinfo.isUp && !isBlacklistDeviceName(ifinfo.ifname)) {
+			if (!isBlacklistDeviceName(ifinfo.ifname)) {
 				
-				if (get_ipconf(&ifinfo) < 0) {
+				if (fill_in_ipconf(&ifinfo) < 0) {
+					//HAGGLE_ERR("Could not get IP configuration for interface %s\n", ifinfo.ifname);
 					break;
 				}
 
@@ -326,11 +357,14 @@ int ConnectivityLocal::read_netlink()
                                     ifinfo.mac[4] == 0 &&
                                     ifinfo.mac[5] == 0)
                                         break;
-                                   
+                             
 				CM_DBG("Interface newlink %s %s %s\n", 
 				       ifinfo.ifname, eth_to_str(ifinfo.mac), 
 				       ifinfo.isUp ? "up" : "down");
 				
+				if (!ifinfo.isUp)
+					break;
+				/*
 				Addresses addrs;
 
 				addrs.add(new Address(AddressType_EthMAC, ifinfo.mac));
@@ -342,6 +376,7 @@ int ConnectivityLocal::read_netlink()
  				ethernet_interfaces_found++;
 
  				report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
+				*/
 			}
 			if (!ifinfo.isUp) {
 				delete_interface(ifinfo.isWireless ? IFTYPE_WIFI : IFTYPE_ETHERNET, ifinfo.mac);
@@ -366,7 +401,38 @@ int ConnectivityLocal::read_netlink()
 		case RTM_NEWADDR:
 			ret = nl_parse_addr_info(nlm, &ifinfo);
 			CM_DBG("Interface newaddr %s %s\n", ifinfo.ifname, ip_to_str(ifinfo.ipaddr.sin_addr));
-			// Update ip address here?
+			
+			if (!isBlacklistDeviceName(ifinfo.ifname)) {
+				Addresses addrs;
+
+				if (fill_in_macaddr(&ifinfo) != 0) {
+					HAGGLE_ERR("Could not fill in mac address of interface %s\n", ifinfo.ifname);
+					break;
+				}
+				
+				if (ifinfo.mac[0] == 0 &&
+                                    ifinfo.mac[1] == 0 &&
+                                    ifinfo.mac[2] == 0 &&
+                                    ifinfo.mac[3] == 0 &&
+                                    ifinfo.mac[4] == 0 &&
+                                    ifinfo.mac[5] == 0)
+				     break;
+				
+				addrs.add(new Address(AddressType_EthMAC, ifinfo.mac));
+				addrs.add(new Address(AddressType_IPv4, &ifinfo.ip, &ifinfo.broadcast));
+				
+				/*
+				HAGGLE_DBG("New interface %s %s/%s [%s]\n", ifinfo.ifname, ip_to_str(ifinfo.ip), 
+					   ip_to_str(ifinfo.broadcast), eth_to_str(ifinfo.mac));
+				*/
+				
+			 	Interface iface(ifinfo.isWireless ? IFTYPE_WIFI : IFTYPE_ETHERNET, 
+						 ifinfo.mac, &addrs, ifinfo.ifname, IFFLAG_LOCAL | IFFLAG_UP);
+				
+ 				ethernet_interfaces_found++;
+
+ 				report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
+			}
 			break;
 		case NLMSG_DONE:
 			CM_DBG("NLMSG_DONE\n");
@@ -1066,7 +1132,7 @@ bool ConnectivityLocal::run()
 		CM_DBG("Could not open netlink socket\n");
 	}
 
-	netlink_getlink(&nlh);
+	netlink_getaddr(&nlh);
 
 #endif
 #if defined(ENABLE_BLUETOOTH)
