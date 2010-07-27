@@ -263,12 +263,13 @@ InterfaceRef ProtocolSocket::resolvePeerInterface(const Address& addr)
 		) {
                 char buf[SOCKADDR_SIZE];
                 unsigned char mac[6];
+		const char *ifname = isServer() ? NULL : localIface->getName();
                 struct sockaddr *peer_addr = (struct sockaddr *)buf;
                 addr.fillInSockaddr(peer_addr);
                 
-                HAGGLE_DBG("trying to figure out peer mac for IP %s on interface %s\n", addr.getAddrStr(), localIface->getName());
-
-                res = get_peer_mac_address(peer_addr, localIface->getName(), mac, 6);
+                HAGGLE_DBG("%s: isServer=%s trying to figure out peer mac for IP %s on interface %s\n", getName(), isServer() ? "true" : "false", addr.getAddrStr(), ifname ? localIface->getName() : "unspecified");
+		
+                res = get_peer_mac_address(peer_addr, ifname, mac, 6);
 
 		if (res < 0) {
 			HAGGLE_ERR("Error when retreiving mac address for peer %s, error=%d\n", addr.getAddrStr(), res);

@@ -660,6 +660,7 @@ int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsig
 #include <netinet/ip.h>
 #include <netinet/in.h>
 #include <linux/icmp.h>
+#include <netinet/ether.h>
 
 int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsigned char *mac, size_t maclen)
 {
@@ -668,14 +669,19 @@ int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsig
                 struct in_pktinfo ipi;
         } cmsg = { {sizeof(struct cmsghdr) + sizeof(struct in_pktinfo), SOL_IP, IP_PKTINFO},
                    {0, {0}, {0}}};
-        int sock, icmp_sock;
+        int icmp_sock;
         unsigned char outpack[0x10000];
         int addrlen = 0, datalen = 64;
         struct icmphdr *icmp;
         struct sockaddr *paddr = NULL;
         int ret = 0;
-        struct arpreq areq;
-
+	FILE *f = NULL;
+	char buf[256]; 
+	char ip_str[20];
+	char mac_str[20];
+	char dummy[20];
+	struct in_addr ip;
+		
 	if (mac == NULL || saddr == NULL || maclen < 6)
 		return -1;
 
@@ -734,28 +740,30 @@ int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsig
                 usleep(50000);
         }
 
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	memset(ip_str, 0, 20);
+	memset(mac_str, 0, 20);
+	memset(dummy, 0, 20);
 
-	if (sock == INVALID_SOCKET)
-		return -5;
+	f = fopen("/proc/net/arp", "r");
 
-        /* ICMP message sent, now check the arp table. */
-        memset(&areq, 0, sizeof(struct arpreq));
-
-        if (ifname)
-                strcpy(areq.arp_dev, ifname);
-        
-        memcpy(&areq.arp_pa, saddr, addrlen);
-
-	if (ioctl(sock, SIOCGARP, &areq) != -1) {
-                memcpy(mac, areq.arp_ha.sa_data, 6);
-                ret = 1;
-	} else {
-		ret = -1;
-                fprintf(stderr, "ARP failed - %s\n", strerror(errno));
-        }
-
-        close(sock);
+	if (!f)
+		return -1;
+	
+	while (fgets(buf, 256, f)) {
+		
+		ret = sscanf(buf, "%s %s %s %s", ip_str, dummy, dummy, mac_str);
+		
+		if (ret > 0) {
+			inet_aton(ip_str, &ip);
+			
+			if (memcmp(&ip, &((struct sockaddr_in *)saddr)->sin_addr.s_addr, 4) == 0) {
+				memcpy(mac, ether_aton(mac_str), 6);
+				ret = 1;
+			}
+		}
+	}
+	
+	fclose(f);
 
 	return ret;
 }
