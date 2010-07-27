@@ -751,6 +751,7 @@ int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsig
                 memcpy(mac, areq.arp_ha.sa_data, 6);
                 ret = 1;
 	} else {
+		ret = -1;
                 fprintf(stderr, "ARP failed - %s\n", strerror(errno));
         }
 

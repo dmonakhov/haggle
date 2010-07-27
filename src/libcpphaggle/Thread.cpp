@@ -286,8 +286,13 @@ Thread::Thread() :
 	size_t len = strlen(MAIN_THREAD_NAME) + 1;
 	name = (char *)malloc(len);
 
-	if (name)
-		snprintf(name, len, MAIN_THREAD_NAME);
+	if (name) {
+		memset(name, '\0', len);
+		strcpy(name, MAIN_THREAD_NAME);
+	} else {
+		name = NULL;
+		len = 0;
+	}
 
 	registry.insert(make_pair(id, this));
 }
@@ -316,10 +321,18 @@ Thread::Thread(Runnable *r) :
 
 	// Allocate name string, add room for thread number and null-char
 	size_t len = strlen(runObj->getName()) + 20 + 1;
-	name = (char *)malloc(len);
 
-	if (name)
-		snprintf(name, len, "%s:%lu", runObj->getName(), num);
+	if (len > 0) {
+		name = (char *)malloc(len);
+		
+		if (name) {
+			memset(name, '\0', len);
+			snprintf(name, len, "%s:%lu", runObj->getName(), num);
+		} else {
+			name = NULL;
+			len = 0;
+		}
+	}
 }
 
 Thread::~Thread()
@@ -332,7 +345,9 @@ Thread::~Thread()
 		 since reaching this point means that Haggle is exiting and the registry
 		 will be destroyed anyway.
 		 */
-		//registryRemove(id);
+#if !defined(OS_ANDROID)
+		registryRemove(id);
+#endif
 	} else {
 		/*
 		If the thread is running, we must stop it (cancel, then
@@ -655,6 +670,7 @@ Runnable::~Runnable()
 
 		TRACE_DBG("Deleting runnable \'%s\' whose thread has id=%d\n", getName(), thr->getNum());
 		delete thr;
+		thr = NULL;
 	} 
 #ifdef DEBUG
 	else {

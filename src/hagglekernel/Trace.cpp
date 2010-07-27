@@ -53,7 +53,8 @@ int Trace::write(const TraceType_t _type, const char *func, const char *fmt, ...
 	if (!enabled)
 		return 0;
 
-	memset(buf, 0, TRACE_BUFLEN);
+	memset(thread_id, '\0', 20);
+	memset(buf, '\0', TRACE_BUFLEN);
 	memset(&args, 0, sizeof(va_list));
 
 	switch (_type) {

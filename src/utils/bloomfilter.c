@@ -136,11 +136,12 @@ char *bloomfilter_to_base64(const struct bloomfilter *bf)
 	struct bloomfilter *bf_net;
 	salt_t *salts, *salts_net;
 	bin_t *bins, *bins_net;
-	
+	size_t bflen = BLOOMFILTER_TOT_LEN(bf);
+
 	if (!bf)
 		return NULL;
 
-	bf_net = (struct bloomfilter *)malloc(BLOOMFILTER_TOT_LEN(bf));
+	bf_net = (struct bloomfilter *)malloc(bflen);
 
 	if (!bf_net)
 		return NULL;
@@ -167,7 +168,7 @@ char *bloomfilter_to_base64(const struct bloomfilter *bf)
 	
 	memcpy(bins_net, bins, FILTER_LEN(bf));
 
-	len = base64_encode_alloc((const char *)bf_net, BLOOMFILTER_TOT_LEN(bf), &b64str);
+	len = base64_encode_alloc((const char *)bf_net, bflen, &b64str);
 
 	bloomfilter_free(bf_net);
 

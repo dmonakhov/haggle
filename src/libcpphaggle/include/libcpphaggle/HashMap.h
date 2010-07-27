@@ -441,6 +441,7 @@ public:
 
 	HashMap<KeyType, ValueType>& operator=(const HashMap<KeyType, ValueType>& m) {
 		delete [] table;
+		table = NULL;
 		_size = m._size;
 		table_size = m.table_size;
 		table = new ListType[table_size];

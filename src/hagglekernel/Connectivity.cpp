@@ -25,8 +25,7 @@ InterfaceStatus_t Connectivity::report_interface(InterfaceRef& found, const Inte
 	return getManager()->report_interface(found, found_by, policy);
 }
 
-InterfaceStatus_t Connectivity::report_interface(Interface *found, const InterfaceRef &found_by, 
-				 ConnectivityInterfacePolicy *policy)
+InterfaceStatus_t Connectivity::report_interface(Interface *found, const InterfaceRef &found_by, ConnectivityInterfacePolicy *policy)
 {
 	return getManager()->report_interface(found, found_by, policy);
 }

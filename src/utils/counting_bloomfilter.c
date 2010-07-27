@@ -138,7 +138,7 @@ struct bloomfilter *counting_bloomfilter_to_noncounting(const struct counting_bl
         if (!bf)
                 return NULL;
 
-        bflen = sizeof(struct bloomfilter *) + (bf->k * SALT_SIZE + bf->m / VALUES_PER_BIN * BIN_SIZE);
+        bflen = sizeof(struct bloomfilter) + (bf->k * SALT_SIZE + bf->m / VALUES_PER_BIN * BIN_SIZE);
 
 	bf_nc = (struct bloomfilter *)malloc(bflen);
 

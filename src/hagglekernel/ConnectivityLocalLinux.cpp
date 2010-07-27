@@ -151,13 +151,17 @@ static int nl_close_handle(struct netlink_handle *nlh)
 static int nl_send(struct netlink_handle *nlh, struct nlmsghdr *n)
 {
 	int res;
-	struct iovec iov = {
-		(void *) n, n->nlmsg_len
-	};
+	struct iovec iov[2];
+	
+	memset(iov, 0, sizeof(struct iovec) * 2);
+	
+	iov[0].iov_base = (void *) n;
+	iov[0].iov_len = n->nlmsg_len;
+
 	struct msghdr msg = {
 		(void *) &nlh->peer, 
                 sizeof(nlh->peer), 
-                &iov, 1, NULL, 0, 0
+                iov, 1, NULL, 0, 0
 	};
 
 	n->nlmsg_seq = ++nlh->seq;

@@ -38,8 +38,8 @@ ProtocolSocket::ProtocolSocket(const ProtType_t _type, const char *_name, Interf
 void ProtocolSocket::setSocketOptions()
 {
 #if defined(OS_LINUX)
-        int ret;
-        long optval;
+        int ret = 0;
+        long optval = 0;
         socklen_t optlen = sizeof(optval);
 
         ret = getsockopt(sock, SOL_SOCKET, SO_RCVBUF, &optval, &optlen);
