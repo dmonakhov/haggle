@@ -677,10 +677,6 @@ int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsig
         int ret = 0;
 	FILE *f = NULL;
 	char buf[256]; 
-	char ip_str[20];
-	char mac_str[20];
-	char dummy[20];
-	struct in_addr ip;
 		
 	if (mac == NULL || saddr == NULL || maclen < 6)
 		return -1;
@@ -740,17 +736,21 @@ int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsig
                 usleep(50000);
         }
 
-	memset(ip_str, 0, 20);
-	memset(mac_str, 0, 20);
-	memset(dummy, 0, 20);
-
 	f = fopen("/proc/net/arp", "r");
 
 	if (!f)
 		return -1;
 	
-	while (fgets(buf, 256, f)) {
-		
+	while (fgets(buf, 256, f)) {		
+		char ip_str[20];
+		char mac_str[20];
+		char dummy[20];
+		struct in_addr ip = { 0 };
+
+		memset(ip_str, '\0', 20);
+		memset(mac_str, '\0', 20);
+		memset(dummy, '\0', 20);
+
 		ret = sscanf(buf, "%s %s %s %s", ip_str, dummy, dummy, mac_str);
 		
 		if (ret > 0) {

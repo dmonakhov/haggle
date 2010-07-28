@@ -355,7 +355,7 @@ bool Certificate::sign(EVP_PKEY *key)
 {
 	bool res = false;
 	
-	if (X509_sign(x, key, EVP_sha1())) 
+	if (key && X509_sign(x, key, EVP_sha1())) 
 		hasSignature = res = true;
 	else {
 		writeErrors("");
@@ -368,6 +368,9 @@ bool Certificate::sign(RSA *key)
 {
 	bool res = false;
 	
+	if (!key)
+		return false;
+
 	EVP_PKEY *pkey = EVP_PKEY_new();
 	
 	if (!pkey) {
@@ -389,6 +392,9 @@ bool Certificate::verifySignature(EVP_PKEY *key)
 {
 	bool res = false;
 	
+	if (!key)
+		return false;
+
 	if (verified)
 		return true;
 
@@ -406,6 +412,9 @@ bool Certificate::verifySignature(RSA *key)
 {
 	bool res = false;
 	
+	if (!key)
+		return false;
+
 	if (verified)
 		return true;
 	

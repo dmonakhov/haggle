@@ -557,6 +557,34 @@ int Thread::join()
 	return ret;
 }
 
+int Thread::detach()
+{
+	int res = 0;
+
+	if (!isRunning())
+		return -1;
+
+#if defined(HAS_PTHREADS)
+	res = pthread_detach(thrHandle);
+
+	if (res != 0) {
+
+		switch (res) {
+		case EINVAL:
+			fprintf(stderr, "pthread_detach: not a joinable thread\n");
+			break;
+		case ESRCH:
+			fprintf(stderr, "pthread_detach: no thread for given ID\n");
+			break;
+		default:
+			fprintf(stderr, "pthread_detach: unknown failure\n");
+		}
+	}
+#endif
+	return res;
+}
+		
+
 int Thread::stop()
 {
 	if (!isRunning())
@@ -626,9 +654,20 @@ void Runnable::cancel(void)
 	} 
 }
 	
-void Runnable::join(void) 
+bool Runnable::join(void) 
 { 
-	if (thr) thr->join(); 
+	if (!thr)
+		return false;
+
+	return thr->join() == THREAD_JOIN_OK; 
+}
+
+bool Runnable::detach(void) 
+{ 
+	if (!thr) 
+		return false;
+
+	return thr->detach() == 0; 
 }
 	
 bool Runnable::isRunning() const

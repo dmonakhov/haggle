@@ -282,8 +282,7 @@ void NodeManager::onSendResult(Event *e)
 				// Yes. Set the flag.
 				neigh->setExchangedNodeDescription(true);
 				sendList.erase(it);
-				HAGGLE_DBG("Successfully sent node description [%s] to neighbor %s [%s], after %lu retries\n",
-					dObj->getIdStr(), neigh->getName().c_str(), neigh->getIdStr(), (*it).second.retries);
+				HAGGLE_DBG("Successfully sent node description [%s] to neighbor %s [%s], after %lu retries\n", dObj->getIdStr(), neigh->getName().c_str(), neigh->getIdStr(), (*it).second.retries);
 				
 				//dObj->print();
 				

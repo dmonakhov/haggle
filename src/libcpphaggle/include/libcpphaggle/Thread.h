@@ -315,7 +315,12 @@ public:
 	/**
 		Stop a thread. This is the same as calling first cancel() and then join().
 	 */
-        int stop(); 
+        int stop();
+
+	/**
+	        Detach a thread. Join not needed.
+	 */
+	int detach();
 	/**
 		Returns true if two thread references refer to the same thread, otherwise false.
 	 */
@@ -393,7 +398,8 @@ public:
 	bool start(void);
 	void stop(void);
 	void cancel(void);
-	void join(void);
+	bool join(void);
+	bool detach(void);
 	bool isRunning() const;
 	/**
 		Get the name of the Runnable. May be overridden by derived classes.

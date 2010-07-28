@@ -143,6 +143,9 @@ bool ProtocolManager::registerProtocol(Protocol *p)
 	}
 
 	p->setRegistered();
+	
+	/* Either we detach the protocol here, or join when it deregisters. */
+	//p->detach();
 
 	return true;
 }
@@ -200,6 +203,11 @@ void ProtocolManager::onDeleteProtocolEvent(Event *e)
 	protocol_registry.erase(p->getId());
 	
 	HAGGLE_DBG("Deleting protocol %s\n", p->getName());
+
+	/*
+	  Either we join the thread here, or we detach it when we start it.
+	*/
+	p->join();
 
 	delete p;
 

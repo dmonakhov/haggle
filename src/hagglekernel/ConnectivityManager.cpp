@@ -313,6 +313,8 @@ void ConnectivityManager::onDeleteConnectivity(Event *e)
 	// Take the connectivity out of the connectivity list
 	conn_registry.remove(conn);
 
+	conn->join();
+
 	// Delete the connectivity:
 	delete conn;
 
