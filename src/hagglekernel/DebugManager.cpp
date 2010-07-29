@@ -368,7 +368,7 @@ void DebugManager::onShutdown()
 	}
 #endif
 	
-#ifdef DEBUG
+#ifdef DEBUG_LEAKS
 	Event::unregisterType(debugEType);
 #endif
 	unregisterWithKernel();
@@ -486,6 +486,10 @@ void DebugManager::onWatchableEvent(const Watchable& wbl)
 				kernel->getDataStore()->print();
 				break;
 #endif
+		        case 'g':
+				dbgCmdRef = new DebugCmd(DBG_CMD_PRINT_DATAOBJECTS);
+				kernel->addEvent(new Event(dbgCmdRef));
+				break;
 			case 'u':
 				kernel->getThisNode()->getDataObject()->print();
 				break;
@@ -542,6 +546,7 @@ void DebugManager::onWatchableEvent(const Watchable& wbl)
 #ifdef DEBUG_DATASTORE
 				printf("d: list data store tables\n");
 #endif
+				printf("g: list data store tables\n");
 				printf("i: Interface list\n");
 #ifdef DEBUG_LEAKS
 				printf("l: Leak report\n");

@@ -156,8 +156,10 @@ LeakMonitor(LEAK_TYPE_CERTIFICATE),
 
 Certificate::~Certificate()
 {
-	if (pubKey)
+
+	if (pubKey) {
 		EVP_PKEY_free(pubKey);
+	}
 
 	if (x)
 		X509_free(x);
@@ -169,11 +171,11 @@ Certificate::~Certificate()
 // Should somehow autodetect the OpenSSL capabilities/version. 
 // One problem is MacOS X, because the headers say OpenSSL version 0.9.8j, but
 // the library is 0.9.7
-#if defined(OS_ANDROID)
+#if defined(OS_MACOSX)
 // RSA_generate_key() is deprecated and removed in the Android OpenSSL version
-#define HAVE_RSA_GENERATE_KEY_EX 1
-#else
 #define HAVE_RSA_GENERATE_KEY_EX 0
+#else
+#define HAVE_RSA_GENERATE_KEY_EX 1
 #endif
 
 Certificate *Certificate::create(const string subject, const string issuer, const string validity, const NodeId_t owner, RSA **privKey)
@@ -226,7 +228,6 @@ Certificate *Certificate::create(const string subject, const string issuer, cons
 	if (!pubKey) {
                 RSA_free(*privKey);
 		*privKey = NULL;
-		RSA_free(pubKey);
                 goto out;
         }
 	
@@ -438,9 +439,11 @@ bool Certificate::verifySignature(RSA *key)
 /**
 	Convert certificate to a human readable string.
  */
+#define MAX_CERT_STR_SIZE 10000
+
 string Certificate::toString() const
 {
-	char x509_str[10000];
+        char x509_str[MAX_CERT_STR_SIZE] = { 0 };
 	
 	if (!x)
 		return x509_str;
@@ -450,10 +453,10 @@ string Certificate::toString() const
 	if (!bp)
 		return x509_str;
 	
-	memset(x509_str, '\0', sizeof(x509_str));
+	memset(x509_str, '\0', MAX_CERT_STR_SIZE);
 		
 	if (X509_print(bp, x))
-		BIO_read(bp, x509_str, sizeof(x509_str));
+		BIO_read(bp, x509_str, MAX_CERT_STR_SIZE);
 	
 	BIO_free(bp);
 	

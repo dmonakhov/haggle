@@ -23,6 +23,7 @@
 
 #include <openssl/sha.h>
 #include <openssl/rsa.h>
+#include <openssl/evp.h>
 #include <openssl/x509.h>
 #include <stdio.h>
 

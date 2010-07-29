@@ -114,7 +114,6 @@ static const char *RSAPrivKeyToString(RSA *key)
 	if (!bp)
 		return NULL;
 	
-
 	if (!PEM_write_bio_RSAPrivateKey(bp, key, NULL, NULL, 0, NULL, NULL)) {
 		BIO_free(bp);
 		return NULL;
@@ -186,6 +185,10 @@ bool SecurityHelper::signDataObject(DataObjectRef& dObj, RSA *key)
 	
 	if (!signature)
 		return false;
+
+	printf("signing data object, siglen=%u\n", siglen);
+
+	memset(signature, 0, siglen);
 	
 	if (RSA_sign(NID_sha1, dObj->getId(), sizeof(DataObjectId_t), signature, &siglen, key) != 1) {
 		free(signature);

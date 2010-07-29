@@ -79,6 +79,12 @@ class DataManager : public Manager
 	bool setCreateTimeOnBloomfilterUpdate;
 	unsigned long agingMaxAge;
 	unsigned long agingPeriod;
+#if defined(DEBUG)
+#define MAX_DATAOBJECTS_LISTED 10
+	List<string> dataObjectsSent; // List of data objects sent.
+	List<string> dataObjectsReceived; // List of data objects received.
+	void onDebugCmd(Event *e);
+#endif
 public:
         DataManager(HaggleKernel *_haggle = haggleKernel, bool setCreateTimeOnBloomfilterUpdate = false);
         ~DataManager();

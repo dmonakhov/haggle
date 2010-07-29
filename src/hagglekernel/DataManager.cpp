@@ -158,6 +158,15 @@ bool DataManager::init_derived()
 		HAGGLE_ERR("Could not register event\n");
 		return false;
 	}
+
+#if defined(DEBUG)
+	ret = setEventHandler(EVENT_TYPE_DEBUG_CMD, onDebugCmd);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Could not register event\n");
+		return false;
+	}
+#endif
 	onInsertedDataObjectCallback = newEventCallback(onInsertedDataObject);
 	onAgedDataObjectsCallback = newEventCallback(onAgedDataObjects);
 
@@ -232,6 +241,32 @@ void DataManager::onShutdown()
 	
 	unregisterWithKernel();
 }
+
+#ifdef DEBUG
+void DataManager::onDebugCmd(Event *e)
+{
+	if (e) {
+		if (e->getDebugCmd()->getType() == DBG_CMD_PRINT_DATAOBJECTS) {
+			unsigned int n = 0;
+			
+			printf("+++++++++++++++++++++++++++++++\n");
+			printf("%u last data objects sent:\n", MAX_DATAOBJECTS_LISTED);
+
+			for (List<string>::iterator it = dataObjectsSent.begin(); it != dataObjectsSent.end(); it++) {
+				printf("%u %s\n", n++, (*it).c_str());
+			}
+			printf("%u last data objects received:\n", MAX_DATAOBJECTS_LISTED);
+
+			n = 0;
+
+			for (List<string>::iterator it = dataObjectsReceived.begin(); it != dataObjectsReceived.end(); it++) {
+				printf("%u %s\n",  n++, (*it).c_str());
+			}
+			printf("+++++++++++++++++++++++++++++++\n");
+		}
+	}
+}
+#endif
 
 void DataManager::onGetLocalBF(Event *e)
 {
@@ -335,6 +370,14 @@ void DataManager::onSendResult(Event *e)
 		HAGGLE_ERR("No data object in send result\n");	
 		return;
 	}
+
+#ifdef DEBUG
+	if (dataObjectsSent.size() >= MAX_DATAOBJECTS_LISTED) {
+		dataObjectsSent.pop_front();
+	}
+	dataObjectsSent.push_back(dObj->getIdStr());
+#endif
+
 	if (!node) {
 		HAGGLE_ERR("No node in send result\n");	
 		return;
@@ -368,6 +411,12 @@ void DataManager::onIncomingDataObject(Event *e)
 		return;
 	}
 
+#ifdef DEBUG
+	if (dataObjectsReceived.size() >= MAX_DATAOBJECTS_LISTED) {
+		dataObjectsReceived.pop_front();
+	}
+	dataObjectsReceived.push_back(dObj->getIdStr());
+#endif
 	// Add the data object to the bloomfilter of the one who sent it:
 	NodeRef peer = e->getNode();
 
