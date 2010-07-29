@@ -205,7 +205,7 @@ bool SecurityHelper::signDataObject(DataObjectRef& dObj, RSA *key)
 
 bool SecurityHelper::verifyDataObject(DataObjectRef& dObj, CertificateRef& cert) const
 {
-	RSA *key = cert->getPubKey();
+	RSA *key;
 	
 	// Cannot verify without signature
 	if (!dObj->getSignature()) {
@@ -214,6 +214,8 @@ bool SecurityHelper::verifyDataObject(DataObjectRef& dObj, CertificateRef& cert)
 	}	
 	writeErrors("(not this): ");
 	
+	key = cert->getPubKey();
+
 	if (RSA_verify(NID_sha1, dObj->getId(), sizeof(DataObjectId_t), 
 		       const_cast<unsigned char *>(dObj->getSignature()), dObj->getSignatureLength(), key) != 1) {
 		char *raw;
@@ -225,12 +227,13 @@ bool SecurityHelper::verifyDataObject(DataObjectRef& dObj, CertificateRef& cert)
 			free(raw);
 		}
 		dObj->setSignatureStatus(DataObject::SIGNATURE_INVALID);
+
 		return false;
 	}
 	
 	HAGGLE_DBG("Signature is valid\n");
 	dObj->setSignatureStatus(DataObject::SIGNATURE_VALID);
-	
+
 	return true;
 }
 

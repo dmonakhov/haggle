@@ -75,12 +75,13 @@ Certificate::Certificate(X509 *_x) :
 	LeakMonitor(LEAK_TYPE_CERTIFICATE),
 #endif
 	stored(false), verified(false), hasSignature(true), x(_x), subject(""), issuer(""), 
-	validity(""), pubKey(NULL), x509_PEM_str(NULL)
+	validity(""), pubKey(NULL), rsaPubKey(NULL), x509_PEM_str(NULL)
 {
 	char buf[200];
 	
 	pubKey = X509_get_pubkey(x);
-	
+	rsaPubKey = EVP_PKEY_get1_RSA(pubKey);
+
 	X509_NAME *subject_name = X509_get_subject_name(x);
 	
 	if (X509_NAME_get_text_by_NID(subject_name, NID_commonName, buf, 200))
@@ -95,12 +96,11 @@ Certificate::Certificate(X509 *_x) :
 	// TODO: set validity
 }
 
-Certificate::Certificate(const string& _subject, const string& _issuer, const string& _validity, const NodeId_t _owner, RSA *rsaPubKey) : 
+Certificate::Certificate(const string& _subject, const string& _issuer, const string& _validity, const NodeId_t _owner, RSA *_rsaPubKey) : 
 #ifdef DEBUG_LEAKS
 LeakMonitor(LEAK_TYPE_CERTIFICATE),
 #endif
-	stored(false), verified(false), hasSignature(false), x(NULL), subject(_subject), issuer(_issuer), 
-		validity(_validity), pubKey(NULL), x509_PEM_str(NULL)
+	stored(false), verified(false), hasSignature(false), x(NULL), subject(_subject), issuer(_issuer), validity(_validity), pubKey(NULL), rsaPubKey(NULL), x509_PEM_str(NULL)
 {
 	memcpy(owner, _owner, sizeof(NodeId_t));
 	
@@ -121,9 +121,10 @@ LeakMonitor(LEAK_TYPE_CERTIFICATE),
 		return;
 	}
 	
-	EVP_PKEY_assign_RSA(pubKey, RSAPublicKey_dup(rsaPubKey));
+	EVP_PKEY_assign_RSA(pubKey, RSAPublicKey_dup(_rsaPubKey));
 	
 	X509_set_pubkey(x, pubKey);
+	rsaPubKey = EVP_PKEY_get1_RSA(pubKey);
 
 	/* Set validity.
 	 FIXME: currently hardcoded
@@ -156,11 +157,13 @@ LeakMonitor(LEAK_TYPE_CERTIFICATE),
 
 Certificate::~Certificate()
 {
+	if (rsaPubKey)
+		RSA_free(rsaPubKey);
 
 	if (pubKey) {
 		EVP_PKEY_free(pubKey);
 	}
-
+	
 	if (x)
 		X509_free(x);
 	
@@ -309,7 +312,7 @@ bool Certificate::createDigest(unsigned char digest[SHA_DIGEST_LENGTH], const st
 
 RSA *Certificate::getPubKey()
 {
-	return EVP_PKEY_get1_RSA(pubKey);
+	return rsaPubKey;
 }
 
 void Certificate::printPubKey() const
@@ -320,7 +323,7 @@ void Certificate::printPubKey() const
 	if (!bp)
 		return;
 
-	RSA_print(bp, getPubKey(), 0);
+	RSA_print(bp, rsaPubKey, 0);
 	
 	memset(key_str, '\0', sizeof(key_str));
 	BIO_read(bp, key_str, sizeof(key_str));
@@ -330,14 +333,13 @@ void Certificate::printPubKey() const
 
 const RSA *Certificate::getPubKey() const
 {
-	return EVP_PKEY_get1_RSA(pubKey);
+	return rsaPubKey;
 }
 
 bool Certificate::isSigned() const
 {
         return hasSignature;
 }
-
 
 bool Certificate::isOwner(const NodeId_t owner) const
 {

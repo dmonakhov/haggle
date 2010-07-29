@@ -59,7 +59,7 @@ class Certificate
 	
 	// The public key associated with this certificate
 	EVP_PKEY *pubKey;
-	
+	RSA *rsaPubKey;
 	// Certificate in PEM format
 	char *x509_PEM_str;
 	

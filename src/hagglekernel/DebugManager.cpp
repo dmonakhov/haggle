@@ -546,7 +546,7 @@ void DebugManager::onWatchableEvent(const Watchable& wbl)
 #ifdef DEBUG_DATASTORE
 				printf("d: list data store tables\n");
 #endif
-				printf("g: list data store tables\n");
+				printf("g: list data data objects sent and received\n");
 				printf("i: Interface list\n");
 #ifdef DEBUG_LEAKS
 				printf("l: Leak report\n");
