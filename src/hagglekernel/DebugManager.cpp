@@ -123,7 +123,7 @@ bool DebugManager::init_derived()
 		return false;
 	}
 #if defined(OS_WINDOWS_MOBILE) || defined(OS_ANDROID) 
-	kernel->addEvent(new Event(debugEType, NULL, 60));
+	kernel->addEvent(new Event(debugEType, NULL, 10));
 #endif
 #endif
 	
@@ -379,11 +379,12 @@ void DebugManager::onDebugReport(Event *e)
 {
 	LOG_ADD("%s: kernel event queue size=%lu\n", Timeval::now().getAsString().c_str(), kernel->size()); 
 	kernel->getNodeStore()->print();
+	kernel->getInterfaceStore()->print();
 
 #ifdef DEBUG_DATASTORE
 	kernel->getDataStore()->print();
 #endif
-	kernel->addEvent(new Event(debugEType, NULL, 20));
+	kernel->addEvent(new Event(debugEType, NULL, 30));
 }
 #endif
 

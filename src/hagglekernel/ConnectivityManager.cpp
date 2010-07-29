@@ -475,14 +475,22 @@ InterfaceStatus_t ConnectivityManager::report_interface(InterfaceRef& found, con
 {
 	bool was_added;
 	
-        if (!found || isBlacklisted(found->getType(), found->getIdentifier()))
-                return INTERFACE_STATUS_NONE;
+        if (!found) {
+		HAGGLE_ERR("Invalid interface reported\n");
+		return INTERFACE_STATUS_NONE;
+	}
+
+        if (isBlacklisted(found->getType(), found->getIdentifier())) {
+		HAGGLE_ERR("Interface [%s] is blacklisted\n", found->getIdentifierStr());
+		return INTERFACE_STATUS_NONE;
+	}
 
 	InterfaceRef iface = kernel->getInterfaceStore()->addupdate(found, found_by, policy, &was_added);
 
-	if (!iface || !was_added)
+	if (!iface || !was_added) {
+		HAGGLE_ERR("Interface [%s] was not added to interface store\n", found->getIdentifierStr());
 		return INTERFACE_STATUS_NONE;
-
+	}
 	// Make sure the interface is up
 	iface->up();
 
@@ -539,12 +547,16 @@ void ConnectivityManager::onIncomingDataObject(Event *e)
 		// Check whether this interface is already registered or not
 		if (!have_interface(remoteIface)) {
 			remoteIface->setFlag(IFFLAG_SNOOPED);
-			if (remoteIface->getType() == IFTYPE_BLUETOOTH)
+			if (remoteIface->getType() == IFTYPE_BLUETOOTH) {
+				CM_IFACE_DBG("%s snooped Bluetooth interface [%s] %s\n", 
+					     getName(), remoteIface->getIdentifierStr(), remoteIface->isUp() ? "UP" : "DOWN");
 				report_interface(remoteIface, localIface, new ConnectivityInterfacePolicyTTL(2));
-			else if (remoteIface->getType() == IFTYPE_ETHERNET ||
-				remoteIface->getType() == IFTYPE_WIFI)
+			} else if (remoteIface->getType() == IFTYPE_ETHERNET ||
+				   remoteIface->getType() == IFTYPE_WIFI) {
+				CM_IFACE_DBG("%s snooped Ethernet/WiFi interface [%s] %s\n", 
+					     getName(), remoteIface->getIdentifierStr(), remoteIface->isUp() ? "UP" : "DOWN");
 				report_interface(remoteIface, localIface, new ConnectivityInterfacePolicyTTL(3));
-			else {
+			} else {
 				// hmm... this shouldn't happen. If it does we've added an 
 				// interface type and forgotten to add it above.
 				HAGGLE_DBG("Snooped unknown interface type.");
@@ -552,7 +564,6 @@ void ConnectivityManager::onIncomingDataObject(Event *e)
 			}
 			report_known_interface(remoteIface, true);
 		}
-		HAGGLE_DBG("Reporting done\n");
 	}
 }
 

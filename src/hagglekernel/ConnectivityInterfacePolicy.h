@@ -41,6 +41,8 @@ using namespace haggle;
 	TTL policies are meant to be stack allocated.
 */
 class ConnectivityInterfacePolicy {
+protected:
+	char agestr[20];
 public:
 	virtual ~ConnectivityInterfacePolicy() {};
 	/** 
@@ -75,7 +77,6 @@ public:
 class ConnectivityInterfacePolicyTTL : public ConnectivityInterfacePolicy {
 	long current_ttl;
 	long base_ttl;
-	char agestr[20];
 public:
 	ConnectivityInterfacePolicyTTL(long TimeToLive);
 	~ConnectivityInterfacePolicyTTL();

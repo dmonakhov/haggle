@@ -164,8 +164,7 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 
 					if (i) {
 						sdpBlackList.push_back(i);
-						LOG_ADD("# ConnectivityManager: black-listing interface [type=%s identifier=%s name=%s]\n", 
-							type, i->getIdentifierStr(), name);
+						LOG_ADD("# ConnectivityManager: black-listing interface [type=%s identifier=%s name=%s]\n", type, i->getIdentifierStr(), name);
 					}
 				}
 			}

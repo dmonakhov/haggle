@@ -174,32 +174,189 @@ static int del_service(sdp_session_t *session, uint32_t handle)
 	return 0;
 }
 
+#if defined(BLUETOOTH_SERVICE_SCAN_DEBUG)
+/* 
+The code for printing services here is taken from 
+http://www.autistici.org/eazy/source/bluescan.c (eazy@ondaquadra.org).
+Credits are due.
+*/
+
+#define MAXLEN 2056
+
+void print_profile(void *data, void *u){
+	sdp_profile_desc_t *d = (sdp_profile_desc_t *)data;
+	char uuid[MAX_LEN_UUID_STR+1];
+	char profile_uuid[MAX_LEN_PROFILEDESCRIPTOR_UUID_STR+1];
+	char *buf = (char *)u;
+	
+	memset(uuid, 0, MAX_LEN_UUID_STR+1);
+	memset(profile_uuid, 0, MAX_LEN_PROFILEDESCRIPTOR_UUID_STR+1);
+	
+	sdp_uuid2strn(&d->uuid, uuid, MAX_LEN_UUID_STR);
+	sdp_profile_uuid2strn(&d->uuid, profile_uuid, MAX_LEN_PROFILEDESCRIPTOR_UUID_STR);
+
+	snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\t%s (0x%s)\n", profile_uuid, uuid);
+
+	if(d->version){
+		snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tVersion: 0x%04x\n", d->version);
+	}
+}
+
+void print_lang(void *data, void *u){
+	sdp_lang_attr_t *lang = (sdp_lang_attr_t *)data;
+	char *buf = (char *)u;
+
+	snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tcode_ISO639: 0x%02x\n", lang->code_ISO639);
+	snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tencoding:    0x%02x\n", lang->encoding);
+	snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tbase_offset: 0x%02x\n", lang->base_offset);
+}
+
+void print_proto_desc(void *data, void *u){
+	int proto = 0, i = 0;
+	char uuid[MAX_LEN_UUID_STR+1];
+	char proto_uuid[MAX_LEN_PROTOCOL_UUID_STR+1];
+	char *buf = (char *)u;
+	sdp_data_t *d;
+	
+	if(!data)
+		return;
+	
+	memset(uuid, 0, MAX_LEN_UUID_STR+1);
+	memset(proto_uuid, 0, MAX_LEN_PROTOCOL_UUID_STR+1);
+	
+	for(d = (sdp_data_t *)data; d != NULL; d = d->next, i++){
+		switch(d->dtd){
+		case SDP_UUID16:
+		case SDP_UUID32:
+		case SDP_UUID128:
+			proto = sdp_uuid_to_proto(&d->val.uuid);
+			sdp_uuid2strn(&d->val.uuid, uuid, MAX_LEN_UUID_STR);
+			sdp_proto_uuid2strn(&d->val.uuid, proto_uuid, MAX_LEN_PROTOCOL_UUID_STR);
+			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\t%s (0x%s)\n", proto_uuid, uuid);
+			break;
+		case SDP_UINT8:
+			if(proto == RFCOMM_UUID)
+				snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tChannel: %d\n", d->val.uint8);
+			else
+				snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tuint8: 0x%x\n", d->val.uint8);
+			break;
+		case SDP_UINT16:
+			if (proto == L2CAP_UUID) {
+				if (i == 1)
+					snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tPSM: %d\n", d->val.uint16);
+				else
+					snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tVersion: 0x%04x\n", d->val.uint16);
+				
+			} else if (proto == BNEP_UUID)
+				if (i == 1)
+					snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tVersion: 0x%04x\n", d->val.uint16);
+				else
+					snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tuint16: 0x%x\n", d->val.uint16);
+			else
+				snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tuint16: 0x%x\n", d->val.uint16);
+			break;
+			/*
+			  case SDP_SEQ16:
+			  break;
+			  case SDP_SEQ8:
+			  break;
+			*/
+		default:
+			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tUnknow: 0x%x\n", d->dtd);
+			break;
+		}
+	}
+}
+void print_proto(void *data, void *u){
+	sdp_list_foreach((sdp_list_t *)data, print_proto_desc, u);
+}
+
+void print_class(void *data, void *u){
+	char uuid[MAX_LEN_UUID_STR+1];
+	char svclass_uuid[MAX_LEN_SERVICECLASS_UUID_STR+1];
+	char *buf = (char *)u;
+	
+	if(!data)
+		return;
+	
+	memset(uuid, 0, MAX_LEN_UUID_STR+1);
+	memset(svclass_uuid, 0, MAX_LEN_SERVICECLASS_UUID_STR+1);
+	
+	sdp_uuid2strn((uuid_t *)data, uuid, MAX_LEN_UUID_STR);
+	sdp_svclass_uuid2strn((uuid_t *)data, svclass_uuid, MAX_LEN_SERVICECLASS_UUID_STR);
+	
+	snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\t%s (0x%s)\n", svclass_uuid, uuid);
+}
+
+#endif // BLUETOOTH_SERVICE_SCAN_DEBUG
+
 static int do_search(sdp_session_t *session, uuid_t *uuid)
 {
 	sdp_list_t *response_list = NULL, *attrid_list, *search_list, *r;
 	uint32_t range = 0x0000ffff;
 	int err = 0;
 	int result = 0;
+#if defined(BLUETOOTH_SERVICE_SCAN_DEBUG)
+	char buf[MAXLEN];
+	uuid_t group;
+	sdp_uuid16_create(&group, PUBLIC_BROWSE_GROUP);
+	search_list = sdp_list_append(0, &group);
+	memset(buf, 0, MAXLEN);
+#else
+	search_list = sdp_list_append(0, uuid);
+#endif
+	attrid_list = sdp_list_append(0, &range);
 
-	search_list = sdp_list_append(0, uuid );
-	attrid_list = sdp_list_append(0, &range );
+	HAGGLE_DBG("Searching for services\n");
 
 	// perform the search
 	err = sdp_service_search_attr_req(session, search_list, SDP_ATTR_REQ_RANGE, attrid_list, &response_list);
 
 	if (err) {
 		result = -1;
+		HAGGLE_ERR("Service search request failed\n");
 		goto cleanup;
-	}
+	}	
 
 	// go through each of the service records
 	for (r = response_list; r; r = r->next) {
 		sdp_record_t *rec = (sdp_record_t*) r->data;
-		sdp_list_t *proto_list = NULL;
-		
+		sdp_list_t *list = NULL;
+		sdp_data_t *data;
+#if defined(BLUETOOTH_SERVICE_SCAN_DEBUG)		
+		if ((data = sdp_data_get(rec, SDP_ATTR_SVCNAME_PRIMARY)) != NULL){
+			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "Service Name: %s\n", data->val.str);
+		}
+		if ((data = sdp_data_get(rec, SDP_ATTR_SVCDESC_PRIMARY)) != NULL){
+			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "Service Description: %s\n", data->val.str);
+		}
+		if ((data = sdp_data_get(rec, SDP_ATTR_PROVNAME_PRIMARY)) != NULL){
+			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "Service Provider: %s\n", data->val.str);
+		}
+		if (sdp_get_service_classes(rec, &list) == 0){
+			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "Service Classes:\n");
+			sdp_list_foreach(list, print_class, buf);
+			sdp_list_free(list, free);
+		}
+		if (sdp_get_access_protos(rec, &list) == 0){
+			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "Service Protocol:\n");
+			sdp_list_foreach(list, print_proto, buf);
+			sdp_list_free(list, (sdp_free_func_t)sdp_data_free);
+		}
+		if (sdp_get_lang_attr(rec, &list) == 0){
+			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "Service Language:\n");
+			sdp_list_foreach(list, print_lang, buf);
+			sdp_list_free(list, free);
+		}
+		if (sdp_get_profile_descs(rec, &list) == 0){
+			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "Service Profile:\n");
+			sdp_list_foreach(list, print_profile, buf);
+			sdp_list_free(list, free);
+		}
+#else
 		// get a list of the protocol sequences
-		if (sdp_get_access_protos( rec, &proto_list) == 0) {
-			sdp_list_t *p = proto_list;
+		if (sdp_get_access_protos(rec, &list) == 0) {
+			sdp_list_t *p = list;
 			int port;
 
 			if ((port = sdp_get_proto_port(p, RFCOMM_UUID)) != 0) {
@@ -212,11 +369,14 @@ static int do_search(sdp_session_t *session, uuid_t *uuid)
 			for(; p; p = p->next) {
 				sdp_list_free((sdp_list_t*)p->data, 0);
 			}
-			sdp_list_free(proto_list, 0);
+			sdp_list_free(list, 0);
 		} 
+#endif
 		sdp_record_free(rec);
 	}
-
+#if defined(BLUETOOTH_SERVICE_SCAN_DEBUG)
+	printf("Bluetooth result:\n%s\n", buf);
+#endif
 cleanup:
 	sdp_list_free(response_list, 0);
 	sdp_list_free(search_list, 0);
@@ -295,11 +455,11 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
                 char remote_name[256];
                 
                 strcpy(remote_name, "PeerBluetooth");
-                /*
+                
                 if (hci_read_remote_name(dd, &ii[i].bdaddr, 256, remote_name, 0) < 0) {
                         fprintf(stderr, "Error looking up name : %s\n", strerror(errno));
                 }
-                */
+                
 		baswap((bdaddr_t *) &macaddr, &ii[i].bdaddr);
 
 		Address addy(AddressType_BTMAC, (unsigned char *) macaddr);
@@ -307,10 +467,12 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
                 status = conn->is_known_interface(IFTYPE_BLUETOOTH, macaddr);
         
                 if (status == INTERFACE_STATUS_HAGGLE) {
+			printf("Interface is a known Haggle interface\n");
                         report_interface = true;
                 } else if (status == INTERFACE_STATUS_UNKNOWN) {
                         switch(ConnectivityBluetoothBase::classifyAddress(IFTYPE_BLUETOOTH, macaddr)) {
                         case BLUETOOTH_ADDRESS_IS_UNKNOWN:
+				printf("Interface is unknown, searching services\n");
                                 channel = find_haggle_service(ii[i].bdaddr);
                     
                                 if (channel > 0) {
@@ -320,13 +482,13 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
                                         conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, false);
                                 }
                                 break;
-                    
                         case BLUETOOTH_ADDRESS_IS_HAGGLE_NODE:
+				printf("Interface belongs to a Haggle node\n");
                                 report_interface = true;
                                 conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, true);
                                 break;
-                    
                         case BLUETOOTH_ADDRESS_IS_NOT_HAGGLE_NODE:
+				printf("Interface does not belong to a Haggle node\n");
                                 conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, false);
                                 break;
                         }

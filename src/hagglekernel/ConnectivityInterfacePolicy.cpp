@@ -116,11 +116,10 @@ Timeval ConnectivityInterfacePolicyTime::lifetime() const
 
 const char *ConnectivityInterfacePolicyTime::ageStr() const
 {
-	static char agestr[40] = { 0 };
 	Timeval age = expiry - Timeval::now();
 
-	memset(agestr, '\0', 40);
-	strncpy(agestr, age.getAsString().c_str(), 39);
+	memset(const_cast<ConnectivityInterfacePolicyTime *>(this)->agestr, '\0', sizeof(agestr));
+	strncpy(const_cast<ConnectivityInterfacePolicyTime *>(this)->agestr, age.getAsString().c_str(), sizeof(agestr) - 1);
 
 	return agestr;
 }
