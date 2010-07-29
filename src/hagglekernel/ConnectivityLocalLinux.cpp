@@ -1063,7 +1063,9 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 		memset(&di, 0, sizeof(struct hci_dev_info));
 
 		di.dev_id = req.dr[i].dev_id;
+#if defined(OS_ANDROID)
 
+#endif
 		hdev = di.dev_id;
 
 		ret = ioctl(hcih.sock, HCIGETDEVINFO, (void *) &di);
@@ -1101,6 +1103,9 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 		name[248] = '\0';
 #if defined(OS_ANDROID)
                 HAGGLE_DBG("Forcing piscan mode (discoverable)\n");
+
+		dev_id = di.dev_id;
+                set_piscan_mode = true;
 		
                 // Force discoverable mode for Android device
                 if (bluetooth_set_scan(hcih.sock, hdev, "piscan") == -1) {
@@ -1113,10 +1118,6 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 		Interface iface(IFTYPE_BLUETOOTH, macaddr, &addy, devname, IFFLAG_LOCAL | IFFLAG_UP);
 
 		report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
-#if defined(OS_ANDROID)
-                set_piscan_mode = true;
-#endif
-
 	}
 	return;
 }
