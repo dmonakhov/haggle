@@ -598,7 +598,6 @@ char *eth_to_str(unsigned char *addr)
 	return buf;
 }
 
-
 #if defined(WIN32) || defined(WINCE)
 int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsigned char *mac, size_t maclen)
 {
@@ -757,8 +756,11 @@ int get_peer_mac_address(const struct sockaddr *saddr, const char *ifname, unsig
 			inet_aton(ip_str, &ip);
 			
 			if (memcmp(&ip, &((struct sockaddr_in *)saddr)->sin_addr.s_addr, 4) == 0) {
-				memcpy(mac, ether_aton(mac_str), 6);
-				ret = 1;
+				struct ether_addr eth;
+				if (ether_aton_r(mac_str, &eth)) {
+					memcpy(mac, &eth, 6);
+					ret = 1;
+				}
 			}
 		}
 	}
@@ -982,3 +984,65 @@ char *get_hardware_name(void)
 	}
 	return hardware_name;
 }
+
+#if defined(OS_WINDOWS) || defined(OS_MACOSX) || defined(OS_ANDROID)
+
+#ifndef isdigit
+#define isdigit(c)  (c >= '0' && c <= '9')
+#endif
+#ifndef islower
+#define islower(c)  (c >=  'a' && c <= 'z')
+#endif
+#ifndef isspace
+#define isspace(c)  (c ==  ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' || c == '\v')
+#endif
+#ifndef isupper
+#define isupper(c)  (c >=  'A' && c <= 'Z')
+#endif
+#ifndef tolower
+#define tolower(c)  (isupper(c) ? ( c - 'A' + 'a') : (c))
+#endif
+#ifndef toupper
+#define toupper(c)  (islower(c) ? (c - 'a' + 'A') : (c))
+#endif
+
+/*
+  ether_aton code from glibc, GPL'd.
+ */
+struct ether_addr *ether_aton_r(const char *asc, struct ether_addr *addr)
+{
+        size_t cnt;
+        
+        for (cnt = 0; cnt < 6; ++cnt) {
+                unsigned int number;
+                char ch;
+                
+                ch = tolower (*asc);
+				asc++;
+                if ((ch < '0' || ch > '9') && (ch < 'a' || ch > 'f'))
+                        return NULL;
+                number = isdigit (ch) ? (ch - '0') : (ch - 'a' + 10);
+                
+                ch = tolower (*asc);
+                if ((cnt < 5 && ch != ':') || (cnt == 5 && ch != '\0' && !isspace (ch))) {
+                        ++asc;
+                        if ((ch < '0' || ch > '9') && (ch < 'a' || ch > 'f'))
+                                return NULL;
+                        number <<= 4;
+                        number += isdigit (ch) ? (ch - '0') : (ch - 'a' + 10);
+                        
+                        ch = *asc;
+                        if (cnt < 5 && ch != ':')
+                                return NULL;
+                }
+                
+                /* Store result.  */
+                addr->ether_addr_octet[cnt] = (unsigned char) number;
+                
+                /* Skip ':'.  */
+                ++asc;
+        }
+        return addr;
+}
+
+#endif

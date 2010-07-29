@@ -95,16 +95,6 @@ bool create_path(const char *path);
  */
 int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp = true);
 
-#if defined(OS_WINDOWS) || defined(OS_MACOSX) || defined(OS_ANDROID)
-struct ether_addr {
-        u_int8_t ether_addr_octet[6];
-};
-
-struct ether_addr *ether_aton_r(const char *asc, struct ether_addr *addr);
-#else
-#include <netinet/ether.h>
-#endif
-
 #if defined(OS_WINDOWS_MOBILE)
 char *strdup(const char *src);
 #endif

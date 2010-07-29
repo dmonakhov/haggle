@@ -53,14 +53,16 @@
 #define ENABLE_KERNEL_SOCKET_CODE	0
 
 
-static const char *blacklist_device_names[] = { "vmnet", "fw", "vboxnet", "lo", "gif", "stf", NULL };
+static const char *blacklist_device_names[] = { "vmnet", "fw", "lo", "gif", "stf", NULL };
 
 static bool isBlacklistDeviceName(const char *devname)
 {
 	int i = 0;
 	while (blacklist_device_names[i]) {
-		if (strcmp(blacklist_device_names[i], devname) <= 0)
+		if (strncmp(blacklist_device_names[i], devname, strlen(blacklist_device_names[i])) == 0) {
+			CM_DBG("Interface %s is blacklisted according to %s\n", devname, blacklist_device_names[i]);
 			return true;
+		}
 		i++;
 	}
 	
@@ -336,17 +338,23 @@ bool ConnectivityLocal::run()
 		
                 int num = getLocalInterfaceList(iflist, true);
                 
+		CM_DBG("Found %d local interfaces\n", num);
+
                 if (num) {
                         while (!iflist.empty()) {
                                 InterfaceRef iface = iflist.pop();
                                 
-                                if (isBlacklistDeviceName(iface->getName()))
-                                        continue;
+                                if (isBlacklistDeviceName(iface->getName())) {
+					CM_DBG("Interface %s is Blacklisted\n", iface->getName());
+					continue;
+				}
                                 
                                 if (iface->isUp()) {
                                         report_interface(iface, rootInterface, new ConnectivityInterfacePolicyTTL(1));
                                         ethernet_interfaces_found++;
-                                }
+                                } else {
+					CM_DBG("Local interface is marked DOWN\n");
+				}
                         }
                 }
 #endif

@@ -201,6 +201,23 @@ int current_platform(void);
 */
 char *get_hardware_name(void);
 
+#if defined(OS_WINDOWS) || defined(OS_MACOSX) || defined(OS_ANDROID)
+#if defined(OS_WINDOWS)
+struct ether_addr {
+        u_int8_t ether_addr_octet[6];
+};
+#elif defined(OS_ANDROID)
+#include <net/if_ether.h>
+#elif defined(OS_MACOSX)
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <net/ethernet.h>
+#endif
+struct ether_addr *ether_aton_r(const char *asc, struct ether_addr *addr);
+#else
+#include <netinet/ether.h>
+#endif
+
 #ifdef __cplusplus
 } /* closing brace for extern "C" */
 #endif

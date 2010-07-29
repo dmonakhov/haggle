@@ -26,6 +26,7 @@
 #include "ConnectivityManager.h"
 
 #include "Utility.h"
+#include <utils.h>
 /*
   CM_IFACE_DBG macro - debugging for the connectivity manager.
 
