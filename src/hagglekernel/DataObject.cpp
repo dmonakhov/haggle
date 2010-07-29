@@ -1280,9 +1280,13 @@ int DataObject::calcId()
                 SHA1_Update(&ctxt, (*it).second.getValue().c_str(), 
                             (*it).second.getValue().length());
                 
-                // Insert the weight of the attribute into the hash
-                unsigned long w = htonl((*it).second.getWeight());
+                // Insert the weight of the attribute into the hash.
+		// We must use a specified length integer to make
+		// sure the hash is the same on all architectures independent
+		// of word/integer size.
+                u_int32_t w = htonl((*it).second.getWeight());
                 SHA1_Update(&ctxt, (unsigned char *) &w, sizeof(w));
+
         }
         
 	// If this data object has a create time:
@@ -1301,13 +1305,14 @@ int DataObject::calcId()
 	} else if (filename.length() > 0 && dataLen > 0) {
 		SHA1_Update(&ctxt, filename.c_str(), filename.length());
 		SHA1_Update(&ctxt, &dataLen, sizeof(dataLen));
+
 	}
 	// Create the final hash value:
         SHA1_Final(this->id, &ctxt);
 
         // Also save as a string:
         calcIdStr();
-	
+
 	return 0;
 }
 

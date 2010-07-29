@@ -281,11 +281,11 @@ void NodeManager::onSendResult(Event *e)
 			if (e->getType() == EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL) {
 				// Yes. Set the flag.
 				neigh->setExchangedNodeDescription(true);
-				sendList.erase(it);
-				HAGGLE_DBG("Successfully sent node description [%s] to neighbor %s [%s], after %lu retries\n", dObj->getIdStr(), neigh->getName().c_str(), neigh->getIdStr(), (*it).second.retries);
 				
+				HAGGLE_DBG("Successfully sent node description [%s] to neighbor %s [%s], after %lu retries\n", dObj->getIdStr(), neigh->getName().c_str(), neigh->getIdStr(), (*it).second.retries);
 				//dObj->print();
 				
+				sendList.erase(it);
 			} else if (e->getType() == EVENT_TYPE_DATAOBJECT_SEND_FAILURE) {
 				// No. Unset the flag.
 				neigh->setExchangedNodeDescription(false);

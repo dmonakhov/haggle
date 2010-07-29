@@ -71,7 +71,6 @@ class SecurityHelper : public ManagerModule<SecurityManager> {
 	friend class SecurityManager;
 	GenericQueue<SecurityTask *> taskQ;
 	const EventType etype;
-	Certificate *issuerCert;
 	bool signDataObject(DataObjectRef& dObj, RSA *key);
 	bool verifyDataObject(DataObjectRef& dObj, CertificateRef& cert) const;
 	void doTask(SecurityTask *task);

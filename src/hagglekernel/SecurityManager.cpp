@@ -148,9 +148,7 @@ static bool generateKeyPair(int num, unsigned long e, RSA **keyPair)
 }
 #endif
 
-SecurityTask::SecurityTask(const SecurityTaskType_t _type, DataObjectRef _dObj, CertificateRef _cert) : 
-                        type(_type), completed(false), dObj(_dObj), 
-                        privKey(NULL), cert(_cert) 
+SecurityTask::SecurityTask(const SecurityTaskType_t _type, DataObjectRef _dObj, CertificateRef _cert) : type(_type), completed(false), dObj(_dObj), privKey(NULL), cert(_cert) 
 {
 }
 

@@ -44,7 +44,7 @@ int Trace::write(const TraceType_t _type, const char *func, const char *fmt, ...
         Mutex::AutoLocker l(m);
 	char buf[TRACE_BUFLEN] = { 0 };
 	char thread_id[20] = { 0 };
-	va_list args = { 0 };
+	va_list args;
 	int len;
 	Timeval t = Timeval::now() - startTime;
 	FILE *stream = NULL;

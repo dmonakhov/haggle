@@ -251,11 +251,12 @@ void DataManager::onDebugCmd(Event *e)
 			
 			printf("+++++++++++++++++++++++++++++++\n");
 			printf("%u last data objects sent:\n", MAX_DATAOBJECTS_LISTED);
-
+			printf("-------------------------------\n");
 			for (List<string>::iterator it = dataObjectsSent.begin(); it != dataObjectsSent.end(); it++) {
 				printf("%u %s\n", n++, (*it).c_str());
 			}
 			printf("%u last data objects received:\n", MAX_DATAOBJECTS_LISTED);
+			printf("-------------------------------\n");
 
 			n = 0;
 
@@ -328,6 +329,14 @@ void DataManager::onVerifiedDataObject(Event *e)
 		HAGGLE_DBG("Verified data object event without data object!\n");
 		return;
 	}
+
+#ifdef DEBUG
+	if (dataObjectsReceived.size() >= MAX_DATAOBJECTS_LISTED) {
+		dataObjectsReceived.pop_front();
+	}
+	dataObjectsReceived.push_back(dObj->getIdStr());
+#endif
+
 	HAGGLE_DBG("%s Received data object [%s]\n", getName(), dObj->getIdStr());
 
 #ifdef DEBUG
@@ -371,13 +380,6 @@ void DataManager::onSendResult(Event *e)
 		return;
 	}
 
-#ifdef DEBUG
-	if (dataObjectsSent.size() >= MAX_DATAOBJECTS_LISTED) {
-		dataObjectsSent.pop_front();
-	}
-	dataObjectsSent.push_back(dObj->getIdStr());
-#endif
-
 	if (!node) {
 		HAGGLE_ERR("No node in send result\n");	
 		return;
@@ -396,6 +398,14 @@ void DataManager::onSendResult(Event *e)
 		// Add data object to node's bloomfilter.
 		HAGGLE_DBG("Adding data object [%s] to node %s's bloomfilter\n", dObj->getIdStr(), node->getName().c_str());
 		node->getBloomfilter()->add(dObj);
+
+#ifdef DEBUG
+	if (dataObjectsSent.size() >= MAX_DATAOBJECTS_LISTED) {
+		dataObjectsSent.pop_front();
+	}
+	dataObjectsSent.push_back(dObj->getIdStr());
+#endif
+
 	}
 }
 
@@ -410,13 +420,6 @@ void DataManager::onIncomingDataObject(Event *e)
 		HAGGLE_DBG("Incoming data object event without data object!\n");
 		return;
 	}
-
-#ifdef DEBUG
-	if (dataObjectsReceived.size() >= MAX_DATAOBJECTS_LISTED) {
-		dataObjectsReceived.pop_front();
-	}
-	dataObjectsReceived.push_back(dObj->getIdStr());
-#endif
 	// Add the data object to the bloomfilter of the one who sent it:
 	NodeRef peer = e->getNode();
 
