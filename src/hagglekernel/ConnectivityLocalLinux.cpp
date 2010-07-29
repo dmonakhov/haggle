@@ -702,6 +702,9 @@ DBusHandlerResult dbus_handler(DBusConnection * conn, DBusMessage * msg, void *d
                                 if (iface) {
                                         cl->report_interface(iface, NULL, new ConnectivityInterfacePolicyAgeless());
                                         delete iface;
+#if defined(OS_ANDROID)
+					set_piscan_mode = true;
+#endif
                                 }
                                         
                         } else {
@@ -748,6 +751,9 @@ DBusHandlerResult dbus_handler(DBusConnection * conn, DBusMessage * msg, void *d
                                 CM_DBG("Bluetooth interface %s down\n", ifname.c_str());
 
                                 cl->delete_interface(ifname);
+#if defined(OS_ANDROID)
+				set_piscan_mode = true;
+#endif
                         }
                 } else {
                         CM_DBG("DBus error in read args\n");
@@ -1009,6 +1015,9 @@ int ConnectivityLocal::read_hci()
 			break;
 
 		case HCI_DEV_DOWN:
+#if defined(OS_ANDROID)
+			set_piscan_mode = false;
+#endif
 			HAGGLE_DBG("HCI dev %d down\n", sd->dev_id);
                         CM_DBG("Bluetooth interface %s down\n", di.name);
                         delete_interface(string(di.name));
@@ -1104,6 +1113,9 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 		Interface iface(IFTYPE_BLUETOOTH, macaddr, &addy, devname, IFFLAG_LOCAL | IFFLAG_UP);
 
 		report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
+#if defined(OS_ANDROID)
+                set_piscan_mode = true;
+#endif
 
 	}
 	return;
@@ -1184,7 +1196,6 @@ bool ConnectivityLocal::run()
 			(*it)->watchIndex = w.add((*it)->fd);
                 }
 #endif
-
 #if defined(ENABLE_BLUETOOTH) && !defined(HAVE_DBUS)
 		int hciIndex = w.add(hcih.sock);
 #endif
@@ -1193,7 +1204,16 @@ bool ConnectivityLocal::run()
 		int nlhIndex = w.add(nlh.sock);
 #endif
 
-		ret = w.wait();
+#if defined(OS_ANDROID) && defined(ENABLE_BLUETOOTH)
+		Timeval waitStartTime;
+		long waitTime = 60000;
+                waitStartTime = Timeval::now();
+                
+                if (set_piscan_mode)
+                        ret = w.waitTimeout(waitTime);
+                else
+#endif
+			ret = w.wait();
                 
 		if (ret == Watch::FAILED) {
 			// Some error
@@ -1203,7 +1223,6 @@ bool ConnectivityLocal::run()
 			// We should exit
 			break;
 		}
-		// This should not happen since we do not have a timeout set
 		if (ret == Watch::TIMEOUT) {
 #if defined(OS_ANDROID)
 			/* Android automatically switches off
@@ -1218,10 +1237,16 @@ bool ConnectivityLocal::run()
 #endif
 			continue;
 		}
-#if defined(ENABLE_ETHERNET)
+#if defined(ENABLE_ETHERNET) && defined(ENABLE_BLUETOOTH)
 		if (w.isSet(nlhIndex)) {
 			read_netlink();
 		}
+#endif
+#if defined(OS_ANDROID)
+		waitTime = ((Timeval::now() - waitStartTime) - waitTime).getTimeAsMilliSeconds();
+                if (waitTime <= 0) {
+                        waitTime = 60000;
+                }
 #endif
 #if defined(ENABLE_BLUETOOTH) && !defined(HAVE_DBUS)
 		if (w.isSet(hciIndex)) {
