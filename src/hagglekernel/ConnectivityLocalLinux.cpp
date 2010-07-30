@@ -341,11 +341,9 @@ int ConnectivityLocal::read_netlink()
 		case RTM_NEWLINK:
 			ret = nl_parse_link_info(nlm, &ifinfo);
 
-			CM_DBG("RTM NEWLINK %s [%s]\n", ifinfo.ifname, eth_to_str(ifinfo.mac));
+			//CM_DBG("RTM NEWLINK %s [%s] %s\n", ifinfo.ifname, eth_to_str(ifinfo.mac), ifinfo.isUp ? "UP" : "DOWN");
 
-			// Ignore new link messages... listen to NEWADDR instead
-			break;
-
+#if 0 // Only Bring up interfaces on NEWADDR
 			/* TODO: Should find a good way to sort out unwanted interfaces. */
 			if (!isBlacklistDeviceName(ifinfo.ifname)) {
 				
@@ -382,7 +380,9 @@ int ConnectivityLocal::read_netlink()
  				report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
 				*/
 			}
+#endif
 			if (!ifinfo.isUp) {
+				CM_DBG("Interface %s [%s] went DOWN\n", ifinfo.ifname, eth_to_str(ifinfo.mac));
 				delete_interface(ifinfo.isWireless ? IFTYPE_WIFI : IFTYPE_ETHERNET, ifinfo.mac);
 			}
 			break;

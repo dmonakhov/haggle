@@ -46,7 +46,7 @@ bool ProtocolSocket::multiplyReceiveBufferSize(unsigned int x)
         ret = getsockopt(sock, SOL_SOCKET, SO_RCVBUF, &optval, &optlen);
 
         if (ret != -1) {
-                optval = optval * x; // Quadruple receive buffer size
+                optval = optval * x;
 
                 ret = setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &optval, optlen);
 
