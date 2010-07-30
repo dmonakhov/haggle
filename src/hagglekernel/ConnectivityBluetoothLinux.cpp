@@ -322,8 +322,9 @@ static int do_search(sdp_session_t *session, uuid_t *uuid)
 	for (r = response_list; r; r = r->next) {
 		sdp_record_t *rec = (sdp_record_t*) r->data;
 		sdp_list_t *list = NULL;
+#if defined(BLUETOOTH_SERVICE_SCAN_DEBUG)
 		sdp_data_t *data;
-#if defined(BLUETOOTH_SERVICE_SCAN_DEBUG)		
+		
 		if ((data = sdp_data_get(rec, SDP_ATTR_SVCNAME_PRIMARY)) != NULL){
 			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "Service Name: %s\n", data->val.str);
 		}

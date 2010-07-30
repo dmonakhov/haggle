@@ -1063,9 +1063,6 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 		memset(&di, 0, sizeof(struct hci_dev_info));
 
 		di.dev_id = req.dr[i].dev_id;
-#if defined(OS_ANDROID)
-
-#endif
 		hdev = di.dev_id;
 
 		ret = ioctl(hcih.sock, HCIGETDEVINFO, (void *) &di);
@@ -1225,7 +1222,7 @@ bool ConnectivityLocal::run()
 			break;
 		}
 		if (ret == Watch::TIMEOUT) {
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && defined(ENABLE_BLUETOOTH)
 			/* Android automatically switches off
 			 Bluetooth discoverable mode after 2
 			 minutes, therefore we reset it here every
@@ -1238,12 +1235,12 @@ bool ConnectivityLocal::run()
 #endif
 			continue;
 		}
-#if defined(ENABLE_ETHERNET) && defined(ENABLE_BLUETOOTH)
+#if defined(ENABLE_ETHERNET)
 		if (w.isSet(nlhIndex)) {
 			read_netlink();
 		}
 #endif
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) && defined(ENABLE_BLUETOOTH)
 		waitTime = ((Timeval::now() - waitStartTime) - waitTime).getTimeAsMilliSeconds();
                 if (waitTime <= 0) {
                         waitTime = 60000;

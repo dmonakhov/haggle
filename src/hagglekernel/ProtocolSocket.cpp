@@ -37,7 +37,7 @@ ProtocolSocket::ProtocolSocket(const ProtType_t _type, const char *_name, Interf
 
 void ProtocolSocket::setSocketOptions()
 {
-#if defined(OS_LINUX)
+#if 0 /* defined(OS_LINUX) */
         int ret = 0;
         long optval = 0;
         socklen_t optlen = sizeof(optval);
