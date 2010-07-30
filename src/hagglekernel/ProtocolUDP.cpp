@@ -61,6 +61,11 @@ bool ProtocolUDP::init_derived()
                 return false;
 	}
 
+	// For application IPC socket we need a large receive buffer.
+	if (!multiplyReceiveBufferSize(4)) {
+		HAGGLE_ERR("Could not increase receive buffer size.\n");
+	}
+	
 	if (!setSocketOption(SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval))) {
 		closeSocket();
 		HAGGLE_ERR("setsockopt SO_REUSEADDR failed\n");

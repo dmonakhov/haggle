@@ -341,7 +341,7 @@ int ConnectivityLocal::read_netlink()
 		case RTM_NEWLINK:
 			ret = nl_parse_link_info(nlm, &ifinfo);
 
-			//CM_DBG("RTM NEWLINK %s [%s]\n", ifinfo.ifname, eth_to_str(ifinfo.mac));
+			CM_DBG("RTM NEWLINK %s [%s]\n", ifinfo.ifname, eth_to_str(ifinfo.mac));
 
 			// Ignore new link messages... listen to NEWADDR instead
 			break;

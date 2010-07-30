@@ -35,9 +35,10 @@ ProtocolSocket::ProtocolSocket(const ProtType_t _type, const char *_name, Interf
 	}
 }
 
-void ProtocolSocket::setSocketOptions()
+bool ProtocolSocket::multiplyReceiveBufferSize(unsigned int x)
 {
-#if 0 /* defined(OS_LINUX) */
+	bool res = false;
+#if defined(OS_LINUX) 
         int ret = 0;
         long optval = 0;
         socklen_t optlen = sizeof(optval);
@@ -45,7 +46,7 @@ void ProtocolSocket::setSocketOptions()
         ret = getsockopt(sock, SOL_SOCKET, SO_RCVBUF, &optval, &optlen);
 
         if (ret != -1) {
-                optval = optval * 4; // Quadruple receive buffer size
+                optval = optval * x; // Quadruple receive buffer size
 
                 ret = setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &optval, optlen);
 
@@ -53,9 +54,16 @@ void ProtocolSocket::setSocketOptions()
                         HAGGLE_ERR("Could not set recv buffer size to %ld bytes\n", optval);
                 } else {
                         HAGGLE_DBG("Set recv buffer size to %ld bytes on protocol %s\n", optval, getName());
+			res = true;
                 }
         }
 #endif
+	return res;
+}
+
+void ProtocolSocket::setSocketOptions()
+{
+	// No default options currently
 }
 
 ProtocolSocket::~ProtocolSocket()

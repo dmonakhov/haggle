@@ -252,6 +252,7 @@ void DataManager::onDebugCmd(Event *e)
 			printf("+++++++++++++++++++++++++++++++\n");
 			printf("%u last data objects sent:\n", MAX_DATAOBJECTS_LISTED);
 			printf("-------------------------------\n");
+
 			for (List<string>::iterator it = dataObjectsSent.begin(); it != dataObjectsSent.end(); it++) {
 				printf("%u %s\n", n++, (*it).c_str());
 			}

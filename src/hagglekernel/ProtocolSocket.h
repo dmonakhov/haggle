@@ -46,6 +46,12 @@ class ProtocolSocket : public Protocol
 	bool registerSocket();
         void setSocketOptions();
     protected:
+	/**
+	   Increase receive buffer size by a multiple.
+	   @param x number to multiply size with
+	   @returns true if successful, false if not.
+	 */
+	bool multiplyReceiveBufferSize(unsigned int x = 4);
 
 	/**
            We wrap the common socket functions so that derived classes
