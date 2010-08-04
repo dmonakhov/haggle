@@ -2,7 +2,7 @@ SUBDIRS :=
 ACLOCAL_AMFLAGS =-I m4 -I /usr/share/aclocal
 # Extra libraries should be compiled first
 if BUNDLED_SQLITE
-SUBDIRS += extlibs/sqlite-3.6.6.2 
+SUBDIRS += $(SQLITE_SUBDIR)
 endif
 
 if OS_IPHONEOS

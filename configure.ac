@@ -24,8 +24,10 @@ CFLAGS="${CFLAGS} ${BASIC_CFLAGS}"
 # Set SQLite version to use.
 # When changing SQLite version here, also update 
 # AC_CONFIG_FILES at the end of this file
-sqlite_ver=3.6.6.2
-AC_SUBST(sqlite_ver)
+SQLITE_VERSION='3.7.0'
+SQLITE_SUBDIR=extlibs/sqlite-${SQLITE_VERSION}
+AC_SUBST(SQLITE_VERSION)
+AC_SUBST(SQLITE_SUBDIR)
 
 extra_config_files=""
 
@@ -160,8 +162,8 @@ AM_CONDITIONAL([BUNDLED_SQLITE], [test x$bundled_sqlite = xyes])
 
 if test x$bundled_sqlite = xyes
 then 
-	SQLITE_INCLUDE_DIR="${PWD}/extlibs/sqlite-${sqlite_ver}"
-     	SQLITE_LIB_DIR="${PWD}/extlibs/sqlite-${sqlite_ver}"
+	SQLITE_INCLUDE_DIR="${PWD}/extlibs/sqlite-${SQLITE_VERSION}"
+     	SQLITE_LIB_DIR="${PWD}/extlibs/sqlite-${SQLITE_VERSION}"
      	AC_SUBST(SQLITE_INCLUDE_DIR)
      	AC_SUBST(SQLITE_LIB_DIR)
 else	
@@ -585,7 +587,7 @@ AC_CONFIG_FILES([Makefile
 		 src/libhaggle/Doxyfile
 		 src/libcpphaggle/Doxyfile
 		 src/hagglekernel/Doxyfile
-		 extlibs/sqlite-3.6.6.2/Makefile
+		 ${SQLITE_SUBDIR}/Makefile
                  doc/Makefile
                  src/Makefile
                  src/utils/Makefile
