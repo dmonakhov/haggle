@@ -1270,12 +1270,23 @@ int SQLDataStore::setViewLimitedNodeAttributes(sqlite_int64 node_rowid) {
 /* ========================================================= */
 
 SQLDataStore::SQLDataStore(const bool _recreate, const string _filepath, const string name) : 
-	DataStore(name), db(NULL), recreate(_recreate), filepath(_filepath)
+	DataStore(name), db(NULL), isInMemory(false), recreate(_recreate), filepath(_filepath)
 {
 }
 
 SQLDataStore::~SQLDataStore()
 {
+	// backup in-memory database
+	if (isInMemory) {
+		string file = getFilepath();
+		if (file.empty()) {
+			file = DEFAULT_DATASTORE_FILENAME;
+			printf("Backup in-memory database to ./%s because of problems creating filepath\n");
+		}
+		
+		backupDatabase(db, file.c_str(), 1);
+	}	
+	
 	if (db)
 		sqlite3_close(db);
 }
@@ -1286,30 +1297,14 @@ bool SQLDataStore::init()
 	sqlite3_stmt *stmt;
 	const char *tail;
 	int num_tables = 0;
+	string file;
 
-	if (filepath.empty()) {
-		HAGGLE_ERR("Bad database filepath %s\n", filepath.c_str());
-                return false;
-	}
 	
-	FILE *fp = NULL;
-	string file = filepath + PLATFORM_PATH_DELIMITER + DEFAULT_DATASTORE_FILENAME;
-	// Try to open the path
-	fp = fopen(file.c_str(), "rb");
-
-	if (!fp) {
-		// The directory path in which the data base resides
-		string path = file.substr(0, file.find_last_of(PLATFORM_PATH_DELIMITER));
-		
-		// Create path. 
-		if (!create_path(path.c_str())) {
-			HAGGLE_ERR("Could not create directory path \'%s\'\n", path.c_str());
-                        return false;
-		}
-	} else {
-		fclose(fp);
+	file = getFilepath();
+	if (file.empty()) {
+		return false;
 	}
-
+		
 	if (recreate) {
 #if defined(OS_WINDOWS)
 		wchar_t *wfilepath = strtowstr_alloc(file.c_str());
@@ -1328,7 +1323,7 @@ bool SQLDataStore::init()
 		}
 #endif
 	}
-
+		
 	ret = sqlite3_open(file.c_str(), &db);
 
 	if (ret != SQLITE_OK) {
@@ -1377,6 +1372,11 @@ bool SQLDataStore::init()
 		return false;
 	}
 
+#if defined(INMEMORY_DATASTORE)
+	_onConfig();
+#endif
+	
+	
 	return true;
 }
 
@@ -3576,6 +3576,55 @@ int SQLDataStore::_dumpToFile(const char *filename)
 }
 
 
+// backup an in-memory database to/from a file (source: http://www.sqlite.org/backup.html)
+int SQLDataStore::backupDatabase(sqlite3 *pInMemory, const char *zFilename, int toFile) {
+	int rc;                   /* Function return code */
+	sqlite3 *pFile;           /* Database connection opened on zFilename */
+	sqlite3_backup *pBackup;  /* Backup object used to copy data */
+	sqlite3 *pTo;             /* Database to copy to (pFile or pInMemory) */
+	sqlite3 *pFrom;           /* Database to copy from (pFile or pInMemory) */
+	
+	/* Open the database file identified by zFilename. Exit early if this fails
+	 ** for any reason. */
+	rc = sqlite3_open(zFilename, &pFile);
+	if( rc==SQLITE_OK ){
+		
+		/* If this is a 'load' operation (isSave==0), then data is copied
+		 ** from the database file just opened to database pInMemory. 
+		 ** Otherwise, if this is a 'save' operation (isSave==1), then data
+		 ** is copied from pInMemory to pFile.  Set the variables pFrom and
+		 ** pTo accordingly. */
+		pTo		= (toFile ? pFile     : pInMemory);
+		pFrom	= (toFile ? pInMemory : pFile);
+		
+		/* Set up the backup procedure to copy from the "main" database of 
+		 ** connection pFile to the main database of connection pInMemory.
+		 ** If something goes wrong, pBackup will be set to NULL and an error
+		 ** code and  message left in connection pTo.
+		 **
+		 ** If the backup object is successfully created, call backup_step()
+		 ** to copy data from pFile to pInMemory. Then call backup_finish()
+		 ** to release resources associated with the pBackup object.  If an
+		 ** error occurred, then  an error code and message will be left in
+		 ** connection pTo. If no error occurred, then the error code belonging
+		 ** to pTo is set to SQLITE_OK.
+		 */
+		pBackup = sqlite3_backup_init(pTo, "main", pFrom, "main");
+		if( pBackup ){
+			(void)sqlite3_backup_step(pBackup, -1);
+			(void)sqlite3_backup_finish(pBackup);
+		}
+		rc = sqlite3_errcode(pTo);
+	}
+
+	/* Close the database connection opened on database file zFilename
+	 ** and return the result of this function. */
+	(void)sqlite3_close(pFile);
+
+	return rc;
+}
+
+
 #ifdef DEBUG_SQLDATASTORE
 
 /* ========================================================= */
@@ -3894,6 +3943,71 @@ void SQLDataStore::_print()
 	printf("============== DataStore End ===============\n");
 }
 
+
 #endif /* DEBUG_SQLDATASTORE */
+
+
+int SQLDataStore::_onConfig()
+{
+	// for now assume that this function is called to switch from file to in-memory
+	// that means that we can expect a database file present at filepath
+	
+	if (isInMemory) return 1;
+	
+	sqlite3 *db_memory;
+	int ret = sqlite3_open(INMEMORY_DATASTORE_FILENAME, &db_memory);
+	
+	if (ret == SQLITE_OK) {
+		ret = backupDatabase(db, filepath.c_str(), 0);
+		
+		if (ret == SQLITE_OK) {
+			if (db)
+				sqlite3_close(db);
+			db = db_memory;
+			isInMemory = true;
+		} else {
+			printf("did not switch to in-memory database\n");
+			return -1;
+		}
+	} else {
+		fprintf(stderr, "Can't open in-memory database\n");
+		sqlite3_close(db_memory);
+		return -1;
+	}
+	
+	printf("Using in-memory database\n");
+	return 1;
+}
+
+string SQLDataStore::getFilepath()
+{
+	string noResult;
+	
+	if (filepath.empty()) {
+		HAGGLE_ERR("Bad database filepath %s\n", filepath.c_str());
+		return noResult;
+	}
+	
+	string file = filepath + PLATFORM_PATH_DELIMITER + DEFAULT_DATASTORE_FILENAME;
+	
+	// Try to open the path
+	FILE *fp = NULL;
+	fp = fopen(file.c_str(), "rb");
+	
+	if (!fp) {
+		// The directory path in which the data base resides
+		string path = file.substr(0, file.find_last_of(PLATFORM_PATH_DELIMITER));
+		
+		// Create path. 
+		if (!create_path(path.c_str())) {
+			HAGGLE_ERR("Could not create directory path \'%s\'\n", path.c_str());
+			return noResult;
+		}
+	} else {
+		fclose(fp);
+	}
+	
+	return file;
+}
 
 

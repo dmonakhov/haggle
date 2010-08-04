@@ -445,6 +445,8 @@ public:
 	// Query cancel functions. Returns the number of queries removed, or -1 on error.
 	int cancelDataObjectQueries(const NodeRef& node);
 
+	void onConfig();
+
 };
 
 #endif /* _DATASTORE_H */

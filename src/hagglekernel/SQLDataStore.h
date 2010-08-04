@@ -27,6 +27,7 @@ class SQLDataStore;
 #include "Node.h"
 
 #define DEFAULT_DATASTORE_FILENAME "haggle.db"
+#define INMEMORY_DATASTORE_FILENAME ":memory:"
 #define DEFAULT_DATASTORE_FILEPATH DEFAULT_DATASTORE_PATH
 
 #include <libxml/parser.h>
@@ -45,6 +46,7 @@ class SQLDataStore : public DataStore
 {
 private:
 	sqlite3 *db; 
+	bool isInMemory;
 	bool recreate;
 	string filepath;
 
@@ -74,6 +76,9 @@ private:
 	int findAndAddDataObjectTargets(DataObjectRef& dObj, const sqlite_int64 dataObjectRowId, const long ratio);
 	int deleteDataObjectNodeDescriptions(DataObjectRef ref_dObj, string *node_id);
 
+	int backupDatabase(sqlite3 *pInMemory, const char *zFilename, int toFile = 1);
+	string getFilepath();
+		
 	
 #ifdef DEBUG_SQLDATASTORE
 	void _print();
@@ -111,9 +116,10 @@ protected:
 	int _readRepository(DataStoreRepositoryQuery *q, const EventCallback<EventHandler> *callback = NULL);
 	int _deleteRepository(DataStoreRepositoryQuery *q);
 	
-        int _dump(const EventCallback<EventHandler> *callback = NULL);
+	int _dump(const EventCallback<EventHandler> *callback = NULL);
 	int _dumpToFile(const char *filename);
-	
+	int _onConfig();
+
 public:
 	SQLDataStore(const bool recreate = false, const string = DEFAULT_DATASTORE_FILEPATH, const string name = "SQLDataStore");
 	~SQLDataStore();
