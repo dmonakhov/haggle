@@ -771,10 +771,11 @@ bool ConnectivityLocal::run()
         }
 #endif
 #if defined(ENABLE_BLUETOOTH)
-        Timeval waitStartTime;
-        long waitTime = 60000;
-
+#define DISCOVERABLE_RESET_INTERVAL 60000
+	Timeval wait_start = Timeval::now();;
+	long to_wait = DISCOVERABLE_RESET_INTERVAL;
         set_piscan_mode = false;
+
 	// Some events on this socket require root permissions. These
 	// include adapter up/down events in read_hci()
 	ret = hci_init_handle(&hcih);
@@ -813,11 +814,18 @@ bool ConnectivityLocal::run()
 #endif
 
 #if defined(ENABLE_BLUETOOTH)
-                waitStartTime = Timeval::now();
-                
-                if (set_piscan_mode)
-                        ret = w.waitTimeout(waitTime);
-                else
+
+		if (set_piscan_mode) {
+			Timeval now = Timeval::now();
+			long waited = (now - wait_start).getTimeAsMilliSeconds();
+			
+			to_wait = DISCOVERABLE_RESET_INTERVAL - waited;
+
+			if (to_wait < 0)
+				to_wait = 1;
+
+			ret = w.waitTimeout(to_wait);
+		} else
 #endif
                         ret = w.wait();
 
@@ -839,14 +847,11 @@ bool ConnectivityLocal::run()
                         if (set_piscan_mode && bluetooth_set_scan(hcih.sock, dev_id, "piscan") == -1) {
                                 fprintf(stderr, "Could not force discoverable mode for Bluetooth device %d\n", dev_id);
                         }
+			wait_start = Timeval::now();
                         continue;
                 }
 
 #if defined(ENABLE_BLUETOOTH)
-                waitTime = ((Timeval::now() - waitStartTime) - waitTime).getTimeAsMilliSeconds();
-                if (waitTime <= 0) {
-                        waitTime = 60000;
-                }
 		if (w.isSet(hciIndex)) {
 			read_hci();
 		}
