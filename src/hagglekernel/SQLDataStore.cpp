@@ -3579,6 +3579,8 @@ int SQLDataStore::_dumpToFile(const char *filename)
 // backup an in-memory database to/from a file (source: http://www.sqlite.org/backup.html)
 int SQLDataStore::backupDatabase(sqlite3 *pInMemory, const char *zFilename, int toFile) {
 	int rc;                   /* Function return code */
+
+#if defined(INMEMORY_DATASTORE)
 	sqlite3 *pFile;           /* Database connection opened on zFilename */
 	sqlite3_backup *pBackup;  /* Backup object used to copy data */
 	sqlite3 *pTo;             /* Database to copy to (pFile or pInMemory) */
@@ -3620,7 +3622,10 @@ int SQLDataStore::backupDatabase(sqlite3 *pInMemory, const char *zFilename, int 
 	/* Close the database connection opened on database file zFilename
 	 ** and return the result of this function. */
 	(void)sqlite3_close(pFile);
-
+#else
+	rc = SQLITE_ERROR;
+#endif
+	
 	return rc;
 }
 
@@ -3951,7 +3956,7 @@ int SQLDataStore::_onConfig()
 {
 	// for now assume that this function is called to switch from file to in-memory
 	// that means that we can expect a database file present at filepath
-	
+
 	if (isInMemory) return 1;
 	
 	sqlite3 *db_memory;
@@ -3976,6 +3981,7 @@ int SQLDataStore::_onConfig()
 	}
 	
 	printf("Using in-memory database\n");
+
 	return 1;
 }
 
