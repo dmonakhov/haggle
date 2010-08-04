@@ -257,10 +257,8 @@ endif
 
 if BUNDLED_SQLITE
 CPPFLAGS +=-I@SQLITE_INCLUDE_DIR@
-haggle_LDADD += @SQLITE_LIB_DIR@/libsqlite.a
-else
-haggle_LDFLAGS +=-lsqlite3 
 endif
+haggle_LDFLAGS +=-lsqlite3 
 
 if ENABLE_BLUETOOTH
 if OS_LINUX

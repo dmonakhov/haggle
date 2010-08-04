@@ -1,14 +1,15 @@
-
 AM_CFLAGS = -DSQLITE_OMIT_LOAD_EXTENSION=1 -DSQLITE_ENABLE_FTS3 -DSQLITE_ENABLE_RTREE
 
 lib_LTLIBRARIES = libsqlite3.la
 libsqlite3_la_SOURCES = sqlite3.c
 libsqlite3_la_LDFLAGS = -no-undefined -version-info 8:6:8
+libsqlite3_la_CFLAGS = -no-uninitialized -no-unused-value -no-unused-variable
 
 bin_PROGRAMS = sqlite3
 sqlite3_SOURCES = shell.c sqlite3.h
 sqlite3_LDADD = $(top_builddir)/$(SQLITE_SUBDIR)/libsqlite3.la
-sqlite3_DEPENDENCIES = $(top_builddir)/$(SQLITE_SUBDIR)libsqlite3.la
+sqlite3_DEPENDENCIES = $(top_builddir)/$(SQLITE_SUBDIR)/libsqlite3.la
+sqlite3_CFLAGS = -no-uninitialized -no-unused-value -no-unused-variable
 
 include_HEADERS = sqlite3.h sqlite3ext.h
 

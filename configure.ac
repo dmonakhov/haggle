@@ -587,7 +587,7 @@ AC_CONFIG_FILES([Makefile
 		 src/libhaggle/Doxyfile
 		 src/libcpphaggle/Doxyfile
 		 src/hagglekernel/Doxyfile
-		 ${SQLITE_SUBDIR}/Makefile
+		 extlibs/sqlite-3.7.0/Makefile
                  doc/Makefile
                  src/Makefile
                  src/utils/Makefile
