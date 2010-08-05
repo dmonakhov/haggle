@@ -1281,7 +1281,7 @@ SQLDataStore::~SQLDataStore()
 		string file = getFilepath();
 		if (file.empty()) {
 			file = DEFAULT_DATASTORE_FILENAME;
-			printf("Backup in-memory database to ./%s because of problems creating filepath\n");
+			HAGGLE_DBG("Backup in-memory database to ./%s because of problems creating filepath\n", file.c_str());
 		}
 		
 		backupDatabase(db, file.c_str(), 1);
@@ -1371,7 +1371,7 @@ bool SQLDataStore::init()
 		HAGGLE_ERR("Could not create tables\n");
 		return false;
 	}
-
+	
 #if defined(INMEMORY_DATASTORE)
 	_onConfig();
 #endif
@@ -3588,9 +3588,9 @@ int SQLDataStore::backupDatabase(sqlite3 *pInMemory, const char *zFilename, int 
 	
 	/* Open the database file identified by zFilename. Exit early if this fails
 	 ** for any reason. */
+
 	rc = sqlite3_open(zFilename, &pFile);
 	if( rc==SQLITE_OK ){
-		
 		/* If this is a 'load' operation (isSave==0), then data is copied
 		 ** from the database file just opened to database pInMemory. 
 		 ** Otherwise, if this is a 'save' operation (isSave==1), then data
@@ -3963,7 +3963,8 @@ int SQLDataStore::_onConfig()
 	int ret = sqlite3_open(INMEMORY_DATASTORE_FILENAME, &db_memory);
 	
 	if (ret == SQLITE_OK) {
-		ret = backupDatabase(db, filepath.c_str(), 0);
+		string file = getFilepath();
+		ret = backupDatabase(db_memory, file.c_str(), 0);
 		
 		if (ret == SQLITE_OK) {
 			if (db)
@@ -3971,16 +3972,16 @@ int SQLDataStore::_onConfig()
 			db = db_memory;
 			isInMemory = true;
 		} else {
-			printf("did not switch to in-memory database\n");
+			HAGGLE_ERR("did not switch to in-memory database\n");
 			return -1;
 		}
 	} else {
-		fprintf(stderr, "Can't open in-memory database\n");
+		HAGGLE_ERR("Can't open in-memory database\n");
 		sqlite3_close(db_memory);
 		return -1;
 	}
 	
-	printf("Using in-memory database\n");
+	HAGGLE_DBG("Using in-memory database\n");
 
 	return 1;
 }

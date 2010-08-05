@@ -29,6 +29,7 @@ class SQLDataStore;
 #define DEFAULT_DATASTORE_FILENAME "haggle.db"
 #define INMEMORY_DATASTORE_FILENAME ":memory:"
 #define DEFAULT_DATASTORE_FILEPATH DEFAULT_DATASTORE_PATH
+#define INMEMORY_DATASTORE 1
 
 #include <libxml/parser.h>
 #include <libxml/tree.h> // For dumping to XML
