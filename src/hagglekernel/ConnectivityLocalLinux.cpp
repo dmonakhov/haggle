@@ -241,6 +241,7 @@ static int nl_parse_addr_info(struct nlmsghdr *nlm, struct if_info *ifinfo)
 	return n;
 }
 
+#if 0
 static int fill_in_ipconf(struct if_info *ifinfo)
 {
 	struct ifreq ifr;
@@ -275,6 +276,7 @@ static int fill_in_ipconf(struct if_info *ifinfo)
 
 	return 0;
 }
+#endif // 0
 
 static int fill_in_macaddr(struct if_info *ifinfo)
 {
@@ -731,7 +733,6 @@ static InterfaceRef dbus_bluetooth_get_interface(struct dbus_handle *dbh, const 
 	DBusMessageIter iter, dict;
 	InterfaceRef iface = NULL;
 	const char *interface_name = NULL, *interface_mac = NULL, *device_name = NULL;
-	int i = 0;
 
 	/* 
 	   Set the device name by looking for the last occurence of a '/' in the
@@ -754,8 +755,6 @@ static InterfaceRef dbus_bluetooth_get_interface(struct dbus_handle *dbh, const 
 
 	reply = dbus_connection_send_with_reply_and_block(dbh->conn, msg, -1, &dbh->err);
 	
-	HAGGLE_DBG("Sent GetProperties message for %s\n", objectpath);
-	
 	dbus_message_unref(msg);
 	
 	if (!reply) {
@@ -774,7 +773,7 @@ static InterfaceRef dbus_bluetooth_get_interface(struct dbus_handle *dbh, const 
 	dbus_message_iter_recurse(&iter, &dict);
 
 	do {
-		int len = 0, type = 0;
+		int type = 0;
 		DBusMessageIter dict_entry, prop_val;
 		char *property = NULL;
 
@@ -1219,6 +1218,7 @@ Interface *hci_get_interface_from_name(const char *ifname)
 	return new Interface(IFTYPE_BLUETOOTH, macaddr, &addr, ifname, IFFLAG_LOCAL | IFFLAG_UP);
 }
 
+#if !defined(HAVE_DBUS)
 static int hci_init_handle(struct hci_handle *hcih)
 {
 	if (!hcih)
@@ -1259,6 +1259,7 @@ void hci_close_handle(struct hci_handle *hcih)
 {
 	close(hcih->sock);
 }
+#endif
 
 int ConnectivityLocal::read_hci()
 {
@@ -1348,16 +1349,7 @@ int ConnectivityLocal::read_hci()
 
 void ConnectivityLocal::findLocalBluetoothInterfaces()
 {
-	/*
-	if (adapter)
-		free(adapter);
-
-	if (dbus_bluetooth_get_default_adapter(&dbh, &adapter) == -1)
-		return;
-	*/
 	DBusMessage *reply, *msg;
-	DBusMessageIter iter;
-	const char *property = "Adapters";
 	char **adapters = NULL;
 	int len = 0;
 
@@ -1370,23 +1362,15 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 		HAGGLE_ERR("%Can't allocate new method call for GetProperties!\n");
 		return;
 	}
-
-//	dbus_message_append_args(msg, DBUS_TYPE_STRING, &property, DBUS_TYPE_INVALID);
 	
 	reply = dbus_connection_send_with_reply_and_block(dbh.conn, msg, -1, &dbh.err);
-
-
-	HAGGLE_DBG("Sent ListAdapters message\n");
 
 	dbus_message_unref(msg);
 	
 	if (!reply) {
-		HAGGLE_ERR("NO REPLY from list adapters\n");
 		if (dbus_error_is_set(&dbh.err)) {
 			HAGGLE_ERR("D-Bus error: %s (%s)\n", dbh.err.name, dbh.err.message);
 			dbus_error_free(&dbh.err);
-		} else {
-			HAGGLE_ERR("DBus reply is NULL\n");
 		}
 		return;
 	}
@@ -1395,18 +1379,11 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 				  DBUS_TYPE_ARRAY, DBUS_TYPE_OBJECT_PATH, &adapters, &len, DBUS_TYPE_INVALID)) {
 		int i;
 		
-		HAGGLE_DBG("Number of adapters is %d\n", len);
-
 		for (i = 0; i < len; i++) {
-			DBusMessage *reply;
-			DBusMessageIter iter;
-			int type = 0;
-			
 			dbus_bluetooth_set_adapter_property_boolean(&dbh, adapters[i], "Discoverable", true);
 			dbus_bluetooth_set_adapter_property_integer(&dbh, adapters[i], "DiscoverableTimeout", 0);
 
 			InterfaceRef iface = dbus_bluetooth_get_interface(&dbh, adapters[i]);
-
 			if (iface) {				
 				report_interface(iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
 			}
@@ -1416,9 +1393,7 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 		if (dbus_error_is_set(&dbh.err)) {
 			HAGGLE_ERR("D-Bus error: %s (%s)\n", dbh.err.name, dbh.err.message);
 			dbus_error_free(&dbh.err);
-		} else {
-			HAGGLE_ERR("DBus reply is NULL\n");
-		}
+		} 
 	}
 
 	dbus_message_unref(reply);
@@ -1668,7 +1643,6 @@ bool ConnectivityLocal::run()
 		}
 	
 		if (doDispatch) {
-                        int n = 0;
 			while (dbus_connection_dispatch(dbh.conn) == DBUS_DISPATCH_DATA_REMAINS) { }
 		}
 #else
