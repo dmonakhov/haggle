@@ -1276,6 +1276,7 @@ SQLDataStore::SQLDataStore(const bool _recreate, const string _filepath, const s
 
 SQLDataStore::~SQLDataStore()
 {
+#if defined(HAVE_SQLITE_BACKUP_SUPPORT)
 	// backup in-memory database
 	if (isInMemory) {
 		string file = getFilepath();
@@ -1286,6 +1287,7 @@ SQLDataStore::~SQLDataStore()
 		
 		backupDatabase(db, file.c_str(), 1);
 	}	
+#endif
 	
 	if (db)
 		sqlite3_close(db);
@@ -1375,8 +1377,6 @@ bool SQLDataStore::init()
 #if defined(INMEMORY_DATASTORE)
 	_onConfig();
 #endif
-	
-	
 	return true;
 }
 
@@ -3575,12 +3575,10 @@ int SQLDataStore::_dumpToFile(const char *filename)
 	return 0;
 }
 
-
+#if defined(HAVE_SQLITE_BACKUP_SUPPORT)
 // backup an in-memory database to/from a file (source: http://www.sqlite.org/backup.html)
 int SQLDataStore::backupDatabase(sqlite3 *pInMemory, const char *zFilename, int toFile) {
 	int rc;                   /* Function return code */
-
-#if defined(INMEMORY_DATASTORE)
 	sqlite3 *pFile;           /* Database connection opened on zFilename */
 	sqlite3_backup *pBackup;  /* Backup object used to copy data */
 	sqlite3 *pTo;             /* Database to copy to (pFile or pInMemory) */
@@ -3622,13 +3620,10 @@ int SQLDataStore::backupDatabase(sqlite3 *pInMemory, const char *zFilename, int 
 	/* Close the database connection opened on database file zFilename
 	 ** and return the result of this function. */
 	(void)sqlite3_close(pFile);
-#else
-	rc = SQLITE_ERROR;
-#endif
-	
+
 	return rc;
 }
-
+#endif // HAVE_SQLITE_BACKUP_SUPPORT
 
 #ifdef DEBUG_SQLDATASTORE
 
@@ -3957,15 +3952,20 @@ int SQLDataStore::_onConfig()
 	// for now assume that this function is called to switch from file to in-memory
 	// that means that we can expect a database file present at filepath
 
-	if (isInMemory) return 1;
+	if (isInMemory)
+		return 1;
 	
 	sqlite3 *db_memory;
 	int ret = sqlite3_open(INMEMORY_DATASTORE_FILENAME, &db_memory);
 	
 	if (ret == SQLITE_OK) {
 		string file = getFilepath();
+#if defined(HAVE_SQLITE_BACKUP_SUPPORT)
 		ret = backupDatabase(db_memory, file.c_str(), 0);
-		
+#else
+		ret = SQLITE_ERROR;
+		HAGGLE_DBG("Cannot switch to in-memory database since there is no backup support in SQLite\n");
+#endif
 		if (ret == SQLITE_OK) {
 			if (db)
 				sqlite3_close(db);

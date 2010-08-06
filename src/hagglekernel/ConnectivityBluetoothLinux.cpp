@@ -468,12 +468,10 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
                 status = conn->is_known_interface(IFTYPE_BLUETOOTH, macaddr);
         
                 if (status == INTERFACE_STATUS_HAGGLE) {
-			printf("Interface is a known Haggle interface\n");
                         report_interface = true;
                 } else if (status == INTERFACE_STATUS_UNKNOWN) {
                         switch(ConnectivityBluetoothBase::classifyAddress(IFTYPE_BLUETOOTH, macaddr)) {
                         case BLUETOOTH_ADDRESS_IS_UNKNOWN:
-				printf("Interface is unknown, searching services\n");
                                 channel = find_haggle_service(ii[i].bdaddr);
                     
                                 if (channel > 0) {
@@ -484,12 +482,10 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
                                 }
                                 break;
                         case BLUETOOTH_ADDRESS_IS_HAGGLE_NODE:
-				printf("Interface belongs to a Haggle node\n");
                                 report_interface = true;
                                 conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, true);
                                 break;
                         case BLUETOOTH_ADDRESS_IS_NOT_HAGGLE_NODE:
-				printf("Interface does not belong to a Haggle node\n");
                                 conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, false);
                                 break;
                         }

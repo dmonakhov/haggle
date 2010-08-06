@@ -84,10 +84,6 @@ private:
         int read_netlink();
         void findLocalEthernetInterfaces();
 #endif
-
-        // Called when add_interface _actually_ adds an interface
-        //void interface_added(const Interface *node);
-
         bool run();
         void hookCleanup();
 public:
