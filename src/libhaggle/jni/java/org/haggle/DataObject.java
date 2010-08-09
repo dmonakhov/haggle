@@ -11,6 +11,9 @@ public class DataObject {
         private native void nativeFree();
         
 	public native boolean addAttribute(String name, String value, long weight);
+	public boolean addAttribute(String name, String value) {
+		return addAttribute(name, value, 1);
+	}
         public native Attribute getAttribute(String name, int n);
         public native Attribute getAttribute(String name, String value);
         public native long getNumAttributes();

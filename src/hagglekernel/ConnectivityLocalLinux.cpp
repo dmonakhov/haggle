@@ -801,10 +801,10 @@ static InterfaceRef dbus_bluetooth_get_interface(struct dbus_handle *dbh, const 
 
 		if (strcmp("Address", property) == 0 && type == DBUS_TYPE_STRING) {
 			dbus_message_iter_get_basic(&prop_val, &interface_mac);
-			HAGGLE_DBG("Mac address is %s\n", interface_mac);
+			//HAGGLE_DBG("Mac address is %s\n", interface_mac);
 		} else if (strcmp("Name", property) == 0 && type == DBUS_TYPE_STRING) {
 			dbus_message_iter_get_basic(&prop_val, &interface_name);
-			HAGGLE_DBG("Mac address is %s\n", interface_name);
+			//HAGGLE_DBG("Mac address is %s\n", interface_name);
 		}
 	} while(dbus_message_iter_next(&dict));
 	

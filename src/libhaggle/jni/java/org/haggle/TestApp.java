@@ -60,6 +60,8 @@ public class TestApp extends Thread implements EventHandler {
                         }
                 }
                 try {
+			final int num_dataobjects = 5;
+			DataObject[] dobjs = new DataObject[num_dataobjects];
                         h = new Handle(name);
 
                         h.registerEventInterest(EVENT_NEIGHBOR_UPDATE, this);
@@ -72,8 +74,19 @@ public class TestApp extends Thread implements EventHandler {
                         
                         h.getApplicationInterestsAsync();
 
-                        Thread.sleep(10000);
+                        Thread.sleep(3000);
 
+			for (int i = 0; i < num_dataobjects; i++) {
+				dobjs[i] = new DataObject();
+				dobjs[i].addAttribute("num", "" + i);
+				h.publishDataObject(dobjs[i]);
+				Thread.sleep(1000);
+			}
+			for (int i = 0; i < num_dataobjects; i++) {
+				h.deleteDataObject(dobjs[i]);
+				dobjs[i].dispose();
+				Thread.sleep(1000);
+			}
                         h.shutdown();
                         
                         Thread.sleep(5000);

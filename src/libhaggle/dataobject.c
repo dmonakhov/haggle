@@ -527,7 +527,7 @@ int haggle_dataobject_calculate_id(const struct dataobject *dobj, dataobject_id_
 
 		list_for_each(pos, &dobj->al->attributes) {
 			haggle_attr_t *a = (haggle_attr_t *)pos;
-			unsigned long w;
+			u_int32_t w;
 
 			SHA1_Update(&ctxt, (unsigned char *)haggle_attribute_get_name(a), strlen(haggle_attribute_get_name(a)));
 			SHA1_Update(&ctxt, (unsigned char *)haggle_attribute_get_value(a), strlen(haggle_attribute_get_value(a)));
