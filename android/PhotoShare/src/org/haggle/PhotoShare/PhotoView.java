@@ -359,7 +359,7 @@ public class PhotoView extends Activity implements OnClickListener {
 			dObj.setThumbnail(os.toByteArray());
 
 			ps.getHaggleHandle().publishDataObject(dObj);
-
+			
 			ArrayList<Attribute> aa = new ArrayList<Attribute>();
 
 			for (int i = 0; i < attrs.length; i++) {
@@ -372,9 +372,18 @@ public class PhotoView extends Activity implements OnClickListener {
 					}
 				}
 			}
+			
 			ps.getHaggleHandle().registerInterests(
 					aa.toArray(new Attribute[aa.size()]));
 
+			// Call dispose on data object and attribute to free native data
+			// before GC in order to save memory
+			dObj.dispose();
+			
+			for (int i = 0; i < aa.size(); i++) {
+				aa.get(i).dispose();
+			}
+			Log.d(PhotoShare.LOG_TAG, "Disposed data object and " + aa.size() + " attributes");
 		} catch (DataObjectException e) {
 			// TODO Auto-generated catch block
 			Log.d(PhotoShare.LOG_TAG, "Could not create data object for "
@@ -393,6 +402,11 @@ public class PhotoView extends Activity implements OnClickListener {
 				Log.d(PhotoShare.LOG_TAG, "Added interest " + addedInterests[i]);
 			}
 			ps.getHaggleHandle().registerInterests(aa);
+			
+			// Call dispose to free native data before GC
+			for (int i = 0; i < addedInterests.length; i++) {
+				aa[i].dispose();
+			}
 		}
 
 		if (deletedInterests != null && deletedInterests.length != 0) {
@@ -402,6 +416,11 @@ public class PhotoView extends Activity implements OnClickListener {
 				Log.d(PhotoShare.LOG_TAG, "Deleted interest " + deletedInterests[i]);
 			}
 			ps.getHaggleHandle().unregisterInterests(aa);
+
+			// Call dispose to free native data before GC
+			for (int i = 0; i < deletedInterests.length; i++) {
+				aa[i].dispose();
+			}
 		}
 	}
 	
@@ -481,9 +500,11 @@ public class PhotoView extends Activity implements OnClickListener {
     		
             Log.d(PhotoShare.LOG_TAG, "Target view is gallery");
         	if (item.getTitle() == "Delete") {
-        		
         		DataObject dObj = imgAdpt.deletePicture(info.position);
         		ps.getHaggleHandle().deleteDataObject(dObj);
+        		// Call dispose() to free native data before garbage collection
+        		dObj.dispose();
+        		Log.d(PhotoShare.LOG_TAG, "Disposed of data object");
         		Toast.makeText(this, "Deleted data object...", Toast.LENGTH_SHORT).show();
         	} else if (item.getTitle() == "View Attributes") {
         		AlertDialog.Builder builder;
@@ -529,6 +550,7 @@ public class PhotoView extends Activity implements OnClickListener {
         				t += ifaces[i].getTypeString() + " " + ifaces[i].getIdentifierString() + " " + ifaces[i].getStatusString() +"\n";
         			}
         		}
+        		
         		text.setText(t);
         		builder = new AlertDialog.Builder(this);
         		builder.setView(layout);
@@ -552,6 +574,9 @@ public class PhotoView extends Activity implements OnClickListener {
     	public DataUpdater(Node[] neighbors)
     	{
     		this.type = org.haggle.EventHandler.EVENT_NEIGHBOR_UPDATE;
+    		for (int i = 0; i < neighbors.length; i++) {
+    			this.neighbors[i].dispose();
+    		}
     		this.neighbors = neighbors;
     	}
         public void run() {
