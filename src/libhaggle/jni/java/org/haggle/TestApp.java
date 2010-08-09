@@ -7,7 +7,7 @@ import org.haggle.EventHandler;
 import org.haggle.DataObject;
 import org.haggle.LaunchCallback;
 
-public class TestApp extends Thread implements EventHandler {	
+public class TestApp implements EventHandler {	
         private Handle h = null;
         private String name;
 
