@@ -257,10 +257,13 @@ endif
 
 if BUNDLED_SQLITE
 haggle_CPPFLAGS +=-I@SQLITE_INCLUDE_DIR@
-haggle_LDFLAGS +=-L$(top_builddir)/$(SQLITE_SUBDIR)
+haggle_CXXFLAGS +=-I@SQLITE_INCLUDE_DIR@
+haggle_LDADD +=$(top_builddir)/$(SQLITE_SUBDIR)/libsqlite3.la
 haggle_DEPENDENCIES +=$(top_builddir)/$(SQLITE_SUBDIR)/libsqlite3.la
-endif
+haggle_LDFLAGS +=-static
+else
 haggle_LDFLAGS +=-lsqlite3 
+endif
 
 if ENABLE_BLUETOOTH
 if OS_LINUX
@@ -276,8 +279,10 @@ if OS_MACOSX
 haggle_LDFLAGS +=-framework CoreFoundation
 endif
 
-all-local:
-	cp $(PROGRAMS) $(top_builddir)/bin/
+$(top_builddir)/bin/$(PROGRAMS): $(PROGRAMS)
+	cp $(PROGRAMS) $@
+
+all-local: $(top_builddir)/bin/$(PROGRAMS)
 
 indent:
 	indent -kr -i8 $(wildcard *.cpp) $(wildcard *.h)

@@ -18,7 +18,6 @@ endif
 EXTRA_DIST = filedropMacOSX.c filedrop.c
 
 all-local:
-	cp $(PROGRAMS) $(top_builddir)/bin/
 
 clean-local:
 	rm -f *~

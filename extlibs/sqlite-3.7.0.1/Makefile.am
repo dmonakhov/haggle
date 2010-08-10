@@ -7,12 +7,18 @@ libsqlite3_la_CFLAGS = -Wno-uninitialized -Wno-unused-value -Wno-unused-variable
 
 bin_PROGRAMS = sqlite3
 sqlite3_SOURCES = shell.c sqlite3.h
-sqlite3_LDADD = $(top_builddir)/$(SQLITE_SUBDIR)/libsqlite3.la
-sqlite3_DEPENDENCIES = $(top_builddir)/$(SQLITE_SUBDIR)/libsqlite3.la
+sqlite3_LDADD = libsqlite3.la
+sqlite3_DEPENDENCIES = libsqlite3.la
 sqlite3_CFLAGS = -Wno-uninitialized -Wno-unused-value -Wno-unused-variable
 
 if OS_LINUX
 sqlite3_LDFLAGS =-lpthread -ldl
+endif
+
+if DEBUG
+else
+# No debugging symbols
+libsqlite3_la_CFLAGS +=-Os
 endif
 
 include_HEADERS = sqlite3.h sqlite3ext.h

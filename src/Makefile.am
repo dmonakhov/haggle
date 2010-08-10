@@ -3,7 +3,6 @@ SUBDIRS = \
 	libcpphaggle \
 	hagglekernel \
 	libhaggle \
-	client \
 	experimental  \
 	bbs \
 	webserver \

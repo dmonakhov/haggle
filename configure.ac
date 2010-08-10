@@ -24,7 +24,7 @@ CFLAGS="${CFLAGS} ${BASIC_CFLAGS}"
 # Set SQLite version to use.
 # When changing SQLite version here, also update 
 # AC_CONFIG_FILES at the end of this file
-SQLITE_VERSION='3.7.0'
+SQLITE_VERSION='3.7.0.1'
 SQLITE_SUBDIR=extlibs/sqlite-${SQLITE_VERSION}
 AC_SUBST(SQLITE_VERSION)
 AC_SUBST(SQLITE_SUBDIR)
@@ -603,11 +603,10 @@ AC_CONFIG_FILES([Makefile
 		 src/libhaggle/Doxyfile
 		 src/libcpphaggle/Doxyfile
 		 src/hagglekernel/Doxyfile
-		 extlibs/sqlite-3.7.0/Makefile
+		 extlibs/sqlite-3.7.0.1/Makefile
                  doc/Makefile
                  src/Makefile
                  src/utils/Makefile
-                 src/client/Makefile
                  src/filedrop/Makefile
                  src/libhaggle/Makefile
                  src/libhaggle/jni/Makefile
