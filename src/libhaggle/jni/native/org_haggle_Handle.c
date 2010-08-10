@@ -25,6 +25,7 @@ static void callback_data_free(callback_data_t *cd)
                 return;
 
         (*cd->env)->DeleteGlobalRef(cd->env, cd->obj);
+	(*cd->env)->DeleteGlobalRef(cd->env, cd->cls);
         free(cd);
 }
 
@@ -45,7 +46,8 @@ static callback_data_t *callback_list_get(haggle_handle_t hh, int type)
 static callback_data_t *callback_list_insert(haggle_handle_t hh, int type, JNIEnv *env, jobject obj)
 {
         callback_data_t *cd;
-        
+        jclass cls;
+
         if (callback_list_get(hh, type) != NULL)
                 return NULL;
 
@@ -60,7 +62,14 @@ static callback_data_t *callback_list_insert(haggle_handle_t hh, int type, JNIEn
         // We must retain this object
 	cd->obj = (*env)->NewGlobalRef(env, obj);
         // Cache the object class
-        cd->cls = (*env)->GetObjectClass(env, cd->obj);
+        cls = (*env)->GetObjectClass(env, cd->obj);
+	
+	if (!cls) {
+		free(cd);
+		return NULL;
+	}
+
+	cd->cls = (*env)->NewGlobalRef(env, cls);
 
         list_add(&cd->l, &cdlist);
 
@@ -291,14 +300,11 @@ JNIEXPORT jint JNICALL Java_org_haggle_Handle_registerEventInterest(JNIEnv *env,
         callback_data_t *cd;
 	haggle_handle_t hh;
         jint res;
-        jclass cls;
 
         hh = (haggle_handle_t)get_native_handle(env, JCLASS_HANDLE, obj);
         
         if (!hh)
                 return -1;
-
-	cls = (*env)->GetObjectClass(env, handler);
 
         cd = callback_list_insert(hh, type, env, handler);
 	
@@ -576,15 +582,20 @@ static int spawn_daemon_callback(unsigned int milliseconds)
         if (mid) {
                 ret = (*env)->CallIntMethod(env, spawn_object, mid, (jlong)milliseconds);
 						
-		if ((*env)->ExceptionCheck(env))
+		if ((*env)->ExceptionCheck(env)) {
+			(*env)->DeleteGlobalRef(env, spawn_object);
+			spawn_object = NULL;
 			return -1;
+		}
         } else {
                 (*env)->DeleteGlobalRef(env, spawn_object);
+		spawn_object = NULL;
                 return -1;
         }
 
         if (milliseconds == 0 || ret == 1) {
                 (*env)->DeleteGlobalRef(env, spawn_object);
+		spawn_object = NULL;
         }
 
         return ret;
@@ -629,7 +640,14 @@ JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_spawnDaemon__Ljava_lang_String
  */
 JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_spawnDaemon__Lorg_haggle_LaunchCallback_2(JNIEnv *env, jclass cls, jobject obj)
 {
+	if (spawn_object) {
+		(*env)->DeleteGlobalRef(env, spawn_object);
+	}
+
         spawn_object = (*env)->NewGlobalRef(env, obj);
+
+	if (!spawn_object)
+		return JNI_FALSE;
 
         return haggle_daemon_spawn_with_callback(NULL, spawn_daemon_callback) >= 0 ? JNI_TRUE : JNI_FALSE;
 }
@@ -644,7 +662,14 @@ JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_spawnDaemon__Ljava_lang_String
         const char *daemonpath;
         jint ret;
 
+	if (spawn_object) {
+		(*env)->DeleteGlobalRef(env, spawn_object);
+	}
+
         spawn_object = (*env)->NewGlobalRef(env, obj);
+
+	if (!spawn_object)
+		return JNI_FALSE;
 
         daemonpath = (*env)->GetStringUTFChars(env, path, 0); 
         

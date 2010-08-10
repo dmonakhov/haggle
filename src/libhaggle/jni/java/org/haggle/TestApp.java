@@ -61,7 +61,7 @@ public class TestApp implements EventHandler {
                         }
                 }
                 try {
-			final int num_dataobjects = 5;
+			final int num_dataobjects = 550;
 			DataObject[] dobjs = new DataObject[num_dataobjects];
                         h = new Handle(name);
 
@@ -83,12 +83,12 @@ public class TestApp implements EventHandler {
 				dobjs[i].addAttribute("num", "" + i);
 				dobjs[i].addAttribute(attr);
 				h.publishDataObject(dobjs[i]);
-				Thread.sleep(1000);
+				Thread.sleep(50);
 			}
 			for (int i = 0; i < num_dataobjects; i++) {
 				h.deleteDataObject(dobjs[i]);
 				dobjs[i].dispose();
-				Thread.sleep(1000);
+				Thread.sleep(50);
 			}
                         h.shutdown();
                         
