@@ -13,6 +13,7 @@ public class TestApp implements EventHandler {
 
 	public synchronized void onNewDataObject(DataObject dObj) {
                 System.out.println("Got new data object, filepath=" + dObj.getFilePath());
+		dObj.dispose();
         }
 	public synchronized void onNeighborUpdate(Node[] neighbors) {
                 System.out.println("Got neighbor update event");
@@ -64,6 +65,7 @@ public class TestApp implements EventHandler {
 			DataObject[] dobjs = new DataObject[num_dataobjects];
                         h = new Handle(name);
 
+                        h.registerEventInterest(EVENT_NEW_DATAOBJECT, this);
                         h.registerEventInterest(EVENT_NEIGHBOR_UPDATE, this);
                         h.registerEventInterest(EVENT_INTEREST_LIST_UPDATE, this);
                         h.registerEventInterest(EVENT_HAGGLE_SHUTDOWN, this);
@@ -79,6 +81,7 @@ public class TestApp implements EventHandler {
 			for (int i = 0; i < num_dataobjects; i++) {
 				dobjs[i] = new DataObject();
 				dobjs[i].addAttribute("num", "" + i);
+				dobjs[i].addAttribute(attr);
 				h.publishDataObject(dobjs[i]);
 				Thread.sleep(1000);
 			}

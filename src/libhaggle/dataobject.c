@@ -567,7 +567,7 @@ int haggle_dataobject_calculate_id(const struct dataobject *dobj, dataobject_id_
 
 		// Generate a readable string of the Id
 		for (i = 0; i < sizeof(dataobject_id_t); i++) {
-			len += sprintf(idStr + len, "%02x", *id[i] & 0xff);
+			len += sprintf(idStr + len, "%02x", (*id)[i] & 0xff);
 		}
 
 		LIBHAGGLE_DBG("data object id to delete: %s\n", idStr);

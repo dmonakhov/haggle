@@ -125,25 +125,53 @@ static int event_handler(haggle_event_t *e, void *arg)
         if (!env)
 		return -1;
 
+	if ((*env)->PushLocalFrame(env, 20) < 0) {
+		return -1; 
+	}
+
 	switch (cd->type) {
                 case LIBHAGGLE_EVENT_SHUTDOWN:
                         mid = (*env)->GetMethodID(env, cd->cls, "onShutdown", "(I)V");
                         if (mid) {
-
                                 (*env)->CallVoidMethod(env, cd->obj, mid, (jint)e->shutdown_reason);
+
+				if ((*env)->ExceptionCheck(env)) {
+					fprintf(stdout, "An exception occurred when calling onShutdown()\n");
+				}
                         }
                         break;
                 case LIBHAGGLE_EVENT_NEIGHBOR_UPDATE:
                         mid = (*env)->GetMethodID(env, cd->cls, "onNeighborUpdate", "([Lorg/haggle/Node;)V");
                         if (mid) {
+				jobjectArray jarr = libhaggle_jni_nodelist_to_node_jobjectArray(env, e->neighbors);
+				
+				if (!jarr)
+					break;
 
-                                (*env)->CallVoidMethod(env, cd->obj, mid, libhaggle_jni_nodelist_to_node_jobjectArray(env, e->neighbors));
+                                (*env)->CallVoidMethod(env, cd->obj, mid, jarr);
+
+				if ((*env)->ExceptionCheck(env)) {
+					fprintf(stdout, "An exception occurred when calling onNeighborUpdate()\n");
+				}
+				
+				(*env)->DeleteLocalRef(env, jarr);
                         }
                         break;
                 case LIBHAGGLE_EVENT_NEW_DATAOBJECT:                
                         mid = (*env)->GetMethodID(env, cd->cls, "onNewDataObject", "(Lorg/haggle/DataObject;)V");	
                         if (mid) {
-                                (*env)->CallVoidMethod(env, cd->obj, mid, java_object_new(env, JCLASS_DATAOBJECT, e->dobj));
+				jobject jdobj = java_object_new(env, JCLASS_DATAOBJECT, e->dobj);
+
+				if (!jdobj)
+					break;
+
+                                (*env)->CallVoidMethod(env, cd->obj, mid, jdobj);
+				 
+				if ((*env)->ExceptionCheck(env)) {
+					fprintf(stdout, "An exception occurred when calling onNewDataObject()\n");
+				}
+
+				(*env)->DeleteLocalRef(env, jdobj);
                         }
                         /* For this event the data object is turned
                          * into a java data object which will be garbage
@@ -154,14 +182,27 @@ static int event_handler(haggle_event_t *e, void *arg)
                 case LIBHAGGLE_EVENT_INTEREST_LIST:
                         mid = (*env)->GetMethodID(env, cd->cls, "onInterestListUpdate", "([Lorg/haggle/Attribute;)V");	
                         if (mid) {
-                                (*env)->CallVoidMethod(env, cd->obj, mid, libhaggle_jni_attributelist_to_attribute_jobjectArray(env, e->interests));
+				jobjectArray jarr = libhaggle_jni_attributelist_to_attribute_jobjectArray(env, e->interests);
+
+				if (!jarr)
+					break;
+
+                                (*env)->CallVoidMethod(env, cd->obj, mid, jarr);
+				 
+				if ((*env)->ExceptionCheck(env)) {
+					fprintf(stdout, "An exception occurred when calling onInterestListUpdate()\n");
+				}
+
+				(*env)->DeleteLocalRef(env, jarr);
                         }
                         break;
                 default:
                         break;
 	}
 
-        return ret;
+	(*env)->PopLocalFrame(env, NULL);
+
+	return ret;
 }
 
 /*
@@ -525,10 +566,18 @@ static int spawn_daemon_callback(unsigned int milliseconds)
         
         cls = (*env)->GetObjectClass(env, spawn_object);
 
+	if (!cls)
+		return -1;
+
         mid = (*env)->GetMethodID(env, cls, "callback", "(J)I");
+	
+	(*env)->DeleteLocalRef(env, cls);
 
         if (mid) {
                 ret = (*env)->CallIntMethod(env, spawn_object, mid, (jlong)milliseconds);
+						
+		if ((*env)->ExceptionCheck(env))
+			return -1;
         } else {
                 (*env)->DeleteGlobalRef(env, spawn_object);
                 return -1;

@@ -14,6 +14,9 @@ public class DataObject {
 	public boolean addAttribute(String name, String value) {
 		return addAttribute(name, value, 1);
 	}
+	public boolean addAttribute(Attribute attr) {
+		return addAttribute(attr.getName(), attr.getValue(), attr.getWeight());
+	}
         public native Attribute getAttribute(String name, int n);
         public native Attribute getAttribute(String name, String value);
         public native long getNumAttributes();

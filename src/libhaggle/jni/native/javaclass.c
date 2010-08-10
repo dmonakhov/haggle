@@ -177,7 +177,11 @@ JNIEnv *get_jni_env()
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
 {
-        JNIEnv *env;;
+        JNIEnv *env;
+	jclass cls;
+
+	/* printf("OnLoad called\n"); */
+
         jvm = vm;
 
         if ((*jvm)->GetEnv(jvm, (void **)&env, JNI_VERSION_1_4) != JNI_OK) {
@@ -186,7 +190,14 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
         }         
 
         // Get handle info
-        jc_handle.cls = (*env)->FindClass(env, "org/haggle/Handle");
+	cls = (*env)->FindClass(env, "org/haggle/Handle");
+	
+	if (!cls)
+		return -1;
+
+	jc_handle.cls = (*env)->NewGlobalRef(env, cls);
+
+	(*env)->DeleteLocalRef(env, cls);
 
         if (!jc_handle.cls)
                 return -1;
@@ -202,7 +213,14 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
 		return -1;
 
         // Get interface info
-        jc_interface.cls = (*env)->FindClass(env, "org/haggle/Interface");
+	cls = (*env)->FindClass(env, "org/haggle/Interface");
+
+	if (!cls)
+		return -1;
+	
+	jc_interface.cls = (*env)->NewGlobalRef(env, cls);
+
+	(*env)->DeleteLocalRef(env, cls);
 
         if (!jc_interface.cls)
                 return -1;
@@ -218,7 +236,14 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
 		return -1;
 
         // Get data object info
-        jc_dataobject.cls = (*env)->FindClass(env, "org/haggle/DataObject");
+        cls = (*env)->FindClass(env, "org/haggle/DataObject");
+
+	if (!cls)
+		return -1;
+
+	jc_dataobject.cls = (*env)->NewGlobalRef(env, cls);
+
+	(*env)->DeleteLocalRef(env, cls);
 
         if (!jc_dataobject.cls)
                 return -1;
@@ -250,11 +275,18 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
 		return -1;
         
         // Get attribute info
-        jc_attribute.cls = (*env)->FindClass(env, "org/haggle/Attribute");
+        cls = (*env)->FindClass(env, "org/haggle/Attribute");
+
+	if (!cls)
+		return -1;
+	
+	jc_attribute.cls = (*env)->NewGlobalRef(env, cls);
+
+	(*env)->DeleteLocalRef(env, cls);
 
         if (!jc_attribute.cls)
                 return -1;
-
+	
         jc_attribute.mid.constructor = (*env)->GetMethodID(env, jc_attribute.cls, "<init>", "(Ljava/lang/String;Ljava/lang/String;J)V");
 
         if (!jc_attribute.mid.constructor)
@@ -266,4 +298,41 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
 		return -1;
 
         return JNI_VERSION_1_4;
+}
+
+JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved)
+{
+	JNIEnv *env = NULL;
+	
+        if ((*vm)->GetEnv(vm, (void **)&env, JNI_VERSION_1_4) != JNI_OK) {
+                fprintf(stderr, "Could not get JNI env in JNI_OnUnload\n");
+                return;
+        }         
+
+	printf("JNI_OnUnload: cleaning up global references\n");
+
+	if (jc_dataobject.cls) {
+		/* printf("Cleaning up data object class reference\n"); */
+		(*env)->DeleteGlobalRef(env, jc_dataobject.cls);
+	}
+
+	if (jc_interface.cls) {
+		/* printf("Cleaning up interface class reference\n"); */
+		(*env)->DeleteGlobalRef(env, jc_interface.cls);
+	}
+
+	if (jc_attribute.cls) {
+		/* printf("Cleaning up attribute class reference\n"); */
+		(*env)->DeleteGlobalRef(env, jc_attribute.cls);
+	}
+
+	if (jc_node.cls) {
+		/* printf("Cleaning up node class reference\n"); */
+		(*env)->DeleteGlobalRef(env, jc_node.cls);
+	}
+
+	if (jc_handle.cls) {
+		/* printf("Cleaning up handle class reference\n"); */
+		(*env)->DeleteGlobalRef(env, jc_handle.cls);
+	}
 }
