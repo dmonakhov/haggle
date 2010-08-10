@@ -325,9 +325,11 @@ JNIEXPORT jbyteArray JNICALL Java_org_haggle_DataObject_getRaw(JNIEnv *env, jobj
         unsigned char *raw = NULL;
         jbyteArray jbarr;
         size_t len;
+	int res;
 
-        int res = haggle_dataobject_get_raw_alloc((haggle_dobj_t *)get_native_handle(env, JCLASS_DATAOBJECT, obj), &raw, &len);
-        if (res != HAGGLE_NO_ERROR || !raw)
+	res = haggle_dataobject_get_raw_alloc((haggle_dobj_t *)get_native_handle(env, JCLASS_DATAOBJECT, obj), &raw, &len);
+	
+	if (res != HAGGLE_NO_ERROR || !raw)
                 return NULL;
 
         jbarr = (*env)->NewByteArray(env, len);

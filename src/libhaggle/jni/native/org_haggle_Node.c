@@ -63,7 +63,9 @@ JNIEXPORT jobjectArray JNICALL Java_org_haggle_Node_getInterfaces(JNIEnv *env, j
 	
 	list_for_each(pos, &node->interfaces) {
 		haggle_interface_t *iface = (haggle_interface_t *)pos;
-		(*env)->SetObjectArrayElement(env, interfaceArray, i++, java_object_new(env, JCLASS_INTERFACE, haggle_interface_copy(iface)));
+		jobject jiface = java_object_new(env, JCLASS_INTERFACE, haggle_interface_copy(iface));
+		(*env)->SetObjectArrayElement(env, interfaceArray, i++, jiface);
+		(*env)->DeleteLocalRef(env, jiface);
 	}
 	
         return interfaceArray;

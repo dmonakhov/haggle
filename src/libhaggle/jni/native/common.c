@@ -11,7 +11,9 @@ jobjectArray libhaggle_jni_nodelist_to_node_jobjectArray(JNIEnv *env, haggle_nod
         nodeArray = (*env)->NewObjectArray(env, haggle_nodelist_size(nl), java_object_class(JCLASS_NODE), NULL);
 
         while (haggle_nodelist_size(nl)) {
-                (*env)->SetObjectArrayElement(env, nodeArray, i++, java_object_new(env, JCLASS_NODE, haggle_nodelist_pop(nl)));
+		jobject jnode = java_object_new(env, JCLASS_NODE, haggle_nodelist_pop(nl));
+                (*env)->SetObjectArrayElement(env, nodeArray, i++, jnode);
+		(*env)->DeleteLocalRef(env, jnode);
         }
 
         return nodeArray;
@@ -27,7 +29,9 @@ jobjectArray libhaggle_jni_attributelist_to_attribute_jobjectArray(JNIEnv *env, 
 
 	list_for_each(pos, &al->attributes) {
 		struct attribute *a = (struct attribute *)pos;
-                (*env)->SetObjectArrayElement(env, attrArray, i++, java_object_new(env, JCLASS_ATTRIBUTE, haggle_attribute_copy(a)));
+		jobject jattr = java_object_new(env, JCLASS_ATTRIBUTE, haggle_attribute_copy(a));
+                (*env)->SetObjectArrayElement(env, attrArray, i++, jattr);
+		(*env)->DeleteLocalRef(env, jattr);
         }
 
         return attrArray;
@@ -52,8 +56,10 @@ jobjectArray libhaggle_jni_dataobject_to_attribute_jobjectArray(JNIEnv *env, hag
         attrArray = (*env)->NewObjectArray(env, haggle_attributelist_size(al), java_object_class(JCLASS_ATTRIBUTE), NULL);
 
         list_for_each(pos, &al->attributes) {
-                struct attribute *a = (struct attribute *)pos;                
-                (*env)->SetObjectArrayElement(env, attrArray, i++, java_object_new(env, JCLASS_ATTRIBUTE, haggle_attribute_copy(a)));
+                struct attribute *a = (struct attribute *)pos;     
+		jobject jattr = java_object_new(env, JCLASS_ATTRIBUTE, haggle_attribute_copy(a));
+                (*env)->SetObjectArrayElement(env, attrArray, i++, jattr);
+		(*env)->DeleteLocalRef(env, jattr);
         }
 
         return attrArray;

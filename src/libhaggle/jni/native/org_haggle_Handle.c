@@ -305,8 +305,10 @@ JNIEXPORT jint JNICALL Java_org_haggle_Handle_registerInterests(JNIEnv *env, job
                 return 0;
         
         for (i = 0; i < (*env)->GetArrayLength(env, attrArr); i++) {
-                haggle_attr_t *attr = (haggle_attr_t *)get_native_handle(env, JCLASS_ATTRIBUTE, (*env)->GetObjectArrayElement(env, attrArr, i));
+		jobject jattr = (*env)->GetObjectArrayElement(env, attrArr, i);
+                haggle_attr_t *attr = (haggle_attr_t *)get_native_handle(env, JCLASS_ATTRIBUTE, jattr);
                 haggle_attributelist_add_attribute(al, haggle_attribute_copy(attr));
+		(*env)->DeleteLocalRef(env, jattr);
         }
 
         ret = haggle_ipc_add_application_interests((haggle_handle_t)get_native_handle(env, JCLASS_HANDLE, obj), al);
@@ -350,8 +352,10 @@ JNIEXPORT jint JNICALL Java_org_haggle_Handle_unregisterInterests(JNIEnv *env, j
                 return 0;
         
         for (i = 0; i < (*env)->GetArrayLength(env, attrArr); i++) {
-                haggle_attr_t *attr = (haggle_attr_t *)get_native_handle(env, JCLASS_ATTRIBUTE, (*env)->GetObjectArrayElement(env, attrArr, i));
+		jobject jattr = (*env)->GetObjectArrayElement(env, attrArr, i);
+                haggle_attr_t *attr = (haggle_attr_t *)get_native_handle(env, JCLASS_ATTRIBUTE, jattr);
                 haggle_attributelist_add_attribute(al, haggle_attribute_copy(attr));
+		(*env)->DeleteLocalRef(env, jattr);
         }
 
         ret = haggle_ipc_remove_application_interests((haggle_handle_t)get_native_handle(env, JCLASS_HANDLE, obj), al);
