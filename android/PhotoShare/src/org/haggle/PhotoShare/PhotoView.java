@@ -404,7 +404,7 @@ public class PhotoView extends Activity implements OnClickListener {
 			ps.getHaggleHandle().registerInterests(aa);
 			
 			// Call dispose to free native data before GC
-			for (int i = 0; i < addedInterests.length; i++) {
+			for (int i = 0; i < aa.length; i++) {
 				aa[i].dispose();
 			}
 		}
@@ -418,7 +418,7 @@ public class PhotoView extends Activity implements OnClickListener {
 			ps.getHaggleHandle().unregisterInterests(aa);
 
 			// Call dispose to free native data before GC
-			for (int i = 0; i < deletedInterests.length; i++) {
+			for (int i = 0; i < aa.length; i++) {
 				aa[i].dispose();
 			}
 		}
@@ -574,8 +574,10 @@ public class PhotoView extends Activity implements OnClickListener {
     	public DataUpdater(Node[] neighbors)
     	{
     		this.type = org.haggle.EventHandler.EVENT_NEIGHBOR_UPDATE;
-    		for (int i = 0; i < neighbors.length; i++) {
-    			this.neighbors[i].dispose();
+    		if (this.neighbors != null) {
+    			for (int i = 0; i < this.neighbors.length; i++) {
+    				this.neighbors[i].dispose();
+    			}
     		}
     		this.neighbors = neighbors;
     	}
