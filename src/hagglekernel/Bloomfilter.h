@@ -28,6 +28,9 @@ class Bloomfilter;
 
 using namespace haggle;
 
+#define DEFAULT_BLOOMFILTER_ERROR_RATE  (0.01)
+#define DEFAULT_BLOOMFILTER_CAPACITY    (1000)
+
 /** */
 #ifdef DEBUG_LEAKS
 class Bloomfilter : public LeakMonitor
@@ -40,7 +43,9 @@ public:
 		BF_TYPE_NORMAL,
 		BF_TYPE_COUNTING
 	} BloomfilterType_t;
-private:
+private:	
+	static float default_error_rate;
+	static unsigned int default_capacity;
 	BloomfilterType_t type;
 	float error_rate;
 	unsigned int capacity;
@@ -56,8 +61,8 @@ public:
 	/**
 		Creates a bloomfilter with the given error rate and capacity.
 	*/
-	Bloomfilter(float error_rate, unsigned int capacity, bool counting = false);
-
+	Bloomfilter(BloomfilterType_t _type = BF_TYPE_NORMAL, float error_rate = default_error_rate, 
+		    unsigned int capacity = default_capacity);
 	
 	Bloomfilter(const unsigned char *bf, size_t len);
 
@@ -71,6 +76,11 @@ public:
 	~Bloomfilter();
 	
 	BloomfilterType_t getType() const { return type; }
+	
+	static void setDefaultErrorRate(float error_rate) { if (error_rate > 0.0) default_error_rate = error_rate; }
+	static float getDefaultErrorRate() { return default_error_rate; }
+	static void setDefaultCapacity(unsigned int capacity) { if (capacity > 0) default_capacity = capacity; }
+	static unsigned int getDefaultCapacity() { return default_capacity; }
 	/**
 		Adds the given data object to the bloomfilter.
 	*/

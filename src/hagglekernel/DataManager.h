@@ -20,8 +20,6 @@
 #define DEFAULT_AGING_MAX_AGE 24*3600	// max age of data objects [s]
 #define DEFAULT_AGING_PERIOD  3600	// period between aging processes [s]
 
-
-
 /*
 	Forward declarations of all data types declared in this file. This is to
 	avoid circular dependencies. If/when a data type is added to this file,

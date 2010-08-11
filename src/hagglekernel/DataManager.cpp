@@ -120,8 +120,7 @@ void DataHelper::cleanup()
 }
 
 DataManager::DataManager(HaggleKernel * _kernel, const bool _setCreateTimeOnBloomfilterUpdate) : 
-	Manager("DataManager", _kernel), localBF(NULL),
-	setCreateTimeOnBloomfilterUpdate(_setCreateTimeOnBloomfilterUpdate)
+	Manager("DataManager", _kernel), localBF(NULL), setCreateTimeOnBloomfilterUpdate(_setCreateTimeOnBloomfilterUpdate)
 {	
 	if (setCreateTimeOnBloomfilterUpdate) {
 		HAGGLE_DBG("Will set create time in node description when updating bloomfilter\n");
@@ -191,7 +190,7 @@ bool DataManager::init_derived()
 		return false;
 	}
 	
-	localBF = new Bloomfilter((float) 0.01, MAX_RECV_DATAOBJECTS, true);
+	localBF = new Bloomfilter(Bloomfilter::BF_TYPE_COUNTING);
 	
 	if (!localBF) {
 		HAGGLE_ERR("Could not create data manager bloomfilter\n");
@@ -598,8 +597,38 @@ void DataManager::onConfig(Metadata *m)
 			HAGGLE_DBG("setCreateTimeOnBloomfilterUpdate set to 'false'\n");
 		}
 	}
-	
-	Metadata *dm = m->getMetadata("Aging");
+
+	Metadata *dm = m->getMetadata("Bloomfilter");
+
+	if (dm) {
+		const char *param = dm->getParameter("default_error_rate");
+
+		if (param) {
+			char *endptr = NULL;
+			float error_rate = strtof(param, &endptr);
+			
+			if (endptr && endptr != param) {
+				Bloomfilter::setDefaultErrorRate(error_rate);
+				HAGGLE_DBG("config default bloomfilter error rate %.3f\n", 
+					   Bloomfilter::getDefaultErrorRate());
+			}
+		}
+		
+		param = dm->getParameter("default_capacity");
+
+		if (param) {
+			char *endptr = NULL;
+			unsigned int capacity = (unsigned int)strtoul(param, &endptr, 10);
+			
+			if (endptr && endptr != param) {
+				Bloomfilter::setDefaultCapacity(capacity);
+				HAGGLE_DBG("config default bloomfilter capacity %u\n", 
+					   Bloomfilter::getDefaultCapacity());
+			}
+		}
+	}
+
+	dm = m->getMetadata("Aging");
 
 	if (dm) {
 		const char *param = dm->getParameter("period");

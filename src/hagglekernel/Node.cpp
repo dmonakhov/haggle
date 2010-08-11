@@ -74,12 +74,7 @@ inline bool Node::init_node(const unsigned char *_id)
 
 	if (!doBF) {
 		/* Init Bloomfilter */
-		doBF = new Bloomfilter(
-#ifdef OS_WINDOWS_DESKTOP
-			(float)
-#endif
-			0.01, 
-			MAX_RECV_DATAOBJECTS);
+		doBF = new Bloomfilter();
 
 		if (!doBF)
 			return false;

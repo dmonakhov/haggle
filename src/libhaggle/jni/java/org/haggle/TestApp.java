@@ -10,9 +10,11 @@ import org.haggle.LaunchCallback;
 public class TestApp implements EventHandler {	
         private Handle h = null;
         private String name;
+	private long num_dataobjects_received = 0;
 
 	public synchronized void onNewDataObject(DataObject dObj) {
-                System.out.println("Got new data object, filepath=" + dObj.getFilePath());
+		num_dataobjects_received++;
+                System.out.println("Got data object " + num_dataobjects_received + " filepath=" + dObj.getFilePath());
 		dObj.dispose();
         }
 	public synchronized void onNeighborUpdate(Node[] neighbors) {
@@ -61,7 +63,7 @@ public class TestApp implements EventHandler {
                         }
                 }
                 try {
-			final int num_dataobjects = 550;
+			final int num_dataobjects = 10;
 			DataObject[] dobjs = new DataObject[num_dataobjects];
                         h = new Handle(name);
 
@@ -90,13 +92,15 @@ public class TestApp implements EventHandler {
 				dobjs[i].dispose();
 				Thread.sleep(50);
 			}
-                        h.shutdown();
-                        
-                        Thread.sleep(5000);
+
+			while (num_dataobjects != num_dataobjects_received)
+				Thread.sleep(1000);
 
                         h.eventLoopStop();
                         
                         Thread.sleep(2000);
+			h.shutdown();
+			Thread.sleep(2000);
 
                 } catch (Handle.RegistrationFailedException e) {
                         System.out.println("Could not get handle: " + e.getMessage());

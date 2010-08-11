@@ -18,17 +18,20 @@
 #include "Debug.h"
 #include "Trace.h"
 
-Bloomfilter::Bloomfilter(float _error_rate, unsigned int _capacity, bool _counting) :
+float Bloomfilter::default_error_rate = DEFAULT_BLOOMFILTER_ERROR_RATE;
+unsigned int Bloomfilter::default_capacity = DEFAULT_BLOOMFILTER_CAPACITY;
+
+Bloomfilter::Bloomfilter(BloomfilterType_t _type, float _error_rate, unsigned int _capacity) :
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_BLOOMFILTER),
 #endif
-	type(_counting ? BF_TYPE_COUNTING : BF_TYPE_NORMAL),
+	type(_type),
 	error_rate(_error_rate),
 	capacity(_capacity),
 	init_n(0),
 	raw(NULL)
 {
-	if (_counting) {
+	if (type == BF_TYPE_COUNTING) {
 		cbf = counting_bloomfilter_new(error_rate, capacity);
 	} else {
 		bf = bloomfilter_new(error_rate, capacity);
@@ -127,6 +130,10 @@ bool Bloomfilter::merge(const Bloomfilter& bf_merge)
 {
 	if (type == BF_TYPE_NORMAL && bf_merge.type == BF_TYPE_NORMAL){
 		// Cannot merge a counting bloomfilter
+		if (BLOOMFILTER_TOT_LEN(bf) != BLOOMFILTER_TOT_LEN(bf_merge.bf)) {
+			HAGGLE_ERR("Cannot merge bloomfilters of different size\n");
+			return false;
+		}
 		bool res = bloomfilter_merge(bf, bf_merge.bf) == MERGE_RESULT_OK;
 		
 		bf->n -= init_n;
@@ -249,25 +256,37 @@ size_t Bloomfilter::getRawLen(void) const
 
 bool Bloomfilter::setRaw(const unsigned char *_bf, size_t _bf_len)
 {
-	if (!_bf)
+	if (!_bf || _bf_len == 0)
 		return false;
 
 	if (type == BF_TYPE_NORMAL) {
 		if (BLOOMFILTER_TOT_LEN(bf) != _bf_len) {
-			HAGGLE_ERR("Old and new bloomfilter differ in length: %lu vs. %lu!\n",
+			HAGGLE_DBG("Old and new bloomfilter differ in length: %lu vs. %lu!\n",
 				BLOOMFILTER_TOT_LEN(bf), (unsigned long)_bf_len);
-			return false;
-		} else {
-			memcpy(bf, _bf, _bf_len);
-		}
+
+			bloomfilter_free(bf);
+			bf = (struct bloomfilter *)malloc(_bf_len);
+			
+			if (!bf) {
+				HAGGLE_ERR("Could not allocate memory for new bloomfilter\n");
+				return false;
+			}
+		} 
+		memcpy(bf, _bf, _bf_len);
 	} else {
 		if (COUNTING_BLOOMFILTER_TOT_LEN(cbf) != _bf_len) {
-			HAGGLE_ERR("Old and new bloomfilter differ in length: %lu vs. %lu!!\n",
+			HAGGLE_DBG("Old and new bloomfilter differ in length: %lu vs. %lu!!\n",
 				BLOOMFILTER_TOT_LEN(bf), (unsigned long)_bf_len);
-			return false;
-		} else {
-			memcpy(cbf, _bf, _bf_len);
-		}
+
+			counting_bloomfilter_free(cbf);
+			cbf = (struct counting_bloomfilter *)malloc(_bf_len);
+
+			if (!cbf) {
+				HAGGLE_ERR("Could not allocate memory for new bloomfilter\n");
+				return false;
+			}
+		} 
+		memcpy(cbf, _bf, _bf_len);
 	}
 	return true;
 }
