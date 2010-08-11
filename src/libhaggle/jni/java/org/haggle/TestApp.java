@@ -11,7 +11,8 @@ public class TestApp implements EventHandler {
         private Handle h = null;
         private String name;
 	private long num_dataobjects_received = 0;
-
+	private boolean should_quit = false;
+	
 	public synchronized void onNewDataObject(DataObject dObj) {
 		num_dataobjects_received++;
                 System.out.println("Got data object " + num_dataobjects_received + " filepath=" + dObj.getFilePath());
@@ -33,6 +34,7 @@ public class TestApp implements EventHandler {
         }
 	public synchronized void onShutdown(int reason) {
                 System.out.println("Got shutdown event, reason=" + reason);
+		should_quit = true;
         }
         public TestApp(String name)
         {
@@ -63,7 +65,7 @@ public class TestApp implements EventHandler {
                         }
                 }
                 try {
-			final int num_dataobjects = 10;
+			final int num_dataobjects = 5000;
 			DataObject[] dobjs = new DataObject[num_dataobjects];
                         h = new Handle(name);
 
@@ -85,15 +87,15 @@ public class TestApp implements EventHandler {
 				dobjs[i].addAttribute("num", "" + i);
 				dobjs[i].addAttribute(attr);
 				h.publishDataObject(dobjs[i]);
-				Thread.sleep(50);
+				Thread.sleep(40);
 			}
 			for (int i = 0; i < num_dataobjects; i++) {
 				h.deleteDataObject(dobjs[i]);
 				dobjs[i].dispose();
-				Thread.sleep(50);
+				Thread.sleep(40);
 			}
 
-			while (num_dataobjects != num_dataobjects_received)
+			while (num_dataobjects != num_dataobjects_received && !should_quit)
 				Thread.sleep(1000);
 
                         h.eventLoopStop();

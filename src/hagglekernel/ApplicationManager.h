@@ -107,6 +107,7 @@ class ApplicationManager : public Manager
 
         /* Event handler functions */
         void onSendResult(Event *e);
+	void onDeletedDataObject(Event *e);
         void onReceiveFromApplication(Event *e);
         void onNeighborStatusChange(Event *e);
 	void onRetrieveNode(Event *e);

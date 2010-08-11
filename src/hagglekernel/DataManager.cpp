@@ -190,7 +190,7 @@ bool DataManager::init_derived()
 		return false;
 	}
 	
-	localBF = new Bloomfilter(Bloomfilter::BF_TYPE_COUNTING);
+	localBF = Bloomfilter::create(Bloomfilter::BF_TYPE_COUNTING);
 	
 	if (!localBF) {
 		HAGGLE_ERR("Could not create data manager bloomfilter\n");
@@ -289,11 +289,16 @@ void DataManager::onGetLocalBF(Event *e)
 		if (re) {
 			HAGGLE_DBG("Retrieved bloomfilter from data store\n");
 			// Yes:
-			if (localBF)
-				delete localBF;
 			
-			localBF = new Bloomfilter(re->getValueBlob(), re->getValueLen());
-			kernel->getThisNode()->setBloomfilter(*localBF, setCreateTimeOnBloomfilterUpdate);
+			Bloomfilter *tmpBF = Bloomfilter::create(re->getValueBlob(), re->getValueLen());
+
+			if (tmpBF) {
+				if (localBF)
+					delete localBF;
+				
+				localBF = tmpBF;
+				kernel->getThisNode()->setBloomfilter(*localBF, setCreateTimeOnBloomfilterUpdate);
+			}
 		}
 		RepositoryEntryRef lbf = new RepositoryEntry("DataManager", "Local Bloomfilter");
 		kernel->getDataStore()->deleteRepository(lbf);

@@ -72,14 +72,6 @@ inline bool Node::init_node(const unsigned char *_id)
 	memset(id, 0, sizeof(NodeId_t));
 	memset(idStr, 0, MAX_NODE_ID_STR_LEN);
 
-	if (!doBF) {
-		/* Init Bloomfilter */
-		doBF = new Bloomfilter();
-
-		if (!doBF)
-			return false;
-	}
-
 	if (createdFromNodeDescription) {
 		struct base64_decode_context b64_ctx;
 		size_t decodelen;
@@ -130,7 +122,7 @@ inline bool Node::init_node(const unsigned char *_id)
 		Metadata *bm = nm->getMetadata(NODE_METADATA_BLOOMFILTER);
 
 		if (bm) {
-			doBF->fromBase64(bm->getContent());
+			getBloomfilter()->fromBase64(bm->getContent());
 		}
 
 		Metadata *im = nm->getMetadata(NODE_METADATA_INTERFACE);
@@ -183,9 +175,6 @@ inline bool Node::init_node(const unsigned char *_id)
 		calcIdStr();
 	} 
 
-	if (!doBF)
-		return false;
-
 	return true;
 }
 
@@ -210,7 +199,7 @@ Node::Node(const Node& n) :
 	type(n.type), num(totNum++), name(n.name), 
 	nodeDescExch(n.nodeDescExch), 
 	dObj(NULL), interfaces(n.interfaces), 
-	doBF(new Bloomfilter(*n.doBF)), 
+	doBF(doBF ? Bloomfilter::create(*n.doBF) : NULL), 
 	eventInterests(n.eventInterests),
 	eventid(n.eventid),
 	stored(n.stored), 
@@ -376,10 +365,10 @@ Node& Node::operator=(const Node &node)
 	name = node.name;
 	nodeDescExch = node.nodeDescExch;
 	
-	if (doBF)
+	if (doBF) {
 		delete doBF;
-
-	doBF = new Bloomfilter(*node.doBF);
+		doBF = Bloomfilter::create(*node.doBF);
+	}
 	stored = node.stored;
 	interfaces = node.interfaces;
 	createdFromNodeDescription = node.createdFromNodeDescription;
@@ -488,7 +477,7 @@ Metadata *Node::toMetadata(bool withBloomfilter) const
         }
 
         if (withBloomfilter)
-                nm->addMetadata(NODE_METADATA_BLOOMFILTER, doBF->toBase64());
+                nm->addMetadata(NODE_METADATA_BLOOMFILTER, getBloomfilter()->toBase64());
 
         return nm;        
 }
@@ -871,18 +860,37 @@ DataObjectRef Node::getDataObject(bool withBloomfilter) const
 
 Bloomfilter *Node::getBloomfilter(void)
 {
+	if (!doBF) {
+		/* Init Bloomfilter */
+		doBF = Bloomfilter::create(type == NODE_TYPE_APPLICATION ? 
+					   Bloomfilter::BF_TYPE_COUNTING : 
+					   Bloomfilter::BF_TYPE_NORMAL);
+	}
+
 	return doBF;
 }
 
 const Bloomfilter *Node::getBloomfilter(void) const
 {
-	return doBF;
+	return const_cast<Node *>(this)->getBloomfilter();
 }
 
-void Node::setBloomfilter(const char *base64, const bool set_create_time)
+bool Node::setBloomfilter(const char *base64, const bool set_create_time)
 {
-	doBF->fromBase64(base64);
-	
+	if (!base64 || strlen(base64) <= 0)
+		return false;
+
+	if (doBF) {
+		if (!doBF->fromBase64(base64))
+			return false;
+	} else {
+		Bloomfilter *tmpBF = Bloomfilter::create_from_base64(Bloomfilter::BF_TYPE_NORMAL, base64);
+
+		if (!tmpBF)
+			return false;
+
+		doBF = tmpBF;
+	}
 	/*
 	 Notes about setting create time
 	 ===============================
@@ -897,20 +905,32 @@ void Node::setBloomfilter(const char *base64, const bool set_create_time)
 	 
 	 It is not yet clear what is the best strategy here.
 	 */
+	      
 	if (set_create_time)
 		setNodeDescriptionCreateTime();
+	
+	return true;
 }
 
-void Node::setBloomfilter(const Bloomfilter& bf, const bool set_create_time)
+bool Node::setBloomfilter(const Bloomfilter& bf, const bool set_create_time)
 {
+	Bloomfilter *tmpBF;
+
+	tmpBF = bf.to_noncounting();
+
+	if (!tmpBF)
+		return false;
+	
 	if (doBF)
 		delete doBF;
 
-	doBF = bf.to_noncounting();
+	doBF = tmpBF;
 
 	/* See not above about setting the create time here. */
 	if (set_create_time)
 		setNodeDescriptionCreateTime();
+
+	return true;
 }
 
 void Node::setNodeDescriptionCreateTime(Timeval t)

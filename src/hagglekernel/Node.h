@@ -298,8 +298,8 @@ public:
         // Bloomfilter functions
 	const Bloomfilter *getBloomfilter() const;
 	Bloomfilter *getBloomfilter();
-	void setBloomfilter(const char *base64, const bool set_create_time = false);
-	void setBloomfilter(const Bloomfilter& bf, const bool set_create_time = false);
+	bool setBloomfilter(const char *base64, const bool set_create_time = false);
+	bool setBloomfilter(const Bloomfilter& bf, const bool set_create_time = false);
 	
 	/**
 		Sets the create time of this node. This should only be done (and will 

@@ -32,14 +32,15 @@ class DataObjectDataRetriever;
 using namespace haggle;
 
 typedef Reference<DataObject> DataObjectRef;
-typedef ReferenceList<DataObject> DataObjectRefList;
+
+#define DATAOBJECT_ID_LEN SHA_DIGEST_LENGTH
+typedef unsigned char DataObjectId_t[DATAOBJECT_ID_LEN];
+typedef unsigned char DataHash_t[SHA_DIGEST_LENGTH];
 
 #include "Node.h"
 #include "Metadata.h"
 #include "Debug.h"
 #include "Utility.h"
-
-#define DATAOBJECT_ID_LEN SHA_DIGEST_LENGTH
 
 #define DATAOBJECT_ATTRIBUTE_NAME "Attr"
 #define DATAOBJECT_ATTRIBUTE_NAME_PARAM "name"
@@ -147,11 +148,7 @@ class DataObjectDataRetriever {
    simpler.
 */
 typedef Reference<DataObjectDataRetriever> DataObjectDataRetrieverRef;
-
-// Define type for Data Object Identifiers
-typedef unsigned char DataObjectId_t[DATAOBJECT_ID_LEN];
-
-typedef unsigned char DataHash_t[SHA_DIGEST_LENGTH];
+typedef ReferenceList<DataObject> DataObjectRefList;
 
 /** */
 #if OMNETPP

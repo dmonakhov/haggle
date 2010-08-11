@@ -789,7 +789,9 @@ void ForwardingManager::findMatchingDataObjectsAndTargets(NodeRef& node)
 	HAGGLE_DBG("%s doing data object query for node %s [id=%s]\n", 
 		   getName(), node->getName().c_str(), node->getIdStr());
 	
-	// Ask the data store for data objects bound for the node:
+	// Ask the data store for data objects bound for the node.
+	// The node can be a valid target, even if it is not a current
+	// neighbor -- we might find a delegate for it.
 	kernel->getDataStore()->doDataObjectQuery(node, 1, dataObjectQueryCallback);
 }
 
@@ -955,21 +957,31 @@ void ForwardingManager::onNewDataObject(Event *e)
 	
 	DataObjectRef& dObj = e->getDataObject();
 	
+	// No point in doing node queries if we have no neighbors to
+	// forward the data object to
 	if (dObj->isPersistent()) {
-		HAGGLE_DBG("%s - new data object %s, doing node query\n", getName(), dObj->getIdStr());
-		//dObj->print();
-		kernel->getDataStore()->doNodeQuery(dObj, MAX_NODES_TO_FIND_FOR_NEW_DATAOBJECTS, 1, nodeQueryCallback);
-	}
+		if (kernel->getNodeStore()->numNeighbors() > 0) {
+			HAGGLE_DBG("%s - new data object %s, doing node query\n", getName(), dObj->getIdStr());
+			//dObj->print();
+			kernel->getDataStore()->doNodeQuery(dObj, MAX_NODES_TO_FIND_FOR_NEW_DATAOBJECTS, 1, nodeQueryCallback);
+		} else {
+			HAGGLE_DBG("%s - new data object %s, but deferring node query due to 0 neighbors\n", 
+				   getName(), dObj->getIdStr());
+		}
+	} 
 }
 
 void ForwardingManager::onTargetNodes(Event * e)
 {
-	const NodeRef &node = e->getNode();
-	const NodeRefList &nodes = e->getNodeList();
+	const NodeRef &delegate_node = e->getNode();
+	const NodeRefList &target_nodes = e->getNodeList();
 	
 	// Ask the data store for data objects bound for the nodes for which the 
 	// node is a good delegate forwarder:
-	kernel->getDataStore()->doDataObjectForNodesQuery(node, nodes, 1, dataObjectQueryCallback);
+	if (isNeighbor(delegate_node)) {
+		// No point in asking for data objects if the delegate is not a current neighbor
+		kernel->getDataStore()->doDataObjectForNodesQuery(delegate_node, target_nodes, 1, dataObjectQueryCallback);
+	}
 }
 
 void ForwardingManager::onDelegateNodes(Event * e)

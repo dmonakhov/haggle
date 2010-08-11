@@ -55,21 +55,28 @@ private:
 		struct counting_bloomfilter *cbf;
 		unsigned char *raw;
 	};
-	Bloomfilter(float _error_rate, unsigned int _capacity, struct bloomfilter *bf);
-	Bloomfilter(float _error_rate, unsigned int _capacity, struct counting_bloomfilter *cbf);
-public:
-	/**
-		Creates a bloomfilter with the given error rate and capacity.
+	/*
+	  Creates a bloomfilter with the given error rate and capacity.
 	*/
 	Bloomfilter(BloomfilterType_t _type = BF_TYPE_NORMAL, float error_rate = default_error_rate, 
 		    unsigned int capacity = default_capacity);
-	
-	Bloomfilter(const unsigned char *bf, size_t len);
-
+	Bloomfilter(float _error_rate, unsigned int _capacity, struct bloomfilter *_bf);
+	Bloomfilter(float _error_rate, unsigned int _capacity, struct counting_bloomfilter *_cbf);	
 	/**
 		Creates an identical copy of the given bloomfilter.
 	*/
 	Bloomfilter(const Bloomfilter &bf);
+public:
+	static Bloomfilter *create(float _error_rate, unsigned int _capacity, struct bloomfilter *bf);
+	static Bloomfilter *create(float _error_rate, unsigned int _capacity, struct counting_bloomfilter *cbf);
+	/**
+		Creates a bloomfilter with the given error rate and capacity.
+	*/
+	static Bloomfilter *create(BloomfilterType_t _type = BF_TYPE_NORMAL, float error_rate = default_error_rate, 
+				   unsigned int capacity = default_capacity);	
+	static Bloomfilter *create(const unsigned char *bf, size_t len);
+	static Bloomfilter *create_from_base64(BloomfilterType_t _type, const string &base64);
+	static Bloomfilter *create(const Bloomfilter &bf);
 	/**
 		Destroys the bloomfilter.
 	*/
@@ -81,23 +88,41 @@ public:
 	static float getDefaultErrorRate() { return default_error_rate; }
 	static void setDefaultCapacity(unsigned int capacity) { if (capacity > 0) default_capacity = capacity; }
 	static unsigned int getDefaultCapacity() { return default_capacity; }
+
+	bool add(const unsigned char *blob, size_t len);
+	bool add(const DataObjectId_t& id);
 	/**
 		Adds the given data object to the bloomfilter.
 	*/
-	void add(const DataObjectRef &dObj);
+
+	bool add(const DataObjectRef &dObj);
+	/**
+	   Removes the given blob from the bloomfilter. Only works on 
+	   counting bloomfilters. For non-counting bloomfilters, this function 
+	   does nothing.
+	 */
+
+	bool remove(const unsigned char *blob, size_t len);
+	bool remove(const DataObjectId_t& id);
+
 	/**
 		Removes the given data object from the bloomfilter. Only works on 
 		counting bloomfilters. For non-counting bloomfilters, this function 
 		does nothing.
 	*/
-	void remove(const DataObjectRef &dObj);
+	
+	bool remove(const DataObjectRef &dObj);
+
+	bool has(const unsigned char *blob, size_t len) const;
+	bool has(const DataObjectId_t& id) const;
+
 	/**
 		Returns true iff the data object is in the bloomfilter.
-	*/
-	
+	*/	
+	bool has(const DataObjectRef &dObj) const;
+
 	bool merge(const Bloomfilter& bf_merge);
 	
-	bool has(const DataObjectRef &dObj) const;
 	/**
 		Returns a newly allocated non counting bloomfilter based
 		on a counting bloomfilter.
@@ -121,7 +146,7 @@ public:
 		Can only set a non-counting bloomfilter to a non-counting bloomfilter
 		and a counting bloomfilter to a counting bloomfilter.
 	*/
-	void fromBase64(const string &b64);
+	bool fromBase64(const string &b64);
 	
 	/**
 		Returns a platform-independent representation of the bloomfilter in a
