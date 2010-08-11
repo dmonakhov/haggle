@@ -10,6 +10,7 @@ public class Handle {
         private native void nativeFree(); // Must be called when handle is not used any more
 	
         public static native void unregister(String name);
+	public void unregister() { unregister(name); }
 
         public native int getSessionId();
         public native int shutdown();
@@ -23,6 +24,7 @@ public class Handle {
         public native int getDataObjectsAsync();
         public native int deleteDataObjectById(char[] id);
         public native int deleteDataObject(DataObject dObj);
+	public native int sendNodeDescription();
 
         // Should probably make the eventLoop functions throw some exceptions
 	public native boolean eventLoopRunAsync(); 

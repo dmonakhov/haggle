@@ -106,6 +106,7 @@ typedef enum control_type {
 	CTRL_TYPE_MATCHING_DATAOBJECT,
 	CTRL_TYPE_DELETE_DATAOBJECT,
 	CTRL_TYPE_GET_DATAOBJECTS,
+	CTRL_TYPE_SEND_NODE_DESCRIPTION,
 	CTRL_TYPE_SHUTDOWN,
 	CTRL_TYPE_EVENT,
 } control_type_t;
@@ -329,6 +330,15 @@ HAGGLE_API int haggle_ipc_get_data_objects_async(haggle_handle_t hh);
 */
 HAGGLE_API int haggle_ipc_delete_data_object_by_id(haggle_handle_t hh, const unsigned char id[20]);
 HAGGLE_API int haggle_ipc_delete_data_object(haggle_handle_t hh, const struct dataobject *dobj);
+
+/**
+        Forces Haggle to try and send its node description to
+	all neighbors.
+
+	Use lightly. This functions should in general never be used.
+	It can cause excessive transmissions.
+*/
+HAGGLE_API int haggle_ipc_send_node_description(haggle_handle_t hh);
 
 /**
 	Send shutdown event to Haggle daemon.

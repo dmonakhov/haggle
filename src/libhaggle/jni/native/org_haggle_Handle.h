@@ -7,6 +7,20 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef org_haggle_Handle_HAGGLE_ERROR
+#define org_haggle_Handle_HAGGLE_ERROR -100L
+#undef org_haggle_Handle_HAGGLE_BUSY_ERROR
+#define org_haggle_Handle_HAGGLE_BUSY_ERROR -96L
+#undef org_haggle_Handle_HAGGLE_NO_ERROR
+#define org_haggle_Handle_HAGGLE_NO_ERROR 0L
+#undef org_haggle_Handle_HAGGLE_DAEMON_ERROR
+#define org_haggle_Handle_HAGGLE_DAEMON_ERROR -100L
+#undef org_haggle_Handle_HAGGLE_DAEMON_NOT_RUNNING
+#define org_haggle_Handle_HAGGLE_DAEMON_NOT_RUNNING 0L
+#undef org_haggle_Handle_HAGGLE_DAEMON_RUNNING
+#define org_haggle_Handle_HAGGLE_DAEMON_RUNNING 1L
+#undef org_haggle_Handle_HAGGLE_DAEMON_CRASHED
+#define org_haggle_Handle_HAGGLE_DAEMON_CRASHED 2L
 /*
  * Class:     org_haggle_Handle
  * Method:    getHandle
@@ -126,6 +140,14 @@ JNIEXPORT jint JNICALL Java_org_haggle_Handle_deleteDataObjectById
  */
 JNIEXPORT jint JNICALL Java_org_haggle_Handle_deleteDataObject
   (JNIEnv *, jobject, jobject);
+
+/*
+ * Class:     org_haggle_Handle
+ * Method:    sendNodeDescription
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_org_haggle_Handle_sendNodeDescription
+  (JNIEnv *, jobject);
 
 /*
  * Class:     org_haggle_Handle

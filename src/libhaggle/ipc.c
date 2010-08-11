@@ -647,6 +647,7 @@ static const char *ctrl_type_names[] = {
 	"matching_dataobject",
 	"delete_dataobject",
 	"get_dataobjects",
+	"send_node_description",
 	"shutdown", 
 	"event", 
 	NULL 
@@ -1027,7 +1028,6 @@ typedef enum {
 	INTEREST_OP_REMOVE
 } interest_op_t;
 
-
 static int haggle_ipc_add_or_remove_interests(haggle_handle_t hh, interest_op_t op, const haggle_attrlist_t *al)
 {
 	struct dataobject *dobj;
@@ -1119,6 +1119,11 @@ int haggle_ipc_get_data_objects_async(haggle_handle_t hh)
 	return haggle_ipc_generate_and_send_control_dataobject(hh, CTRL_TYPE_GET_DATAOBJECTS);
 }
 
+int haggle_ipc_send_node_description(haggle_handle_t hh)
+{
+	return haggle_ipc_generate_and_send_control_dataobject(hh, CTRL_TYPE_SEND_NODE_DESCRIPTION);
+}
+
 int haggle_ipc_shutdown(haggle_handle_t hh)
 {
 	return haggle_ipc_generate_and_send_control_dataobject(hh, CTRL_TYPE_SHUTDOWN);
@@ -1180,12 +1185,6 @@ int haggle_ipc_publish_dataobject(haggle_handle_t hh, haggle_dobj_t *dobj)
 	return haggle_ipc_send_dataobject(hh, dobj, NULL, IO_NO_REPLY);
 }
 
-
-/*
-	Generate a data object containing the attributes in the given list. The list
-	will be automatically freed, so the caller must make a copy if it wants to keep
-	the list.
-*/
 int haggle_ipc_generate_and_send_control_dataobject(haggle_handle_t hh, control_type_t type)
 {
 	struct dataobject *dobj;

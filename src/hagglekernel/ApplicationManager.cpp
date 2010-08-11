@@ -790,6 +790,7 @@ static const char *ctrl_type_names[] = {
 	"matching_dataobject",
 	"delete_dataobject",
 	"get_dataobjects",
+	"send_node_description",
 	"shutdown", 
 	"event", 
 	NULL 
@@ -1162,6 +1163,10 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 							appNode->getBloomfilter()->remove(id);
 						}
 					}
+					break;
+			        case CTRL_TYPE_SEND_NODE_DESCRIPTION:
+					if (kernel->getNodeStore()->numNeighbors())
+						kernel->addEvent(new Event(EVENT_TYPE_NODE_DESCRIPTION_SEND));
 					break;
 				case CTRL_TYPE_INVALID:
 				default:

@@ -473,6 +473,16 @@ JNIEXPORT jint JNICALL Java_org_haggle_Handle_deleteDataObject(JNIEnv *env, jobj
 
 /*
  * Class:     org_haggle_Handle
+ * Method:    sendNodeDescription
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_org_haggle_Handle_sendNodeDescription(JNIEnv *env, jobject obj)
+{
+	return (jint)haggle_ipc_send_node_description((haggle_handle_t)get_native_handle(env, JCLASS_HANDLE, obj));
+}
+
+/*
+ * Class:     org_haggle_Handle
  * Method:    publishDataObject
  * Signature: (Lorg/haggle/DataObject;)I
  */
