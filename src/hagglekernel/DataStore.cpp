@@ -119,6 +119,7 @@ const EventCallback<EventHandler> *DataStoreRepositoryQuery::getCallback() const
 const char *DataStoreTask::taskName[_TASK_MAX] = {
 	"TASK_INSERT_DATAOBJECT",
 	"TASK_DELETE_DATAOBJECT",
+	"TASK_DELETE_DATAOBJECT_BY_ID",
 	"TASK_AGE_DATAOBJECTS",
 	"TASK_INSERT_NODE",
 	"TASK_DELETE_NODE",
@@ -144,9 +145,9 @@ const char *DataStoreTask::taskName[_TASK_MAX] = {
 
 unsigned long DataStoreTask::totNum = 0;
 
-DataStoreTask::DataStoreTask(DataObjectRef& _dObj, TaskType _type, const EventCallback<EventHandler> *_callback) : 
+DataStoreTask::DataStoreTask(DataObjectRef& _dObj, TaskType _type, const EventCallback<EventHandler> *_callback, bool keepInBloomfilter) : 
 	type(_type), priority(TASK_PRIORITY_HIGH), num(totNum++), timestamp(Timeval::now()), dObj(_dObj.copy()), 
-	callback(_callback), boolParameter(false) 
+	callback(_callback), boolParameter(keepInBloomfilter) 
 {
 	if (type == TASK_INSERT_DATAOBJECT) {
 	} else if (type == TASK_DELETE_DATAOBJECT) {
@@ -154,17 +155,18 @@ DataStoreTask::DataStoreTask(DataObjectRef& _dObj, TaskType _type, const EventCa
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
 	}
 }
-DataStoreTask::DataStoreTask(const DataObjectId_t _id, TaskType _type, const EventCallback<EventHandler> *_callback) :
-	type(_type), priority(TASK_PRIORITY_HIGH), num(totNum++), timestamp(Timeval::now()), callback(_callback), boolParameter(true) 
+DataStoreTask::DataStoreTask(const DataObjectId_t _id, TaskType _type, const EventCallback<EventHandler> *_callback, bool keepInBloomfilter) :
+	type(_type), priority(TASK_PRIORITY_HIGH), num(totNum++), timestamp(Timeval::now()), callback(_callback), boolParameter(keepInBloomfilter) 
 {
-	if (type == TASK_DELETE_DATAOBJECT) {
+	if (type == TASK_DELETE_DATAOBJECT_BY_ID) {
 		memcpy(id, _id, sizeof(DataObjectId_t));
 	} else {
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
 	}
 }
 DataStoreTask::DataStoreTask(const NodeRef& _node, TaskType _type, const EventCallback<EventHandler> *_callback, bool _boolParameter) :
-	type(_type), priority(TASK_PRIORITY_HIGH), num(totNum++), timestamp(Timeval::now()), node(_node.copy()), callback(_callback), boolParameter(_boolParameter) 
+	type(_type), priority(TASK_PRIORITY_HIGH), num(totNum++), timestamp(Timeval::now()), node(_node.copy()), 
+	callback(_callback), boolParameter(_boolParameter) 
 {
 	if (type == TASK_INSERT_NODE ||
 	    type == TASK_RETRIEVE_NODE ||
@@ -289,8 +291,10 @@ DataStoreTask::~DataStoreTask()
 		/*
 			The boolParameter indicates whether we deleted by reference or by ID
 		*/
-		if (!boolParameter)
-			delete dObj;
+
+		delete dObj;
+		break;
+	case TASK_DELETE_DATAOBJECT_BY_ID:
 		break;
 	case TASK_AGE_DATAOBJECTS:
 		delete age;
@@ -460,20 +464,20 @@ void DataStore::insertDataObject(DataObjectRef& dObj, const EventCallback<EventH
 	cond.signal();
 }
 
-void DataStore::deleteDataObject(const DataObjectId_t id)
+void DataStore::deleteDataObject(const DataObjectId_t id, bool keepInBloomfilter)
 {
 	Mutex::AutoLocker l(mutex);
 	
-	taskQ.insert(new DataStoreTask(id, TASK_DELETE_DATAOBJECT));
+	taskQ.insert(new DataStoreTask(id, TASK_DELETE_DATAOBJECT_BY_ID, NULL, keepInBloomfilter));
 	
 	cond.signal();
 }
 
-void DataStore::deleteDataObject(DataObjectRef& dObj)
+void DataStore::deleteDataObject(DataObjectRef& dObj, bool keepInBloomfilter)
 {
 	Mutex::AutoLocker l(mutex);
 	
-	taskQ.insert(new DataStoreTask(dObj, TASK_DELETE_DATAOBJECT));
+	taskQ.insert(new DataStoreTask(dObj, TASK_DELETE_DATAOBJECT, NULL, keepInBloomfilter));
 	
 	cond.signal();
 }
@@ -723,10 +727,10 @@ bool DataStore::run()
 			_insertDataObject(*task->dObj, task->callback);
 			break;
 		case TASK_DELETE_DATAOBJECT:
-			if (task->boolParameter)
-				_deleteDataObject(task->id);
-			else
-				_deleteDataObject(*task->dObj);
+			_deleteDataObject(*task->dObj, true, task->boolParameter);
+			break;
+		case TASK_DELETE_DATAOBJECT_BY_ID:
+			_deleteDataObject(task->id, true, task->boolParameter);
 			break;
 		case TASK_AGE_DATAOBJECTS:
 			_ageDataObjects(*task->age, task->callback);

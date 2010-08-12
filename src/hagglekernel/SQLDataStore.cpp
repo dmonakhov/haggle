@@ -2227,7 +2227,7 @@ out_insertNode_err:
 	return -1;	
 }
 
-int SQLDataStore::_deleteDataObject(const DataObjectId_t &id, bool shouldReportRemoval)
+int SQLDataStore::_deleteDataObject(const DataObjectId_t &id, bool shouldReportRemoval, bool keepInBloomfilter)
 {
 	int ret;
 	char *sql_cmd;
@@ -2248,7 +2248,7 @@ int SQLDataStore::_deleteDataObject(const DataObjectId_t &id, bool shouldReportR
 		// with the data object.
 		if (dObj) {
 			dObj->setStored(false);
-			kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_DELETED, dObj));
+			kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_DELETED, dObj, keepInBloomfilter));
 		} else {
 			HAGGLE_ERR("Tried to report removal of a data object that "
 				"isn't in the data store. (id=%s)\n", idStr);
@@ -2292,13 +2292,13 @@ int SQLDataStore::_deleteDataObject(const DataObjectId_t &id, bool shouldReportR
 	return 0;
 }
 
-int SQLDataStore::_deleteDataObject(DataObjectRef& dObj, bool shouldReportRemoval)
+int SQLDataStore::_deleteDataObject(DataObjectRef& dObj, bool shouldReportRemoval, bool keepInBloomfilter)
 {
 	// FIXME: shouldn't the data object be given back ownership of it's file?
 	// (If it has one.) So that the file is removed from disk along with the
 	// data object.
-	if (_deleteDataObject(dObj->getId(), false) == 0 && shouldReportRemoval)
-		kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_DELETED, dObj));
+	if (_deleteDataObject(dObj->getId(), false, keepInBloomfilter) == 0 && shouldReportRemoval)
+		kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_DELETED, dObj, keepInBloomfilter));
 	
 	return 0;
 }

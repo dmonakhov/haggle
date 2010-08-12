@@ -514,11 +514,15 @@ void DataManager::onDeletedDataObject(Event * e)
 		/* 
 		  Do not remove Node descriptions from the bloomfilter. We do not
 		  want to receive old node descriptions again.
+		  If the flag in the event is set, it means we should keep the data object
+		  in the bloomfilter.
 		*/
-		if (!(*it)->isNodeDescription()) {
+		if (!(*it)->isNodeDescription() && !e->getFlags()) {
 			HAGGLE_DBG("Removing deleted data object [id=%s] from bloomfilter\n", (*it)->getIdStr());
 			localBF->remove(*it);
 			n_removed++;
+		} else {
+			HAGGLE_DBG("Keeping deleted data object [id=%s] in bloomfilter\n", (*it)->getIdStr());
 		}
 	}
 	
@@ -568,12 +572,12 @@ void DataManager::onAgedDataObjects(Event *e)
 			onAging(NULL);
 		} else {
 			// Delay the aging for one period
-			kernel->addEvent(new Event(agingEvent, NULL, agingPeriod));
+			kernel->addEvent(new Event(agingEvent, NULL, (double)agingPeriod));
 		}
 	} else {
 		// No data in event -> means this is the first time the function
 		// is called and we should start the aging timer.
-		kernel->addEvent(new Event(agingEvent, NULL, agingPeriod));
+		kernel->addEvent(new Event(agingEvent, NULL, (double)agingPeriod));
 	}
 }
 

@@ -128,9 +128,25 @@ JNIEXPORT jint JNICALL Java_org_haggle_Handle_getDataObjectsAsync
 /*
  * Class:     org_haggle_Handle
  * Method:    deleteDataObjectById
+ * Signature: ([CZ)I
+ */
+JNIEXPORT jint JNICALL Java_org_haggle_Handle_deleteDataObjectById___3CZ
+  (JNIEnv *, jobject, jcharArray, jboolean);
+
+/*
+ * Class:     org_haggle_Handle
+ * Method:    deleteDataObject
+ * Signature: (Lorg/haggle/DataObject;Z)I
+ */
+JNIEXPORT jint JNICALL Java_org_haggle_Handle_deleteDataObject__Lorg_haggle_DataObject_2Z
+  (JNIEnv *, jobject, jobject, jboolean);
+
+/*
+ * Class:     org_haggle_Handle
+ * Method:    deleteDataObjectById
  * Signature: ([C)I
  */
-JNIEXPORT jint JNICALL Java_org_haggle_Handle_deleteDataObjectById
+JNIEXPORT jint JNICALL Java_org_haggle_Handle_deleteDataObjectById___3C
   (JNIEnv *, jobject, jcharArray);
 
 /*
@@ -138,7 +154,7 @@ JNIEXPORT jint JNICALL Java_org_haggle_Handle_deleteDataObjectById
  * Method:    deleteDataObject
  * Signature: (Lorg/haggle/DataObject;)I
  */
-JNIEXPORT jint JNICALL Java_org_haggle_Handle_deleteDataObject
+JNIEXPORT jint JNICALL Java_org_haggle_Handle_deleteDataObject__Lorg_haggle_DataObject_2
   (JNIEnv *, jobject, jobject);
 
 /*

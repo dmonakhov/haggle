@@ -101,6 +101,9 @@ static inline int list_detach(list_t *le)
 #define list_for_each(pos, head) \
         for (pos = (head)->next; pos != (head); pos = pos->next)
 
+#define list_for_each_reverse(pos, head) \
+        for (pos = (head)->prev; pos != (head); pos = pos->prev)
+
 #define list_for_each_safe(pos, tmp, head) \
         for (pos = (head)->next, tmp = pos->next; pos != (head); \
                 pos = tmp, tmp = pos->next)

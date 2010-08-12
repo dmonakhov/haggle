@@ -237,6 +237,7 @@ class DataStoreDump
 typedef enum {
 	TASK_INSERT_DATAOBJECT,
 	TASK_DELETE_DATAOBJECT,
+	TASK_DELETE_DATAOBJECT_BY_ID,
 	TASK_AGE_DATAOBJECTS,
 	TASK_INSERT_NODE,
 	TASK_DELETE_NODE,
@@ -300,8 +301,8 @@ class DataStoreTask
 	// Some tasks also take a boolean parameter. This is it:
 	bool boolParameter;
 public:
-	DataStoreTask(DataObjectRef& _dObj, TaskType _type = TASK_INSERT_DATAOBJECT, const EventCallback<EventHandler> *_callback = NULL);
-	DataStoreTask(const DataObjectId_t _id, TaskType _type = TASK_DELETE_DATAOBJECT, const EventCallback<EventHandler> *_callback = NULL);
+	DataStoreTask(DataObjectRef& _dObj, TaskType _type = TASK_INSERT_DATAOBJECT, const EventCallback<EventHandler> *_callback = NULL, bool keepInBloomfilter = false);
+	DataStoreTask(const DataObjectId_t _id, TaskType _type = TASK_DELETE_DATAOBJECT_BY_ID, const EventCallback<EventHandler> *_callback = NULL, bool keepInBloomfilter = false);
 	DataStoreTask(const NodeRef& _node, TaskType _type = TASK_INSERT_NODE, const EventCallback<EventHandler> *_callback = NULL, bool _boolParameter = false);
         DataStoreTask(NodeType_t _nodeType, TaskType _type = TASK_RETRIEVE_NODE_BY_TYPE, const EventCallback<EventHandler> *_callback = NULL);
 	DataStoreTask(const InterfaceRef& _iface, TaskType _type = TASK_RETRIEVE_NODE_BY_INTERFACE, const EventCallback<EventHandler> *_callback = NULL, bool _boolParameter = false);
@@ -357,8 +358,8 @@ protected:
 	virtual int _retrieveNode(NodeType_t type, const EventCallback<EventHandler> *callback) = 0;
 	virtual int _retrieveNode(const InterfaceRef& iface, const EventCallback<EventHandler> *callback, bool forceCallback = false) = 0;
 	virtual int _insertDataObject(DataObjectRef& dObj, const EventCallback<EventHandler> *callback = NULL) = 0;
-	virtual int _deleteDataObject(const DataObjectId_t &id, bool shouldReportRemoval = true) = 0;
-	virtual int _deleteDataObject(DataObjectRef& dObj, bool shouldReportRemoval = true) = 0;
+	virtual int _deleteDataObject(const DataObjectId_t &id, bool shouldReportRemoval = true, bool keepInBloomfilter = false) = 0;
+	virtual int _deleteDataObject(DataObjectRef& dObj, bool shouldReportRemoval = true, bool keepInBloomfilter = false) = 0;
 	virtual int _ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback = NULL) = 0;
 	virtual int _insertFilter(Filter *f, bool matchFilter = false, const EventCallback<EventHandler> *callback = NULL) = 0;
 	virtual int _deleteFilter(long eventtype) = 0;
@@ -424,8 +425,8 @@ public:
 	void retrieveNode(NodeType_t type, const EventCallback<EventHandler> *callback);
 	void retrieveNode(const InterfaceRef& iface, const EventCallback<EventHandler> *callback, bool forceCallback = false);
 	void insertDataObject(DataObjectRef& dObj, const EventCallback<EventHandler> *callback = NULL);
-	void deleteDataObject(const DataObjectId_t id);
-	void deleteDataObject(DataObjectRef& dObj);
+	void deleteDataObject(const DataObjectId_t id, bool keepInBloomfilter = false);
+	void deleteDataObject(DataObjectRef& dObj, bool keepInBloomfilter = false);
 	void ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback = NULL);
 	void insertFilter(const Filter& f, bool matchFilter = false, const EventCallback<EventHandler> *callback = NULL);
 	void deleteFilter(long eventtype);

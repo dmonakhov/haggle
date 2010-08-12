@@ -57,7 +57,7 @@ int Event::num_event_types = MAX_NUM_PUBLIC_EVENT_TYPES;
 // This will store the callback functions for registered private events
 EventCallback < EventHandler > *Event::privCallbacks[MAX_NUM_PRIVATE_EVENT_TYPES];
 
-Event::Event(EventType _type, const DataObjectRef& _dObj, double _delay) : 
+Event::Event(EventType _type, const DataObjectRef& _dObj, unsigned long flags, double _delay) : 
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_EVENT),
 #endif
@@ -67,7 +67,7 @@ Event::Event(EventType _type, const DataObjectRef& _dObj, double _delay) :
 	dObj(_dObj),
 	data(NULL),
 	doesHaveData(_dObj),
-	flags(0)
+	flags(flags)
 {
 	if (!EVENT_TYPE(type)) {
 		HAGGLE_ERR("ERROR: trying to allocate an invalid event type!\n");
@@ -323,7 +323,7 @@ Event::Event(EventType _type, const DataObjectRef& _dObj, const NodeRef& _node, 
 	}
 }
 
-Event::Event(EventType _type, const DataObjectRefList& _dObjs, double _delay) : 
+Event::Event(EventType _type, const DataObjectRefList& _dObjs, unsigned long flags, double _delay) : 
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_EVENT),
 #endif
@@ -333,7 +333,7 @@ Event::Event(EventType _type, const DataObjectRefList& _dObjs, double _delay) :
 	dObjs(_dObjs),
 	data(NULL),
 	doesHaveData(_dObjs.size() > 0),
-	flags(0)
+	flags(flags)
 {
 	if (!EVENT_TYPE(type)) {
 		HAGGLE_ERR("ERROR: trying to allocate an invalid event type!\n");

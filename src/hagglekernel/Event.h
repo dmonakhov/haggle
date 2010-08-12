@@ -110,6 +110,10 @@ typedef int EventType;
 	EVENT_TYPE_DATAOBJECT_DELETED:
 	This event is sent by the data manager when a data object has been removed
 	from the data store.
+
+	Flag bit:
+	1         If this bit is set, the data object should also be deleted
+	          from a nodes bloomfilter.
 	
 	EVENT_TYPE_DATAOBJECT_FORWARD:
 	This event is sent by any manager when that manager wishes to send a data 
@@ -399,18 +403,18 @@ private:
 			return -1;
         }
 public:
-        Event(EventType _type, const DataObjectRef& _dObj, double _delay = 0.0);
+        Event(EventType _type, const DataObjectRef& _dObj, unsigned long flags = 0, double _delay = 0.0);
         Event(EventType _type, const InterfaceRef& _iface, double _delay = 0.0);
         Event(EventType _type, const NodeRef& _node, double _delay = 0.0);
         Event(EventType _type, const PolicyRef& _policy, double _delay = 0.0);
-        Event(EventType _type, const DataObjectRef&  _dObj, const NodeRef& _node, unsigned long flags = 0, double _delay = 0.0);
+        Event(EventType _type, const DataObjectRef& _dObj, const NodeRef& _node, unsigned long flags = 0, double _delay = 0.0);
 #ifdef DEBUG
         Event(const DebugCmdRef& _dbgCmdRef, double _delay = 0.0);
 #endif
         Event(EventType _type, const NodeRef& _node, const NodeRefList& _nodes, double _delay = 0.0);
         Event(EventType _type, const DataObjectRef& _dObj, const NodeRefList& _nodes, double _delay = 0.0);
 	Event(EventType _type, const DataObjectRef& _dObj, const NodeRef& _node, const NodeRefList& _nodes, double _delay = 0.0);
-        Event(EventType _type, const DataObjectRefList&  _dObjs, double _delay = 0.0);
+        Event(EventType _type, const DataObjectRefList&  _dObjs, unsigned long flags = 0, double _delay = 0.0);
         Event(EventType _type, void *_data = NULL, double _delay = 0.0);
         Event(const EventCallback<EventHandler> *_callback, void *_data, double _delay = 0.0);
 	Event(const EventCallback<EventHandler> *_callback, const DataObjectRef&  _dObj, double _delay = 0.0);

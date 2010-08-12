@@ -1143,6 +1143,9 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 					break;
 				case CTRL_TYPE_DELETE_DATAOBJECT:
 					if (appNode) {
+						DataObjectId_t id;
+						base64_decode_context ctx;
+						bool keep_in_bloomfilter = false;
 						Metadata *dobj_m = mc->getMetadata(DATAOBJECT_METADATA_APPLICATION_CONTROL_DATAOBJECT);
 				
 						if (!dobj_m)
@@ -1152,15 +1155,24 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 					       
 						if (!id_str)
 							break;
-												
-						DataObjectId_t id;
-						base64_decode_context ctx;
+						
+						const char *keep_str = mc->getParameter(DATAOBJECT_METADATA_APPLICATION_CONTROL_DATAOBJECT_BLOOMFILTER_PARAM);
+						
+						if (keep_str) {
+							if (strcmp(keep_str, "yes") == 0)
+								keep_in_bloomfilter = true;
+						}
 						size_t len = DATAOBJECT_ID_LEN;
 						base64_decode_ctx_init(&ctx);
 						
 						if (base64_decode(&ctx, id_str, strlen(id_str), (char *)id, &len)) {
-							kernel->getDataStore()->deleteDataObject(id);
-							appNode->getBloomfilter()->remove(id);
+							kernel->getDataStore()->deleteDataObject(id, keep_in_bloomfilter);
+							
+							if (!keep_in_bloomfilter) {
+								HAGGLE_DBG("Deleting data object from application %s's bloomfilter\n", 
+									   appNode->getName().c_str());
+								appNode->getBloomfilter()->remove(id);
+							}
 						}
 					}
 					break;

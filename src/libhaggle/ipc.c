@@ -1298,7 +1298,7 @@ int haggle_ipc_send_dataobject(struct haggle_handle *hh, haggle_dobj_t *dobj,
         return HAGGLE_NO_ERROR;
 }
 
-int haggle_ipc_delete_data_object_by_id(haggle_handle_t hh, const dataobject_id_t id)
+int haggle_ipc_delete_data_object_by_id_bloomfilter(haggle_handle_t hh, const dataobject_id_t id, int keep_in_bloomfilter)
 {
 	char base64str[BASE64_LENGTH(sizeof(dataobject_id_t)) + 1];
 	struct dataobject *dobj;
@@ -1328,6 +1328,12 @@ int haggle_ipc_delete_data_object_by_id(haggle_handle_t hh, const dataobject_id_
 		haggle_dataobject_free(dobj);
 		return HAGGLE_ALLOC_ERROR;
 	}
+
+	if (metadata_set_parameter(ctrl_m, DATAOBJECT_METADATA_APPLICATION_CONTROL_DATAOBJECT_BLOOMFILTER_PARAM, 
+				   keep_in_bloomfilter ? "yes" : "no") < 0) {
+		haggle_dataobject_free(dobj);
+		return HAGGLE_ALLOC_ERROR;
+	}
 	
 	ret = haggle_ipc_send_dataobject(hh, dobj, NULL, IO_NO_REPLY);
 	
@@ -1336,15 +1342,24 @@ int haggle_ipc_delete_data_object_by_id(haggle_handle_t hh, const dataobject_id_
 	return ret;
 }
 
+int haggle_ipc_delete_data_object_by_id(haggle_handle_t hh, const dataobject_id_t id)
+{
+	return haggle_ipc_delete_data_object_by_id_bloomfilter(hh, id, 0);
+}
 
-int haggle_ipc_delete_data_object(haggle_handle_t hh, const struct dataobject *dobj)
+int haggle_ipc_delete_data_object_bloomfilter(haggle_handle_t hh, const struct dataobject *dobj, int keep_in_bloomfilter)
 {
 	dataobject_id_t id;
 
 	// Calculate the id from the data object
 	haggle_dataobject_calculate_id(dobj, &id);
 
-	return haggle_ipc_delete_data_object_by_id(hh, id);
+	return haggle_ipc_delete_data_object_by_id_bloomfilter(hh, id, keep_in_bloomfilter);
+}
+
+int haggle_ipc_delete_data_object(haggle_handle_t hh, const struct dataobject *dobj)
+{
+	return haggle_ipc_delete_data_object_bloomfilter(hh, dobj, 0);
 }
 
 int haggle_event_loop_is_running(haggle_handle_t hh)

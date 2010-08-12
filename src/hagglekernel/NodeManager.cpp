@@ -479,8 +479,8 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 
 		if (node == kernel->getThisNode()) {
 			HAGGLE_ERR("Node description is my own. Ignoring and deleting from data store\n");
-			// Remove the data object from the data store:
-			kernel->getDataStore()->deleteDataObject(dObj);
+			// Remove the data object from the data store (keep in bloomfilter):
+			kernel->getDataStore()->deleteDataObject(dObj, true);
 			continue;
 		}
 		
@@ -539,9 +539,9 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 			} else {
 				if (node->getNodeDescriptionCreateTime() <= neighbor->getNodeDescriptionCreateTime()) {
 					HAGGLE_DBG("Node description create time is NOT greater than on existing neighbor node. IGNORING node description\n");
-					// Delete old node descriptions from data store
+					// Delete old node descriptions from data store (keep in bloomfilter)
 					if (node->getNodeDescriptionCreateTime() < neighbor->getNodeDescriptionCreateTime())
-						kernel->getDataStore()->deleteDataObject(dObj);
+						kernel->getDataStore()->deleteDataObject(dObj, true);
 
 					continue;
 				}

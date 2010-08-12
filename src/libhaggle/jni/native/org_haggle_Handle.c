@@ -433,12 +433,13 @@ JNIEXPORT jint JNICALL Java_org_haggle_Handle_getDataObjectsAsync(JNIEnv *env, j
         return (jint)haggle_ipc_get_data_objects_async((haggle_handle_t)get_native_handle(env, JCLASS_HANDLE, obj));
 }
 
+
 /*
  * Class:     org_haggle_Handle
  * Method:    deleteDataObjectById
- * Signature: ([C)I
+ * Signature: ([CZ)I
  */
-JNIEXPORT jint JNICALL Java_org_haggle_Handle_deleteDataObjectById(JNIEnv *env, jobject obj, jcharArray idArray)
+JNIEXPORT jint JNICALL Java_org_haggle_Handle_deleteDataObjectById___3CZ(JNIEnv *env, jobject obj, jcharArray idArray, jboolean keep_in_bloomfilter)
 {
         unsigned char id[20];
         jchar *carr;
@@ -459,16 +460,36 @@ JNIEXPORT jint JNICALL Java_org_haggle_Handle_deleteDataObjectById(JNIEnv *env, 
         
         (*env)->ReleaseCharArrayElements(env, idArray, carr, 0);
 
-        return (jint)haggle_ipc_delete_data_object_by_id((haggle_handle_t)get_native_handle(env, JCLASS_HANDLE, obj), id);
+        return (jint)haggle_ipc_delete_data_object_by_id_bloomfilter((haggle_handle_t)get_native_handle(env, JCLASS_HANDLE, obj), id, (int)(keep_in_bloomfilter == JNI_TRUE));
+}
+
+/*
+ * Class:     org_haggle_Handle
+ * Method:    deleteDataObject
+ * Signature: (Lorg/haggle/DataObject;Z)I
+ */
+JNIEXPORT jint JNICALL Java_org_haggle_Handle_deleteDataObject__Lorg_haggle_DataObject_2Z(JNIEnv *env, jobject obj, jobject dobj, jboolean keep_in_bloomfilter)
+{
+	return (jint)haggle_ipc_delete_data_object_bloomfilter((haggle_handle_t)get_native_handle(env, JCLASS_HANDLE, obj), (haggle_dobj_t *)get_native_handle(env, JCLASS_DATAOBJECT, dobj), (int)(keep_in_bloomfilter == JNI_TRUE));
+}
+
+/*
+ * Class:     org_haggle_Handle
+ * Method:    deleteDataObjectById
+ * Signature: ([C)I
+ */
+JNIEXPORT jint JNICALL Java_org_haggle_Handle_deleteDataObjectById___3C(JNIEnv *env, jobject obj, jcharArray idArray)
+{
+	return Java_org_haggle_Handle_deleteDataObjectById___3CZ(env, obj, idArray, JNI_FALSE);
 }
 /*
  * Class:     org_haggle_Handle
  * Method:    deleteDataObject
  * Signature: (Lorg/haggle/DataObject;)I
  */
-JNIEXPORT jint JNICALL Java_org_haggle_Handle_deleteDataObject(JNIEnv *env, jobject obj, jobject dObj)
+JNIEXPORT jint JNICALL Java_org_haggle_Handle_deleteDataObject__Lorg_haggle_DataObject_2(JNIEnv *env, jobject obj, jobject dobj)
 {
-        return (jint)haggle_ipc_delete_data_object((haggle_handle_t)get_native_handle(env, JCLASS_HANDLE, obj), (haggle_dobj_t *)get_native_handle(env, JCLASS_DATAOBJECT, dObj));
+	return (jint)haggle_ipc_delete_data_object((haggle_handle_t)get_native_handle(env, JCLASS_HANDLE, obj), (haggle_dobj_t *)get_native_handle(env, JCLASS_DATAOBJECT, dobj));
 }
 
 /*

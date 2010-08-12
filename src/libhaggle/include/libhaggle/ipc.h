@@ -129,6 +129,7 @@ typedef enum control_type {
 #define DATAOBJECT_METADATA_APPLICATION_CONTROL_EVENT_INTEREST_WEIGHT_PARAM "weight"
 #define DATAOBJECT_METADATA_APPLICATION_CONTROL_DATAOBJECT "DataObject"
 #define DATAOBJECT_METADATA_APPLICATION_CONTROL_DATAOBJECT_ID_PARAM "id"
+#define DATAOBJECT_METADATA_APPLICATION_CONTROL_DATAOBJECT_BLOOMFILTER_PARAM "keep_in_bloomfilter"
 
 /* Attribute name definitions */
 #define HAGGLE_ATTR_CONTROL_NAME "HaggleIPC"  // <-- all control messages should have at this one.
@@ -328,6 +329,9 @@ HAGGLE_API int haggle_ipc_get_data_objects_async(haggle_handle_t hh);
 
 	NOTE: This function is not yet implemented.
 */
+
+HAGGLE_API int haggle_ipc_delete_data_object_by_id_bloomfilter(haggle_handle_t hh, const unsigned char id[20], int keep_in_bloomfilter);
+HAGGLE_API int haggle_ipc_delete_data_object_bloomfilter(haggle_handle_t hh, const struct dataobject *dobj, int keep_in_bloomfilter);
 HAGGLE_API int haggle_ipc_delete_data_object_by_id(haggle_handle_t hh, const unsigned char id[20]);
 HAGGLE_API int haggle_ipc_delete_data_object(haggle_handle_t hh, const struct dataobject *dobj);
 
