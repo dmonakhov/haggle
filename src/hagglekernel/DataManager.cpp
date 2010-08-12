@@ -508,7 +508,8 @@ void DataManager::onDeletedDataObject(Event * e)
 		return;
 	
 	DataObjectRefList dObjs = e->getDataObjectList();
-	
+	unsigned int n_removed = 0;
+
 	for (DataObjectRefList::iterator it = dObjs.begin(); it != dObjs.end(); it++) {
 		/* 
 		  Do not remove Node descriptions from the bloomfilter. We do not
@@ -517,10 +518,11 @@ void DataManager::onDeletedDataObject(Event * e)
 		if (!(*it)->isNodeDescription()) {
 			HAGGLE_DBG("Removing deleted data object [id=%s] from bloomfilter\n", (*it)->getIdStr());
 			localBF->remove(*it);
+			n_removed++;
 		}
 	}
 	
-	if (dObjs.size() > 0)
+	if (n_removed > 0)
 		kernel->getThisNode()->setBloomfilter(*localBF, setCreateTimeOnBloomfilterUpdate);
 }
 

@@ -2808,7 +2808,7 @@ filterQuery_cleanup:
 
 // ----- Node > Dataobjects
 
-int SQLDataStore::_doDataObjectQueryStep2(NodeRef &node, NodeRef alsoThisBF, DataStoreQueryResult *qr, int max_matches, unsigned int threshold, unsigned int attrMatch)
+int SQLDataStore::_doDataObjectQueryStep2(NodeRef &node, NodeRef delegate_node, DataStoreQueryResult *qr, int max_matches, unsigned int threshold, unsigned int attrMatch)
 {
 	int ret;
 	sqlite3_stmt *stmt;
@@ -2838,20 +2838,32 @@ int SQLDataStore::_doDataObjectQueryStep2(NodeRef &node, NodeRef alsoThisBF, Dat
 
 	/* looping through the results and allocating dataobjects */
 	while ((ret = sqlite3_step(stmt)) != SQLITE_DONE) {
-
 		if (ret == SQLITE_ROW) {
 			sqlite_int64 dObjRowId = sqlite3_column_int64(stmt, view_match_nodes_and_dataobjects_rated_dataobject_rowid);
 
 			DataObjectRef dObj = getDataObjectFromRowId(dObjRowId);
 
 			if (dObj) {
-				if (!(node->getBloomfilter()->has(dObj) || (alsoThisBF && alsoThisBF->getBloomfilter()->has(dObj)))) {
-					//HAGGLE_DBG("Data object rowid=" INT64_FORMAT "\n", dObjRowId);
-					qr->addDataObject(dObj);
-					num_match++;
-					if (max_matches != 0 && (num_match >= max_matches)) {
-						break;
+				bool delegate_has_dataobject = delegate_node ? delegate_node->getBloomfilter()->has(dObj) : false;
+				// Ignore this data object if the target or the potential delegate 
+				// already has it
+				if (node->getBloomfilter()->has(dObj) || delegate_has_dataobject)
+					continue;
+					
+				//HAGGLE_DBG("Data object rowid=" INT64_FORMAT "\n", dObjRowId);
+				if (dObj->isNodeDescription()) {
+					NodeRef desc_node = Node::create(NODE_TYPE_PEER, dObj);
+					// Ignore this data object if it is the node description of the target
+					// or a potential delegate
+					if (desc_node == node || (delegate_node && delegate_node == desc_node)) {
+						continue;
 					}
+				}
+				qr->addDataObject(dObj);
+				num_match++;
+				
+				if (max_matches != 0 && (num_match >= max_matches)) {
+					break;
 				}
 			} else {
 				HAGGLE_DBG("Could not get data object from rowid\n");

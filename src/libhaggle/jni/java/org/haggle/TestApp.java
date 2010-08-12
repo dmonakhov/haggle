@@ -67,7 +67,7 @@ public class TestApp implements EventHandler {
                         }
                 }
                 try {
-			DataObject[] dobjs = new DataObject[num_dataobjects];
+			//DataObject[] dobjs = new DataObject[num_dataobjects];
                         h = new Handle(name);
 
                         h.registerEventInterest(EVENT_NEW_DATAOBJECT, this);
@@ -92,17 +92,19 @@ public class TestApp implements EventHandler {
 			Thread.sleep(3000);
 
 			for (int i = 0; i < num_dataobjects; i++) {
-				dobjs[i] = new DataObject();
-				dobjs[i].addAttribute("num", "" + i);
-				dobjs[i].addAttribute(attr);
-				h.publishDataObject(dobjs[i]);
+				DataObject dobj = new DataObject();
+				dobj.addAttribute("num", "" + i);
+				dobj.addAttribute(attr);
+				h.publishDataObject(dobj);
 				Thread.sleep(40);
 			}
-			for (int i = 0; i < num_dataobjects; i++) {
+			/*
+			  for (int i = 0; i < num_dataobjects; i++) {
 				h.deleteDataObject(dobjs[i]);
 				dobjs[i].dispose();
 				Thread.sleep(40);
 			}
+			*/
 
 			while (num_dataobjects != num_dataobjects_received && !should_quit)
 				Thread.sleep(1000);

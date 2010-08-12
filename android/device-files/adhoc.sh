@@ -16,7 +16,7 @@ if ls $MODULE_PATH/wlan.ko 2>/dev/null; then
 elif ls $MODULE_PATH/bcm4329.ko 2>/dev/null; then
     NETDEV=eth0
     MODULE=bcm4329
-    HOSTNAME=NexusOne
+    HOSTNAME=Android
     POST_INSERT_CMD="iwconfig eth0 mode ad-hoc essid HaggleHoc"
 else
     echo "Unknown network device..."
@@ -36,18 +36,15 @@ case "$1" in
 'start')
 
 echo "Shutting down interface $NETDEV"
-ifconfig $NETDEV down
+ifconfig $NETDEV down 2>/dev/null
 sleep 1
 echo "Removing module $MODULE"
-rmmod $MODULE
+rmmod $MODULE 2>/dev/null
 
 echo "Node IP is $IP_PREFIX.$NODE"
 
-if ls /system/bin/hostname 2>/dev/null; then
-    hostname "$HOSTNAME-$NODE"
-else
-    echo "127.0.0.1    $HOSTNAME-$NODE" > /system/etc/hosts
-fi
+echo "Setting hostname $HOSTNAME-$NODE"
+echo "$HOSTNAME-$NODE" > /proc/sys/kernel/hostname
 
 insmod $MODULE_PATH/$MODULE.ko
 
@@ -58,9 +55,10 @@ ifconfig $NETDEV up
 
 ;;
 'stop')
-ifconfig $NETDEV down
+echo "shutting down $NETDEV"
+ifconfig $NETDEV down 2>/dev/null
 sleep 1
-rmmod $MODULE
+rmmod $MODULE 2>/dev/null
 ;;
 *)
 echo "Usage: $0 [start|stop] [ node # ]"
