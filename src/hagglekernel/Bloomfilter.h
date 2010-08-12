@@ -44,10 +44,10 @@ public:
 		BF_TYPE_COUNTING
 	} BloomfilterType_t;
 private:	
-	static float default_error_rate;
+	static double default_error_rate;
 	static unsigned int default_capacity;
 	BloomfilterType_t type;
-	float error_rate;
+	double error_rate;
 	unsigned int capacity;
 	const unsigned long init_n;
 	union {
@@ -58,21 +58,21 @@ private:
 	/*
 	  Creates a bloomfilter with the given error rate and capacity.
 	*/
-	Bloomfilter(BloomfilterType_t _type = BF_TYPE_NORMAL, float error_rate = default_error_rate, 
+	Bloomfilter(BloomfilterType_t _type = BF_TYPE_NORMAL, double error_rate = default_error_rate, 
 		    unsigned int capacity = default_capacity);
-	Bloomfilter(float _error_rate, unsigned int _capacity, struct bloomfilter *_bf);
-	Bloomfilter(float _error_rate, unsigned int _capacity, struct counting_bloomfilter *_cbf);	
+	Bloomfilter(double _error_rate, unsigned int _capacity, struct bloomfilter *_bf);
+	Bloomfilter(double _error_rate, unsigned int _capacity, struct counting_bloomfilter *_cbf);	
 	/**
 		Creates an identical copy of the given bloomfilter.
 	*/
 	Bloomfilter(const Bloomfilter &bf);
 public:
-	static Bloomfilter *create(float _error_rate, unsigned int _capacity, struct bloomfilter *bf);
-	static Bloomfilter *create(float _error_rate, unsigned int _capacity, struct counting_bloomfilter *cbf);
+	static Bloomfilter *create(double _error_rate, unsigned int _capacity, struct bloomfilter *bf);
+	static Bloomfilter *create(double _error_rate, unsigned int _capacity, struct counting_bloomfilter *cbf);
 	/**
 		Creates a bloomfilter with the given error rate and capacity.
 	*/
-	static Bloomfilter *create(BloomfilterType_t _type = BF_TYPE_NORMAL, float error_rate = default_error_rate, 
+	static Bloomfilter *create(BloomfilterType_t _type = BF_TYPE_NORMAL, double error_rate = default_error_rate, 
 				   unsigned int capacity = default_capacity);	
 	static Bloomfilter *create(const unsigned char *bf, size_t len);
 	static Bloomfilter *create_from_base64(BloomfilterType_t _type, const string &base64);
@@ -84,8 +84,8 @@ public:
 	
 	BloomfilterType_t getType() const { return type; }
 	
-	static void setDefaultErrorRate(float error_rate) { if (error_rate > 0.0) default_error_rate = error_rate; }
-	static float getDefaultErrorRate() { return default_error_rate; }
+	static void setDefaultErrorRate(double error_rate) { if (error_rate > 0.0) default_error_rate = error_rate; }
+	static double getDefaultErrorRate() { return default_error_rate; }
 	static void setDefaultCapacity(unsigned int capacity) { if (capacity > 0) default_capacity = capacity; }
 	static unsigned int getDefaultCapacity() { return default_capacity; }
 

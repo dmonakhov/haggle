@@ -201,10 +201,10 @@ int current_platform(void);
 */
 char *get_hardware_name(void);
 
-#if defined(OS_WINDOWS) || defined(OS_MACOSX) || defined(OS_ANDROID)
-#if defined(OS_WINDOWS)
+#if defined(WIN32) || defined(OS_MACOSX) || defined(OS_ANDROID)
+#if defined(WIN32)
 struct ether_addr {
-        u_int8_t ether_addr_octet[6];
+        BYTE ether_addr_octet[6];
 };
 #elif defined(OS_ANDROID)
 #include <net/if_ether.h>

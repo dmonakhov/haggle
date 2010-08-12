@@ -23,7 +23,7 @@
 #include <openssl/sha.h>
 #include "bloomfilter.h"
 
-struct counting_bloomfilter *counting_bloomfilter_new(float error_rate, unsigned int capacity)
+struct counting_bloomfilter *counting_bloomfilter_new(double error_rate, unsigned int capacity)
 {
 	struct counting_bloomfilter *bf;
 	unsigned int m, k, i;

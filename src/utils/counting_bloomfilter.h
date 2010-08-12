@@ -77,7 +77,7 @@ enum counting_bf_op {
 #endif
 #endif
 
-struct counting_bloomfilter *counting_bloomfilter_new(float error_rate, unsigned int capacity);
+struct counting_bloomfilter *counting_bloomfilter_new(double error_rate, unsigned int capacity);
 int counting_bloomfilter_operation(struct counting_bloomfilter *bf, const char *key, const unsigned int len, unsigned int op);
 void counting_bloomfilter_free(struct counting_bloomfilter *bf);
 struct counting_bloomfilter *counting_bloomfilter_copy(const struct counting_bloomfilter *bf);

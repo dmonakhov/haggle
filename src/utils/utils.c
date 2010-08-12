@@ -985,7 +985,7 @@ char *get_hardware_name(void)
 	return hardware_name;
 }
 
-#if defined(OS_WINDOWS) || defined(OS_MACOSX) || defined(OS_ANDROID)
+#if defined(WIN32) || defined(OS_MACOSX) || defined(OS_ANDROID)
 
 #ifndef isdigit
 #define isdigit(c)  (c >= '0' && c <= '9')

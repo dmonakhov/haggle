@@ -22,7 +22,7 @@
 #include "bloomfilter.h"
 #include <openssl/sha.h>
 
-struct bloomfilter *bloomfilter_new(float error_rate, unsigned int capacity)
+struct bloomfilter *bloomfilter_new(double error_rate, unsigned int capacity)
 {
 	struct bloomfilter *bf;
 	unsigned int m, k, i;

@@ -1,5 +1,0 @@
-noinst_LIBRARIES = libsqlite.a
-libsqlite_a_SOURCES = alter.c analyze.c attach.c auth.c bitvec.c btmutex.c btree.c build.c callback.c complete.c date.c delete.c expr.c fault.c  func.c global.c hash.c insert.c journal.c legacy.c loadext.c main.c malloc.c mem0.c mem1.c mem2.c mem3.c mem5.c memjournal.c mutex.c mutex_noop.c mutex_unix.c opcodes.c os.c os_unix.c pager.c parse.c pcache1.c pcache.c pragma.c prepare.c printf.c random.c resolve.c select.c  status.c table.c tokenize.c trigger.c update.c utf.c util.c vacuum.c vdbeapi.c vdbeaux.c vdbeblob.c vdbe.c vdbefifo.c vdbemem.c vtab.c walker.c where.c
-EXTRA_DIST = btree.h btreeInt.h fts3.h fts3_hash.h fts3_tokenizer.h hash.h hwtime.h keywordhash.h mutex.h opcodes.h os_common.h os.h pager.h parse.h pcache.h rtree.h sqlite3ext.h sqlite3.h sqliteicu.h sqliteInt.h sqliteLimit.h vdbe.h vdbeInt.h mutex_os2.c mutex_w32.c tclsqlite.c os_os2.c os_win.c rtree.c fts3.c fts3_hash.c fts3_icu.c fts3_porter.c fts3_tokenizer1.c fts3_tokenizer.c shell.c
-
-CPPFLAGS+=-DSQLITE_OMIT_LOAD_EXTENSION=1

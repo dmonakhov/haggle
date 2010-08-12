@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\testsuite&quot;;&quot;$(SolutionDir)\..\..\src\utils&quot;;&quot;$(SolutionDir)\..\..\src\hagglekernel&quot;;&quot;$(SolutionDir)\..\..\src\libhaggle\include&quot;;&quot;$(SolutionDir)\..\..\extlibs\libxml2-2.6.31\include&quot;;.\;&quot;$(SolutionDir)\..\..\src\libcpphaggle\include&quot;;&quot;$(SolutionDir)\..\..\extlibs\sqlite-3.6.6.2&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\crypto&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\inc32&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\testsuite&quot;;&quot;$(SolutionDir)\..\..\src\utils&quot;;&quot;$(SolutionDir)\..\..\src\hagglekernel&quot;;&quot;$(SolutionDir)\..\..\src\libhaggle\include&quot;;&quot;$(SolutionDir)\..\..\extlibs\libxml2-2.6.31\include&quot;;.\;&quot;$(SolutionDir)\..\..\src\libcpphaggle\include&quot;;&quot;$(SolutionDir)\..\..\extlibs\sqlite-3.7.0.1&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\crypto&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\inc32&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -117,7 +117,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\testsuite&quot;;&quot;$(SolutionDir)\..\..\src\utils&quot;;&quot;$(SolutionDir)\..\..\src\hagglekernel&quot;;&quot;$(SolutionDir)\..\..\src\libhaggle\include&quot;;&quot;$(SolutionDir)\..\..\extlibs\libxml2-2.6.31\include&quot;;.\;&quot;$(SolutionDir)\..\..\src\libcpphaggle\include&quot;;&quot;$(SolutionDir)\..\..\extlibs\sqlite-3.6.6.2&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\crypto&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\inc32&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\testsuite&quot;;&quot;$(SolutionDir)\..\..\src\utils&quot;;&quot;$(SolutionDir)\..\..\src\hagglekernel&quot;;&quot;$(SolutionDir)\..\..\src\libhaggle\include&quot;;&quot;$(SolutionDir)\..\..\extlibs\libxml2-2.6.31\include&quot;;.\;&quot;$(SolutionDir)\..\..\src\libcpphaggle\include&quot;;&quot;$(SolutionDir)\..\..\extlibs\sqlite-3.7.0.1&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\crypto&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j&quot;;&quot;$(ProjectDir)..\..\..\extlibs\openssl-0.9.8j\inc32&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"

@@ -488,7 +488,7 @@ InterfaceStatus_t ConnectivityManager::report_interface(InterfaceRef& found, con
 	InterfaceRef iface = kernel->getInterfaceStore()->addupdate(found, found_by, policy, &was_added);
 
 	if (!iface || !was_added) {
-		HAGGLE_ERR("Interface [%s] was not added to interface store\n", found->getIdentifierStr());
+		//HAGGLE_ERR("Interface [%s] was not added to interface store\n", found->getIdentifierStr());
 		return INTERFACE_STATUS_NONE;
 	}
 	// Make sure the interface is up

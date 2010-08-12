@@ -18,10 +18,10 @@
 #include "Debug.h"
 #include "Trace.h"
 
-float Bloomfilter::default_error_rate = DEFAULT_BLOOMFILTER_ERROR_RATE;
+double Bloomfilter::default_error_rate = DEFAULT_BLOOMFILTER_ERROR_RATE;
 unsigned int Bloomfilter::default_capacity = DEFAULT_BLOOMFILTER_CAPACITY;
 
-Bloomfilter::Bloomfilter(BloomfilterType_t _type, float _error_rate, unsigned int _capacity) :
+Bloomfilter::Bloomfilter(BloomfilterType_t _type, double _error_rate, unsigned int _capacity) :
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_BLOOMFILTER),
 #endif
@@ -38,7 +38,7 @@ Bloomfilter::Bloomfilter(BloomfilterType_t _type, float _error_rate, unsigned in
 	}
 }
 
-Bloomfilter::Bloomfilter(float _error_rate, unsigned int _capacity, struct bloomfilter *_bf) :
+Bloomfilter::Bloomfilter(double _error_rate, unsigned int _capacity, struct bloomfilter *_bf) :
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_BLOOMFILTER),
 #endif
@@ -50,7 +50,7 @@ Bloomfilter::Bloomfilter(float _error_rate, unsigned int _capacity, struct bloom
 {
 }
 
-Bloomfilter::Bloomfilter(float _error_rate, unsigned int _capacity, struct counting_bloomfilter *_cbf) :
+Bloomfilter::Bloomfilter(double _error_rate, unsigned int _capacity, struct counting_bloomfilter *_cbf) :
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_BLOOMFILTER),
 #endif
@@ -79,12 +79,12 @@ Bloomfilter::Bloomfilter(const Bloomfilter &_bf) :
 	} 
 }
 
-Bloomfilter *Bloomfilter::create(float error_rate, unsigned int capacity, struct bloomfilter *bf)
+Bloomfilter *Bloomfilter::create(double error_rate, unsigned int capacity, struct bloomfilter *bf)
 {
 	return new Bloomfilter(error_rate, capacity, bf);
 }
 
-Bloomfilter *Bloomfilter::create(float error_rate, unsigned int capacity, struct counting_bloomfilter *cbf)
+Bloomfilter *Bloomfilter::create(double error_rate, unsigned int capacity, struct counting_bloomfilter *cbf)
 {
 	return new Bloomfilter(error_rate, capacity, cbf);
 }
@@ -92,7 +92,7 @@ Bloomfilter *Bloomfilter::create(float error_rate, unsigned int capacity, struct
 /**
    Creates a bloomfilter with the given error rate and capacity.
 */
-Bloomfilter *Bloomfilter::create(BloomfilterType_t type, float error_rate, unsigned int capacity)
+Bloomfilter *Bloomfilter::create(BloomfilterType_t type, double error_rate, unsigned int capacity)
 {
 	Bloomfilter *bf = new Bloomfilter(type, error_rate, capacity);
 	

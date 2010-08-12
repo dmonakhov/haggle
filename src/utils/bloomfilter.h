@@ -80,7 +80,7 @@ enum bf_op {
 int bloomfilter_calculate_length(unsigned int num_keys, double error_rate, 
 				 unsigned int *lowest_m, unsigned int *best_k);
 
-struct bloomfilter *bloomfilter_new(float error_rate, unsigned int capacity);
+struct bloomfilter *bloomfilter_new(double error_rate, unsigned int capacity);
 int bloomfilter_operation(struct bloomfilter *bf, const char *key, const unsigned int len, unsigned int op);
 void bloomfilter_free(struct bloomfilter *bf);
 struct bloomfilter *bloomfilter_copy(const struct bloomfilter *bf);
