@@ -471,12 +471,12 @@ public class PhotoView extends Activity implements OnClickListener {
     }
 	@Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
-
 		Log.d(PhotoShare.LOG_TAG, "onCreateContextMenu");
 		
 		if (v == gallery) {
 			menu.setHeaderTitle("Picture");
 			menu.add("Delete");
+			menu.add("Delete (keep in bloomfilter)");
 			menu.add("View Attributes");
 			menu.add("Cancel");
 		} else { 
@@ -506,7 +506,15 @@ public class PhotoView extends Activity implements OnClickListener {
         		dObj.dispose();
         		Log.d(PhotoShare.LOG_TAG, "Disposed of data object");
         		Toast.makeText(this, "Deleted data object...", Toast.LENGTH_SHORT).show();
+        	} else if (item.getTitle() == "Delete (keep in bloomfilter)") {
+        		DataObject dObj = imgAdpt.deletePicture(info.position);
+        		ps.getHaggleHandle().deleteDataObject(dObj, true);
+        		// Call dispose() to free native data before garbage collection
+        		dObj.dispose();
+        		Log.d(PhotoShare.LOG_TAG, "Disposed of data object");
+        		Toast.makeText(this, "Deleted data object, but kept in bloomfilter...", Toast.LENGTH_SHORT).show();
         	} else if (item.getTitle() == "View Attributes") {
+        	
         		AlertDialog.Builder builder;
         		AlertDialog alertDialog;
 
