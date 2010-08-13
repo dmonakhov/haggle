@@ -24,8 +24,8 @@ public class Handle {
         public native int getDataObjectsAsync();
         public native int deleteDataObjectById(char[] id, boolean keepInBloomfilter);
         public native int deleteDataObject(DataObject dObj, boolean keepInBloomfilter);
-        //public native int deleteDataObjectById(char[] id);
-	//public native int deleteDataObject(DataObject dObj);
+        public native int deleteDataObjectById(char[] id);
+	public native int deleteDataObject(DataObject dObj);
 	public native int sendNodeDescription();
 
         // Should probably make the eventLoop functions throw some exceptions
