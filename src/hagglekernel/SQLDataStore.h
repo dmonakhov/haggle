@@ -106,7 +106,7 @@ protected:
 	int _insertDataObject(DataObjectRef& dObj, const EventCallback<EventHandler> *callback = NULL);
 	int _deleteDataObject(const DataObjectId_t &id, bool shouldReportRemoval = true, bool keepInBloomfilter = false);
 	int _deleteDataObject(DataObjectRef& dObj, bool shouldReportRemoval = true, bool keepInBloomfilter = false);
-	int _ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback = NULL);
+	int _ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback = NULL, bool keepInBloomfilter = false);
 	int _insertFilter(Filter *f, bool matchFilter = false, const EventCallback<EventHandler> *callback = NULL);
 	int _deleteFilter(long eventtype);
 	// matching Filters

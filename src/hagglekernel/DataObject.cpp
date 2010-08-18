@@ -1104,7 +1104,10 @@ int DataObject::parseMetadata(bool from_network)
         pval = metadata->getParameter(DATAOBJECT_PERSISTENT_PARAM);
         
         if (pval) {
-                persistent = (strcmp(pval, "no") != 0);
+		if (strcmp(pval, "no") == 0 || strcmp(pval, "false") == 0)
+			persistent = false;
+		else if (strcmp(pval, "yes") == 0 || strcmp(pval, "true") == 0)
+			persistent = true;
         }
 
         // Check create time

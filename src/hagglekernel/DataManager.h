@@ -75,6 +75,7 @@ class DataManager : public Manager
 	 */
 	Bloomfilter *localBF;
 	bool setCreateTimeOnBloomfilterUpdate;
+	bool keepInBloomfilterOnAging;
 	unsigned long agingMaxAge;
 	unsigned long agingPeriod;
 #if defined(DEBUG)

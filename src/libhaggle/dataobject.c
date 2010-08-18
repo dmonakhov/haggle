@@ -201,9 +201,12 @@ struct dataobject *haggle_dataobject_new_from_raw(const unsigned char *raw, cons
 		}
 
 		persistent = metadata_get_parameter(dobj->m, DATAOBJECT_PERSISTENT_PARAM);
-
-		if (persistent && strcmp(persistent, "no") == 0) {
-			haggle_dataobject_unset_flags(dobj, DATAOBJECT_FLAG_PERSISTENT);
+		
+		if (persistent) {
+			if (strcmp(persistent, "no") == 0 || strcmp(persistent, "false") == 0)
+				haggle_dataobject_unset_flags(dobj, DATAOBJECT_FLAG_PERSISTENT);
+			else if (strcmp(persistent, "yes") == 0 || strcmp(persistent, "true") == 0)
+				haggle_dataobject_set_flags(dobj, DATAOBJECT_FLAG_PERSISTENT);
 		}
 		
 		createtime = metadata_get_parameter(dobj->m, DATAOBJECT_CREATE_TIME_PARAM);

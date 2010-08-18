@@ -313,7 +313,7 @@ public:
 	DataStoreTask(DataStoreRepositoryQuery *q, TaskType _type);
 	DataStoreTask(const Filter& _f, TaskType _type, const EventCallback<EventHandler> *_callback = NULL, bool _boolParameter = false);
 	DataStoreTask(TaskType _type, void *_data = NULL, const EventCallback<EventHandler> *_callback = NULL);
-	DataStoreTask(const Timeval &_age, TaskType _type = TASK_AGE_DATAOBJECTS, const EventCallback<EventHandler> *_callback = NULL);
+	DataStoreTask(const Timeval &_age, TaskType _type = TASK_AGE_DATAOBJECTS, const EventCallback<EventHandler> *_callback = NULL, bool keepInBloomfilter = false);
         DataStoreTask(const DataStoreTask &ii); // Not defined
 
 	~DataStoreTask();
@@ -360,7 +360,7 @@ protected:
 	virtual int _insertDataObject(DataObjectRef& dObj, const EventCallback<EventHandler> *callback = NULL) = 0;
 	virtual int _deleteDataObject(const DataObjectId_t &id, bool shouldReportRemoval = true, bool keepInBloomfilter = false) = 0;
 	virtual int _deleteDataObject(DataObjectRef& dObj, bool shouldReportRemoval = true, bool keepInBloomfilter = false) = 0;
-	virtual int _ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback = NULL) = 0;
+	virtual int _ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback = NULL, bool keepInBloomfilter = false) = 0;
 	virtual int _insertFilter(Filter *f, bool matchFilter = false, const EventCallback<EventHandler> *callback = NULL) = 0;
 	virtual int _deleteFilter(long eventtype) = 0;
 	virtual int _doFilterQuery(DataStoreFilterQuery *q) = 0;
@@ -427,7 +427,7 @@ public:
 	void insertDataObject(DataObjectRef& dObj, const EventCallback<EventHandler> *callback = NULL);
 	void deleteDataObject(const DataObjectId_t id, bool keepInBloomfilter = false);
 	void deleteDataObject(DataObjectRef& dObj, bool keepInBloomfilter = false);
-	void ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback = NULL);
+	void ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback = NULL, bool keepInBloomfilter = false);
 	void insertFilter(const Filter& f, bool matchFilter = false, const EventCallback<EventHandler> *callback = NULL);
 	void deleteFilter(long eventtype);
 	void doFilterQuery(const Filter *f, EventCallback<EventHandler> *callback);

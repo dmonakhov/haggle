@@ -2303,7 +2303,7 @@ int SQLDataStore::_deleteDataObject(DataObjectRef& dObj, bool shouldReportRemova
 	return 0;
 }
 
-int SQLDataStore::_ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback)
+int SQLDataStore::_ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback, bool keepInBloomfilter)
 {
 	int ret;
 	char *sql_cmd;
@@ -2368,7 +2368,7 @@ int SQLDataStore::_ageDataObjects(const Timeval& minimumAge, const EventCallback
 		_deleteDataObject(*it, false);	// delete and report as event
 	}
 
-	kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_DELETED, dObjs));
+	kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_DELETED, dObjs, keepInBloomfilter));
 	
 	if (ret == SQLITE_ERROR) {
 		HAGGLE_DBG("Could not age data objects : %s\n", sqlite3_errmsg(db));

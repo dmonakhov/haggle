@@ -30,7 +30,7 @@
 using namespace haggle;
 
 DataTask::DataTask(const DataTaskType_t _type, DataObjectRef _dObj) : 
-                        type(_type), completed(false), dObj(_dObj)
+	type(_type), completed(false), dObj(_dObj)
 {
 }
 
@@ -120,7 +120,9 @@ void DataHelper::cleanup()
 }
 
 DataManager::DataManager(HaggleKernel * _kernel, const bool _setCreateTimeOnBloomfilterUpdate) : 
-	Manager("DataManager", _kernel), localBF(NULL), setCreateTimeOnBloomfilterUpdate(_setCreateTimeOnBloomfilterUpdate)
+	Manager("DataManager", _kernel), localBF(NULL), 
+	setCreateTimeOnBloomfilterUpdate(_setCreateTimeOnBloomfilterUpdate), 
+	keepInBloomfilterOnAging(true)
 {	
 	if (setCreateTimeOnBloomfilterUpdate) {
 		HAGGLE_DBG("Will set create time in node description when updating bloomfilter\n");
@@ -589,7 +591,7 @@ void DataManager::onAging(Event *e)
 	// Delete from the data store any data objects we're not interested
 	// in and are too old.
 	// FIXME: find a better way to deal with the age parameter. 
-	kernel->getDataStore()->ageDataObjects(Timeval(agingMaxAge, 0), onAgedDataObjectsCallback);
+	kernel->getDataStore()->ageDataObjects(Timeval(agingMaxAge, 0), onAgedDataObjectsCallback, keepInBloomfilterOnAging);
 }
 
 void DataManager::onConfig(Metadata *m)
@@ -674,6 +676,19 @@ void DataManager::onConfig(Metadata *m)
 			}
 		}
 		
+		param = dm->getParameter("keep_in_bloomfilter");
+		
+		if (param) {
+			if (strcmp(param, "true") == 0) {
+				HAGGLE_DBG("config aging: keep_in_bloomfilter=true\n");
+				LOG_ADD("# %s: aging: keep_in_bloomfilter=true\n", getName());
+				keepInBloomfilterOnAging = true;
+			} else if (strcmp(param, "false") == 0) {
+				HAGGLE_DBG("config aging: keep_in_bloomfilter=false\n");
+				LOG_ADD("# %s: aging: keep_in_bloomfilter=false\n", getName());
+				keepInBloomfilterOnAging = false;
+			}
+		}
 	}
 	
 	if (agingHasChanged)
