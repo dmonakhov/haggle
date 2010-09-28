@@ -15,29 +15,87 @@
 #ifndef _PROTOCOLLOCAL_H
 #define _PROTOCOLLOCAL_H
 
-/*
-	Forward declarations of all data types declared in this file. This is to
-	avoid circular dependencies. If/when a data type is added to this file,
-	remember to add it here.
-*/
-
 class ProtocolLOCAL;
+class ProtocolLOCALClient;
+class ProtocolLOCALServer;
+
+
+#include <libcpphaggle/Platform.h>
 
 #include "ProtocolSocket.h"
+#include <sys/types.h>
+#include <sys/un.h>
+
+/* Configurable parameters */
+#define LOCAL_DEFAULT_BACKLOG 10
+#define LOCAL_DEFAULT_PATH "/tmp/haggle.sock"
 
 /** */
 class ProtocolLOCAL : public ProtocolSocket
 {
-private:
-        struct sockaddr_un un_addr;
-
-	ProtocolEvent receiveDataObject();
-        ProtocolEvent sendData(const void *buf, const int buflen, const int flags, int *bytes);
-        ProtocolEvent receiveData(void *buf, const int buflen, struct sockaddr_un *addr, const int flags, int *bytes);
+        friend class ProtocolLOCALServer;
+        friend class ProtocolLOCALClient;
+	UnixAddress uaddr;
+	bool initbase();
+        ProtocolLOCAL(SOCKET sock, const InterfaceRef& _localIface, const InterfaceRef& _peerIface,
+		    const char *_path, const short flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL);
 public:
-        ProtocolLOCAL(const char *_path, ProtocolManager *m);
-        ~ProtocolLOCAL();
-        int sendSingleDataObject(const DataObjectRef& dObj, const InterfaceRef& _peerIface);
+        ProtocolLOCAL(const InterfaceRef& _localIface, const InterfaceRef& _peerIface,
+                    const char *_path = LOCAL_DEFAULT_PATH,
+                    const short flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL);
+        virtual ~ProtocolLOCAL() = 0;
+};
+
+/** */
+class ProtocolLOCALClient : public ProtocolLOCAL
+{
+        friend class ProtocolLOCALServer;
+	bool init_derived();
+public:
+        ProtocolLOCALClient(SOCKET sock, const InterfaceRef& _localIface, const InterfaceRef& _peerIface, const char *_path, ProtocolManager *m = NULL) : 
+	ProtocolLOCAL(sock, _localIface, _peerIface, _path, PROT_FLAG_CLIENT | PROT_FLAG_CONNECTED, m) {}
+        ProtocolLOCALClient(const InterfaceRef& _localIface, const InterfaceRef& _peerIface,
+                          const char *_path = LOCAL_DEFAULT_PATH, ProtocolManager *m = NULL) :
+	ProtocolLOCAL(_localIface, _peerIface, _path, PROT_FLAG_CLIENT, m) {}
+        ProtocolEvent connectToPeer();};
+
+
+/** */
+class ProtocolLOCALSender : public ProtocolLOCALClient
+{
+public:
+	ProtocolLOCALSender(const InterfaceRef& _localIface, 
+			  const InterfaceRef& _peerIface,
+			  const char *_path = LOCAL_DEFAULT_PATH, 
+			  ProtocolManager *m = NULL) :
+	ProtocolLOCALClient(_localIface, _peerIface, _path, m) {}
+	bool isSender() { return true; }
+};
+
+/** */
+class ProtocolLOCALReceiver : public ProtocolLOCALClient
+{
+public:
+	ProtocolLOCALReceiver(SOCKET sock, 
+			    const InterfaceRef& _localIface,
+			    const InterfaceRef& _peerIface,
+			    const char  *_path,
+			    ProtocolManager *m = NULL) : 
+	ProtocolLOCALClient(sock, _localIface, _peerIface, _path, m) {}
+	bool isReceiver() { return true; }
+};
+
+/** */
+class ProtocolLOCALServer : public ProtocolLOCAL
+{
+        friend class ProtocolLOCAL;
+        int backlog;
+	bool init_derived();
+public:
+        ProtocolLOCALServer(const InterfaceRef& _localIface = NULL, ProtocolManager *m = NULL,
+                          const char *_path = LOCAL_DEFAULT_PATH, int _backlog = LOCAL_DEFAULT_BACKLOG);
+        ~ProtocolLOCALServer();
+        ProtocolEvent acceptClient();
 };
 
 #endif /* PROTOCOLLOCAL_H */

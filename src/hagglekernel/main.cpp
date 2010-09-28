@@ -508,7 +508,7 @@ int run_haggle()
 	* running. */
 
 	if (!p || !p->init()) {
-		HAGGLE_ERR("Could not initialize UDP protocol\n");
+		HAGGLE_ERR("Could not initialize UDP Application protocol\n");
 		goto finish;
 	}
 	p->setFlag(PROT_FLAG_APPLICATION);

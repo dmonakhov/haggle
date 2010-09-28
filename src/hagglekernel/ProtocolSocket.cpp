@@ -43,12 +43,12 @@ bool ProtocolSocket::multiplyReceiveBufferSize(unsigned int x)
         long optval = 0;
         socklen_t optlen = sizeof(optval);
 
-        ret = getsockopt(sock, SOL_SOCKET, SO_RCVBUF, &optval, &optlen);
+        ret = ::getsockopt(sock, SOL_SOCKET, SO_RCVBUF, &optval, &optlen);
 
         if (ret != -1) {
                 optval = optval * x;
 
-                ret = setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &optval, optlen);
+                ret = ::setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &optval, optlen);
 
                 if (ret == -1) {
                         HAGGLE_ERR("Could not set recv buffer size to %ld bytes\n", optval);
@@ -79,7 +79,7 @@ bool ProtocolSocket::openSocket(int domain, int type, int protocol, bool registe
 		return false;
 	}
 
-	sock = socket(domain, type, protocol);
+	sock = ::socket(domain, type, protocol);
 
 	if (sock == INVALID_SOCKET) {
 		HAGGLE_ERR("%s: could not open socket : %s\n", getName(), STRERROR(ERRNO));
@@ -115,19 +115,19 @@ bool ProtocolSocket::setSocket(SOCKET _sock, bool registersock)
 }
 
 
-bool ProtocolSocket::bindSocket(const struct sockaddr *saddr, socklen_t addrlen)
+bool ProtocolSocket::bind(const struct sockaddr *saddr, socklen_t addrlen)
 {
 	if (!saddr)
 		return false;
 
-	if (bind(sock, saddr, addrlen) == SOCKET_ERROR) {
-		HAGGLE_ERR("%s: could not bind socket : %s\n", getName(), STRERROR(ERRNO));
+	if (::bind(sock, saddr, addrlen) == SOCKET_ERROR) {
+		HAGGLE_ERR("%s: could not bind socket %d : %s\n", getName(), errno, STRERROR(ERRNO));
 		return false;
 	}
 	return true;
 }
 
-SOCKET ProtocolSocket::acceptOnSocket(struct sockaddr *saddr, socklen_t *addrlen)
+SOCKET ProtocolSocket::accept(struct sockaddr *saddr, socklen_t *addrlen)
 {
 	if (sock == INVALID_SOCKET) {
 		HAGGLE_ERR("%s: cannot accept client on invalid server socket\n", getName());
@@ -141,7 +141,7 @@ SOCKET ProtocolSocket::acceptOnSocket(struct sockaddr *saddr, socklen_t *addrlen
 		HAGGLE_ERR("%s: cannot accept connection on non-listening socket\n", getName());
 		return INVALID_SOCKET;
 	}
-	SOCKET clientsock = accept(sock, saddr, addrlen);
+	SOCKET clientsock = ::accept(sock, saddr, addrlen);
 
 	if (clientsock == INVALID_SOCKET) {
 		HAGGLE_ERR("%s: accept failed : %s\n", getName(), STRERROR(ERRNO));
@@ -220,7 +220,6 @@ void ProtocolSocket::closeSocket()
 	setMode(PROT_MODE_DONE);
 }
 
-
 ssize_t ProtocolSocket::sendTo(const void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
 {
 	if (!to || !buf) {
@@ -257,16 +256,16 @@ ssize_t ProtocolSocket::recvFrom(void *buf, size_t len, int flags, struct sockad
 	return ret;
 }
 
-InterfaceRef ProtocolSocket::resolvePeerInterface(const Address& addr)
+InterfaceRef ProtocolSocket::resolvePeerInterface(const SocketAddress& addr)
 {
 	int res;
-        InterfaceRef pIface = getKernel()->getInterfaceStore()->retrieve(addr);
+	InterfaceRef pIface = getKernel()->getInterfaceStore()->retrieve(addr);
 
 	if (pIface) {
 		HAGGLE_DBG("Peer interface is [%s]\n", pIface->getIdentifierStr());
-	} else if (addr.getType() == AddressType_IPv4 
+	} else if (addr.getType() == Address::TYPE_IPV4
 #if defined(ENABLE_IPv6)
-		|| addr.getType() == AddressType_IPv6
+		   || addr.getType() == Address::TYPE_IPV6
 #endif
 		) {
                 char buf[SOCKADDR_SIZE];
@@ -275,19 +274,22 @@ InterfaceRef ProtocolSocket::resolvePeerInterface(const Address& addr)
                 struct sockaddr *peer_addr = (struct sockaddr *)buf;
                 addr.fillInSockaddr(peer_addr);
                 
-                HAGGLE_DBG("%s: isServer=%s trying to figure out peer mac for IP %s on interface %s\n", getName(), isServer() ? "true" : "false", addr.getAddrStr(), ifname ? localIface->getName() : "unspecified");
+                HAGGLE_DBG("%s: isServer=%s trying to figure out peer mac for IP %s on interface %s\n", getName(), isServer() ? "true" : "false", addr.getStr(), ifname ? localIface->getName() : "unspecified");
 		
                 res = get_peer_mac_address(peer_addr, ifname, mac, 6);
 
 		if (res < 0) {
-			HAGGLE_ERR("Error when retreiving mac address for peer %s, error=%d\n", addr.getAddrStr(), res);
+			HAGGLE_ERR("Error when retreiving mac address for peer %s, error=%d\n", addr.getStr(), res);
 		} else if (res == 0) {
-			HAGGLE_ERR("No corresponding mac address for peer %s\n", addr.getAddrStr());
+			HAGGLE_ERR("No corresponding mac address for peer %s\n", addr.getStr());
 		} else {
-			Address addr2(AddressType_EthMAC, mac);
-			pIface = new Interface(localIface->getType(), mac, &addr, "TCP peer", IFFLAG_UP);
-			pIface->addAddress(&addr2);
-			HAGGLE_DBG("Peer interface is [%s]\n", pIface->getIdentifierStr());
+			EthernetAddress eth_addr(mac);
+			pIface = Interface::create<EthernetInterface>(mac, "TCP peer", eth_addr, IFFLAG_UP);
+			
+			if (pIface) {
+				pIface->addAddress(eth_addr);
+				HAGGLE_DBG("Peer interface is [%s]\n", pIface->getIdentifierStr());
+			}
 		}
 	}
 
@@ -355,7 +357,7 @@ ProtocolEvent ProtocolSocket::openConnection(const struct sockaddr *saddr, sockl
         if (nonblock)
                 setNonblock(false);
 
-	if (connect(sock, saddr, addrlen) == SOCKET_ERROR) {
+	if (::connect(sock, saddr, addrlen) == SOCKET_ERROR) {
 		HAGGLE_ERR("%s Connection failed : %s\n", getName(), getProtocolErrorStr());
 
                 if (wasNonblock)
@@ -377,13 +379,15 @@ void ProtocolSocket::closeConnection()
 	if (sock == INVALID_SOCKET) {
 		HAGGLE_ERR("%s: cannot close connection as socket is not valid\n", getName());
 	}	return;
-
-	if (socketIsRegistered)
-		getKernel()->unregisterWatchable(sock);
 	
-	CLOSE_SOCKET(sock);
-
 	unSetFlag(PROT_FLAG_CONNECTED);
+	
+	// TODO: should consider calling closeSocket() here since that is basically doing the same thing
+	if (socketIsRegistered) {
+		getKernel()->unregisterWatchable(sock);
+		socketIsRegistered = false;
+	}
+	CLOSE_SOCKET(sock);
 }
 
 bool ProtocolSocket::setSocketOption(int level, int optname, void *optval, socklen_t optlen)

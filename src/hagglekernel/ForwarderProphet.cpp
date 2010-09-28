@@ -213,7 +213,7 @@ bool ForwarderProphet::addRoutingInformation(DataObjectRef& dObj, Metadata *pare
 void ForwarderProphet::_newNeighbor(const NodeRef &neighbor)
 {
 	// We don't handle routing to anything but other haggle nodes:
-	if (neighbor->getType() != NODE_TYPE_PEER)
+	if (neighbor->getType() != Node::TYPE_PEER)
 		return;
 	
 	// Update our private metric regarding this node:
@@ -231,7 +231,7 @@ void ForwarderProphet::_newNeighbor(const NodeRef &neighbor)
 void ForwarderProphet::_endNeighbor(const NodeRef &neighbor)
 {
 	// We don't handle routing to anything but other haggle nodes:
-	if (neighbor->getType() != NODE_TYPE_PEER)
+	if (neighbor->getType() != Node::TYPE_PEER)
 		return;
 	
 	// Update our private metric regarding this node:
@@ -284,7 +284,7 @@ void ForwarderProphet::_generateTargetsFor(const NodeRef &neighbor)
 				// Yes: insert this node into the list of targets for this 
 				// delegate forwarder.
 				
-				NodeRef target = Node::create_with_id(NODE_TYPE_PEER, id_number_to_nodeid[it->first].c_str(), "PRoPHET target node");
+				NodeRef target = Node::create_with_id(Node::TYPE_PEER, id_number_to_nodeid[it->first].c_str(), "PRoPHET target node");
                                 
 				if (target) {
 					lst.push_back(target);
@@ -315,7 +315,7 @@ void ForwarderProphet::_generateDelegatesFor(const DataObjectRef &dObj, const No
 		// Exclude ourselves and the target node from the list of good delegate
 		// forwarders:
 		if (it->first != this_node_id && it->first != target_id) {
-                        //NodeRef delegate = Node::create_with_id(NODE_TYPE_PEER, id_number_to_nodeid[it->first].c_str(), "PRoPHET delegate node");
+                        //NodeRef delegate = Node::create_with_id(Node::TYPE_PEER, id_number_to_nodeid[it->first].c_str(), "PRoPHET delegate node");
 			
 			NodeRef delegate = kernel->getNodeStore()->retrieve(id_number_to_nodeid[it->first], true);
 			

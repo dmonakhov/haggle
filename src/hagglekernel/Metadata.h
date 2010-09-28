@@ -67,6 +67,7 @@ class Metadata
         virtual bool addMetadata(Metadata *m) = 0;
         virtual Metadata *addMetadata(const string name, const string content = "") = 0;
 	virtual bool initFromRaw(const unsigned char *raw, size_t len) { return false; }
+	bool isName(const string _name) const;
         string getName() const { return name; }
         const string& getName() { return name; }
         bool removeMetadata(const string name);

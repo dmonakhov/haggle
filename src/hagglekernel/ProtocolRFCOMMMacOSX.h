@@ -131,7 +131,7 @@ class ProtocolRFCOMMServer : public ProtocolRFCOMM
 public:
 	void handleRFCOMMChannelOpen(IOBluetoothRFCOMMChannelRef mRFCOMMChannelRef);
 
-	bool clientIsRunning(char mac[BT_ALEN]);
+	bool clientIsRunning(char mac[6]);
         ProtocolRFCOMMServer(const InterfaceRef& _iface, ProtocolManager *m);
         ~ProtocolRFCOMMServer();
 };

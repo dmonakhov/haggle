@@ -44,7 +44,7 @@ class Certificate
 	// Whether this certificate is stored or not.
 	bool stored;
 	// to define who is the owner of this certificate
-	NodeId_t owner;
+	Node::Id_t owner;
 	// to define if the certificate is verified or not
 	bool verified;
 	// True if Certificate is signed
@@ -66,7 +66,7 @@ class Certificate
 	bool createDigest(unsigned char digest[SHA_DIGEST_LENGTH], const string data) const;
 	
 	Certificate(X509 *_x);
-	Certificate(const string& _subject, const string& _issuer, const string& _validity, const NodeId_t _owner, RSA *_pubKey);
+	Certificate(const string& _subject, const string& _issuer, const string& _validity, const Node::Id_t _owner, RSA *_pubKey);
 public:
 	~Certificate();
 	/**
@@ -80,7 +80,7 @@ public:
 	 @returns a pointer to a new certificate for the attribute, or NULL on failure. The certificate must
 	 be deleted by the creator.
 	 */
-	static Certificate *create(const string subject, const string issuer, const string validity, const NodeId_t owner, RSA **privKey);
+	static Certificate *create(const string subject, const string issuer, const string validity, const Node::Id_t owner, RSA **privKey);
 	/**
 	 Create an attribute certificate with a public key stored in a file.
 	 
@@ -92,7 +92,7 @@ public:
 	 @returns a pointer to a new certificate for the attribute, or NULL on failure. The certificate must
 	 be deleted by the creator.
 	 */
-	static Certificate *create(const string subject, const string issuer, const string validity, const NodeId_t owner, const string pubKeyFile);	
+	static Certificate *create(const string subject, const string issuer, const string validity, const Node::Id_t owner, const string pubKeyFile);	
 	void setStored(bool _stored = true) { stored = _stored; }
 	bool isStored() const { return stored; }
 	bool isSigned(void) const;
@@ -108,7 +108,7 @@ public:
 	 */
 	bool verifySignature(EVP_PKEY *key);
 	bool verifySignature(RSA *key);
-	bool isOwner(const NodeId_t owner) const;
+	bool isOwner(const Node::Id_t owner) const;
 	bool isSubject(const string subject) const;
         RSA *getPubKey();
         const RSA *getPubKey() const;

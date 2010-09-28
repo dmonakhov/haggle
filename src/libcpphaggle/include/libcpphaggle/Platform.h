@@ -73,6 +73,9 @@ typedef DWORD32 in_addr_t;
 typedef INT64 int64_t;
 typedef UINT64 u_int64_t;
 typedef DWORD pid_t;
+
+#define inet_pton(af, src, dst) InetPton(af, src, dst)
+
 #if defined(OS_WINDOWS_MOBILE)
 typedef unsigned int uintptr_t;
 #endif
@@ -121,8 +124,8 @@ typedef SSIZE_T ssize_t;
 #include <errno.h>
 
 typedef int SOCKET; /* This makes it easier to be compatible to the Windows API */
-#define CLOSE_SOCKET(sock) close(sock)
-#define CLOSE_FILE(fd) close(fd)
+#define CLOSE_SOCKET(sock) ::close(sock)
+#define CLOSE_FILE(fd) ::close(fd)
 #define SOCKET_ERROR -1 // For compatibility with Windows
 #define INVALID_SOCKET -1
 #define ERRNO errno

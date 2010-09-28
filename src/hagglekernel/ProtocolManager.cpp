@@ -256,9 +256,9 @@ void ProtocolManager::onShutdown()
 
 class LocalByTypeCriteria : public InterfaceStore::Criteria
 {
-	InterfaceType_t type;
+	Interface::Type_t type;
 public:
-	LocalByTypeCriteria(InterfaceType_t _type) : type(_type) {}
+	LocalByTypeCriteria(Interface::Type_t _type) : type(_type) {}
 	virtual bool operator() (const InterfaceRecord& ir) const
 	{
 		if (ir.iface->getType() == type && ir.iface->isLocal() && ir.iface->isUp())
@@ -395,7 +395,6 @@ Protocol *ProtocolManager::getReceiverProtocol(const ProtType_t type, const Inte
 			// does not apply to protocol media
 			break;
 #endif
-
 		default:
 			HAGGLE_DBG("Unable to create client receiver protocol for type %ld\n", type);
 			break;
@@ -516,29 +515,25 @@ void ProtocolManager::onLocalInterfaceUp(Event *e)
 	
 	for (Addresses::const_iterator it = adds->begin() ; it != adds->end() ; it++) {
 		switch((*it)->getType()) {
-			case AddressType_IPv4:
+		case Address::TYPE_IPV4:
 #if defined(ENABLE_IPv6)
-			case AddressType_IPv6:
+		case Address::TYPE_IPV6:
 #endif
-				getServerProtocol(PROT_TYPE_TCP, iface);
-				return;
-			break;
-			
+			getServerProtocol(PROT_TYPE_TCP, iface);
+			return;			
 #if defined(ENABLE_BLUETOOTH)
-			case AddressType_BTMAC:
-				getServerProtocol(PROT_TYPE_RFCOMM, iface);
-				return;
-			break;
+		case Address::TYPE_BLUETOOTH:
+			getServerProtocol(PROT_TYPE_RFCOMM, iface);
+			return;
 #endif			
 #if defined(ENABLE_MEDIA)
 			// FIXME: should probably separate loop interfaces from media interfaces somehow...
-			case AddressType_FilePath:
-				getServerProtocol(PROT_TYPE_MEDIA, iface);
-				return;
-			break;
+		case Address::TYPE_FILEPATH:
+			getServerProtocol(PROT_TYPE_MEDIA, iface);
+			return;
 #endif
 			
-			default:
+		default:
 			break;
 		}
 	}
@@ -565,7 +560,7 @@ void ProtocolManager::onLocalInterfaceDown(Event *e)
 		Never bring down our application IPC protocol when
 		application interfaces go down (i.e., applications deregister).
 		*/
-		if (p->getLocalInterface()->getType() == IFTYPE_APPLICATION_PORT) {
+		if (p->getLocalInterface()->getType() == Interface::TYPE_APPLICATION_PORT) {
 			continue;
 		}
 		// Is the associated with this protocol?
@@ -636,7 +631,7 @@ void ProtocolManager::onNeighborInterfaceDown(Event *e)
 		 Never bring down our application IPC protocol when
 		 application interfaces go down (i.e., applications deregister).
 		 */
-		if (p->getLocalInterface()->getType() == IFTYPE_APPLICATION_PORT) {
+		if (p->getLocalInterface()->getType() == Interface::TYPE_APPLICATION_PORT) {
 			continue;
 		}
 		// Is the associated with this protocol?
@@ -740,12 +735,12 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 				
 				switch (iface->getType()) {
 #if defined(ENABLE_BLUETOOTH)
-				case IFTYPE_BLUETOOTH:
+				case Interface::TYPE_BLUETOOTH:
 					/*
 					  Select Bluetooth only if there are no Ethernet or WiFi
 					  interfaces.
 					*/
-					if (!iface->getAddressByType(AddressType_BTMAC)) {
+					if (!iface->getAddress<BluetoothAddress>()) {
 						HAGGLE_DBG("Interface %s:%s has no Bluetooth address - IGNORING.\n",
 							   iface->getTypeStr(), iface->getIdentifierStr());
 						break;
@@ -753,19 +748,19 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 					
 					if (!peerIface)
 						peerIface = iface;
-					else if (peerIface->getType() != IFTYPE_ETHERNET &&
-						 peerIface->getType() != IFTYPE_WIFI)
+					else if (peerIface->getType() != Interface::TYPE_ETHERNET &&
+						 peerIface->getType() != Interface::TYPE_WIFI)
 						peerIface = iface;
 					break;
 #endif
 #if defined(ENABLE_ETHERNET)
-				case IFTYPE_ETHERNET:
+				case Interface::TYPE_ETHERNET:
 					/*
 					  Let Ethernet take priority over the other types.
 					*/
-					if (!iface->getAddressByType(AddressType_IPv4)
+					if (!iface->getAddress<IPv4Address>()
 #if defined(ENABLE_IPv6)
-					    && !iface->getAddressByType(AddressType_IPv6)
+					    && !iface->getAddress<IPv6Address>()
 #endif
 						) {
 						HAGGLE_DBG("Interface %s:%s has no IPv4 or IPv6 addresses - IGNORING.\n",
@@ -774,14 +769,14 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 					}
 					if (!peerIface)
 						peerIface = iface;
-					else if (peerIface->getType() == IFTYPE_BLUETOOTH ||
-						 peerIface->getType() == IFTYPE_WIFI)
+					else if (peerIface->getType() == Interface::TYPE_BLUETOOTH ||
+						 peerIface->getType() == Interface::TYPE_WIFI)
 						peerIface = iface;
 					break;
-				case IFTYPE_WIFI:
-					if (!iface->getAddressByType(AddressType_IPv4) 
+				case Interface::TYPE_WIFI:
+					if (!iface->getAddress<IPv4Address>() 
 #if defined(ENABLE_IPv6)
-					    && !iface->getAddressByType(AddressType_IPv6)
+					    && !iface->getAddress<IPv6Address>()
 #endif
 						) {
 						HAGGLE_DBG("Interface %s:%s has no IPv4 or IPv6 addresses - IGNORING.\n",
@@ -790,17 +785,17 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 					}
 					if (!peerIface)
 						peerIface = iface;
-					else if (peerIface->getType() == IFTYPE_BLUETOOTH &&
-						 peerIface->getType() != IFTYPE_ETHERNET)
+					else if (peerIface->getType() == Interface::TYPE_BLUETOOTH &&
+						 peerIface->getType() != Interface::TYPE_ETHERNET)
 						peerIface = iface;
 					break;
-#endif
-				case IFTYPE_APPLICATION_PORT:
-				case IFTYPE_APPLICATION_LOCAL:
+#endif // ENABLE_ETHERNET
+				case Interface::TYPE_APPLICATION_PORT:
+				case Interface::TYPE_APPLICATION_LOCAL:
                                         
-					if (!iface->getAddressByType(AddressType_IPv4) 
+					if (!iface->getAddress<IPv4Address>() 
 #if defined(ENABLE_IPv6)
-					    && !iface->getAddressByType(AddressType_IPv6)
+					    && !iface->getAddress<IPv6Address>()
 #endif
 						) {
 						HAGGLE_DBG("Interface %s:%s has no IPv4 or IPv6 addresses - IGNORING.\n",
@@ -808,7 +803,7 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 						break;
 					}
 					// Not much choise here.
-					if (targ->getType() == NODE_TYPE_APPLICATION) {
+					if (targ->getType() == Node::TYPE_APPLICATION) {
 						peerIface = iface;
 						done = true;
 					} else {
@@ -817,12 +812,11 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 					}
                                         
 					break;
-				case IFTYPE_MEDIA:
 #if defined(ENABLE_MEDIA)
-					
-#endif
+				case Interface::TYPE_MEDIA:
 					break;
-				case IFTYPE_UNDEF:
+#endif
+				case Interface::TYPE_UNDEFINED:
 				default:
 					break;
 				}
@@ -864,13 +858,13 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 			
 			switch ((*it)->getType()) {
 #if defined(ENABLE_BLUETOOTH)
-			case AddressType_BTMAC:
+			case Address::TYPE_BLUETOOTH:
 				p = getSenderProtocol(PROT_TYPE_RFCOMM, peerIface);
 				break;
 #endif
-			case AddressType_IPv4:
+			case Address::TYPE_IPV4:
 #if defined(ENABLE_IPv6)
-			case AddressType_IPv6:
+			case Address::TYPE_IPV6:
 #endif
 				if (peerIface->isApplication()) {
 #ifdef USE_UNIX_APPLICATION_SOCKET
@@ -883,7 +877,7 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 					p = getSenderProtocol(PROT_TYPE_TCP, peerIface);
 				break;
 #if defined(ENABLE_MEDIA)
-			case AddressType_FilePath:
+			case Address::TYPE_FILEPATH:
 				p = getSenderProtocol(PROT_TYPE_MEDIA, peerIface);
 				break;
 #endif

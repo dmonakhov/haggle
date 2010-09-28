@@ -49,16 +49,16 @@ void bluetoothDiscoverySDPCompleteCallback(void *userRefCon, IOBluetoothDeviceRe
 	//memcpy(macaddr, btAddr, BT_ALEN);
 	
 	const BluetoothDeviceAddress *btAddr = IOBluetoothDeviceGetAddress(foundDevRef);
-	Address addr(AddressType_BTMAC, (unsigned char *)btAddr);
+	BluetoothAddress addr((unsigned char *)btAddr);
 	
-	Interface iface(IFTYPE_BLUETOOTH, btAddr, &addr, name, IFFLAG_UP);
+	BluetoothInterface iface((unsigned char *)btAddr, name, &addr, IFFLAG_UP);
 	
 	if (IOBluetoothDeviceGetServiceRecordForUUID(foundDevRef, uuid) != NULL) {
-		CM_DBG("%s: Found Haggle device %s\n", conn->getName(), addr.getAddrStr());
+		CM_DBG("%s: Found Haggle device %s\n", conn->getName(), addr.getStr());
 		
 		conn->report_interface(&iface, conn->rootInterface, new ConnectivityInterfacePolicyTTL(2));
 	} else {
-		CM_DBG("%s: Found non-Haggle device [%s]\n", conn->getName(), addr.getAddrStr());
+		CM_DBG("%s: Found non-Haggle device [%s]\n", conn->getName(), addr.getStr());
 	}
 
 	IOBluetoothDeviceCloseConnection(foundDevRef);

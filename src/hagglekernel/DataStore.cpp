@@ -175,7 +175,7 @@ DataStoreTask::DataStoreTask(const NodeRef& _node, TaskType _type, const EventCa
 		HAGGLE_ERR("Tried to create a data store task with the wrong task for the data. (task type = %s)\n", taskName[type]);
 	}
 }
-DataStoreTask::DataStoreTask(NodeType_t _nodeType, TaskType _type, const EventCallback<EventHandler> *_callback) :
+DataStoreTask::DataStoreTask(Node::Type_t _nodeType, TaskType _type, const EventCallback<EventHandler> *_callback) :
 	type(_type), priority(TASK_PRIORITY_MEDIUM), num(totNum++), timestamp(Timeval::now()), nodeType(_nodeType), callback(_callback), boolParameter(false) 
 {
 	if (type == TASK_RETRIEVE_NODE_BY_TYPE) {
@@ -437,7 +437,7 @@ void DataStore::retrieveNode(const NodeRef& node, const EventCallback<EventHandl
 	cond.signal();
 }
 
-void DataStore::retrieveNode(NodeType_t type, const EventCallback<EventHandler> *callback)
+void DataStore::retrieveNode(Node::Type_t type, const EventCallback<EventHandler> *callback)
 {
 	Mutex::AutoLocker l(mutex);
 	

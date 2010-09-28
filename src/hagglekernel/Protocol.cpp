@@ -121,7 +121,7 @@ bool Protocol::init()
 			// Set a temporary peer node. It will be updated by the protocol manager
 			// when it received a node updated event once the node description
 			// has been received.
-			peerNode = Node::create(NODE_TYPE_UNDEF, "Peer node");
+			peerNode = Node::create(Node::TYPE_UNDEF, "Peer node");
 
 			if (!peerNode)
 				return false;
@@ -281,7 +281,7 @@ string Protocol::peerDescription()
 	string peerstr = "Unknown peer";
 
 	if (peerNode) {
-		if (peerNode->getType() != NODE_TYPE_UNDEF) {
+		if (peerNode->getType() != Node::TYPE_UNDEF) {
 			peerstr = peerNode->getName();
 		} else if (peerIface) {
 			peerstr = peerIface->getIdentifierStr();
@@ -417,7 +417,7 @@ bool Protocol::sendDataObject(const DataObjectRef& dObj, const NodeRef& peer, co
 		return false;
 	}
 	
-	if (!peerNode || (peerNode->getType() == NODE_TYPE_UNDEF && peer->getType() != NODE_TYPE_UNDEF)) {
+	if (!peerNode || (peerNode->getType() == Node::TYPE_UNDEF && peer->getType() != Node::TYPE_UNDEF)) {
 		HAGGLE_DBG("Setting peer node to %s, which was previously undefined\n", peer->getName().c_str());
 		peerNode = peer;
 	} else if (peerNode != peer) {
@@ -941,7 +941,7 @@ ProtocolEvent Protocol::sendDataObjectNow(const DataObjectRef& dObj)
 		if (len == 0 && !hasSentHeader && pEvent == PROT_EVENT_SUCCESS) {
 			// We are sending to a local application: done after sending the 
 			// header:
-			if (peerIface->getType() == IFTYPE_APPLICATION_PORT)
+			if (peerIface->getType() == Interface::TYPE_APPLICATION_PORT)
                                 return pEvent;
 			
 			hasSentHeader = true;

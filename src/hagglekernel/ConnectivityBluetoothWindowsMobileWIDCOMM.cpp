@@ -52,7 +52,7 @@ void unregisterSDPService(CSdpService **sdp)
 void serviceDiscoveryCallback(struct RemoteDevice *rd, CSdpDiscoveryRec *records, int num_records, void *data)
 {
 	ConnectivityBluetooth *conn = static_cast<ConnectivityBluetooth *>(data);
-	Address addr(AddressType_BTMAC, (unsigned char *) rd->bda);
+	BluetoothAddress addr((unsigned char *) rd->bda);
 
 	CM_DBG("Found Haggle Bluetooth device [%s:%s]\n", addr.getAddrStr(), rd->name.c_str());
 
@@ -67,7 +67,7 @@ static void inquiryCallback(struct RemoteDevice *rd, void *data)
 	unsigned char uuid[] = HAGGLE_BLUETOOTH_SDP_UUID;
 	GUID guid;
 
-	Address addr(AddressType_BTMAC, (unsigned char *) rd->bda);
+	BluetoothAddress addr((unsigned char *) rd->bda);
 	
 	convertUUIDBytesToGUID((char *)uuid, &guid);
 
@@ -84,7 +84,7 @@ static void inquiryCallback(struct RemoteDevice *rd, void *data)
 */
 void bluetoothDiscovery(ConnectivityBluetooth *conn)
 {
-	const Address *addr = conn->rootInterface->getAddressByType(AddressType_BTMAC);
+	const Address *addr = conn->rootInterface->getAddressByType(Address::TYPE_BLUETOOTH);
 	int count = 0;
 
 	if (!addr)
@@ -115,7 +115,7 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 		if (rd == NULL)
 			break;
 
-		Address addr(AddressType_BTMAC, (unsigned char *)rd->bda);
+		BluetoothAddress addr(Address::TYPE_BLUETOOTH, (unsigned char *)rd->bda);
 		
 		status = conn->is_known_interface(IFTYPE_BLUETOOTH, rd->bda);
 

@@ -109,7 +109,8 @@ static Interface *android_get_net_interface_info(const char *name, const unsigne
                 return NULL;
         }
         */
-        addrs.add(new Address(AddressType_EthMAC, (void *)mac));
+
+        addrs.add(new EthernetAddress(mac));
 
         if (ioctl(s, SIOCGIFADDR, &ifr) < 0) {
                 addr = 0;
@@ -121,7 +122,8 @@ static Interface *android_get_net_interface_info(const char *name, const unsigne
                 baddr = 0;
         } else {
                 baddr = ((struct sockaddr_in *)&ifr.ifr_broadaddr)->sin_addr.s_addr;
-                addrs.add(new Address(AddressType_IPv4, &addr, &baddr));
+                addrs.add(new IPv4Address(addr));
+                //addrs.add(new IPv4BroadcastAddress(baddr));
         }
 
         if (ioctl(s, SIOCGIFFLAGS, &ifr) < 0) {
@@ -134,9 +136,9 @@ static Interface *android_get_net_interface_info(const char *name, const unsigne
 
 	
         if (flags & IFF_UP)
-                return new Interface(IFTYPE_ETHERNET, mac, &addrs, name, IFFLAG_LOCAL | IFFLAG_UP);
+                return Interface::create<EthernetInterface>( mac, name, addrs, IFFLAG_LOCAL | IFFLAG_UP);
 
-        return new Interface(IFTYPE_ETHERNET, mac, &addrs, name, IFFLAG_LOCAL);
+        return Interface::create<EthernetInterface>(mac, name, addrs, IFFLAG_LOCAL);
 }
 
 #define	max(a,b) ((a) > (b) ? (a) : (b))
@@ -201,9 +203,9 @@ Interface *hci_get_interface_from_name(const char *ifname)
 	}
 
 	name[248] = '\0';
-	Address addr(AddressType_BTMAC, (unsigned char *) macaddr);
+	BluetoothAddress addr((unsigned char *) macaddr);
 	
-	return new Interface(IFTYPE_BLUETOOTH, macaddr, &addr, ifname, IFFLAG_LOCAL | IFFLAG_UP);
+	return Interface::create<BluetoothInterface>(macaddr, ifname, addr, IFFLAG_LOCAL | IFFLAG_UP);
 }
 
 static int hci_init_handle(struct hci_handle *hcih)
@@ -420,13 +422,17 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
                         fprintf(stderr, "Could not force discoverable mode for Bluetooth device %s\n", devname);
                 }
                 
-		Address addy(AddressType_BTMAC, (unsigned char *) macaddr);
+		BluetoothAddress addr((unsigned char *) macaddr);
 		
-		Interface iface(IFTYPE_BLUETOOTH, macaddr, &addy, devname, IFFLAG_LOCAL | IFFLAG_UP);
+		InterfaceRef iface = Interface::create<BluetoothInterface>(macaddr, devname, addr, IFFLAG_LOCAL | IFFLAG_UP);
                                         
+		if (iface) {
+			report_interface(iface, NULL, new ConnectivityInterfacePolicyAgeless());
+		}
+
                 set_piscan_mode = true;
                 dev_id = hdev;
-		report_interface(&iface, NULL, new ConnectivityInterfacePolicyAgeless());
+
 
 	}
 	return;
@@ -544,7 +550,7 @@ void ConnectivityLocal::ti_wifi_event_handle(IPC_EV_DATA *pData)
                                         sleep(5);
 
                                         tih.iface = android_get_net_interface_info(TI_WIFI_DEV_NAME, tih.own_addr);
-                                        if (tih.iface->getAddressByType(AddressType_IPv4) == NULL) {
+                                        if (tih.iface->getAddress<IPv4Address>() == NULL) {
                                                 CM_DBG("Interface %s has no IPv4 address yet... trying later\n", tih.iface->getName());
                                                  delete tih.iface;
                                                  tih.iface = NULL;

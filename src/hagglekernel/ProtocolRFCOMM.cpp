@@ -36,9 +36,9 @@ ProtocolRFCOMM::ProtocolRFCOMM(SOCKET _sock, const char *_mac, const unsigned sh
 {
 	memcpy(mac, _mac, BT_ALEN);
 	
-	Address addr(AddressType_BTMAC, (unsigned char *) mac);
+	BluetoothAddress addr((unsigned char *) mac);
 
-	peerIface = new Interface(IFTYPE_BLUETOOTH, mac, &addr, "Peer Bluetooth", IFFLAG_UP);
+	peerIface = Interface::create<BluetoothInterface>(mac, "Peer Bluetooth", addr, IFFLAG_UP);
 }
 
 ProtocolRFCOMM::ProtocolRFCOMM(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, const unsigned short _channel, const short flags, ProtocolManager * m) : 
@@ -70,8 +70,8 @@ bool ProtocolRFCOMM::initbase()
 
 #ifndef OS_WINDOWS
 	if (localIface) {
-		Address *addr = localIface->getAddressByType(AddressType_BTMAC);
-		if (addr != NULL) {
+		BluetoothAddress *addr = localIface->getAddress<BluetoothAddress>();
+		if (addr) {
                         // Binding RFCOMM sockets to a hardware address does not
                         // seem to work in Windows
 			BDADDR_swap(&localAddr.bt_bdaddr, addr->getRaw());
@@ -106,12 +106,12 @@ bool ProtocolRFCOMM::initbase()
 ProtocolEvent ProtocolRFCOMMClient::connectToPeer()
 {
 	struct sockaddr_bt peerAddr;
-	Address	*addr;
+	BluetoothAddress *addr;
 	
 	if (!peerIface)
 		return PROT_EVENT_ERROR;
 
-	addr = peerIface->getAddressByType(AddressType_BTMAC);
+	addr = peerIface->getAddress<BluetoothAddress>();
 
 	if(!addr)
 		return PROT_EVENT_ERROR;
@@ -123,18 +123,18 @@ ProtocolEvent ProtocolRFCOMMClient::connectToPeer()
 	peerAddr.bt_channel = channel & 0xff;
 
 	HAGGLE_DBG("%s Trying to connect over RFCOMM to [%s] channel=%u\n", 
-		   getName(), addr->getAddrStr(), channel);
+		   getName(), addr->getStr(), channel);
 
 	ProtocolEvent ret = openConnection((struct sockaddr *) &peerAddr, sizeof(peerAddr));
 
 	if (ret != PROT_EVENT_SUCCESS) {
 		HAGGLE_DBG("%s Connection failed to [%s] channel=%u\n", 
-			   getName(), addr->getAddrStr(), channel);
+			   getName(), addr->getStr(), channel);
 		return ret;
 	}
 
 	HAGGLE_DBG("%s Connected to [%s] channel=%u\n", 
-		   getName(), addr->getAddrStr(), channel);
+		   getName(), addr->getStr(), channel);
 
 	return ret;
 }
@@ -189,7 +189,7 @@ ProtocolEvent ProtocolRFCOMMServer::acceptClient()
 
 	len = sizeof(clientAddr);
 
-	clientSock = acceptOnSocket((struct sockaddr *) &clientAddr, &len);
+	clientSock = accept((struct sockaddr *) &clientAddr, &len);
 
 	if (clientSock == INVALID_SOCKET)
 		return PROT_EVENT_ERROR;

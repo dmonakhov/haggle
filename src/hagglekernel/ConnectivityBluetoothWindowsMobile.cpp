@@ -453,7 +453,7 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 	wsaq.lpcsaBuffer = NULL;
 	wsaq.lpBlob = &blob;
 	
-	addr = conn->rootInterface->getAddressByType(AddressType_BTMAC);
+	addr = conn->rootInterface->getAddressByType(Address::TYPE_BLUETOOTH);
 
 	if (!addr)
 		return;
@@ -497,7 +497,7 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 		}
 
 		btAddr2Mac(btAddr, macaddr);
-		Address addr(AddressType_BTMAC, macaddr);
+		BluetoothAddress addr(macaddr);
 
 		status = conn->is_known_interface(IFTYPE_BLUETOOTH, macaddr);
 

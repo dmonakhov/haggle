@@ -60,8 +60,8 @@ class ConnectivityBluetoothBase;
 class ConnectivityBluetoothBase : public Connectivity {
 private:
 	static Mutex sdpListMutex;
-	static InterfaceRefList sdpWhiteList;
-	static InterfaceRefList sdpBlackList;
+	static BluetoothInterfaceRefList sdpWhiteList;
+	static BluetoothInterfaceRefList sdpBlackList;
 	static bool ignoreNonListedInterfaces;
 public:
 	static unsigned long baseTimeBetweenScans;
@@ -81,11 +81,11 @@ public:
 	This is returned if the address is neither whitelisted or 
 	blacklisted, and ignoreNonListedInterfaces is false.
 	*/
-	static int classifyAddress(const Interface &iface);
+	static int classifyAddress(const BluetoothInterface &iface);
 	/**
 	See the other version of this function.
 	*/
-	static int classifyAddress(const InterfaceType_t type, const unsigned char *identifier);
+	static int classifyAddress(const Interface::Type_t type, const unsigned char identifier[6]);
 
 	static void updateSDPLists(Metadata *md);
 	static void clearSDPLists();

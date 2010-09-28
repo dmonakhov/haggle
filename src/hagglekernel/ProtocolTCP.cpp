@@ -65,7 +65,7 @@ bool ProtocolTCP::initbase()
 	}
         // Figure out the address type based on the local interface
 #if defined(ENABLE_IPv6)
-	if (localIface->getAddressByType(AddressType_IPv6))
+	if (localIface->getAddress<IPv6Address>())
                 af = AF_INET6;
 #endif
 
@@ -106,7 +106,7 @@ bool ProtocolTCP::initbase()
                 return false;
 	}
 
-	if (!bindSocket(local_addr, addrlen)) {
+	if (!bind(local_addr, addrlen)) {
 		closeSocket();
 		HAGGLE_ERR("Could not bind TCP socket\n");
                 return false;
@@ -135,13 +135,16 @@ ProtocolEvent ProtocolTCPClient::connectToPeer()
         char buf[SOCKADDR_SIZE];
         struct sockaddr *peer_addr = (struct sockaddr *)buf;
 	unsigned short peerPort;
-	Address *addr = NULL;
+	SocketAddress *addr = NULL;
 	InterfaceRef pIface;
 	
+        // FIXME: use other port than the default one?
+        peerPort = TCP_DEFAULT_PORT;
+
 	if (!peerIface ||
-		!(peerIface->getAddressByType(AddressType_IPv4) || 
+	    !(peerIface->getAddress<IPv4Address>() || 
 #if defined(ENABLE_IPv6)
-		  peerIface->getAddressByType(AddressType_IPv6)
+	      peerIface->getAddress<IPv6Address>()
 #else
 		  0
 #endif
@@ -149,34 +152,33 @@ ProtocolEvent ProtocolTCPClient::connectToPeer()
 		return PROT_EVENT_ERROR;
 
 #if defined(ENABLE_IPv6)
-	addr = peerIface->getAddressByType(AddressType_IPv6);
+	IPv6Address *addr6 = peerIface->getAddress<IPv6Address>();
+	addrlen = addr6->fillInSockaddr((struct sockaddr_in6 *)peer_addr, peerPort);
+	addr = addr6;
 #endif
 	
-	if (addr == NULL) {
+	if (!addr) {
 		// Since the check above passed, we know there has to be an IPv4 or an 
 		// IPv6 address associated with the interface, and since there was no IPv6...
-		addr = peerIface->getAddressByType(AddressType_IPv4);
+		IPv4Address *addr4 = peerIface->getAddress<IPv4Address>();
+		addrlen = addr4->fillInSockaddr((struct sockaddr_in *)peer_addr, peerPort);
+		addr = addr4;
 	}
 
-	if (addr == NULL) {
+	if (!addr) {
 		HAGGLE_DBG("No IP address to connect to\n");
 		return PROT_EVENT_ERROR;
 	}
 	
-        // FIXME: use other port than the default one?
-        peerPort = TCP_DEFAULT_PORT; //addr->getProtocolPortOrChannel();
-
-        addrlen = addr->fillInSockaddr(peer_addr, peerPort);
-
 	ProtocolEvent ret = openConnection(peer_addr, addrlen);
 
 	if (ret != PROT_EVENT_SUCCESS) {
 		HAGGLE_DBG("%s Connection failed to [%s] tcp port=%u\n", 
-			getName(), addr->getAddrStr(), peerPort);
+			getName(), addr->getStr(), peerPort);
 		return ret;
 	}
 
-	HAGGLE_DBG("%s Connected to [%s] tcp port=%u\n", getName(), addr->getAddrStr(), peerPort);
+	HAGGLE_DBG("%s Connected to [%s] tcp port=%u\n", getName(), addr->getStr(), peerPort);
 
 	return ret;
 }
@@ -211,7 +213,7 @@ ProtocolEvent ProtocolTCPServer::acceptClient()
 	ProtocolTCPClient *p = NULL;
 	unsigned char *rawaddr = NULL;
 	socklen_t addrlen = 0;
-	AddressType_t atype = AddressType_EthMAC;
+	SocketAddress *addr;
 	unsigned short port;
 
 	HAGGLE_DBG("In TCPServer receive\n");
@@ -223,7 +225,7 @@ ProtocolEvent ProtocolTCPServer::acceptClient()
 
 	len = SOCKADDR_SIZE;
 
-	clientsock = acceptOnSocket((struct sockaddr *) peer_addr, &len);
+	clientsock = accept((struct sockaddr *) peer_addr, &len);
 
 	if (clientsock == SOCKET_ERROR)
 		return PROT_EVENT_ERROR;
@@ -234,30 +236,27 @@ ProtocolEvent ProtocolTCPServer::acceptClient()
 		return PROT_EVENT_ERROR;
 	}
 	
-
 #if defined(ENABLE_IPv6)
 	if (peer_addr->sa_family == AF_INET6) {
 		struct sockaddr_in6 *saddr_in6 = (struct sockaddr_in6 *)peer_addr;
 		addrlen = sizeof(struct sockaddr_in6);
-		atype = AddressType_IPv6;
 		rawaddr = (unsigned char *)&saddr_in6->sin6_addr;
 		port = ntohs(saddr_in6->sin6_port);
+		addr = new IPv6Address(*saddr_in6, TransportTCP(port));
 	} else
 #endif
 	if (peer_addr->sa_family == AF_INET) {
 		struct sockaddr_in *saddr_in = (struct sockaddr_in *)peer_addr;
 		addrlen = sizeof(struct sockaddr_in);
-		atype = AddressType_IPv4;
 		rawaddr = (unsigned char *)&saddr_in->sin_addr;
 		port = ntohs(saddr_in->sin_port);
+		addr = new IPv4Address(*saddr_in, TransportTCP(port));
 	} else {
 		HAGGLE_ERR("ERROR: no matching address for incoming client\n");
 		return PROT_EVENT_ERROR;
 	}
 
-	Address addr(atype, rawaddr, NULL, ProtocolSpecType_TCP, port);
-
-        p = new ProtocolTCPReceiver(clientsock, localIface, resolvePeerInterface(addr), port, getManager());
+        p = new ProtocolTCPReceiver(clientsock, localIface, resolvePeerInterface(*addr), port, getManager());
 
 	if (!p || !p->init()) {
 		HAGGLE_DBG("Unable to create new TCP client on socket %d\n", clientsock);

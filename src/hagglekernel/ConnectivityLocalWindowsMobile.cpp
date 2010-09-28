@@ -98,7 +98,7 @@ void ConnectivityLocal::handleBTEvent(BTEVENT * e)
 
 void ConnectivityLocal::findLocalBluetoothInterfaces()
 {
-	char macaddr[6];
+	unsigned char macaddr[6];
 	char btName[256];
 
 	if (WIDCOMMBluetooth::readLocalDeviceAddress(macaddr) < 0)
@@ -107,12 +107,12 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 	if (WIDCOMMBluetooth::readLocalDeviceName(btName, 256) < 0)
 		return;
 
-	Address addy(AddressType_BTMAC, (unsigned char *) macaddr);
+	BluetoothAddress addr(macaddr);
 
 	if (btIface)
 		btIface = NULL;
 
-	btIface = InterfaceRef(new Interface(IFTYPE_BLUETOOTH, macaddr, &addy, btName, IFFLAG_LOCAL | IFFLAG_UP));
+	btIface = InterfaceRef(new Interface(IFTYPE_BLUETOOTH, macaddr, &addr, btName, IFFLAG_LOCAL | IFFLAG_UP));
 	
 	HAGGLE_DBG("Adding new LOCAL Bluetooth Interface: %s\n", btName);
 
@@ -144,7 +144,7 @@ static void btAddr2Mac(unsigned __int64 btAddr, char *mac)
 // Find local bluetooth interfaces
 void ConnectivityLocal::findLocalBluetoothInterfaces()
 {
-	char macaddr[BT_ALEN];
+	unsigned char macaddr[BT_ALEN];
 	char btName[BT_ALEN*3];
 
 #if defined(OS_WINDOWS_MOBILE)
@@ -193,12 +193,12 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 		return;		//-1;
 	}
 	
-	Address addy(AddressType_BTMAC, (unsigned char *) macaddr);
+	BluetoothAddress addr(macaddr);
 
 	if (btIface)
 		btIface = NULL;
 
-	btIface = InterfaceRef(new Interface(IFTYPE_BLUETOOTH, macaddr, &addy, btName, IFFLAG_LOCAL | IFFLAG_UP));
+	btIface = InterfaceRef(new Interface(IFTYPE_BLUETOOTH, macaddr, &addr, btName, IFFLAG_LOCAL | IFFLAG_UP));
 	
 	HAGGLE_DBG("Adding new LOCAL Bluetooth Interface: %s\n", btName);
 

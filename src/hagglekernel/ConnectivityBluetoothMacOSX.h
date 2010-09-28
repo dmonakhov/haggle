@@ -52,7 +52,7 @@ class ConnectivityBluetooth : public ConnectivityBluetoothBase
 	friend void bluetoothDiscoveryCompleteCallback(void *userRefCon, 
 						       IOBluetoothDeviceInquiryRef inquiryRef, 
 						       IOReturn error, Boolean aborted);
-	friend bool bluetoothDiscovery(const InterfaceRef iface, ConnectivityBluetooth *conn);
+	friend bool bluetoothDiscovery(const BluetoothInterfaceRef iface, ConnectivityBluetooth *conn);
 public:
         ConnectivityBluetooth(ConnectivityManager *m, const InterfaceRef& _iface);
         ~ConnectivityBluetooth();

@@ -15,295 +15,342 @@
 #ifndef _ADDRESS_H
 #define _ADDRESS_H
 
-/*
-Forward declarations of all data types declared in this file. This is to
-avoid circular dependencies. If/when a data type is added to this file,
-remember to add it here.
-*/
-class ProtocolSpec;
-class ProtocolSpecs;
-class Address;
-class Addresses;
-
 #include <libcpphaggle/Platform.h>
 #include <libcpphaggle/List.h>
-
 #include "Debug.h"
+#include "Metadata.h"
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+
+#if defined(OS_UNIX)
+#include <sys/un.h>
+#endif
 
 using namespace haggle;
+class Address;
 
-typedef enum {
-	ProtocolSpecType_None,
-	ProtocolSpecType_RFCOMM,
-	ProtocolSpecType_TCP,
-	ProtocolSpecType_UDP
-} ProtocolSpecType_t;
+#define TRANSPORT_METADATA "Transport"
+#define TRANSPORT_METADATA_TYPE_PARAM "type"
+#define TRANSPORT_METADATA_PORT_PARAM "port"
+#define TRANSPORT_METADATA_CHANNEL_PARAM "channel"
 
-typedef enum {
-	AddressType_EthMAC,
-	AddressType_BTMAC,
-	AddressType_FilePath,
-#if defined(ENABLE_IPv6)
-	AddressType_IPv6,
+class Transport {
+	friend class Address;	
+public:
+	typedef enum {
+		TYPE_NONE,
+		TYPE_RFCOMM,
+		TYPE_UDP,
+		TYPE_TCP,
+	} Type_t;
+protected:
+	Type_t type;
+	static const char *type_str[];
+	char *uri_prefix;
+	Transport(Type_t type, const char *prefix = "");
+	Transport(const Transport& t);
+public:	
+	virtual ~Transport();
+	static const char *typeToStr(Type_t type);
+	static Type_t strToType(const char *str);
+	static Transport *create(Type_t type, unsigned short arg = 0);
+	Type_t getType() const { return type; }
+	const char *getTypeStr() const { return typeToStr(type); }
+	const char *getURIPrefix() const { return uri_prefix; }
+	virtual bool equal(const Transport& t) const = 0;
+	virtual Transport *copy() const = 0;
+	friend bool operator==(const Transport& t1, const Transport& t2);
+	virtual Metadata *toMetadata() const = 0;
+	static Transport *fromMetadata(const Metadata& m);
+};
+
+class TransportNone : public Transport {
+public:
+	TransportNone();
+	TransportNone(const TransportNone& t);
+	bool equal(const Transport& t) const;
+	TransportNone *copy() const { return new TransportNone(*this); }
+	Metadata *toMetadata() const { return NULL; }
+	static TransportNone *fromMetadata(const Metadata& m) { return NULL; }
+};
+
+class TransportUDP : public Transport {
+	unsigned short port;
+public:
+	TransportUDP(unsigned short _port);
+	TransportUDP(const TransportUDP& t);
+	unsigned short getPort() const { return port; }
+	bool equal(const Transport& t) const;
+	TransportUDP *copy() const { return new TransportUDP(*this); }
+	Metadata *toMetadata() const;
+	static TransportUDP *fromMetadata(const Metadata& m);
+};
+
+class TransportTCP : public Transport {
+	unsigned short port;
+public:
+	TransportTCP(unsigned short _port);
+	TransportTCP(const TransportTCP& t);
+	unsigned short getPort() const { return port; }
+	bool equal(const Transport& t) const;
+	TransportTCP *copy() const { return new TransportTCP(*this); }
+	Metadata *toMetadata() const;
+	static TransportTCP *fromMetadata(const Metadata& m);
+};
+
+class TransportRFCOMM : public Transport {
+	unsigned short channel;
+public:
+	TransportRFCOMM(unsigned short _channel);
+	TransportRFCOMM(const TransportRFCOMM& t);
+	unsigned short getChannel() const { return channel; }
+	bool equal(const Transport& t) const;
+	TransportRFCOMM *copy() const { return new TransportRFCOMM(*this); }
+	Metadata *toMetadata() const;
+	static TransportRFCOMM *fromMetadata(const Metadata& m);
+};
+
+#ifndef ETH_ALEN
+#define ETH_ALEN 6
 #endif
-	AddressType_IPv4
-} AddressType_t;
-
-// Address lengths
-#define ETH_ALEN	6
-#define BT_ALEN		6
-#if defined(ENABLE_IPv6)
-#define IPv6_ALEN	16
-#endif
-#define IPv4_ALEN	4
-
-#if defined(ENABLE_IPv6)
-#define MAX_ALEN	IPv6_ALEN
-#else
-#define MAX_ALEN	ETH_ALEN
+#ifndef BT_ALEN
+#define BT_ALEN 6
 #endif
 
-/**
-Address class.
+#define ADDRESS_METADATA "Address"
+#define ADDRESS_METADATA_NETWORK_PARAM "net"
+#define ADDRESS_METADATA_TRANSPORT TRANSPORT_METADATA
+#define ADDRESS_METADATA_TYPE_PARAM "type"
 
-Stores an address to a local or remote node.
-
-This class is supposed to be readonly. Once created it should not be 
-modified, other than to add protocols as part of it's creation.
-*/
-class Address 
+class Address
 #ifdef DEBUG_LEAKS
 	: LeakMonitor
 #endif
 {
-	AddressType_t aType;
-	/*
-	These addresses are stored "Network endian".
-	*/
-	union {
-		unsigned char EthMAC[ETH_ALEN];
-		unsigned char BTMAC[BT_ALEN];
-		unsigned char IPv4[IPv4_ALEN];
-#if defined(ENABLE_IPv6)
-		unsigned char IPv6[IPv6_ALEN];
-#endif
-		char *path;
-	};
-	bool has_broadcast;
-	union {
-		unsigned char EthMAC_broadcast[ETH_ALEN];
-		unsigned char BTMAC_broadcast[BT_ALEN];
-		unsigned char IPv4_broadcast[IPv4_ALEN];
-#if defined(ENABLE_IPv6)
-		unsigned char IPv6_broadcast[IPv6_ALEN];
-#endif
-	};
-
-	ProtocolSpecType_t pType;
-	union {
-		unsigned short tcp_port;
-		unsigned short udp_port;
-		unsigned short rfcomm_channel;
-	};
-
-	char *addr_str;
-	char *broadcast_str;
-	char *uri_str;
-
-	/**
-	Private function to create address and broadcast address string.
-	*/
-	void create_addr_str(void);
-	/**
-	Private function to create address URI string.
-	*/
-	void create_uri_str(void);
 public:
-	/**
-	Returns the length of a kind of address, in bytes.
-
-	Returns -1 if the length is dynamic.
-	*/
-	static long getAddressLength(AddressType_t type);
-
-	/**
-	Creates an address. This can be any kind of address.
-
-	Address is expected to be in binary format, in network endian.
-
-	portOrChannel is expected to be in host endian.
-
-	The given addresses are the property of the caller.
-	*/
-	Address(AddressType_t _type, 
-		const void *Address, 
-		const void *Broadcast = NULL,
-		ProtocolSpecType_t protocolType = ProtocolSpecType_None, 
-		unsigned short portOrChannel = 0);
-
-	/**
-	Creates an IPv4 or IPv6 address as defined by the socket address type.
-
-	This function ignores any port number or other information besides the 
-	actual IP address in the sockaddr_in structs.
-
-	portOrChannel is expected to be in host endian.
-
-	The given addresses are the property of the caller.
-	*/
-	Address(const struct sockaddr *ip, 
-		const struct sockaddr *ip_broadcast = NULL, 
-		ProtocolSpecType_t protocolType = ProtocolSpecType_None, 
-		unsigned short portOrChannel = 0);
-
-	/**
-	If given something formatted the same way as returned by getURI, it
-	creates an address from that URI. If not, this creates a file reference
-	address.
-
-	portOrChannel is expected to be in host endian.
-
-	Information in a URI overrides protocolType/portOrChannel.
-
-	The given address is the property of the caller.
-	*/
-	Address(const char *path, ProtocolSpecType_t protocolType = ProtocolSpecType_None, 
-		unsigned short portOrChannel = 0);
-
-	/**
-	Copy constructor.
-	*/
-	Address(const Address &_original);
-	/**
-	Destructor.
-	*/
-	~Address();
-
-	/**
-	Merges in the information from the given address into this address.
-
-	This function is for internal interface module usage. Do not use it 
-	outside the interface module.
-	*/
-	void mergeWith(const Address *addr);
-	/**
-	Returns a copy to this address.
-	*/
-	Address *copy(void) const;
-	/**
-	Adds a protocol to this address.
-
-	The protocol is the property of the caller.
-	*/
-	void addProtocol(ProtocolSpec *proto);
-	/**
-	Returns the first found protocol of the given type.
-
-	May return NULL, if no such address was found.
-
-	The returned address is the property of the address.
-	*/
-	ProtocolSpec *getProtocolByType(ProtocolSpecType_t type);
-	/**
-	Returns the type of this address.
-	*/
-	AddressType_t getType(void) const;
-	/**
-	Returns the type of the protocol associated with this address.
-	*/
-	ProtocolSpecType_t getProtocolType(void) const;
-	/**
-	Returns the port or channel for the protocol associated with this 
-	address.
-
-	If none is set, this function will return 0.
-	*/
-	unsigned short getProtocolPortOrChannel(void) const;
-	/**
-	Returns the length of this address in bytes.
-	*/
-	long getLength(void) const;
-	/**
-	Returns a pointer to the raw, binary, address. It's only as long as 
-	getLength() says it is.
-	*/
-	const unsigned char *getRaw(void) const;
-	/**
-	Returns a pointer to the raw, binary, broadcast address. It's only as 
-	long as getLength() says it is.
-
-	Returns NULL if there is no broadcast address set.
-	*/
-	const unsigned char *getRawBroadcast(void) const;
-	/**
-	Returns a pointer to a readable form of the address.
-
-	The returned pointer is the property of the address.
-	*/
-	const char *getAddrStr(void) const;
-	/**
-	Returns a pointer to a readable form of the broadcast address, if one 
-	exists.
-
-	The returned pointer is the property of the address.
-
-	May return NULL, if no broadcast address is set.
-	*/
-	const char *getBroadcastStr(void) const;
-	/**
-	Returns a pointer to a URI form of the address.
-
-	The returned pointer is the property of the address.
-	*/
-	const char *getURI(void) const;
-	/**
-	Returns true iff a broadcast address is available.
-	*/
-	bool hasBroadcast(void) const;
-
-	/**
-	If this is an IPv4 or IPv6 address, this function fills in a correct
-	struct sockaddr_in or struct sockaddr_in6 struct from the information
-	in this address. It then returns the size of the struct it filled in.
-
-	If the address has a associated port number for UDP or TCP, this 
-	function will fill that port number in.
-
-	If this is not an IPv4 or IPv6 address, this function does nothing and
-	returns 0.
-
-	If "port" is anything but 0, the function will fill in that value 
-	instead of the value in the address. This value is expected to be in
-	host endian.
-
-	"sa" has to have space enough to fill in the correct struct.
-	*/
-	socklen_t fillInSockaddr(struct sockaddr *sa, unsigned short port = 0) const;
-
-	/**
-	If this is an IPv4 or IPv6 address, and it has a broadcast address set,
-	this function fills in a correct struct sockaddr_in or struct 
-	sockaddr_in6 struct from the information in the brodcast address. It 
-	then returns the size of the struct it filled in.
-
-	If the address has a associated port number for UDP or TCP, this 
-	function will fill that port number in. If not, 0 will be set.
-
-	If this is not an IPv4 or IPv6 address, this function does nothing and
-	returns 0.
-
-	If "port" is anything but 0, the function will fill in that value 
-	instead of the value in the address. This value is expected to be in
-	host endian.
-
-	"sa" has to have space enough to fill in the correct struct.
-	*/
-	socklen_t fillInBroadcastSockaddr(struct sockaddr *sa, unsigned short port = 0);
-	/**
-	Equality operator.
-	*/
-	friend bool operator==(const Address &i1, const Address &i2);
+	typedef enum {
+		TYPE_UNDEFINED = 0,
+		TYPE_ETHERNET,
+		TYPE_ETHERNET_BROADCAST,
+		TYPE_BLUETOOTH,
+		TYPE_IPV4,
+		TYPE_IPV4_BROADCAST,
+		TYPE_IPV6,
+		TYPE_IPV6_BROADCAST,
+		TYPE_FILEPATH,
+		TYPE_UNIX,
+	} Type_t;
+protected:
+	Type_t type;
+	static const char *type_str[];
+	static const char *uri_prefix[];
+	const unsigned char *raw;
+	Transport *transport;	
+	char *uri;
+	char *straddr;
+	Address(Type_t _type, const void *_raw, const Transport& t = TransportNone());
+	Address(const Address& a);
+	bool allocURI(size_t len) const;
+	bool allocStr(size_t len) const;
+public:
+	virtual ~Address() = 0;
+	static const char *typeToStr(Type_t type);
+	static Type_t strToType(const char *str);
+	Type_t getType() const { return type; }
+	const char *getTypeStr() const { return typeToStr(type); }
+	const Transport *getTransport() const { return transport; }
+	const unsigned char *getRaw() const { return raw; }
+	virtual size_t getLength() const = 0;
+	virtual const char *getURI() const = 0;
+	virtual const char *getStr() const = 0;
+	bool merge(const Address& a) { return false; }
+	virtual Address *copy() const = 0;
+	virtual bool equal(const Address& a) const = 0;
+	friend bool operator==(const Address& a1, const Address& a2);
+	Metadata *toMetadata() const;
+	static Address *fromMetadata(const Metadata& m);
 };
+
+class SocketAddress : public Address {
+protected:
+	SocketAddress(Address::Type_t type, const void *raw, const Transport& t = TransportNone());
+	SocketAddress(const SocketAddress& a);
+public:
+	virtual socklen_t fillInSockaddr(struct sockaddr *sa) const { return 0; };
+	virtual ~SocketAddress() = 0;
+	int family() const;
+};
+
+#if defined(ENABLE_ETHERNET)
+class EthernetAddress : public SocketAddress {
+	unsigned char mac[ETH_ALEN];
+public:
+	EthernetAddress() : SocketAddress(Address::TYPE_ETHERNET, mac) {}
+	EthernetAddress(unsigned char _mac[ETH_ALEN]);
+	EthernetAddress(const EthernetAddress& a);
+	~EthernetAddress();
+	size_t getLength() const { return sizeof(mac); }
+	const char *getURI() const;
+	const char *getStr() const;
+	socklen_t fillInSockaddr(struct sockaddr *sa) const;
+	Address *copy() const { return new EthernetAddress(*this); }
+	bool equal(const Address& a) const;
+	static EthernetAddress *fromMetadata(const Metadata& m);
+};
+
+class EthernetBroadcastAddress : public EthernetAddress {
+public:
+	EthernetBroadcastAddress() : EthernetAddress() {}
+	EthernetBroadcastAddress(unsigned char _mac[ETH_ALEN]) : EthernetAddress(_mac) { type = TYPE_ETHERNET_BROADCAST; }
+	EthernetBroadcastAddress(const EthernetBroadcastAddress& a) : EthernetAddress(a) {}
+	~EthernetBroadcastAddress() {}
+};
+
+#endif
+
+#if defined(ENABLE_BLUETOOTH)
+
+#if defined(OS_LINUX)
+#include <bluetooth/bluetooth.h>
+#include <bluetooth/rfcomm.h>
+
+/* Some redefinitions of Bluetooth sockaddr for portability between
+ * Windows and Linux */
+#define sockaddr_bt sockaddr_rc
+#define bt_channel rc_channel
+#define bt_family rc_family
+#define bt_bdaddr rc_bdaddr
+
+#elif defined(OS_WINDOWS)
+#include <ws2bth.h>
+#define sockaddr_bt _SOCKADDR_BTH
+#define bt_channel port
+#define bt_family addressFamily
+#define bt_bdaddr btAddr
+#if defined(OS_WINDOWS_MOBILE)
+#define AF_BLUETOOTH AF_BT
+#elif defined(OS_WINDOWS_DESKTOP)
+#define AF_BLUETOOTH AF_BTH
+
+#endif /* OS_LINUX */
+
+#endif
+
+class BluetoothAddress : public SocketAddress {
+	unsigned char mac[BT_ALEN];
+public:
+	BluetoothAddress() : SocketAddress(Address::TYPE_BLUETOOTH, mac) {}
+	BluetoothAddress(unsigned char _mac[BT_ALEN], const Transport& t = TransportNone());
+	BluetoothAddress(const BluetoothAddress& a);
+	~BluetoothAddress();
+	size_t getLength() const { return sizeof(mac); }
+	const char *getURI() const;
+	const char *getStr() const;
+	socklen_t fillInSockaddr(struct sockaddr *sa, unsigned short channel) const;
+	socklen_t fillInSockaddr(struct sockaddr *sa) const;
+	Address *copy() const { return new BluetoothAddress(*this); }
+	bool equal(const Address& a) const;
+	static BluetoothAddress *fromMetadata(const Metadata& m);
+};
+
+#endif /* ENABLE_BLUETOOTH */
+
+class IPv4Address : public SocketAddress {
+	friend class Address;
+	struct in_addr ipv4;
+public:
+	IPv4Address() : SocketAddress(Address::TYPE_IPV4, &ipv4) {}
+	IPv4Address(struct sockaddr_in& saddr, const Transport& t = TransportNone());
+	IPv4Address(struct in_addr& inaddr, const Transport& t = TransportNone());
+	IPv4Address(const IPv4Address& a);
+	~IPv4Address();
+	size_t getLength() const { return sizeof(ipv4); }
+	const char *getURI() const;
+	const char *getStr() const;
+	socklen_t fillInSockaddr(struct sockaddr_in *sa, unsigned short port = 0) const;
+	socklen_t fillInSockaddr(struct sockaddr *sa, unsigned short port = 0) const;
+	socklen_t fillInSockaddr(struct sockaddr *sa) const;
+	Address *copy() const { return new IPv4Address(*this); }
+	bool equal(const Address& a) const;
+	static IPv4Address *fromMetadata(const Metadata& m);
+};
+
+class IPv4BroadcastAddress : public IPv4Address {
+public:
+	IPv4BroadcastAddress() : IPv4Address() { type = TYPE_IPV4_BROADCAST; }
+	IPv4BroadcastAddress(struct sockaddr_in& saddr) : IPv4Address(saddr) { type = TYPE_IPV4_BROADCAST; }
+	IPv4BroadcastAddress(struct in_addr& inaddr) : IPv4Address(inaddr) { type = TYPE_IPV4_BROADCAST; }
+	IPv4BroadcastAddress(const IPv4BroadcastAddress& a) : IPv4Address(a) {}
+	~IPv4BroadcastAddress() {}
+};
+
+#if defined(ENABLE_IPv6)
+class IPv6Address : public SocketAddress {	
+	struct in6_addr ipv6;
+public:
+	IPv6Address() : SocketAddress(Address::TYPE_IPV6, &ipv6) {}
+	IPv6Address(struct sockaddr_in6& saddr, const Transport& t = TransportNone());
+	IPv6Address(struct in6_addr& inaddr, const Transport& t = TransportNone());
+	IPv6Address(const IPv6Address& a);
+	~IPv6Address();
+	size_t getLength() const { return sizeof(ipv6); }
+	const char *getURI() const;
+	const char *getStr() const;
+	socklen_t fillInSockaddr(struct sockaddr_in6 *sa, unsigned short port = 0) const;
+	socklen_t fillInSockaddr(struct sockaddr *sa, unsigned short port = 0) const;
+	socklen_t fillInSockaddr(struct sockaddr *sa) const;
+	Address *copy() const { return new IPv6Address(*this); }
+	bool equal(const Address& a) const;
+	static IPv6Address *fromMetadata(const Metadata& m);
+};
+
+class IPv6BroadcastAddress : public IPv6Address {
+public:
+	IPv6BroadcastAddress() : IPv6Address() { type = TYPE_IPV6_BROADCAST; }
+	IPv6BroadcastAddress(struct sockaddr_in6& saddr) : IPv6Address(saddr) { type = TYPE_IPV6_BROADCAST; }
+	IPv6BroadcastAddress(struct in6_addr& inaddr) : IPv6Address(inaddr) { type = TYPE_IPV6_BROADCAST; }
+	IPv6BroadcastAddress(const IPv6Address& a) : IPv6Address(a) {}
+	~IPv6BroadcastAddress() {}
+};
+
+#endif
+
+class FileAddress : public Address {
+	const char *filepath;
+public:
+	FileAddress() : Address(Address::TYPE_FILEPATH, filepath), filepath("none") {}
+	FileAddress(const char *path);
+	FileAddress(const FileAddress& a);
+	~FileAddress();
+	size_t getLength() const { return strlen(filepath); }
+	const char *getURI() const;
+	const char *getStr() const;
+	Address *copy() const { return new FileAddress(*this); }
+	bool equal(const Address& a) const;
+	static FileAddress *fromMetadata(const Metadata& m);
+};
+
+#if defined(OS_UNIX)
+class UnixAddress : public SocketAddress {
+	const char *filepath;
+public:
+	UnixAddress() : SocketAddress(Address::TYPE_UNIX, filepath), filepath("none") {}
+	UnixAddress(struct sockaddr_un& saddr);
+	UnixAddress(const char *path);
+	UnixAddress(const UnixAddress& a);
+	~UnixAddress();
+	size_t getLength() const { return strlen(filepath); }
+	const char *getURI() const;
+	const char *getStr() const;
+	socklen_t fillInSockaddr(struct sockaddr *sa) const;
+	socklen_t fillInSockaddr(struct sockaddr_un *sa) const;
+	Address *copy() const { return new UnixAddress(*this); }
+	bool equal(const Address& a) const;
+	static UnixAddress *fromMetadata(const Metadata& m);
+};
+#endif
 
 class Addresses : public List<Address *>
 {
@@ -316,5 +363,4 @@ public:
 	Address *pop();
 };
 
-#endif
-
+#endif /* _ADDRESS_H */

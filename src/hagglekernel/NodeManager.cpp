@@ -421,13 +421,13 @@ void NodeManager::onNewNodeContact(Event *e)
 	NodeRef neigh = e->getNode();
 
 	switch (neigh->getType()) {
-	case NODE_TYPE_UNDEF:
+	case Node::TYPE_UNDEF:
 		HAGGLE_DBG("%s - New node contact. Have not yet received node description!\n", getName());
 		break;
-	case NODE_TYPE_PEER:
+	case Node::TYPE_PEER:
 		HAGGLE_DBG("%s - New node contact %s [id=%s]\n", getName(), neigh->getName().c_str(), neigh->getIdStr());
 		break;
-	case NODE_TYPE_GATEWAY:
+	case Node::TYPE_GATEWAY:
 		HAGGLE_DBG("%s - New gateway contact %s\n", getName(), neigh->getIdStr());
 		break;
 	default:
@@ -467,7 +467,7 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 
 		DataObjectRef dObj = dObjs.pop();
 
-		NodeRef node = Node::create(NODE_TYPE_PEER, dObj);
+		NodeRef node = Node::create(Node::TYPE_PEER, dObj);
 
 		if (!node) {
 			HAGGLE_DBG("Could not create node from metadata!\n");
@@ -532,7 +532,7 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 		// If the existing neighbor node was undefined, we merge the bloomfilters
 		// of the undefined node and the node created from the node description
 		if (neighbor) {
-			if (neighbor->getType() == NODE_TYPE_UNDEF) {
+			if (neighbor->getType() == Node::TYPE_UNDEF) {
 				HAGGLE_DBG("Merging bloomfilter of node %s with its previously undefined node\n", 
 					node->getName().c_str());
 				node->getBloomfilter()->merge(*neighbor->getBloomfilter());

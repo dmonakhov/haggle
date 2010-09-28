@@ -111,7 +111,7 @@ void BenchmarkManager::onTimeout(Event *e)	// start evaluation
 	HAGGLE_LOG("Starting benchmark\n");
 
 #ifdef USE_PREGENERATED_DATABASE
-	kernel->getDataStore()->retrieveNode(NODE_TYPE_PEER, newEventCallback(onRetreiveNodes));
+	kernel->getDataStore()->retrieveNode(Node::TYPE_PEER, newEventCallback(onRetreiveNodes));
 #else
 	// Generate and insert nodes
 	for (unsigned int n = 0; n < Test_Num; n++) {
@@ -172,7 +172,7 @@ NodeRef BenchmarkManager::createNode(unsigned int numAttr)
 	sprintf(nodeid, "%ld", id);
 	sprintf(nodename, "node %ld", id);
 	
-	NodeRef node = Node::create_with_id(NODE_TYPE_PEER, nodeid, nodename);
+	NodeRef node = Node::create_with_id(Node::TYPE_PEER, nodeid, nodename);
 
 	if (!node)
 		return NULL;

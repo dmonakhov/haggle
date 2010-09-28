@@ -353,7 +353,7 @@ int ConnectivityLocal::read_netlink()
 					//HAGGLE_ERR("Could not get IP configuration for interface %s\n", ifinfo.ifname);
 					break;
 				}
-
+				
 				if (ifinfo.mac[0] == 0 &&
                                     ifinfo.mac[1] == 0 &&
                                     ifinfo.mac[2] == 0 &&
@@ -368,41 +368,48 @@ int ConnectivityLocal::read_netlink()
 				
 				if (!ifinfo.isUp)
 					break;
-				/*
+		
 				Addresses addrs;
-
-				addrs.add(new Address(AddressType_EthMAC, ifinfo.mac));
-				addrs.add(new Address(AddressType_IPv4, &ifinfo.ip, &ifinfo.broadcast));
 				
-			 	Interface iface(ifinfo.isWireless ? IFTYPE_WIFI : IFTYPE_ETHERNET, 
-						 ifinfo.mac, &addrs, ifinfo.ifname, IFFLAG_LOCAL | IFFLAG_UP);
+				addrs.add(new EthernetAddress(ifinfo.mac));
+				addrs.add(new IPv4Address(ifinfo.ip));
+				addrs.add(new IPv4BroadcastAddress(ifinfo.broadcast));
 				
- 				ethernet_interfaces_found++;
+				InterfaceRef iface;
 
- 				report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
-				*/
+				if (ifinfo.isWireless) {
+					iface = Interface::create<WiFiInterface>(ifinfo.mac, ifinfo.ifname, addrs, IFFLAG_LOCAL | IFFLAG_UP);
+				} else {
+					iface = Interface::create<EthernetInterface>(ifinfo.mac, ifinfo.ifname, addrs, IFFLAG_LOCAL | IFFLAG_UP);
+				}
+				
+				if (iface) {
+					ethernet_interfaces_found++;
+					
+					report_interface(iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
+				}
 			}
 #endif
 			if (!ifinfo.isUp) {
 				CM_DBG("Interface %s [%s] went DOWN\n", ifinfo.ifname, eth_to_str(ifinfo.mac));
-				delete_interface(ifinfo.isWireless ? IFTYPE_WIFI : IFTYPE_ETHERNET, ifinfo.mac);
+				delete_interface(ifinfo.isWireless ? Interface::TYPE_WIFI : Interface::TYPE_ETHERNET, ifinfo.mac);
 			}
 			break;
 		case RTM_DELLINK:
 		{
 			ret = nl_parse_link_info(nlm, &ifinfo);
-			Address mac(AddressType_EthMAC, (unsigned char *) ifinfo.mac);
-			CM_DBG("Interface dellink %s %s\n", ifinfo.ifname, mac.getAddrStr());
+			EthernetAddress mac(ifinfo.mac);
+			CM_DBG("Interface dellink %s %s\n", ifinfo.ifname, mac.getStr());
 			// Delete interface here?
 			
-			delete_interface(ifinfo.isWireless ? IFTYPE_WIFI : IFTYPE_ETHERNET, ifinfo.mac);
+			delete_interface(ifinfo.isWireless ? Interface::TYPE_WIFI : Interface::TYPE_ETHERNET, ifinfo.mac);
 		}
 			break;
 		case RTM_DELADDR:
 			ret = nl_parse_addr_info(nlm, &ifinfo);
 			CM_DBG("Interface deladdr %s %s\n", ifinfo.ifname, ip_to_str(ifinfo.ipaddr.sin_addr));
 			// Delete interface here?
-			delete_interface(ifinfo.isWireless ? IFTYPE_WIFI : IFTYPE_ETHERNET, ifinfo.mac);
+			delete_interface(ifinfo.isWireless ? Interface::TYPE_WIFI : Interface::TYPE_ETHERNET, ifinfo.mac);
 			break;
 		case RTM_NEWADDR:
 			ret = nl_parse_addr_info(nlm, &ifinfo);
@@ -424,20 +431,27 @@ int ConnectivityLocal::read_netlink()
                                     ifinfo.mac[5] == 0)
 				     break;
 				
-				addrs.add(new Address(AddressType_EthMAC, ifinfo.mac));
-				addrs.add(new Address(AddressType_IPv4, &ifinfo.ip, &ifinfo.broadcast));
-				
+				addrs.add(new EthernetAddress(ifinfo.mac));
+				addrs.add(new IPv4Address(ifinfo.ip));
+				//addrs.add(new IPv4BroadcastAddress(ifinfo.broadcast));
+
 				/*
 				HAGGLE_DBG("New interface %s %s/%s [%s]\n", ifinfo.ifname, ip_to_str(ifinfo.ip), 
 					   ip_to_str(ifinfo.broadcast), eth_to_str(ifinfo.mac));
 				*/
 				
-			 	Interface iface(ifinfo.isWireless ? IFTYPE_WIFI : IFTYPE_ETHERNET, 
-						 ifinfo.mac, &addrs, ifinfo.ifname, IFFLAG_LOCAL | IFFLAG_UP);
+				InterfaceRef iface;
 				
- 				ethernet_interfaces_found++;
-
- 				report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
+				if (ifinfo.isWireless) {
+					iface = Interface::create<WiFiInterface>(ifinfo.mac, ifinfo.ifname, addrs, IFFLAG_LOCAL | IFFLAG_UP);
+				} else {
+					iface = Interface::create<EthernetInterface>(ifinfo.mac, ifinfo.ifname, addrs, IFFLAG_LOCAL | IFFLAG_UP);
+				}
+				if (iface) {
+					ethernet_interfaces_found++;
+					
+					report_interface(iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
+				}
 			}
 			break;
 		case NLMSG_DONE:
@@ -528,13 +542,16 @@ void ConnectivityLocal::findLocalEthernetInterfaces()
 		memcpy(&broadcast, &((struct sockaddr_in *) &(ifbuf.ifr_broadaddr))->sin_addr, sizeof(struct in_addr));
 		
 		Addresses addrs;
-		addrs.add(new Address(AddressType_EthMAC, macaddr));
-		addrs.add(new Address(AddressType_IPv4, &ip, &broadcast));
+		addrs.add(new EthernetAddress(macaddr));
+		addrs.add(new IPv4Address(ip /*, &broadcast */));
+		//addrs.add(new IPv4BroadcastAddress(broadcast));
 		
 		// Create the interface
-		Interface iface(IFTYPE_ETHERNET, macaddr, &addrs, ifr->ifr_name, IFFLAG_LOCAL | IFFLAG_UP);
+		InterfaceRef iface = Interface::create<EthernetInterface>(macaddr, ifr->ifr_name, 
+									  addrs, IFFLAG_LOCAL | IFFLAG_UP);
  
-		report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
+		if (iface) 
+			report_interface(iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
 
 		req.ifc.ifc_len -= len;
 		ifr = (struct ifreq *) ((char *) ifr + len);
@@ -806,13 +823,13 @@ static InterfaceRef dbus_bluetooth_get_interface(struct dbus_handle *dbh, const 
 			dbus_message_iter_get_basic(&prop_val, &interface_name);
 			//HAGGLE_DBG("Mac address is %s\n", interface_name);
 		}
-	} while(dbus_message_iter_next(&dict));
+	} while (dbus_message_iter_next(&dict));
 	
 	if (device_name && interface_mac && interface_name) {
 		bdaddr_t *mac = strtoba(interface_mac);				
 
-		Address addr(AddressType_BTMAC, (unsigned char *)mac);
-		iface =  new Interface(IFTYPE_BLUETOOTH, (char *)mac, &addr, device_name, IFFLAG_LOCAL | IFFLAG_UP);
+		BluetoothAddress addr((unsigned char *)mac);
+		iface = Interface::create<BluetoothInterface>(mac, device_name, addr, IFFLAG_LOCAL | IFFLAG_UP);
 	}
 failure:
 	dbus_message_unref(reply);
@@ -1213,9 +1230,9 @@ Interface *hci_get_interface_from_name(const char *ifname)
 	}
 
 	name[248] = '\0';
-	Address addr(AddressType_BTMAC, (unsigned char *) macaddr);
+	BluetoothAddress addr((unsigned char *)macaddr);
 	
-	return new Interface(IFTYPE_BLUETOOTH, macaddr, &addr, ifname, IFFLAG_LOCAL | IFFLAG_UP);
+	return Interface::create<BluetoothInterface>(macaddr, ifname, addr, IFFLAG_LOCAL | IFFLAG_UP);
 }
 
 #if !defined(HAVE_DBUS)
@@ -1477,11 +1494,14 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
                 }
 #endif
 		
-		Address addy(AddressType_BTMAC, (unsigned char *) macaddr);
+		BluetoothAddress addy((unsigned char *) macaddr);
 		
-		Interface iface(IFTYPE_BLUETOOTH, macaddr, &addy, devname, IFFLAG_LOCAL | IFFLAG_UP);
+		InterfaceRef iface = Interface::create<BluetoothInterfac>(macaddr, devname, addy, IFFLAG_LOCAL | IFFLAG_UP);
+		
+		if (iface) {
+			report_interface(iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
+		}
 
-		report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
 	}
 	return;
 }

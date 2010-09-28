@@ -21,7 +21,6 @@
 	remember to add it here.
 */
 class Node;
-class NodePtrs;
 
 #include <libcpphaggle/Reference.h>
 #include <libcpphaggle/Map.h>
@@ -30,34 +29,12 @@ class NodePtrs;
 
 using namespace haggle;
 
-typedef Reference<Node> NodeRef;
-typedef ReferenceList<Node> NodeRefList;
-
 #include "Attribute.h"
 #include "Interface.h"
 #include "Metadata.h"
 #include "DataObject.h"
 #include "Bloomfilter.h"
 #include "Debug.h"
-
-// Different types of nodes. Determines among other things how to deal
-// with the ID
-typedef enum {
-        NODE_TYPE_UNDEF, // An uninitilized state of the node
-        NODE_TYPE_THIS_NODE,
-        NODE_TYPE_APPLICATION,
-        NODE_TYPE_PEER,
-        NODE_TYPE_GATEWAY,
-        _NUM_NODE_TYPES
-} NodeType_t;
-
-
-#define NODE_TYPE_MIN NODE_TYPE_UNDEF
-#define NODE_TYPE_MAX (_NUM_NODE_TYPES-1)
-
-#define MAX_NODEDESC_LEN 1500
-#define NODE_ID_LEN SHA_DIGEST_LENGTH
-#define MAX_NODE_ID_STR_LEN (2*NODE_ID_LEN+1) // +1 for null termination
 
 /* Some attribute strings in a node's metadata */
 #define NODE_DESC_ATTR "NodeDescription"
@@ -66,19 +43,19 @@ typedef enum {
 #define NODE_METADATA "Node"
 #define NODE_METADATA_ID_PARAM "id"
 #define NODE_METADATA_NAME_PARAM "name"
-#define NODE_METADATA_THRESHOLD_PARAM "resolutionThreshold"
-#define NODE_METADATA_MAX_DATAOBJECTS_PARAM "resolutionLimit"
+#define NODE_METADATA_THRESHOLD_PARAM "resolution_threshold"
+#define NODE_METADATA_MAX_DATAOBJECTS_PARAM "resolution_limit"
 
 #define NODE_METADATA_INTERFACE "Interface"
 #define NODE_METADATA_INTERFACE_TYPE_PARAM "type"
 #define NODE_METADATA_INTERFACE_IDENTIFIER_PARAM "identifier"
-#define NODE_METADATA_INTERFACE_ADDRESS "Address"
+#define NODE_METADATA_INTERFACE_NAME_PARAM "name"
 #define NODE_METADATA_BLOOMFILTER "Bloomfilter"
 
 #define NODE_DEFAULT_DATAOBJECTS_PER_MATCH 10
 #define NODE_DEFAULT_MATCH_THRESHOLD 10
 
-typedef unsigned char NodeId_t[NODE_ID_LEN];
+
 
 /** */
 #ifdef DEBUG_LEAKS
@@ -87,14 +64,33 @@ class Node: public LeakMonitor
 class Node
 #endif
 {
+public:
+	// Different types of nodes. Determines among other things how to deal
+	// with the ID
+	typedef enum {
+		TYPE_UNDEF, // An uninitilized state of the node
+		TYPE_THIS_NODE,
+		TYPE_APPLICATION,
+		TYPE_PEER,
+		TYPE_GATEWAY,
+		_NUM_NODE_TYPES
+	} Type_t;
+	
+#define NODE_TYPE_MIN NODE_TYPE_UNDEF
+#define NODE_TYPE_MAX (_NUM_NODE_TYPES-1)
+	
+#define NODE_ID_LEN SHA_DIGEST_LENGTH
+#define MAX_NODE_ID_STR_LEN (2*NODE_ID_LEN+1) // +1 for null termination
+	typedef unsigned char Id_t[NODE_ID_LEN];
+protected:	
 	/**
 		The type of the node.
 	*/
-        NodeType_t type;
+        Type_t type;
 	/**
 		A unique node ID, which is a SHA1 hash.
 	*/
-        NodeId_t id;
+	Id_t id;
 
 	/**
 		The node ID in string format.
@@ -168,7 +164,7 @@ class Node
 	/**
 		A utility function to calculate the node ID based on the information
 		in the node object.
-		(Currently only makes sense for nodes of type NODE_TYPE_THIS_NODE)
+		(Currently only makes sense for nodes of type Node::TYPE_THIS_NODE)
 	*/
         void calcId();
 	/**
@@ -186,27 +182,27 @@ class Node
         bool createdFromNodeDescription;
 	Timeval nodeDescriptionCreateTime;
 	long filterEventId;
-	inline bool init_node(const NodeId_t _id);
+	inline bool init_node(const Node::Id_t _id);
 	unsigned long matchThreshold;
 	unsigned long numberOfDataObjectsPerMatch;
 
-        Node(NodeType_t _type, const string name = "Unnamed node", Timeval _nodeDescriptionCreateTime = -1);
+        Node(Type_t _type, const string name = "Unnamed node", Timeval _nodeDescriptionCreateTime = -1);
 public:
-	static Node *create(NodeType_t type, const DataObjectRef& dObj);
-	static Node *create(NodeType_t type = NODE_TYPE_UNDEF, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
-	static Node *create_with_id(NodeType_t type, const NodeId_t id, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
-	static Node *create_with_id(NodeType_t type, const char *idStr, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
+	static Node *create(Type_t type, const DataObjectRef& dObj);
+	static Node *create(Type_t type = TYPE_UNDEF, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
+	static Node *create_with_id(Type_t type, const Node::Id_t id, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
+	static Node *create_with_id(Type_t type, const char *idStr, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
 
         Node(const Node &n); // Copy constructor
         Node& operator=(const Node &);
 	~Node();
 	Node *copy() { return new Node(*this); }
         static const unsigned char *strIdToRaw(const char *strId);
-	static const char *typeToStr(const NodeType_t type);
-        NodeType_t getType() const;
+	static const char *typeToStr(const Type_t type);
+        Node::Type_t getType() const;
 	const char *getTypeStr() const { return typestr[type]; }
         const unsigned char *getId() const;
-	void setId(const NodeId_t _id);
+	void setId(const Id_t _id);
         const char *getIdStr() const;
 	unsigned long getNum() const { return num; }
 	bool isStored() const { return stored; }
@@ -321,5 +317,38 @@ public:
         friend bool operator==(const Node &n1, const Node &n2);
         friend bool operator!=(const Node &n1, const Node &n2);
 };
+
+typedef Reference<Node> NodeRef;
+typedef ReferenceList<Node> NodeRefList;
+
+class ThisNode : public Node
+{
+	friend class Node;
+	ThisNode(const string name = "this node", Timeval _nodeDescriptionCreateTime = -1) : 
+		Node(TYPE_THIS_NODE, name, _nodeDescriptionCreateTime) {}
+	~ThisNode() {}
+};
+
+class PeerNode : public Node
+{
+	friend class Node;
+	PeerNode(const string name = "peer node", Timeval _nodeDescriptionCreateTime = -1) : 
+		Node(TYPE_PEER, name, _nodeDescriptionCreateTime) {}
+	~PeerNode() {}
+};
+
+typedef Reference<PeerNode> PeerNodeRef;
+typedef ReferenceList<PeerNode> PeerNodeRefList;
+
+class GatewayNode : public Node
+{
+	friend class Node;
+	GatewayNode(const string name = "gateway node", Timeval _nodeDescriptionCreateTime = -1) : 
+		Node(TYPE_GATEWAY, name, _nodeDescriptionCreateTime) {}
+	~GatewayNode() {}
+};
+
+typedef Reference<GatewayNode> GatewayNodeRef;
+typedef ReferenceList<GatewayNode> GatewayNodeRefList;
 
 #endif /* _NODE_H */

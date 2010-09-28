@@ -35,7 +35,7 @@ bool ProtocolUDP::init_derived()
 	char buf[SOCKADDR_SIZE];
         struct sockaddr *sa = (struct sockaddr *)buf;
 	socklen_t sa_len;
-	Address *addr = NULL;
+	SocketAddress *addr = NULL;
 	
 	if (!localIface) {
 		HAGGLE_ERR("Could not create UDP socket, no local interface\n");
@@ -43,11 +43,11 @@ bool ProtocolUDP::init_derived()
 	}
 
 #if defined(ENABLE_IPv6)
-	addr = localIface->getAddressByType(AddressType_IPv6);
+	addr = localIface->getAddress<IPv6Address>();
 #endif
 	
 	if (!addr)
-		addr = localIface->getAddressByType(AddressType_IPv4);
+		addr = localIface->getAddress<IPv4Address>();
 	
 	if (!addr) {
 		HAGGLE_ERR("Could not create UDP socket, no IP address\n");
@@ -78,9 +78,12 @@ bool ProtocolUDP::init_derived()
                 return false;
 	}
 	
-	if (!bindSocket(sa, sa_len)) {
+	if (!bind(sa, sa_len)) {
 		closeSocket();
-		HAGGLE_ERR("bind failed\n");
+		/*
+		HAGGLE_ERR("bind failed : ip=%s port=%u\n", 
+			   inet_ntoa(((struct sockaddr_in *)sa)->sin_addr), ntohs(((struct sockaddr_in *)sa)->sin_port));
+		 */
 		return false;
 	}
 
@@ -99,16 +102,21 @@ ProtocolUDP::ProtocolUDP(const char *ipaddr, unsigned short _port, ProtocolManag
 {
 	struct in_addr addr;
 
+	if (inet_pton(AF_INET, ipaddr, &addr) != 1) {
+		HAGGLE_ERR("Bad IP address %s\n", ipaddr);
+	}
+	/*
 #ifdef OS_WINDOWS
 	unsigned long tmp_addr = inet_addr(ipaddr);
 	memcpy(&addr, &tmp_addr, sizeof(struct in_addr));
 #else
 	inet_aton(ipaddr, &addr);
 #endif
-	Address address(AddressType_IPv4, (unsigned char *) &addr, NULL, 
-		ProtocolSpecType_UDP, port);
+	 */
 	
-	localIface = new Interface(IFTYPE_APPLICATION_PORT, NULL, &address, "Loopback", IFFLAG_UP);
+	IPv4Address address(addr, TransportUDP(_port));
+	
+	localIface = new ApplicationPortInterface(_port, "Application", &address, IFFLAG_UP);
 }
 
 ProtocolUDP::~ProtocolUDP()
@@ -135,8 +143,8 @@ bool ProtocolUDP::isForInterface(const InterfaceRef& iface)
 		an application interface, then this is the protocol to
 		use.
 	*/
-	if (iface->getType() == IFTYPE_APPLICATION_PORT &&
-		localIface->getType() == IFTYPE_APPLICATION_PORT)
+	if (iface->getType() == Interface::TYPE_APPLICATION_PORT &&
+	    localIface->getType() == Interface::TYPE_APPLICATION_PORT)
 		return true;
 	else if (peerIface && iface == peerIface)
 		return true;
@@ -203,17 +211,13 @@ ProtocolEvent ProtocolUDP::receiveDataObject()
         if (peer_addr->sa_family == AF_INET) {
                 sa = (struct sockaddr_in *)peer_addr;
                 port = ntohs(sa->sin_port);
-                
-                addr = new Address(AddressType_IPv4, (unsigned char *) &(sa->sin_addr), 
-                                   NULL, ProtocolSpecType_UDP, port);                
-        }
+                addr = new IPv4Address(sa->sin_addr, TransportUDP(port));
+	}
 #if defined(ENABLE_IPv6) 
         else if (peer_addr->sa_family == AF_INET6) {
                 struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)peer_addr;
                 port = ntohs(sa6->sin6_port);
-                
-                addr = new Address(AddressType_IPv6, (unsigned char *) &(sa6->sin6_addr), 
-                                   NULL, ProtocolSpecType_UDP, port);
+                addr = new IPv6Address(sa6->sin6_addr, TransportUDP(port));
         }
 #endif
 
@@ -226,13 +230,13 @@ ProtocolEvent ProtocolUDP::receiveDataObject()
 		return PROT_EVENT_ERROR;
 	}
 
-        peerIface = new Interface(IFTYPE_APPLICATION_PORT, &port, addr, "Application", IFFLAG_UP);
+        peerIface = new ApplicationPortInterface(port, "Application", addr, IFFLAG_UP);
         peerNode = getKernel()->getNodeStore()->retrieve(peerIface);
 
 	delete addr;
 
 	if (!peerNode) {
-		peerNode = Node::create(NODE_TYPE_APPLICATION, "Unknown application");
+		peerNode = Node::create(Node::TYPE_APPLICATION, "Unknown application");
 
 		if (!peerNode) {      
 			HAGGLE_ERR("Could not create application node\n");
@@ -283,7 +287,7 @@ ProtocolEvent ProtocolUDP::sendData(const void *buffer, size_t len, const int fl
         char buf[SOCKADDR_SIZE];
         struct sockaddr *sa = (struct sockaddr *)buf;		
 	socklen_t addrlen;
-	Address	*addr = NULL;
+	SocketAddress *addr = NULL;
 	ssize_t ret;
 	
 	if (!buffer) {
@@ -298,11 +302,11 @@ ProtocolEvent ProtocolUDP::sendData(const void *buffer, size_t len, const int fl
 	}
 	
 #if defined(ENABLE_IPv6)
-	addr = peerIface->getAddressByType(AddressType_IPv6);
+	addr = peerIface->getAddress<IPv6Address>();
 #endif
 
 	if (!addr)
-		addr = peerIface->getAddressByType(AddressType_IPv4);
+		addr = peerIface->getAddress<IPv4Address>();
 	
 	if (!addr) {
 		HAGGLE_DBG("Send interface has no valid address\n");
@@ -310,19 +314,18 @@ ProtocolEvent ProtocolUDP::sendData(const void *buffer, size_t len, const int fl
 		return PROT_EVENT_ERROR;
 	}
 	
-	if (addr->getProtocolType() != ProtocolSpecType_UDP) {
-		HAGGLE_DBG("Send interface [%s:%u] has no valid UDP port\n",
-			addr->getAddrStr(), 
-			addr->getProtocolPortOrChannel());
+	if (addr->getTransport()->getType() != Transport::TYPE_UDP) {
+		HAGGLE_DBG("Send interface [%s] has no valid UDP port\n",
+			   peerIface->getIdentifierStr());
 		*bytes = 0;
 		return PROT_EVENT_ERROR;
 	}
 	
 	addrlen = addr->fillInSockaddr(sa);
 	
-	HAGGLE_DBG("%s:%lu sending to address %s:%u\n", 
-		getName(), getId(), addr->getAddrStr(), addr->getProtocolPortOrChannel());
-
+	HAGGLE_DBG("%s:%lu sending to address %s\n", 
+		   getName(), getId(), addr->getURI());
+	
 	ret = sendTo(buffer, len, flags, sa, addrlen);
 
 	if (ret < 0)

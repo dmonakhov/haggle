@@ -98,7 +98,7 @@ class NodeStore : protected List<NodeRecord *>
 	 */
         bool _stored(const NodeRef &node, bool mustBeNeighbor = false);
         bool _stored(const Node &node, bool mustBeNeighbor = false);
-        bool _stored(const NodeId_t id, bool mustBeNeighbor = false);
+        bool _stored(const Node::Id_t id, bool mustBeNeighbor = false);
 	bool _stored(const string idStr, bool mustBeNeighbor = false);
 public:
 	/**
@@ -152,7 +152,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
-        bool stored(const NodeId_t id, bool mustBeNeighbor = false);
+        bool stored(const Node::Id_t id, bool mustBeNeighbor = false);
 	/**
 		Check if a node is currently stored in the store. The caller
 		may optionally specify whether the given node must be marked
@@ -207,7 +207,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
-        NodeRef retrieve(const NodeId_t id, bool mustBeNeighbor = false);
+        NodeRef retrieve(const Node::Id_t id, bool mustBeNeighbor = false);
 	/**
 		Retrieve a node from the node store. The caller may optionally 
 		specify to only retrieve current neighbors.
@@ -246,7 +246,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
-	size_type retrieve(const NodeType_t type, NodeRefList& nl);
+	size_type retrieve(const Node::Type_t type, NodeRefList& nl);
 	/**
 		Retrieve a list of all current and confirmed neighbors.
 		Returns NULL if there are no neighbors. The list has to be freed 
@@ -279,7 +279,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
-        int remove(const NodeType_t type);
+        int remove(const Node::Type_t type);
 
 	/**
 		Remove a node that have a specific interface.

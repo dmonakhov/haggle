@@ -23,155 +23,125 @@ const char *Interface::typestr[] = {
 	"undefined",
 	"application[port]",
 	"application[local]",
-	"bluetooth",
+#if defined(ENABLE_ETHERNET)
 	"ethernet",
 	"wifi",
+#endif
+#if defined(ENABLE_BLUETOOTH)
+	"bluetooth",
+#endif
+#if defined(ENABLE_MEDIA)
 	"media",
+#endif
 	NULL,
 };
 
-void Interface::setIdentifierString()
-{
-	char buf[30];
-
-	if (!identifierIsValid) {
-		identifierString = "Invalid identifier";
-		return;
-	}
-
-	switch (type) {
-		case IFTYPE_APPLICATION_PORT:
-			sprintf(buf, "%hu", identifier.application_port);
-			identifierString = string("Application on port ") + buf;
-			return;		 
-		case IFTYPE_APPLICATION_LOCAL:
-			identifierString = string("Application on local unix socket: ") + identifier.application_local;
-			return;
-		case IFTYPE_BLUETOOTH:
-		case IFTYPE_ETHERNET:
-		case IFTYPE_WIFI:
-			sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x",
-				(unsigned char)identifier.mac[0], (unsigned char)identifier.mac[1],
-				(unsigned char)identifier.mac[2], (unsigned char)identifier.mac[3],
-				(unsigned char)identifier.mac[4], (unsigned char)identifier.mac[5]);
-			identifierString = buf;
-			return;
-		case IFTYPE_MEDIA:
-			identifierString = identifier.media;
-		case IFTYPE_UNDEF:
-		default:
-			break;
-	}
-	identifierString = "Undefined";
-}
-
-Interface::Interface(InterfaceType_t _type, const void *identifier, 
-		     const Address *addr, const string _name, const flag_t _flags) :
+Interface::Interface(Interface::Type_t _type, const void *_identifier, size_t _identifier_len,
+		     const string& _name, const Address *addr, const flag_t _flags) :
 #ifdef DEBUG_LEAKS
-LeakMonitor(LEAK_TYPE_INTERFACE),
+	LeakMonitor(LEAK_TYPE_INTERFACE),
 #endif
-type(_type), name(_name), flags(_flags & (IFFLAG_ALL ^ IFFLAG_STORED)), identifierIsValid(false), identifierString("Undefined")
+	type(_type), name(_name), identifier(static_cast<const unsigned char *>(_identifier)), 
+	identifier_len(_identifier_len), flags(_flags & (IFFLAG_ALL ^ IFFLAG_STORED)), 
+	identifier_str("Undefined")
 {
-	if (identifier) {
-		identifierIsValid = true;
-		memcpy(this->identifier.raw, identifier, getIdentifierLen());
-		setIdentifierString();
-	}
-
 	if (addr)
-		addAddress(addr);
+		addAddress(*addr);
 }
 
-Interface::Interface(InterfaceType_t _type, const void *identifier, 
-		     const Addresses *addrs, const string _name, const flag_t _flags) :
+Interface::Interface(const Interface &iface, const void *_identifier) :
 #ifdef DEBUG_LEAKS
-LeakMonitor(LEAK_TYPE_INTERFACE),
+	LeakMonitor(LEAK_TYPE_INTERFACE),
 #endif
-	type(_type), name(_name), flags(_flags & (IFFLAG_ALL ^ IFFLAG_STORED)), 
-	identifierIsValid(false), identifierString("Undefined")
+	type(iface.type), name(iface.name), identifier(static_cast<const unsigned char *>(_identifier)), 
+	identifier_len(iface.identifier_len), flags(iface.flags & (IFFLAG_ALL ^ IFFLAG_STORED)),  
+	identifier_str(iface.identifier_str), addresses(iface.addresses)
 {
-	if (identifier) {
-		identifierIsValid = true;
-		memcpy(this->identifier.raw, identifier, getIdentifierLen());
-		setIdentifierString();
-	}
-
-	if (addrs) {
-		Addresses::const_iterator it = addrs->begin();
-
-		while (it != addrs->end()) {
-			addAddress(*it);
-			it++;
-		}
-	}
-}
-
-Interface::Interface(const Interface &iface) :
-#ifdef DEBUG_LEAKS
-LeakMonitor(LEAK_TYPE_INTERFACE),
-#endif
-	type(iface.type), name(iface.name), flags(iface.flags & (IFFLAG_ALL ^ IFFLAG_STORED)), 
-	identifierIsValid(iface.identifierIsValid), identifierString(iface.identifierString), 
-	addresses(iface.addresses)
-{		
-	memcpy(identifier.raw, iface.identifier.raw, getIdentifierLen());
-}
-
-Interface *Interface::copy() const
-{
-	return new Interface(*this);
 }
 
 Interface::~Interface(void)
 {
 }
 
-const char *Interface::typeToStr(InterfaceType_t type)
+Interface *Interface::create(Type_t type, const void *identifier, const char *name, flag_t flags)
+{
+	if (!name)
+		name = DEFAULT_INTERFACE_NAME;
+	
+	switch (type) {
+	case TYPE_APPLICATION_PORT:
+		return new ApplicationPortInterface(*static_cast<const unsigned short *>(identifier), name, NULL, flags);
+	case TYPE_APPLICATION_LOCAL:
+		return new ApplicationLocalInterface(static_cast<const char *>(identifier), name, NULL, flags);
+#if defined(ENABLE_ETHERNET)
+	case TYPE_ETHERNET:
+		return new EthernetInterface(static_cast<const unsigned char *>(identifier), name, NULL, flags);
+	case TYPE_WIFI:
+		return new WiFiInterface(static_cast<const unsigned char *>(identifier), name, NULL, flags);
+#endif
+#if defined(ENABLE_BLUETOOTH)
+	case TYPE_BLUETOOTH:
+		return new BluetoothInterface(static_cast<const unsigned char *>(identifier), name, NULL, flags);
+#endif
+#if defined(ENABLE_MEDIA)
+	case TYPE_MEDIA:
+		return new MediaInterface(static_cast<const char *>(identifier), name, flags);
+#endif
+	default:
+		return NULL;
+		
+	}
+	return NULL;
+}
+
+Interface *Interface::create(Type_t type, const void *identifier, const char *name, const Address& addr, flag_t flags)
+{	
+	Interface *iface = create(type, identifier, name, flags);
+
+	if (iface) {
+		iface->addAddress(addr);
+	}
+	return iface;
+}
+
+Interface *Interface::create(Type_t type, const void *identifier, const char *name, const Addresses& addrs, flag_t flags)
+{
+	Interface *iface = create(type, identifier, name, flags);
+	
+	if (iface && addrs.size()) {
+		iface->addAddresses(addrs);
+	}
+	return iface;
+}
+
+/*
+void Interface::setName(const string _name)
+{
+	name = _name;
+}
+*/
+
+const char *Interface::typeToStr(Interface::Type_t type)
 {
 	return typestr[type];
 }
 
-InterfaceType_t Interface::strToType(const char *str)
+Interface::Type_t Interface::strToType(const char *str)
 {
 	int i = 0;
 
 	while (typestr[i]) {
 		if (strcmp(typestr[i], str) == 0) {
-			return (InterfaceType_t)i;
+			return (Interface::Type_t)i;
 		}
 		i++;
 	}
-	return IFTYPE_UNDEF;
+	return Interface::TYPE_UNDEFINED;
 }
 
 size_t Interface::getIdentifierLen() const
 {
-	if (!identifierIsValid)
-		return -1;
-
-	switch (type) {
-		case IFTYPE_APPLICATION_PORT:
-			return sizeof(identifier.application_port);
-			break;
-			
-		case IFTYPE_APPLICATION_LOCAL:
-			return sizeof(identifier.application_local);
-			break;
-		case IFTYPE_BLUETOOTH:
-		case IFTYPE_ETHERNET:
-		case IFTYPE_WIFI:
-			return sizeof(identifier.mac);
-			break;
-		case IFTYPE_MEDIA:
-			return strlen(identifier.media);
-			break;
-		case IFTYPE_UNDEF:
-			return 0;
-		default:
-			return -1;
-			break;
-	}
-	return -1;
+	return identifier_len;
 }
 
 const char *Interface::getFlagsStr() const
@@ -194,27 +164,24 @@ const char *Interface::getFlagsStr() const
 	return str.c_str();
 }
 
-void Interface::addAddress(const Address *addr)
+void Interface::addAddress(const Address& addr)
 {
-	if (addr == NULL)
-		return;
-
 	for (Addresses::iterator it = addresses.begin(); it != addresses.end(); it++) {
 		// Are these the same?
-		if (*addr == *(*it)) {
+		if (addr == *(*it)) {
 			// Merge:
-			(*it)->mergeWith(addr);
+			(*it)->merge(addr);
 			return;
 		}
 	}
 	// Address not found in list, insert it.
-	addresses.push_front(addr->copy());
+	addresses.push_front(addr.copy());
 }
 
-void Interface::addAddresses(const Addresses *adds)
+void Interface::addAddresses(const Addresses& addrs)
 {
-	for (Addresses::const_iterator it = adds->begin(); it != adds->end(); it++) {
-		addAddress(*it);
+	for (Addresses::const_iterator it = addrs.begin(); it != addrs.end(); it++) {
+		addAddress(**it);
 	}
 }
 
@@ -229,6 +196,26 @@ bool Interface::hasAddress(const Address &add) const
 	return false;
 }
 
+/*
+
+template<typename T>
+T *Interface::getAddress() {
+	T a;
+	
+	for (Addresses::iterator it = addresses.begin(); it != addresses.end(); it++) {
+		if ((*it)->getType() == a.getType()) {
+			return static_cast<T*>(*it);
+		}
+	}
+	return NULL;
+}
+
+template<typename T> 
+const T *Interface::getAddress() const
+{
+	return const_cast<T *>(this)->getAddress();
+}
+*/
 const char *Interface::getName() const
 {
 	return name.c_str();
@@ -239,27 +226,12 @@ const Addresses *Interface::getAddresses() const
 	return &addresses;
 }
 
-Address *Interface::getAddressByType(const AddressType_t _type)
-{
-	for (Addresses::iterator it = addresses.begin(); it != addresses.end(); it++) {
-		if ((*it)->getType() == _type) {
-			return *it;
-		}
-	}
-	return NULL;
-}
-
-const Address *Interface::getAddressByType(const AddressType_t _type) const
-{
-	return const_cast<Interface *>(this)->getAddressByType(_type);
-}
-
-void Interface::setFlag(const flag_t flag)
+void Interface::setFlag(flag_t flag)
 {
 	flags |= flag;
 }
 
-void Interface::resetFlag(const flag_t flag)
+void Interface::resetFlag(flag_t flag)
 {
 	flags &= (flag ^ 0xff);
 }
@@ -269,7 +241,7 @@ bool Interface::isLocal() const
 	return (flags & IFFLAG_LOCAL) != 0;
 }
 
-bool Interface::isFlagSet(const flag_t flag) const
+bool Interface::isFlagSet(flag_t flag) const
 {
 	return (flags & flag) != 0;
 }
@@ -281,7 +253,7 @@ bool Interface::isStored() const
 
 bool Interface::isApplication() const
 {
-	return (type == IFTYPE_APPLICATION_PORT || type == IFTYPE_APPLICATION_LOCAL);
+	return (type == TYPE_APPLICATION_PORT || type == TYPE_APPLICATION_LOCAL);
 }
 
 void Interface::up()
@@ -304,71 +276,20 @@ bool Interface::isSnooped() const
 	return (flags & IFFLAG_SNOOPED) != 0;
 }
 
-bool Interface::equal(const InterfaceType_t type, const unsigned char *identifier) const
+bool Interface::equal(const Interface::Type_t type, const unsigned char *identifier) const
 {
 	if (!identifierIsValid || type != this->type)
 		return false;
 	
-	switch (type) {
-		case IFTYPE_APPLICATION_PORT:			
-			if (memcmp(&this->identifier.application_port, 
-					identifier, sizeof(this->identifier.application_port)) == 0)
-				return true;
-			break;
-		case IFTYPE_APPLICATION_LOCAL:
-			if (strcmp(this->identifier.application_local, (const char *)identifier) == 0)
-				return true;
-			break;
-		case IFTYPE_BLUETOOTH:
-		case IFTYPE_ETHERNET:
-		case IFTYPE_WIFI:
-			if (memcmp(this->identifier.mac, identifier, ETH_ALEN) == 0)
-				return true;
-			break;
-		case IFTYPE_MEDIA:
-			// Probably check identifier here too, whatever type it should be
-			break;
-		case IFTYPE_UNDEF:
-		default:
-			return false;
-			break;
-	}
-	return false;
+	return memcmp(this->identifier, identifier, identifier_len) == 0;
 }
 
 bool operator==(const Interface& i1, const Interface& i2)
 {
-	if (i1.type != i2.type)
+	if (i1.type != i2.type || i1.identifier_len != i2.identifier_len)
 		return false;
 
-	// Cannot compare interfaces without valid identifiers
-	if (!i1.identifierIsValid || !i2.identifierIsValid)
-		return false;
-
-	switch (i1.type) {
-		case IFTYPE_APPLICATION_PORT:			
-			if (i1.identifier.application_port == i2.identifier.application_port)
-				return true;
-			break;
-		case IFTYPE_APPLICATION_LOCAL:
-			if (strcmp(i1.identifier.application_local, i2.identifier.application_local) == 0)
-				return true;
-			break;
-		case IFTYPE_BLUETOOTH:
-		case IFTYPE_ETHERNET:
-		case IFTYPE_WIFI:
-			if (memcmp(i1.identifier.mac, i2.identifier.mac, sizeof(i2.identifier.mac)) == 0)
-				return true;
-			break;
-		case IFTYPE_MEDIA:
-			// Probably check identifier here too, whatever type it should be
-			break;
-		case IFTYPE_UNDEF:
-		default:
-			return false;
-			break;
-	}
-	return false;
+	return memcmp(i1.identifier, i2.identifier, i1.identifier_len) == 0;
 }
 
 bool operator<(const Interface& i1, const Interface& i2)
@@ -377,29 +298,295 @@ bool operator<(const Interface& i1, const Interface& i2)
 		return true;
 	else if (i1.type > i2.type)
 		return false;
+	else if (i1.identifier_len < i2.identifier_len)
+		return true;
 
-	switch (i1.type) {
-		case IFTYPE_APPLICATION_PORT:			
-			if (i1.identifier.application_port < i2.identifier.application_port)
-				return true;
-			break;
-		case IFTYPE_APPLICATION_LOCAL:
-			if (strcmp(i1.identifier.application_local, i2.identifier.application_local) < 0)
-				return true;
-			break;
-		case IFTYPE_BLUETOOTH:
-		case IFTYPE_ETHERNET:
-		case IFTYPE_WIFI:
-			if (memcmp(i1.identifier.mac, i2.identifier.mac, sizeof(i2.identifier.mac)) < 0)
-				return true;
-			break;
-		case IFTYPE_MEDIA:
-			// Probably check identifier here too, whatever type it should be
-			break;
-		case IFTYPE_UNDEF:
-		default:
-			return false;
-			break;
-	}
-	return false;
+	return memcmp(i1.identifier, i2.identifier, i1.identifier_len) < 0;
 }
+
+#if 0
+UndefinedInterface::UndefinedInterface(const string name, flag_t flags) : 
+	Interface(Interface::TYPE_UNDEFINED, NULL, 0, name, NULL, flags)
+{
+	setIdentifierStr();
+}
+
+UndefinedInterface::UndefinedInterface(const UndefinedInterface& iface) :
+	Interface(iface, NULL)
+{
+}
+
+UndefinedInterface::~UndefinedInterface()
+{
+}
+
+/*
+Interface *UndefinedInterface::copy() const
+{
+	return new UndefinedInterface(*this);
+}
+*/
+UndefinedInterface *UndefinedInterface::copy() const
+{
+	return new UndefinedInterface(*this);
+}
+
+void UndefinedInterface::setIdentifierStr()
+{
+	identifier_str = "undefined interface";
+}
+
+#endif
+
+ApplicationInterface::ApplicationInterface(Interface::Type_t type, const void *identifier, size_t identifier_len, 
+					   const string name, const Address *a, flag_t flags) : 
+	Interface(type, identifier, identifier_len, name, a, flags)
+{
+}
+
+ApplicationInterface::ApplicationInterface(const ApplicationInterface& iface, const void *identifier) : 
+	Interface(iface, identifier)
+{
+}
+
+ApplicationInterface::~ApplicationInterface()
+{
+}
+
+ApplicationPortInterface::ApplicationPortInterface(const void *identifier, size_t identifier_len, 
+						   const string name, flag_t flags) :
+	ApplicationInterface(Interface::TYPE_APPLICATION_PORT, identifier, identifier_len, name, NULL, flags), port(0)
+{
+	if (identifier && identifier_len == sizeof(port)) {
+		memcpy(&port, identifier, sizeof(port));
+		setIdentifierStr();
+	}
+}
+
+ApplicationPortInterface::ApplicationPortInterface(const unsigned short _port, const string name, 
+						   const Address *a, flag_t flags) : 
+	ApplicationInterface(Interface::TYPE_APPLICATION_PORT, &port, sizeof(port), name, a, flags), port(_port)
+{
+	setIdentifierStr();
+}
+
+ApplicationPortInterface::ApplicationPortInterface(const ApplicationPortInterface& iface) : 
+	ApplicationInterface(iface, &port), port(iface.port)
+{
+}
+
+ApplicationPortInterface::~ApplicationPortInterface()
+{
+}
+
+void ApplicationPortInterface::setIdentifierStr()
+{
+	char port_str[20];
+	snprintf(port_str, 20, "%u", port);
+	identifier_str = string("Application on port ") + port_str;
+}
+
+Interface *ApplicationPortInterface::copy() const
+{
+	return new ApplicationPortInterface(*this);
+}
+
+ApplicationLocalInterface::ApplicationLocalInterface(const void *identifier, size_t identifier_len, 
+						   const string name, flag_t flags) :
+	ApplicationInterface(Interface::TYPE_APPLICATION_LOCAL, path, identifier_len, name, NULL, flags)
+{
+	if (identifier && identifier_len > 0 && identifier_len < LOCAL_PATH_MAX) {
+		strcpy(path, static_cast<const char *>(identifier));
+		setIdentifierStr();
+	}
+}
+
+ApplicationLocalInterface::ApplicationLocalInterface(const string _path, const string name, const Address *a, flag_t flags) :
+	ApplicationInterface(Interface::TYPE_APPLICATION_LOCAL, path, _path.length(), name, a, flags)
+{
+	if (_path.length() < LOCAL_PATH_MAX) {
+		strcpy(path, _path.c_str());
+		setIdentifierStr();
+	}
+}
+
+ApplicationLocalInterface::~ApplicationLocalInterface()
+{
+}
+
+ApplicationLocalInterface::ApplicationLocalInterface(const ApplicationLocalInterface& iface) :
+	ApplicationInterface(iface, path)
+{
+	strcpy(path, iface.path);
+}
+
+void ApplicationLocalInterface::setIdentifierStr()
+{
+	identifier_str = string("Application on local unix socket: ") + path;
+}
+
+Interface *ApplicationLocalInterface::copy() const
+{
+	return new ApplicationLocalInterface(*this);
+}
+
+#if defined(ENABLE_ETHERNET)
+
+EthernetInterface::EthernetInterface(const void *identifier, size_t identifier_len, 
+				     const string name, flag_t flags) :
+	Interface(Interface::TYPE_ETHERNET, mac, GENERIC_MAC_LEN, name, NULL, flags)
+{	
+	if (identifier && identifier_len == GENERIC_MAC_LEN) {
+		memcpy(mac, identifier, GENERIC_MAC_LEN);
+		setIdentifierStr();
+	}
+}
+
+EthernetInterface::EthernetInterface(Interface::Type_t type, const unsigned char *_mac, 
+				     const string name, const Address *a, flag_t flags) :
+	Interface(type, mac, GENERIC_MAC_LEN, name, a, flags)
+{
+	if (_mac) {
+		memcpy(mac, _mac, GENERIC_MAC_LEN);
+		setIdentifierStr();
+	}
+}
+
+EthernetInterface::EthernetInterface(const unsigned char _mac[GENERIC_MAC_LEN], const string name, 
+				     const Address *a, flag_t flags) : 
+	Interface(Interface::TYPE_ETHERNET, mac, GENERIC_MAC_LEN, name, a, flags)
+{
+	memcpy(mac, _mac, GENERIC_MAC_LEN);
+	setIdentifierStr();
+}
+
+EthernetInterface::EthernetInterface(const EthernetInterface& iface) :
+	Interface(iface, mac)
+{
+	memcpy(mac, iface.mac, GENERIC_MAC_LEN);
+}
+
+EthernetInterface::~EthernetInterface()
+{
+}
+
+void EthernetInterface::setIdentifierStr()
+{
+	char buf[18];
+	sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x",
+		identifier[0], identifier[1],
+		identifier[2], identifier[3],
+		identifier[4], identifier[5]);
+	identifier_str = buf;
+}
+
+Interface *EthernetInterface::copy() const
+{
+	return new EthernetInterface(*this);
+}
+
+WiFiInterface::WiFiInterface(const void *identifier, size_t identifier_len, const string name, flag_t flags) :
+	EthernetInterface(Interface::TYPE_WIFI, static_cast<const unsigned char *>(identifier), name, NULL, flags)
+{
+}
+
+WiFiInterface::WiFiInterface(const unsigned char _mac[GENERIC_MAC_LEN], const string name, 
+			     const Address *a, flag_t flags) :
+	EthernetInterface(Interface::TYPE_WIFI, _mac, name, a, flags)
+{
+}
+
+WiFiInterface::WiFiInterface(const WiFiInterface& iface) :
+	EthernetInterface(iface)
+{
+}
+
+WiFiInterface::~WiFiInterface()
+{
+}
+
+Interface *WiFiInterface::copy() const
+{
+	return new WiFiInterface(*this);
+}
+
+#endif // ENABLE_ETHERNET
+
+#if defined(ENABLE_BLUETOOTH)
+
+BluetoothInterface::BluetoothInterface(const void *identifier, size_t identifier_len, 
+				       const string name, flag_t flags) :
+	Interface(Interface::TYPE_BLUETOOTH, mac, GENERIC_MAC_LEN, name, NULL, flags)
+{
+	if (identifier && identifier_len == GENERIC_MAC_LEN) {
+		memcpy(mac, identifier, GENERIC_MAC_LEN);
+		setIdentifierStr();
+	}
+}
+
+BluetoothInterface::BluetoothInterface(const unsigned char _mac[GENERIC_MAC_LEN], const string name, 
+				       const Address *a, flag_t flags) :
+	Interface(Interface::TYPE_BLUETOOTH, mac, GENERIC_MAC_LEN, name, a, flags)
+{
+	memcpy(mac, _mac, GENERIC_MAC_LEN);
+	setIdentifierStr();
+}
+
+BluetoothInterface::~BluetoothInterface()
+{
+}
+
+void BluetoothInterface::setIdentifierStr()
+{
+	char buf[30];
+	sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x",
+		identifier[0], identifier[1],
+		identifier[2], identifier[3],
+		identifier[4], identifier[5]);
+	identifier_str = buf;
+}
+
+Interface *BluetoothInterface::copy() const
+{
+	return new BluetoothInterface(*this);
+}
+#endif // ENABLE_BLUETOOTH
+
+#if defined(ENABLE_MEDIA)
+
+MediaInterface::MediaInterface(const void *identifier, size_t identifier_len, 
+			       const string name, flag_t flags) :
+	Interface(Interface::TYPE_MEDIA, path.c_str(), identifier_len, name, NULL, flags)
+{
+	if (identifier && identifier_len > 0) {
+		path = static_cast<const char *>(identifier);
+		setIdentifierStr();
+	}
+}
+
+MediaInterface::MediaInterface(const string _path, const string name, flag_t flags) :
+	Interface(Interface::TYPE_MEDIA, path.c_str(), _path.length(), name, NULL, flags), 
+	path(_path)
+{
+	setIdentifierStr();
+}
+
+MediaInterface::MediaInterface(const MediaInterface& iface) :
+	Interface(iface, path.c_str()), path(iface.path)
+{
+}
+
+MediaInterface::~MediaInterface()
+{
+}
+
+void MediaInterface::setIdentifierStr()
+{
+	identifier_str = path;
+}
+
+Interface *MediaInterface::copy() const
+{
+	return new MediaInterface(*this);
+}
+#endif // ENABLE_MEDIA

@@ -68,9 +68,9 @@ class ProtocolSocket : public Protocol
 	bool openSocket(int domain, int type, int protocol, bool registersock = false, bool nonblock = true);
 	bool setSocket(SOCKET sock, bool registersock = false);
 	void closeSocket();
-	bool bindSocket(const struct sockaddr *saddr, socklen_t addrlen);
+	bool bind(const struct sockaddr *saddr, socklen_t addrlen);
 	virtual bool setListen(int backlog = DEFAULT_SOCKET_BACKLOG);
-	SOCKET acceptOnSocket(struct sockaddr *saddr, socklen_t *addrlen);
+	SOCKET accept(struct sockaddr *saddr, socklen_t *addrlen);
 	bool setNonblock(bool block = false);
         bool isNonblock();
         void closeConnection();
@@ -80,7 +80,7 @@ class ProtocolSocket : public Protocol
 	ssize_t recvFrom(void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);
 
 	bool socketIsOpen() const { return (sock != INVALID_SOCKET); }
-	InterfaceRef resolvePeerInterface(const Address& addr);
+	InterfaceRef resolvePeerInterface(const SocketAddress& addr);
         
 	/**
            Functions that are overridden from class Protocol.

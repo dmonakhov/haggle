@@ -538,7 +538,7 @@ ProtocolRFCOMMClient::ProtocolRFCOMMClient(const char *devaddr,
 {
 	char devname[30] = "bluetooth peer";
 	
-	Address addr(AddressType_BTMAC, (unsigned char *) devaddr);
+	BluetoothAddress addr((unsigned char *) devaddr);
 	
 	IOBluetoothDeviceRef dev = IOBluetoothRFCOMMChannelGetDevice(rfcommChannelRef);
 	
@@ -546,7 +546,7 @@ ProtocolRFCOMMClient::ProtocolRFCOMMClient(const char *devaddr,
 		CFStringGetCString(IOBluetoothDeviceGetName(dev), devname, 30, kCFStringEncodingUTF8);
 	}	
 	
-	peerIface = InterfaceRef(new Interface(IFTYPE_BLUETOOTH, devaddr, &addr, devname, IFFLAG_UP));
+	peerIface = Interface::create<BluetoothInterface>(devaddr, devname, addr, IFFLAG_UP);
 	
 	mRFCOMMClientInterface = [[RFCOMMClientInterface alloc] initClientWithRFCOMMChannelRef: this 
 									rfcommChannelRef: rfcommChannelRef];
@@ -598,9 +598,7 @@ ProtocolEvent ProtocolRFCOMMClient::connectToPeer()
 {
 	BluetoothDeviceAddress devAddr;
 	
-	Address	*addr;
-	
-	addr = peerIface->getAddressByType(AddressType_BTMAC);
+	BluetoothAddress *addr = peerIface->getAddress<BluetoothAddress>();
 	
 	if(!addr) {
 		HAGGLE_DBG("Peer interface does not have a bluetooth mac address.\n");

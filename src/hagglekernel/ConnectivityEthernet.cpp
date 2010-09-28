@@ -110,60 +110,63 @@ bool ConnEthIfaceListElement::openBroadcastSocket()
 	struct sockaddr	*my_addr = NULL;
 	socklen_t my_addr_len = -1;
 	bool has_broadcast = false;
-	Address *addr;
+	const EthernetAddress *eth_addr;
+	const SocketAddress *addr;
 	int on = 1;
 
 	if (broadcastSocket != INVALID_SOCKET)
 		return false;
 
-	addr = iface->getAddressByType(AddressType_EthMAC);
+	eth_addr = iface->getAddress<EthernetAddress>();
 
-	if (!addr) {
+	if (!eth_addr) {
 		HAGGLE_ERR("No ethernet MAC address in interface!");
 		return false;
 	}
-	memcpy(broadcast_packet.mac, addr->getRaw(), addr->getLength());
+	memcpy(broadcast_packet.mac, eth_addr->getRaw(), eth_addr->getLength());
 
 #if defined(ENABLE_IPv6)
 	// Prefer IPv6 addresses:
-	addr = iface->getAddressByType(AddressType_IPv6);
+	addr = iface->getAddress<IPv6Address>();
 
-	if (addr != NULL) {
-		if(addr->hasBroadcast()) {
+	if (addr) {
+		IPv6BroadcastAddress *ipv6bc;
+		// Fill in the socket address for the broadcasting socket:
+		my_addr = (struct sockaddr *) &my_addr6;
+		
+		my_addr_len = addr->fillInSockaddr(my_addr);
+		my_addr6.sin6_port = htons(0);
+		
+		ipv6bc = iface->getAddress<IPv6BroadcastAddress>();
+		
+		if (ipv6bc) {
 			has_broadcast = true;
-			
-			// Fill in the socket address for the broadcasting socket:
-			my_addr = (struct sockaddr *) &my_addr6;
-			
-			my_addr_len = addr->fillInSockaddr(my_addr);
-			my_addr6.sin6_port = htons(0);
-			
 			// Fill in the broadcast address to send to:
-			broadcast_addr_len = 
-				addr->fillInBroadcastSockaddr(
-					&broadcast_addr, 
-					HAGGLE_UDP_CONNECTIVITY_PORT);
+			broadcast_addr_len = ipv6bc->fillInSockaddr(&broadcast_addr, 
+								    HAGGLE_UDP_CONNECTIVITY_PORT);
 		}
 	}
 #endif
 	
 	// Fallback: IPv4 address:
 	if (!has_broadcast) {
-		addr = iface->getAddressByType(AddressType_IPv4);
+		addr = iface->getAddress<IPv4Address>();
                 
-		if (addr != NULL) {
-			if (addr->hasBroadcast()) {
+		if (addr) {
+			IPv4BroadcastAddress *ipv4bc;
+			// Fill in the socket address for the broadcasting socket:
+			my_addr = (struct sockaddr *) &my_addr4;
+			
+			my_addr_len = addr->fillInSockaddr(my_addr);
+			my_addr4.sin_port = htons(0);
+			
+			ipv4bc = iface->getAddress<IPv4BroadcastAddress>();
+
+			if (ipv4bc) {
 				has_broadcast = true;
-				
-				// Fill in the socket address for the broadcasting socket:
-				my_addr = (struct sockaddr *) &my_addr4;
-				
-				my_addr_len = addr->fillInSockaddr(my_addr);
-				my_addr4.sin_port = htons(0);
-				
 				// Fill in the broadcast address to send to:
-				broadcast_addr_len = addr->fillInBroadcastSockaddr(&broadcast_addr, 
-                                                                              HAGGLE_UDP_CONNECTIVITY_PORT);
+				broadcast_addr_len = ipv4bc->fillInSockaddr(&broadcast_addr, 
+									    HAGGLE_UDP_CONNECTIVITY_PORT);
 			}
 		}
 	}
@@ -211,8 +214,8 @@ bool ConnectivityEthernet::handleInterfaceUp(const InterfaceRef &iface)
         Mutex::AutoLocker l(ifaceListMutex);
 	ConnEthIfaceListElement	*new_elem = NULL;
 	
-	if (!(iface->getType() == IFTYPE_ETHERNET ||
-		 iface->getType() == IFTYPE_WIFI))
+	if (!(iface->getType() == Interface::TYPE_ETHERNET ||
+	      iface->getType() == Interface::TYPE_WIFI))
 		return false;
 	
 	// HOTFIX: make sure not to add the ethernet root interface to the list
@@ -247,8 +250,8 @@ void ConnectivityEthernet::handleInterfaceDown(const InterfaceRef &iface)
 {
         bool is_empty = true;
 
-	if (!(iface->getType() == IFTYPE_ETHERNET ||
-		 iface->getType() == IFTYPE_WIFI))
+	if (!(iface->getType() == Interface::TYPE_ETHERNET ||
+	      iface->getType() == Interface::TYPE_WIFI))
 		return;
 	
 	synchronized(ifaceListMutex) {
@@ -322,7 +325,7 @@ bool ConnectivityEthernet::isBeaconMine(struct haggle_beacon *b)
 		
 		for (;it != ifaceList.end(); it++) {
 			
-			Address *addr = (*it)->iface->getAddressByType(AddressType_EthMAC);
+			const EthernetAddress *addr = (*it)->iface->getAddress<EthernetAddress>();
 			
 			if (addr && memcmp(addr->getRaw(), b->mac, addr->getLength()) == 0) {
 				return true;
@@ -366,14 +369,14 @@ bool ConnectivityEthernet::init()
 	my_addr.sin_addr.s_addr = INADDR_ANY;
 	my_addr.sin_port = htons(HAGGLE_UDP_CONNECTIVITY_PORT);
 	
-	const Address addr((struct sockaddr *)&my_addr);
+	const IPv4Address addr(my_addr);
 
-	fakeRootInterface = new Interface(IFTYPE_ETHERNET, 
+	fakeRootInterface = new EthernetInterface( 
 		// FIXME: Hotfix for hotfix: use the MAC address of the first interface, 
 		// rather than a bogus MAC address. Not good, but works for now.
 		rootInterface->getIdentifier(), 
-		&addr, 
 		"Root ethernet",
+		&addr, 
 		IFFLAG_UP|IFFLAG_LOCAL);
 	
 	if (!fakeRootInterface) {
@@ -536,27 +539,29 @@ bool ConnectivityEthernet::run()
 					lifetime = received_lifetime;
 				
 				// We'll assume that this protocol is available:
-				addrs.add(new Address(AddressType_EthMAC, (unsigned char *)beacon->mac));
-				
-				if (in_addr->sa_family == AF_INET6) {
-					addrs.add(new Address(in_addr, NULL, ProtocolSpecType_TCP, TCP_DEFAULT_PORT));
-					
-					Interface iface(IFTYPE_ETHERNET, beacon->mac, &addrs, "Remote Ethernet", IFFLAG_UP);
-					
-					report_interface(&iface, fakeRootInterface, new ConnectivityInterfacePolicyTime(received_lifetime));
-				} else if (in_addr->sa_family == AF_INET) {	
-					Address *ipv4 = new Address(in_addr, NULL, ProtocolSpecType_TCP, TCP_DEFAULT_PORT);
-					
-					addrs.add(ipv4);
-					
+				addrs.add(new EthernetAddress(beacon->mac));
+
+				if (in_addr->sa_family == AF_INET) {	
+					addrs.add(new IPv4Address((struct sockaddr_in&)*in_addr, TransportTCP(TCP_DEFAULT_PORT)));
+										
 					/*
-					 CM_DBG("Neighbor interface (%s) will expire in %lf seconds\n", 
-					       ipv4->getURI(), (received_lifetime - Timeval::now()).getTimeAsSecondsDouble());
+					  CM_DBG("Neighbor interface (%s) will expire in %lf seconds\n", 
+					  ipv4->getURI(), (received_lifetime - Timeval::now()).getTimeAsSecondsDouble());
 					*/
 					
-					Interface iface(IFTYPE_ETHERNET, beacon->mac, &addrs, "Remote Ethernet", IFFLAG_UP);
+					EthernetInterface iface(beacon->mac,"Remote Ethernet", NULL, IFFLAG_UP);
+					iface.addAddresses(addrs);
 					report_interface(&iface, fakeRootInterface, new ConnectivityInterfacePolicyTime(received_lifetime));
 				}
+#if defined(ENABLE_IPV6)
+				else if (in_addr->sa_family == AF_INET6) {
+					addrs.add(new IPv6Address((struct sockaddr_in6&)*in_addr, TransportTCP(TCP_DEFAULT_PORT)));
+					
+					EthernetInterface iface(beacon->mac, "Remote Ethernet", NULL, IFFLAG_UP);
+					iface.addAddresses(addrs);
+					report_interface(&iface, fakeRootInterface, new ConnectivityInterfacePolicyTime(received_lifetime));
+				} 
+#endif
 			} else {
 				//CM_DBG("Beacon is my own\n");
 			}

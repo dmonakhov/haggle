@@ -31,7 +31,6 @@ class ProtocolUDP;
 class ProtocolUDP : public ProtocolSocket
 {
         unsigned short port;
-        string ipAddress;
         ProtocolEvent sendData(const void *buf, size_t buflen, const int flags, size_t *bytes);
 	ProtocolEvent receiveData(void *buf, size_t buflen, struct sockaddr *peer_addr, const int flags, size_t *bytes);
 	ProtocolEvent receiveDataObject();
@@ -48,9 +47,6 @@ public:
 	unsigned short getPort() const {
 		return port;
 	}
-	const char* getAddress() const {
-		return ipAddress.c_str();
-        }
 };
 
 #endif /* PROTOCOLUDP_H */

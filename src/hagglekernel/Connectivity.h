@@ -64,7 +64,7 @@ protected:
 	/**
 		Utility function to check if an interface already exists.
 	*/
-	InterfaceStatus_t have_interface(const InterfaceType_t type, const unsigned char *identifier);
+	InterfaceStatus_t have_interface(Interface::Type_t type, const unsigned char *identifier);
 	/**
 		Utility function to call the same-named function in the Connectivity
 		Manager.
@@ -79,11 +79,11 @@ protected:
 		Utility function to call the same-named function in the Connectivity
 		Manager.
 	*/
-	InterfaceStatus_t report_known_interface(const InterfaceType_t type, const unsigned char *identifier, bool isHaggle = false);
+	InterfaceStatus_t report_known_interface(Interface::Type_t type, const unsigned char *identifier, bool isHaggle = false);
 	/**
 		Utility functions to check if an interface is already known from before.
 	*/
-	InterfaceStatus_t is_known_interface(const InterfaceType_t type, const unsigned char *identifier);
+	InterfaceStatus_t is_known_interface(Interface::Type_t type, const unsigned char *identifier);
 	InterfaceStatus_t is_known_interface(const Interface *iface);
 
 	/**
@@ -103,7 +103,7 @@ protected:
 	/**
 		Utility function to delete an interface by type and identifier.
 	*/
-	void delete_interface(const InterfaceType_t type, const unsigned char *identifier);
+	void delete_interface(Interface::Type_t type, const unsigned char *identifier);
 
 	/**
 	 Function that is automatically called when cleanup

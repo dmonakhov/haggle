@@ -15,11 +15,6 @@
 #ifndef _INTERFACE_H
 #define _INTERFACE_H
 
-/*
-	Forward declarations of all data types declared in this file. This is to
-	avoid circular dependencies. If/when a data type is added to this file,
-	remember to add it here.
-*/
 class Interface;
 
 #include <time.h>
@@ -27,9 +22,9 @@ class Interface;
 #include <libcpphaggle/Platform.h>
 #include <libcpphaggle/Thread.h>
 #include <libcpphaggle/Reference.h>
-#include <haggleutils.h>
 #include <libcpphaggle/String.h>
 #include <libcpphaggle/Pair.h>
+#include <haggleutils.h>
 
 #include "Debug.h"
 #include "Address.h"
@@ -46,19 +41,15 @@ using namespace haggle;
 
 #define MAX_MEDIA_PATH_LEN 100
 #define GENERIC_MAC_LEN 6
+#define BT_MAC_LEN GENERIC_MAC_LEN
+#define ETH_MAC_LEN GENERIC_MAC_LEN
+#define WIFI_MAC_LEN ETH_LEN
 #define LOCAL_PATH_MAX 108 // This is based on the UNIX_PATH_MAX in linux/un.h from the Linux headers
 
-typedef enum {
-	IFTYPE_UNDEF = 0,
-	IFTYPE_APPLICATION_PORT,
-	IFTYPE_APPLICATION_LOCAL,
-	IFTYPE_BLUETOOTH,
-	IFTYPE_ETHERNET,
-	IFTYPE_WIFI,
-	IFTYPE_MEDIA,
-	_IFTYPE_MAX,
-} InterfaceType_t;
+#define DEFAULT_INTERFACE_NAME "Unnamed Interface"
 
+#define CREATE(ClassName) {				\
+		create<ClassName>()
 /**
 	Interface class.
 	
@@ -70,56 +61,78 @@ class Interface : public LeakMonitor
 class Interface
 #endif
 {
-	union {
-		unsigned char raw[1]; // Used for generic access
-		unsigned char mac[GENERIC_MAC_LEN];
-		short application_port;
-		char application_local[LOCAL_PATH_MAX];
-		char media[MAX_MEDIA_PATH_LEN];
-	} identifier;
-
-	static const char *typestr[];
-	
-	const InterfaceType_t type;
-	
+public:
+	typedef enum {
+		TYPE_UNDEFINED = 0,
+		TYPE_APPLICATION_PORT,
+		TYPE_APPLICATION_LOCAL,
+		TYPE_ETHERNET,
+		TYPE_WIFI,
+		TYPE_BLUETOOTH,
+		TYPE_MEDIA,
+	} Type_t;
+protected:
+	const Type_t type;
 	// The name of this interface
 	const string name;
+	const unsigned char *identifier;
+	size_t identifier_len;
+	static const char *typestr[];
 
-	typedef char flag_t;
+	typedef unsigned char flag_t;
 	// Flag field to show certain boolean things.
 	flag_t flags;
 
 	// Set to true if there is a valid identifier set for this interface
 	bool identifierIsValid;
 
-	string identifierString;
+	string identifier_str;
 
 	// The addresses associated with this interface.
 	Addresses addresses;
-
-	// Creates and sets the identfierString
-	void setIdentifierString();
-public:
 	/**
 		Constructors. Differs in taking one or multiple addresses.
 	*/
-	Interface(InterfaceType_t type, const void *identifier, const Address *addr, 
-		  const string name = "Unnamed Interface",  const flag_t flags = 0);
+	Interface(Type_t type, const void *identifier = NULL, size_t identifier_len = 0, 
+		  const string& name = DEFAULT_INTERFACE_NAME, 
+		  const Address *addr = NULL, flag_t flags = 0);
+	/*
+	Interface(Type_t type, const void *identifier, size_t identifier_len, 
+		  const string& name = DEFAULT_INTERFACE_NAME,  
+		  const Addresses *addrs = NULL, flag_t flags = 0);
+	*/
+	Interface(const Interface &iface, const void *identifier);
+	
+	//void setIdentifier(const void *identifier, size_t identifier_len) = 0;
+	//void setName(const string name);
+public:
+	/* Template create functions. These return an interface of a specified type */
+	
+	template<typename T>
+	static T *create(const void *identifier, const char *name, flag_t flags);
 
-	Interface(InterfaceType_t type, const void *identifier, const Addresses *addrs = NULL, 
-		  const string name = "Unnamed Interface",  const flag_t flags = 0);
+	template<typename T>
+	static T *create(const void *identifier, const char *name, const Address& addr, flag_t flags);
 
-	Interface(const Interface &iface);
+	template<typename T>
+	static T *create(const void *identifier, const char *name, const Addresses& addrs, flag_t flags);
+
+	/* Create functions that return an interface down-casted to base type. */
+	static Interface *create(Type_t type, const void *identifier, const char *name = DEFAULT_INTERFACE_NAME, 
+				 flag_t flags = 0); 
+	static Interface *create(Type_t type, const void *identifier, const char *name, 
+				 const Address& addr, flag_t flags = 0); 
+	static Interface *create(Type_t type, const void *identifier, const char *name, 
+				 const Addresses& addrs, flag_t flags = 0); 
+	
 	/**
 		Destructor.
 	*/
 	~Interface();
 
-
-	Interface *copy() const;
-
-	static InterfaceType_t strToType(const char *str);
-	static const char *typeToStr(InterfaceType_t type);
+	virtual Interface *copy() const { return new Interface(*this); }
+	static Interface::Type_t strToType(const char *str);
+	static const char *typeToStr(Type_t type);
 
 	/**
 	Gets the currently set name for this interface.
@@ -129,12 +142,12 @@ public:
 	/**
 		Gets the type for this interface.
 	*/
-	InterfaceType_t getType() const { return type; }
+	Interface::Type_t getType() const { return type; }
 	const char *getTypeStr() const { return typeToStr(type); }
 	/**
 		Gets a pointer to the beginning of the raw identifier which is unique for this interface.
 	*/
-	const unsigned char *getIdentifier() const { return identifier.raw; }
+	const unsigned char *getIdentifier() const { return identifier; }
 	/** 
 		Gets the length of the raw identifier which is unique for this interface.
 	*/
@@ -142,12 +155,12 @@ public:
 	/**
 		Gets the identifier for this interface as a pair.
 	*/
-	const Pair<const unsigned char *, const long> getIdentifierPair() const { return make_pair(identifier.raw, getIdentifierLen()); }
+	Pair<const unsigned char *, size_t> getIdentifierPair() const { return make_pair(identifier, identifier_len); }
 	
 	/**
 		Gets the identifier as a human readable C-string.
 	*/
-	const char *getIdentifierStr() const { return identifierString.c_str(); }
+	const char *getIdentifierStr() const { return identifier_str.c_str(); }
 	
 	/**
 		Gets the flags as a human readable C-string.
@@ -159,7 +172,7 @@ public:
 		The address is the property of the caller and the caller shall take 
 		responsibility for the memory associated with it.
 	*/
-	void addAddress(const Address *addr);
+	void addAddress(const Address& addr);
 	
 	/**
 		Inserts a set of addresses into this interface.
@@ -167,7 +180,7 @@ public:
 		The addresses are the property of the caller and the caller shall take 
 		responsibility for the memory associated with it.
 	*/
-	void addAddresses(const Addresses *adds);
+	void addAddresses(const Addresses& addrs);
 	
 	/**
 		Returns a list of the addresses referring to this interface.
@@ -180,31 +193,47 @@ public:
 		Returns true iff the interface has an address that is equal to the given
 		address.
 	*/
-	bool hasAddress(const Address &add) const;
+	bool hasAddress(const Address& add) const;
 	
 	/**
-		Returns the first found address of the given type.
+		Returns the first found address of the type given by the template.
 		
 		May return NULL, if no such address was found.
 		
 		The returned address is the property of the interface.
 	*/
-	const Address *getAddressByType(AddressType_t type) const;
-	Address *getAddressByType(AddressType_t type);
+
+	template<typename T>
+	T *getAddress() {
+		T a;
+		
+		for (Addresses::iterator it = addresses.begin(); it != addresses.end(); it++) {
+			if ((*it)->getType() == a.getType()) {
+				return static_cast<T*>(*it);
+			}
+		}
+		return NULL;
+	}
+
+	template<typename T> 
+	const T *getAddress() const
+	{
+		return const_cast<Interface *>(this)->getAddress<T>();
+	}
 	
 	/** 
 		Sets a given flag.
 	*/
-	void setFlag(const flag_t flag);
+	void setFlag(flag_t flag);
 
 	/** 
 		Resets a given flag.
 	*/
-	void resetFlag(const flag_t flag);
+	void resetFlag(flag_t flag);
 	/** 
 		Generic flag set check.
 	*/
-	bool isFlagSet(const flag_t flag) const;
+	bool isFlagSet(flag_t flag) const;
 	/** 
 		Is a flag set or not?
 	*/
@@ -248,7 +277,7 @@ public:
 	/**
 		Returns true if the type and identifier match.
 	*/
-	bool equal(const InterfaceType_t type, const unsigned char *identifier) const;
+	bool equal(Type_t type, const unsigned char *identifier) const;
 	/**
 		Equality operator.
 	*/
@@ -256,8 +285,206 @@ public:
 	friend bool operator<(const Interface& i1, const Interface& i2);
 };
 
+#if 0
+class UndefinedInterface : public Interface {
+	friend class Interface;
+	void setIdentifierStr();
+public:
+	UndefinedInterface(const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
+	UndefinedInterface(const UndefinedInterface& iface);
+	~UndefinedInterface();
+//	Interface *copy() const;
+	UndefinedInterface *copy() const;
+};
+
+typedef Reference<UndefinedInterface> UndefinedInterfaceRef;
+typedef ReferenceList<UndefinedInterface> UndefinedInterfaceRefList;
+#endif
+
+class ApplicationInterface : public Interface {
+	friend class Interface;
+protected:
+	ApplicationInterface(Interface::Type_t type, const void *identifier, size_t identifer_len, 
+			     const string name = DEFAULT_INTERFACE_NAME, const Address *a = NULL, flag_t flags = 0);
+	ApplicationInterface(const ApplicationInterface& iface, const void *identifier);
+	virtual ~ApplicationInterface() = 0;
+public:
+	ApplicationInterface(const ApplicationInterface& iface);
+};
+
+typedef Reference<ApplicationInterface> ApplicationInterfaceRef;
+typedef ReferenceList<ApplicationInterface> ApplicationInterfaceRefList;
+
+class ApplicationPortInterface : public ApplicationInterface {
+	friend class Interface;
+	unsigned short port;
+	void setIdentifierStr();
+	ApplicationPortInterface(const void *identifier = NULL, size_t identifier_len = 0, 
+				 const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
+public:
+	ApplicationPortInterface(const unsigned short port, const string name = DEFAULT_INTERFACE_NAME, 
+				 const Address *a = NULL, flag_t flags= 0);
+	ApplicationPortInterface(const ApplicationPortInterface& iface);
+	~ApplicationPortInterface();
+	Interface *copy() const;
+};
+
+class ApplicationLocalInterface : public ApplicationInterface {
+	friend class Interface;
+	char path[LOCAL_PATH_MAX];
+	void setIdentifierStr();
+	ApplicationLocalInterface(const void *identifier = NULL, size_t identifier_len = 0, 
+				  const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
+public:
+	ApplicationLocalInterface(const string _path, const string name = DEFAULT_INTERFACE_NAME, 
+				  const Address *a = NULL, flag_t flags = 0);
+	ApplicationLocalInterface(const ApplicationLocalInterface& iface);
+	~ApplicationLocalInterface();
+	Interface *copy() const;
+};
+
+#if defined(ENABLE_ETHERNET)
+class EthernetInterface : public Interface {
+	friend class Interface;
+protected:
+	unsigned char mac[GENERIC_MAC_LEN];
+	void setIdentifierStr();
+	EthernetInterface(const void *identifier = NULL, size_t identifier_len = 0, 
+			  const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
+	EthernetInterface(Interface::Type_t type, const unsigned char *_mac = NULL, 
+			  const string name = DEFAULT_INTERFACE_NAME, 
+			  const Address *a = NULL, flag_t flags = 0);
+public:
+	EthernetInterface(const unsigned char _mac[GENERIC_MAC_LEN], const string name = DEFAULT_INTERFACE_NAME, 
+			  const Address *a = NULL, flag_t flags = 0);
+	EthernetInterface(const EthernetInterface& iface);
+	~EthernetInterface();
+	Interface *copy() const;
+};
+
+typedef Reference<EthernetInterface> EthernetInterfaceRef;
+typedef ReferenceList<EthernetInterface> EthernetInterfaceRefList;
+
+class WiFiInterface : public EthernetInterface {
+	friend class Interface;
+	WiFiInterface(const void *identifier = NULL, size_t identifier_len = 0, 
+		      const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
+public:
+	WiFiInterface(const unsigned char _mac[GENERIC_MAC_LEN], const string name = DEFAULT_INTERFACE_NAME, 
+		      const Address *a = NULL, flag_t flags = 0);
+	WiFiInterface(const WiFiInterface& iface);
+	~WiFiInterface();
+	Interface *copy() const;
+};
+
+typedef Reference<WiFiInterface> WiFiInterfaceRef;
+typedef ReferenceList<WiFiInterface> WiFiInterfaceRefList;
+
+#endif // ENABLE_ETHERNET
+
+#if defined(ENABLE_BLUETOOTH)
+class BluetoothInterface : public Interface {
+	friend class Interface;
+	unsigned char mac[GENERIC_MAC_LEN];
+	void setIdentifierStr();
+	BluetoothInterface(const void *identifier = NULL, size_t identifier_len = 0, 
+			   const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
+public:
+	BluetoothInterface(const unsigned char _mac[GENERIC_MAC_LEN], const string name = DEFAULT_INTERFACE_NAME, 
+			   const Address *a = NULL, flag_t flags = 0);
+	BluetoothInterface(const WiFiInterface& iface);
+	~BluetoothInterface();
+	Interface *copy() const;
+};
+
+typedef Reference<BluetoothInterface> BluetoothInterfaceRef;
+typedef ReferenceList<BluetoothInterface> BluetoothInterfaceRefList;
+
+#endif // ENABLE_BLUETOOTH
+
+#if defined(ENABLE_MEDIA)
+class MediaInterface : public Interface {
+	friend class Interface;
+	const string path;
+	void setIdentifierStr();
+	MediaInterface(const void *identifier = NULL, size_t identifier_len = 0, 
+		       const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
+public:
+	MediaInterface(const string _path, const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
+	MediaInterface(const MediaInterface& iface);
+	~MediaInterface();
+	Interface *copy() const;
+};
+
+typedef Reference<MediaInterface> MediaInterfaceRef;
+typedef ReferenceList<MediaInterface> MediaInterfaceRefList;
+
+#endif // ENABLE_MEDIA
 
 typedef Reference<Interface> InterfaceRef;
 typedef ReferenceList<Interface> InterfaceRefList;
+
+template<typename T>
+inline T *Interface::create(const void *identifier, const char *name, flag_t flags)
+{
+	T type_iface;
+	size_t identifier_len = 0;
+	
+	if (!name)
+		name = DEFAULT_INTERFACE_NAME;
+
+	switch (type_iface.type) {
+	case TYPE_APPLICATION_PORT:
+		identifier_len = sizeof(unsigned short);
+		break;
+	case TYPE_APPLICATION_LOCAL:
+		identifier_len = strlen(static_cast<const char *>(identifier));
+		break;
+#if defined(ENABLE_ETHERNET)
+	case TYPE_ETHERNET:
+		identifier_len = GENERIC_MAC_LEN;
+		break;
+	case TYPE_WIFI:
+		identifier_len = GENERIC_MAC_LEN;
+		break;
+#endif
+#if defined(ENABLE_BLUETOOTH)
+	case TYPE_BLUETOOTH:
+		identifier_len = GENERIC_MAC_LEN;
+		break;
+#endif
+#if defined(ENABLE_MEDIA)
+	case TYPE_MEDIA:
+		identifier_len = strlen(static_cast<const char *>(identifier));
+		break;
+#endif	
+	default:
+		return NULL;
+	}
+
+	return new T(identifier, identifier_len, name, flags);
+}
+
+template<typename T>
+inline T *Interface::create(const void *identifier, const char *name, const Address& addr, flag_t flags)
+{	
+	T *iface = create<T>(identifier, name, flags);
+	
+	if (iface) {
+		iface->addAddress(addr);
+	}
+	return iface;
+}
+
+template<typename T>
+inline T *Interface::create(const void *identifier, const char *name, const Addresses& addrs, flag_t flags)
+{
+	T *iface = create<T>(identifier, name, flags);
+	
+	if (iface && addrs.size()) {
+		iface->addAddresses(addrs);
+	}
+	return iface;
+}
 
 #endif /* _INTERFACE_H */

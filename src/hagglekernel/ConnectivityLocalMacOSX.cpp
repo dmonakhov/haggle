@@ -74,8 +74,8 @@ static bool isBlacklistDeviceName(const char *devname)
 void ConnectivityLocal::findLocalBluetoothInterfaces()
 {
 	IOReturn ret;
-//	unsigned char macaddr[BT_ALEN] = { 0x00, 0x16, 0xcb, 0x2c, 0x99, 0x65 };
-	unsigned char macaddr[BT_ALEN] = { 0x00, 0x1e, 0xc2, 0xb5, 0xd6, 0xd7 };
+//	unsigned char macaddr[6] = { 0x00, 0x16, 0xcb, 0x2c, 0x99, 0x65 };
+	unsigned char macaddr[6] = { 0x00, 0x1e, 0xc2, 0xb5, 0xd6, 0xd7 };
 	const char *name = "LocalBluetoothDevice";
 	ret = IOBluetoothLocalDeviceAvailable();
 
@@ -142,7 +142,7 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
  	}
 	
 
- 	memcpy(macaddr, &btAddr, BT_ALEN);
+ 	memcpy(macaddr, &btAddr, 6);
 #endif /* ENABLE_BLUETOOTH_INTERFACE_DISCOVERY */
 	
 #if 1 && !defined(OS_MACOSX_IPHONE)
@@ -153,48 +153,50 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 		Perhaps this information could be obtained in a similar way but from
 		IOKit?
 	*/
-	char	addressStr[32];
-	{
+	char addressStr[32];
 	FILE *fp;
-	long	i;
-	int		c;
+	int c;
 	
-	fp = popen(
-		"system_profiler SPBluetoothDataType | "
+	fp = popen("system_profiler SPBluetoothDataType | "
 			"grep \"Address: 00\" | "
 			"awk '{ print $2}' | "
 			"awk -F- '{print \"bt://\"$1\":\"$2\":\"$3\":\"$4\":\"$5\":\"$6}'", 
 		"r");
-	for(i = 0; i < 32; i++)
-	{
+	for (int i = 0; i < 32; i++)	{
 		c = fgetc(fp);
-		if(c == 4 || c < 0)
-		{
+		if (c == 4 || c < 0) {
 			addressStr[i] = 0;
 			break;
-		}else
+		} else {
 			addressStr[i] = (char) c;
+		}
 	}
+
+	Address *addr = Address::create(addressStr);
+
+	if (addr) {
+		const unsigned char *rawaddr = addr->getRaw();
+		macaddr[0] = rawaddr[0];
+		macaddr[1] = rawaddr[1];
+		macaddr[2] = rawaddr[2];
+		macaddr[3] = rawaddr[3];
+		macaddr[4] = rawaddr[4];
+		macaddr[5] = rawaddr[5];
 	}
-	Address addr(addressStr);
-	{
-	const unsigned char *rawaddr = addr.getRaw();
-	macaddr[0] = rawaddr[0];
-	macaddr[1] = rawaddr[1];
-	macaddr[2] = rawaddr[2];
-	macaddr[3] = rawaddr[3];
-	macaddr[4] = rawaddr[4];
-	macaddr[5] = rawaddr[5];
-	}
+
+	
 #else
-	Address	addr(AddressType_BTMAC, macaddr);
+	BluetoothAddress btaddr(macaddr);
 #endif
 	/*
 	   Put it in the found devices table:
 	 */
-	Interface iface(IFTYPE_BLUETOOTH, macaddr, &addr, name, IFFLAG_UP | IFFLAG_LOCAL);
+	BluetoothInterface iface(macaddr, name, addr, IFFLAG_UP | IFFLAG_LOCAL);
 	
  	report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyTTL(1));	
+	
+	if (addr)
+		delete addr;
 	// TODO: Check return values
 }
 #endif

@@ -361,7 +361,7 @@ int WIDCOMMBluetooth::doDiscovery(const RemoteDevice *rd, GUID *guid, widcomm_di
 	return stack->_doDiscovery(rd, guid, callback, data, false);
 }
 
-int WIDCOMMBluetooth::readLocalDeviceAddress(char *mac)
+int WIDCOMMBluetooth::readLocalDeviceAddress(unsigned char *mac)
 {
 	DEV_VER_INFO dvi;
 

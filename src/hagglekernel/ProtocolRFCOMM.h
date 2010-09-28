@@ -75,30 +75,9 @@ ProtocolRFCOMMMac.h
 
 #if defined(OS_LINUX)
 #define BDADDR_swap(d,s) baswap((bdaddr_t *)d,(const bdaddr_t *)s)
-
-/* Some redefinitions of Bluetooth sockaddr for portability between
-* Windows and Linux */
-#define sockaddr_bt sockaddr_rc
-#define bt_channel rc_channel
-#define bt_family rc_family
-#define bt_bdaddr rc_bdaddr
-
 #elif defined(OS_WINDOWS)
 #define BDADDR_swap(d,s) swap_6bytes(d,s)
-
-/* Some redefinitions of Bluetooth sockaddr for portability between
-* Windows and Linux */
-#define sockaddr_bt _SOCKADDR_BTH
-#define bt_channel port
-#define bt_family addressFamily
-#define bt_bdaddr btAddr
-#if defined(OS_WINDOWS_MOBILE)
-#define AF_BLUETOOTH AF_BT
-#elif defined(OS_WINDOWS_DESKTOP)
-#define AF_BLUETOOTH AF_BTH
-#endif
 #define BTPROTO_RFCOMM BTHPROTO_RFCOMM
-
 #endif
 
 
@@ -106,7 +85,7 @@ ProtocolRFCOMMMac.h
 class ProtocolRFCOMM : public ProtocolSocket
 {
 protected:
-        char mac[BT_ALEN];  // The Bluetooth byteswapped mac address
+        char mac[BT_MAC_LEN];  // The Bluetooth byteswapped mac address
         unsigned short channel;
 	bool initbase();
         ProtocolRFCOMM(SOCKET _sock, const char *_mac, const unsigned short _channel, const InterfaceRef& _localIface, const short flags = PROT_FLAG_CLIENT, ProtocolManager *m = NULL);

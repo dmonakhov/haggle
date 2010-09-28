@@ -96,13 +96,13 @@ Certificate::Certificate(X509 *_x) :
 	// TODO: set validity
 }
 
-Certificate::Certificate(const string& _subject, const string& _issuer, const string& _validity, const NodeId_t _owner, RSA *_rsaPubKey) : 
+Certificate::Certificate(const string& _subject, const string& _issuer, const string& _validity, const Node::Id_t _owner, RSA *_rsaPubKey) : 
 #ifdef DEBUG_LEAKS
 LeakMonitor(LEAK_TYPE_CERTIFICATE),
 #endif
 	stored(false), verified(false), hasSignature(false), x(NULL), subject(_subject), issuer(_issuer), validity(_validity), pubKey(NULL), rsaPubKey(NULL), x509_PEM_str(NULL)
 {
-	memcpy(owner, _owner, sizeof(NodeId_t));
+	memcpy(owner, _owner, sizeof(Node::Id_t));
 	
 	x = X509_new();
 	
@@ -181,7 +181,7 @@ Certificate::~Certificate()
 #define HAVE_RSA_GENERATE_KEY_EX 1
 #endif
 
-Certificate *Certificate::create(const string subject, const string issuer, const string validity, const NodeId_t owner, RSA **privKey)
+Certificate *Certificate::create(const string subject, const string issuer, const string validity, const Node::Id_t owner, RSA **privKey)
 {
         Certificate *c = NULL;
 	RSA *pubKey, *keyPair;
@@ -247,7 +247,7 @@ out:
 	return c;
 }
 
-Certificate *Certificate::create(const string subject, const string issuer, const string validity, const NodeId_t owner, const string pubKeyFile)
+Certificate *Certificate::create(const string subject, const string issuer, const string validity, const Node::Id_t owner, const string pubKeyFile)
 {
 	FILE *f = fopen(pubKeyFile.c_str(), "r");
 
@@ -341,9 +341,9 @@ bool Certificate::isSigned() const
         return hasSignature;
 }
 
-bool Certificate::isOwner(const NodeId_t owner) const
+bool Certificate::isOwner(const Node::Id_t owner) const
 {
-	if (memcmp(owner, this->owner, sizeof(NodeId_t)) == 0)
+	if (memcmp(owner, this->owner, sizeof(Node::Id_t)) == 0)
 		return true;
 	
 	return false;

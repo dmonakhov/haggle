@@ -378,12 +378,12 @@ bool ForwardingManager::isNeighbor(const NodeRef& node)
 	if (node->isNeighbor())
 		return true;
 
-	if (node && node->getType() == NODE_TYPE_PEER) {
+	if (node && node->getType() == Node::TYPE_PEER) {
 		/*
 		 WARNING! Previously, kernel->getNodeStore()->retrieve(node,...) was
 		 called on the same line as node->getType(), i.e.,
 		 
-		 if (node && node->getType() == NODE_TYPE_PEER && kernel->getNodeStore()->retrieve(node, true))
+		 if (node && node->getType() == Node::TYPE_PEER && kernel->getNodeStore()->retrieve(node, true))
 			...
 		 
 		 but this could cause a potential deadlock in the NodeStore(). The first
@@ -435,7 +435,7 @@ bool ForwardingManager::shouldForward(const DataObjectRef& dObj, const NodeRef& 
 	}
 	
 	if (dObj->isNodeDescription()) {
-		NodeRef descNode = Node::create(NODE_TYPE_PEER, dObj);
+		NodeRef descNode = Node::create(Node::TYPE_PEER, dObj);
 		
 		if (descNode) {
 			if (descNode == node) {
@@ -633,7 +633,7 @@ void ForwardingManager::onNodeQueryResult(Event *e)
 						dObj->getIdStr(), target->getName().c_str());
                                         target_neighbors.push_front(target);
                                 }
-                        } else if (target->getType() == NODE_TYPE_PEER || target->getType() == NODE_TYPE_GATEWAY) { 
+                        } else if (target->getType() == Node::TYPE_PEER || target->getType() == Node::TYPE_GATEWAY) { 
                                 HAGGLE_DBG("Trying to find delegates for data object %s bound for target %s\n", 
 					dObj->getIdStr(), target->getName().c_str());
                                 forwardByDelegate(dObj, target, targets);
@@ -670,7 +670,7 @@ void ForwardingManager::onNewNeighbor(Event *e)
 {
 	NodeRef node = e->getNode();
 	
-	if (node->getType() == NODE_TYPE_UNDEF)
+	if (node->getType() == Node::TYPE_UNDEF)
 		return;
 	
 	// Tell the forwarding module that we've got a new neighbor:
@@ -692,7 +692,7 @@ void ForwardingManager::onNewNeighbor(Event *e)
 
 void ForwardingManager::onEndNeighbor(Event *e)
 {	
-	if (e->getNode()->getType() == NODE_TYPE_UNDEF)
+	if (e->getNode()->getType() == Node::TYPE_UNDEF)
 		return;
 	
 	NodeRef node = e->getNode();
@@ -729,7 +729,7 @@ void ForwardingManager::onNodeUpdated(Event *e)
 	NodeRef node = e->getNode();
 	NodeRefList &replaced = e->getNodeList();
 	
-	if (node->getType() == NODE_TYPE_UNDEF) {
+	if (node->getType() == Node::TYPE_UNDEF) {
 		HAGGLE_DBG("%s Node is undefined, deferring dataObjectQuery\n", getName());
 		return;
 	} 
@@ -743,7 +743,7 @@ void ForwardingManager::onNodeUpdated(Event *e)
 	
 	while (it != replaced.end()) {
 		// Was this undefined?
-		if ((*it)->getType() == NODE_TYPE_UNDEF && node->isNeighbor()) {
+		if ((*it)->getType() == Node::TYPE_UNDEF && node->isNeighbor()) {
 			// Yep. Tell the forwarding module that we've got a new neighbor:
 			if (forwardingModule) {
 				forwardingModule->newNeighbor(node);
@@ -821,7 +821,7 @@ size_t ForwardingManager::metadataToRecurseList(Metadata *m, NodeRefList& recurs
 		const char *id = tm->getParameter("node_id");
 		
 		if (id) {
-			NodeRef n = Node::create_with_id(NODE_TYPE_PEER, id);
+			NodeRef n = Node::create_with_id(Node::TYPE_PEER, id);
 			
 			if (n) {
 				recurse_list.push_back(n);

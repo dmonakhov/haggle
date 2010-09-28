@@ -69,7 +69,7 @@ const char *Node::typestr[] = {
 
 inline bool Node::init_node(const unsigned char *_id)
 {
-	memset(id, 0, sizeof(NodeId_t));
+	memset(id, 0, sizeof(Node::Id_t));
 	memset(idStr, 0, MAX_NODE_ID_STR_LEN);
 
 	if (createdFromNodeDescription) {
@@ -134,7 +134,7 @@ inline bool Node::init_node(const unsigned char *_id)
 		while (im) {
 			Addresses addrs;
 			char *identifier = NULL;
-			const char *type;
+			const char *type, *name;
 
 			base64_decode_ctx_init(&b64_ctx);
 
@@ -148,37 +148,43 @@ inline bool Node::init_node(const unsigned char *_id)
 			if (!pval || !base64_decode_alloc(&b64_ctx, pval, strlen(pval), &identifier, &decodelen))
 				return false;
 
-			Metadata *am = im->getMetadata(NODE_METADATA_INTERFACE_ADDRESS);
+			name = im->getParameter(NODE_METADATA_INTERFACE_NAME_PARAM);
+
+			Metadata *am = im->getMetadata(ADDRESS_METADATA);
 
 			while (am) {
-				addrs.push_back(new Address(am->getContent().c_str()));
+				Address *addr = Address::fromMetadata(*am);
+
+				if (addr)
+					addrs.push_back(addr);
+
 				am = im->getNextMetadata();
 			}
 
-			addInterface(new Interface(Interface::strToType(type), identifier, &addrs));
+			addInterface(Interface::create(Interface::strToType(type), identifier, name, addrs));
 
 			free(identifier);
 
 			im = nm->getNextMetadata();
 		}
 	}
-	if (type == NODE_TYPE_THIS_NODE) {
+	if (type == TYPE_THIS_NODE) {
 		dObj->setIsThisNodeDescription(true);
 		calcId();
-	} else if (type == NODE_TYPE_UNDEF) {
+	} else if (type == Node::TYPE_UNDEF) {
 		if (_id) {
 			HAGGLE_DBG("Attempted to create undefined node with ID. ID ignored.\n");
 		}
 		strncpy(idStr, "[Unknown id]", MAX_NODE_ID_STR_LEN);
 	} else if (_id) {
-		memcpy(id, _id, sizeof(NodeId_t));
+		memcpy(id, _id, sizeof(Node::Id_t));
 		calcIdStr();
 	} 
 
 	return true;
 }
 
-Node::Node(const NodeType_t _type, const string _name, Timeval _nodeDescriptionCreateTime) : 
+Node::Node(const Node::Type_t _type, const string _name, Timeval _nodeDescriptionCreateTime) : 
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_NODE),
 #endif
@@ -216,15 +222,30 @@ Node::Node(const Node& n) :
 		dObj = n.dObj->copy();
 }
 
-Node *Node::create(NodeType_t type, const DataObjectRef& dObj)
+Node *Node::create(Type_t type, const DataObjectRef& dObj)
 {
+	Node *node = NULL;
+	
 	if (!dObj) {
 		HAGGLE_ERR("Bad data object\n");
 		return NULL;
 	}
 
-	Node *node = new Node(type);
-
+	switch (type) {
+		case TYPE_THIS_NODE:
+			node = new ThisNode();
+			break;
+		case TYPE_PEER:
+			node = new PeerNode();
+			break;
+		case TYPE_GATEWAY:
+			node = new GatewayNode();
+			break;
+		default:
+			break;
+			
+	}
+	
 	if (!node)
 		return NULL;
 
@@ -240,9 +261,23 @@ Node *Node::create(NodeType_t type, const DataObjectRef& dObj)
 	return node;
 }
 
-Node *Node::create(NodeType_t type, const string name, Timeval _nodeDescriptionCreateTime)
+Node *Node::create(Type_t type, const string name, Timeval _nodeDescriptionCreateTime)
 {
-	Node *node = new Node(type, name, _nodeDescriptionCreateTime);
+	Node *node = NULL;
+	
+	switch (type) {
+		case TYPE_THIS_NODE:
+			node = new ThisNode(name, _nodeDescriptionCreateTime);
+			break;
+		case TYPE_PEER:
+			node = new PeerNode(name, _nodeDescriptionCreateTime);
+			break;
+		case TYPE_GATEWAY:
+			node = new GatewayNode(name, _nodeDescriptionCreateTime);
+			break;
+		default:
+			break;			
+	}
 
 	if (!node)
 		return NULL;
@@ -264,10 +299,24 @@ Node *Node::create(NodeType_t type, const string name, Timeval _nodeDescriptionC
 	return node;
 }
 
-Node *Node::create_with_id(NodeType_t type, const NodeId_t id, const string name, Timeval _nodeDescriptionCreateTime)
+Node *Node::create_with_id(Type_t type, const Id_t id, const string name, Timeval _nodeDescriptionCreateTime)
 {
-	Node *node = new Node(type, name, _nodeDescriptionCreateTime);
-
+	Node *node = NULL;
+	
+	switch (type) {
+		case TYPE_THIS_NODE:
+			node = new ThisNode(name, _nodeDescriptionCreateTime);
+			break;
+		case TYPE_PEER:
+			node = new PeerNode(name, _nodeDescriptionCreateTime);
+			break;
+		case TYPE_GATEWAY:
+			node = new GatewayNode(name, _nodeDescriptionCreateTime);
+			break;
+		default:
+			break;			
+	}
+	
 	if (!node)
 		return NULL;
 	
@@ -288,9 +337,9 @@ Node *Node::create_with_id(NodeType_t type, const NodeId_t id, const string name
 	return node;
 }
 
-Node *Node::create_with_id(NodeType_t type, const char *_idStr, const string name, Timeval _nodeDescriptionCreateTime)
+Node *Node::create_with_id(Type_t type, const char *_idStr, const string name, Timeval _nodeDescriptionCreateTime)
 {
-	NodeId_t iD;
+	Node::Id_t iD;
 	unsigned int i;
 
 	if (!_idStr) {
@@ -318,8 +367,22 @@ Node *Node::create_with_id(NodeType_t type, const char *_idStr, const string nam
 			iD[i] += (_idStr[i*2 + 1] - 'a' + 10);
 	}
 
-	Node *node = new Node(type, name, _nodeDescriptionCreateTime);
-
+	Node *node = NULL;
+	
+	switch (type) {
+		case TYPE_THIS_NODE:
+			node = new ThisNode(name, _nodeDescriptionCreateTime);
+			break;
+		case TYPE_PEER:
+			node = new PeerNode(name, _nodeDescriptionCreateTime);
+			break;
+		case TYPE_GATEWAY:
+			node = new GatewayNode(name, _nodeDescriptionCreateTime);
+			break;
+		default:
+			break;			
+	}
+	
 	if (!node)
 		return NULL;
 	
@@ -387,12 +450,12 @@ Node& Node::operator=(const Node &node)
 	return *this;
 }
 
-NodeType_t Node::getType() const
+Node::Type_t Node::getType() const
 {
 	return type;
 }
 
-const char *Node::typeToStr(const NodeType_t type)
+const char *Node::typeToStr(const Node::Type_t type)
 {
         return typestr[type];
 }
@@ -402,9 +465,9 @@ const unsigned char *Node::getId() const
 	return id;
 }
 
-void Node::setId(const NodeId_t _id)
+void Node::setId(const Node::Id_t _id)
 {
-	memcpy(id, _id, sizeof(NodeId_t));
+	memcpy(id, _id, sizeof(Node::Id_t));
 	calcIdStr();
 }
 
@@ -472,7 +535,7 @@ Metadata *Node::toMetadata(bool withBloomfilter) const
                 const Addresses *adds = (*it)->getAddresses();
 
 		for (Addresses::const_iterator jt = adds->begin(); jt != adds->end(); jt++) {
-                        im->addMetadata(NODE_METADATA_INTERFACE_ADDRESS, (*jt)->getURI());
+			im->addMetadata((*jt)->toMetadata());
 		}
         }
 
@@ -828,7 +891,7 @@ bool Node::isAvailable() const
 
 bool Node::isNeighbor() const
 {
-	return ((type == NODE_TYPE_PEER) || (type == NODE_TYPE_UNDEF) || (type == NODE_TYPE_GATEWAY)) && isAvailable();
+	return ((type == Node::TYPE_PEER) || (type == Node::TYPE_UNDEF) || (type == Node::TYPE_GATEWAY)) && isAvailable();
 }
 
 DataObjectRef Node::getDataObject(bool withBloomfilter) const
@@ -862,7 +925,7 @@ Bloomfilter *Node::getBloomfilter(void)
 {
 	if (!doBF) {
 		/* Init Bloomfilter */
-		doBF = Bloomfilter::create(type == NODE_TYPE_APPLICATION ? 
+		doBF = Bloomfilter::create(type == Node::TYPE_APPLICATION ? 
 					   Bloomfilter::BF_TYPE_COUNTING : 
 					   Bloomfilter::BF_TYPE_NORMAL);
 	}
@@ -935,7 +998,7 @@ bool Node::setBloomfilter(const Bloomfilter& bf, const bool set_create_time)
 
 void Node::setNodeDescriptionCreateTime(Timeval t)
 {
-	if (type == NODE_TYPE_THIS_NODE) {
+	if (type == Node::TYPE_THIS_NODE) {
 		//HAGGLE_DBG("SETTING create time on node description\n");
 		dObj->setCreateTime(t);
 		nodeDescriptionCreateTime = t;
@@ -949,7 +1012,7 @@ Timeval Node::getNodeDescriptionCreateTime() const
 
 bool operator==(const Node &n1, const Node &n2)
 {
-	if (n1.type == NODE_TYPE_UNDEF || n2.type == NODE_TYPE_UNDEF) {
+	if (n1.type == Node::TYPE_UNDEF || n2.type == Node::TYPE_UNDEF) {
 		// Check if the interfaces overlap:
 		
 		for (InterfaceRefList::const_iterator it = n1.interfaces.begin(); it != n1.interfaces.end(); it++) {

@@ -72,7 +72,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on an 
 		interface reference while calling this function.
 	*/
-	bool stored(const InterfaceType_t type, const unsigned char *identifier);
+	bool stored(Interface::Type_t type, const unsigned char *identifier);
 	/**
 		Add or update an interface to the store given previously unreferenced interfaces.
 		Returns: If successful (i.e., the interface was added or updated), a valid interface 
@@ -142,7 +142,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on an 
 		interface reference while calling this function.
 	*/
-	InterfaceRef retrieve(const InterfaceType_t type, const unsigned char *identifier);
+	InterfaceRef retrieve(Interface::Type_t type, const unsigned char *identifier);
 	/**
 		Retrieve all interfaces that match the given
 		criteria. The interfaces that match the criteria will
@@ -211,7 +211,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on an 
 		interface reference while calling this function.
 	*/
-	size_type remove(const InterfaceType_t type, const unsigned char *identifier, InterfaceRefList *ifl = NULL);
+	size_type remove(Interface::Type_t type, const unsigned char *identifier, InterfaceRefList *ifl = NULL);
 	/**
 		Age an interface associated with a specific parent interface. If the
                 interface dies due to age, it is removed along with any children.
@@ -244,7 +244,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on an 
 		interface reference while calling this function.
 	*/
-	size_type age(const InterfaceType_t type, const unsigned char *identifier, InterfaceRefList *ifl = NULL, Timeval *lifetime = NULL);
+	size_type age(Interface::Type_t type, const unsigned char *identifier, InterfaceRefList *ifl = NULL, Timeval *lifetime = NULL);
 	/**
 		Age an interface associated with a specific parent interface reference. If the
                 interface dies due to age, it is removed along with any children

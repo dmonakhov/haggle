@@ -56,7 +56,7 @@ public:
 	EventCriteria(EventType _etype) : etype(_etype) {}
 	bool operator() (const NodeRef& n) const
 	{
-		return (n->getType() == NODE_TYPE_APPLICATION && 
+		return (n->getType() == Node::TYPE_APPLICATION && 
 			n->hasEventInterest(etype));
 	}
 };
@@ -69,7 +69,7 @@ public:
 	EventCriteria2(EventType _etype1, EventType _etype2) : etype1(_etype1), etype2(_etype2) {}
 	bool operator() (const NodeRef& n1) const
 	{
-		return (n1->getType() == NODE_TYPE_APPLICATION && 
+		return (n1->getType() == Node::TYPE_APPLICATION && 
 			n1->hasEventInterest(etype1) && 
 			n1->hasEventInterest(etype2));
 	}
@@ -82,7 +82,7 @@ public:
 	NeighborCriteria(EventType _etype1, EventType _etype2) : etype1(_etype1), etype2(_etype2) {}
 	bool operator() (const NodeRef& n1) const
 	{
-		return (n1->getType() == NODE_TYPE_PEER && 
+		return (n1->getType() == Node::TYPE_PEER && 
 			n1->isAvailable() &&
 			n1->hasEventInterest(etype1) && 
 			n1->hasEventInterest(etype2));
@@ -154,7 +154,7 @@ bool ApplicationManager::init_derived()
 	onDataStoreFinishedProcessingCallback = newEventCallback(onDataStoreFinishedProcessing);
 	onRetrieveAppNodesCallback = newEventCallback(onRetrieveAppNodes);
 	
-	kernel->getDataStore()->retrieveNode(NODE_TYPE_APPLICATION, onRetrieveAppNodesCallback);
+	kernel->getDataStore()->retrieveNode(Node::TYPE_APPLICATION, onRetrieveAppNodesCallback);
 	
         /* 
          * Register a filter that makes sure we receive all data
@@ -189,20 +189,21 @@ void ApplicationManager::onStartup()
 	
 	// We need a fake application node, for the protocol to be selected 
 	// properly
-	NodeRef fakeAppNode = Node::create(NODE_TYPE_APPLICATION, "Startup application node");
+	NodeRef fakeAppNode = Node::create(Node::TYPE_APPLICATION, "Startup application node");
 
 	if (!fakeAppNode)
 		return;
 	
+	struct in_addr ip;
+	inet_pton(AF_INET, "127.0.0.1", &ip);
+	
 	// Set up the address to the application:
-	Address addr("udp://127.0.0.1:8788");
+	IPv4Address addr(ip, TransportUDP(8788));
+	
 	// Reuse whatever is written in the URL above, to minimize the number of 
 	// hardcoded values:
-	short port = addr.getProtocolPortOrChannel();
 	// Create an interface for the address:
-	InterfaceRef iface = new Interface(IFTYPE_APPLICATION_PORT, &port, &addr);
-	// Mark the interface as up:
-	iface->up();
+	InterfaceRef iface = new ApplicationPortInterface(8788, "App startup", &addr, IFFLAG_UP);
 	
 	// Add the interface to the node:
 	fakeAppNode->addInterface(iface);
@@ -300,7 +301,7 @@ void ApplicationManager::onSendResult(Event *e)
 	
 	NodeRef app = e->getNode();
 	
-	if (!app || app->getType() != NODE_TYPE_APPLICATION)
+	if (!app || app->getType() != Node::TYPE_APPLICATION)
 		return;
 	
 	DataObjectRef dObj = e->getDataObject();
@@ -394,7 +395,7 @@ void ApplicationManager::onPrepareShutdown()
 	NodeRefList lst;
 	unsigned long num;
 	
-        num = kernel->getNodeStore()->retrieve(NODE_TYPE_APPLICATION, lst);
+        num = kernel->getNodeStore()->retrieve(Node::TYPE_APPLICATION, lst);
 	
 	if (num) {
 		for (NodeRefList::iterator it = lst.begin(); it != lst.end(); it++) {
@@ -703,7 +704,7 @@ void ApplicationManager::onNeighborStatusChange(Event *e)
 					while (mdIface) {
                                                 // interface type
 						const char *typeString = mdIface->getParameter("type");
-						InterfaceType_t ifaceType = Interface::strToType(typeString);
+						Interface::Type_t ifaceType = Interface::strToType(typeString);
 						// interface id
 						const char *strBase64 = mdIface->getParameter("identifier");
 						base64_decode_ctx_init(&b64_ctx);
@@ -845,8 +846,8 @@ Metadata *ApplicationManager::addControlMetadata(const control_type_t type, cons
 
 void ApplicationManager::onReceiveFromApplication(Event *e)
 {
-	NodeId_t id;
-	size_t decodelen = sizeof(NodeId_t);
+	Node::Id_t id;
+	size_t decodelen = sizeof(Node::Id_t);
 	struct base64_decode_context ctx;
 	const Attribute *ctrlAttr;
 	/*
@@ -939,7 +940,7 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 						// Create a temporary application node to serve as target for the 
 						// return value, since the data object most likely came from a 
 						// different interface than the application is registered on.
-						NodeRef newAppNode = Node::create_with_id(NODE_TYPE_APPLICATION, appNode->getId(), appNode->getName());
+						NodeRef newAppNode = Node::create_with_id(Node::TYPE_APPLICATION, appNode->getId(), appNode->getName());
 
 						if (!newAppNode)
 							break;
@@ -961,7 +962,7 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 					} else {
 						HAGGLE_DBG("app name=\'%s\'\n", name_str);
 						
-						appNode = Node::create_with_id(NODE_TYPE_APPLICATION, id, name_str);
+						appNode = Node::create_with_id(Node::TYPE_APPLICATION, id, name_str);
 						
 						if (!appNode)
 							break;
@@ -1061,7 +1062,7 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 							
 							// Update the node description and send it to all 
 							// neighbors.
-							kernel->getDataStore()->retrieveNode(NODE_TYPE_APPLICATION, onRetrieveAppNodesCallback);
+							kernel->getDataStore()->retrieveNode(Node::TYPE_APPLICATION, onRetrieveAppNodesCallback);
 						}
 					} else {
 						HAGGLE_ERR("No application node \'%s\' for request to remove interests\n", name_str);

@@ -150,7 +150,7 @@ class WIDCOMMBluetooth : public CBtIf
 	WIDCOMMBluetooth(void);
 	~WIDCOMMBluetooth(void);
 public:
-	static int readLocalDeviceAddress(char *mac);
+	static int readLocalDeviceAddress(unsigned char *mac);
 	static int readLocalDeviceName(char *name, int len);
 	static bool enumerateRemoteDevicesStart();
 	static const RemoteDevice *getNextRemoteDevice();

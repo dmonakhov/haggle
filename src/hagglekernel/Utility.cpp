@@ -473,7 +473,7 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
 {
         char wifi_iface_name[PROPERTY_VALUE_MAX];
         OS_802_11_MAC_ADDRESS hwaddr;
-        char mac[6];
+        unsigned char mac[6];
         tiINT32 res;
         unsigned int flags;
         in_addr_t addr, baddr;
@@ -506,7 +506,7 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
 
         memcpy(mac, &hwaddr, 6);
 
-        addrs.add(new Address(AddressType_EthMAC, (void *)mac));
+        addrs.add(new EthernetAddress(mac));
 
         // We are done with the adapter handle
         TI_AdapterDeinit(h_adapter);
@@ -557,12 +557,14 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
                 baddr = 0;
         } else {
                 baddr = ((struct sockaddr_in *)&ifr.ifr_broadaddr)->sin_addr.s_addr;
-                addrs.add(new Address(AddressType_IPv4, &addr, &baddr));
+                addrs.add(new IPv4Address(addr));
+		addrs.add(new IPv4BroadcastAddress(bdaddr));
         }
 
         close(s);
 
-        iflist.push_back(InterfaceRef(new Interface(IFTYPE_ETHERNET, mac, &addrs, wifi_iface_name, IFFLAG_LOCAL | ((flags & IFF_UP) ? IFFLAG_UP : 0))));
+        iflist.push_back(InterfaceRef(new EthernetInterface(mac, wifi_iface_name, &addrs, 
+							    IFFLAG_LOCAL | ((flags & IFF_UP) ? IFFLAG_UP : 0))));
 
         return 1;
 }
@@ -610,15 +612,22 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
                 if (onlyUp && !(item->ifr_flags & IFF_UP)) 
                         continue;
 
-                addrs.add(new Address(AddressType_IPv4, &((struct sockaddr_in *)&item->ifr_addr)->sin_addr.s_addr, &((struct sockaddr_in *)&item->ifr_broadaddr)->sin_addr.s_addr));
-                
+                addrs.add(new IPv4Address(((struct sockaddr_in *)&item->ifr_addr)->sin_addr));
+		addrs.add(new IPv4BroadcastAddress(((struct sockaddr_in *)&item->ifr_broadaddr)->sin_addr));
+
 		if (ioctl(sock, SIOCGIFHWADDR, item) < 0)
                         continue;
                
-                addrs.add(new Address(AddressType_EthMAC, item->ifr_hwaddr.sa_data));
+                addrs.add(new EthernetAddress((unsigned char *)item->ifr_hwaddr.sa_data));
+		
+		InterfaceRef iface = Interface::create<EthernetInterface>(item->ifr_hwaddr.sa_data, 
+									  item->ifr_name, IFFLAG_LOCAL | ((item->ifr_flags & IFF_UP) ? IFFLAG_UP : 0));
 
-                iflist.push_back(InterfaceRef(new Interface(IFTYPE_ETHERNET, item->ifr_hwaddr.sa_data, &addrs, item->ifr_name, IFFLAG_LOCAL | ((item->ifr_flags & IFF_UP) ? IFFLAG_UP : 0))));
-                num++;
+		if (iface) {
+			iface->addAddresses(addrs);
+			iflist.push_back(iface);
+			num++;
+		}
         }
         
         close(sock);
@@ -661,7 +670,7 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
 	int len = 0;
 	
 	for (; req.ifc.ifc_len != 0; ifr = (struct ifreq *) ((char *) ifr + len), req.ifc.ifc_len -= len) {
-		unsigned char macaddr[ETH_ALEN];
+		unsigned char macaddr[6];
 		struct in_addr ip, bc;
 
 		len = (sizeof(ifr->ifr_name) + max(sizeof(struct sockaddr),
@@ -678,7 +687,7 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
 			continue;
 		}
 
-		memcpy(macaddr, LLADDR(ifaddr), ETH_ALEN);
+		memcpy(macaddr, LLADDR(ifaddr), 6);
 
 		ifr->ifr_addr.sa_family = AF_INET;
 
@@ -702,11 +711,13 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
                         continue;
 
 		Addresses addrs;
-		addrs.add(new Address(AddressType_EthMAC, macaddr));
-		addrs.add(new Address(AddressType_IPv4, (unsigned char *) &ip, (unsigned char *) &bc));
-		
+		addrs.add(new EthernetAddress(macaddr));
+		addrs.add(new IPv4Address(ip));
+		addrs.add(new IPv4BroadcastAddress(bc));
+
 		// FIXME: separate 802.3 (wired) from 802.11 (wireless) ethernet
-		iflist.push_back(InterfaceRef(new Interface(IFTYPE_ETHERNET, macaddr, &addrs, ifr->ifr_name, IFFLAG_UP | IFFLAG_LOCAL)));
+		iflist.push_back(InterfaceRef(Interface::create(Interface::TYPE_ETHERNET, macaddr, 
+								ifr->ifr_name, addrs, IFFLAG_UP | IFFLAG_LOCAL)));
 			
                 num++;
 	}
@@ -782,10 +793,11 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
 			continue;
 		}
 		// Ok, this interface seems to be interesting
-		Address mac(AddressType_EthMAC, ipAA->PhysicalAddress);
+		EthernetAddress mac(ipAA->PhysicalAddress);
 
-		Interface *ethIface = new Interface(IFTYPE_ETHERNET, (char *)ipAA->PhysicalAddress, &mac, 
-				ipAA->AdapterName, IFFLAG_LOCAL | ((ipAA->OperStatus == IfOperStatusUp) ? IFFLAG_UP : 0));
+		EthernetInterface *ethIface = new EthernetInterface(ipAA->PhysicalAddress, 
+								    ipAA->AdapterName, mac, 
+								    IFFLAG_LOCAL | ((ipAA->OperStatus == IfOperStatusUp) ? IFFLAG_UP : 0));
 		/*	
 		HAGGLE_DBG("LOCAL Interface type=%d index=%d name=%s mtu=%d mac=%s\n", 
 			ipAA->IfType, ipAA->IfIndex, ipAA->AdapterName, ipAA->Mtu, mac.getAddrStr());
@@ -807,8 +819,12 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
 				// Create broadcast address
 				bc.S_un.S_addr = saddr_v4->sin_addr.S_un.S_addr | ~mask;
 
-				Address ipv4(AddressType_IPv4, (unsigned char *)&saddr_v4->sin_addr, (unsigned char *)&bc);
-				ethIface->addAddress(&ipv4);
+				IPv4Address ipv4(*saddr_v4);
+				ethIface->addAddress(ipv4);
+
+				IPv4BroadcastAddress ipv4bc(bc);
+				ethIface->addAddress(ipv4bc);
+
 				/*
 				HAGGLE_DBG("IPv4 ADDRESS for interface[%s]: IP=%s PrefixLen=%d Broadcast=%s\n", 
 					mac.getAddrStr(), ip_to_str(saddr_v4->sin_addr), 
@@ -819,8 +835,8 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
 			} else if (ipAUA->Address.lpSockaddr->sa_family == AF_INET6) {
 				// TODO: Handle IPv6 prefix and broadcast address
 				struct sockaddr_in6 *saddr_v6 = (struct sockaddr_in6 *)ipAUA->Address.lpSockaddr;
-				Address ipv6(AddressType_IPv6, (unsigned char *)&saddr_v6->sin6_addr);
-				ethIface->addAddress(&ipv6);
+				IPv6Address ipv6(*saddr_v6);
+				ethIface->addAddress(ipv6);
 #endif
 			}
 		}

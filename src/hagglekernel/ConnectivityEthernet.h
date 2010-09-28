@@ -23,7 +23,7 @@
 #include "Interface.h"
 
 // The haggle connectivity UDP port number.
-#define HAGGLE_UDP_CONNECTIVITY_PORT 9696
+#define HAGGLE_UDP_CONNECTIVITY_PORT ((unsigned short)9696)
 
 struct haggle_beacon {
         u_int32_t seqno;

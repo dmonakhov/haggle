@@ -101,7 +101,7 @@ protected:
 	int _insertNode(NodeRef& node, const EventCallback<EventHandler> *callback = NULL, bool mergeBloomfilter = false);
 	int _deleteNode(NodeRef& node);
 	int _retrieveNode(NodeRef& node, const EventCallback<EventHandler> *callback, bool forceCallback);
-	int _retrieveNode(NodeType_t type, const EventCallback<EventHandler> *callback);
+	int _retrieveNode(Node::Type_t type, const EventCallback<EventHandler> *callback);
 	int _retrieveNode(const InterfaceRef& iface, const EventCallback<EventHandler> *callback, bool forceCallback);
 	int _insertDataObject(DataObjectRef& dObj, const EventCallback<EventHandler> *callback = NULL);
 	int _deleteDataObject(const DataObjectId_t &id, bool shouldReportRemoval = true, bool keepInBloomfilter = false);

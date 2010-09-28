@@ -45,6 +45,9 @@ DataHelper::DataHelper(DataManager *m, const EventType _etype) :
 
 DataHelper::~DataHelper()
 {
+	if (isRunning())
+		stop();
+	
 	while (!taskQ.empty()) {
 		DataTask *task = NULL;
 		taskQ.retrieve(&task);
@@ -430,7 +433,7 @@ void DataManager::onIncomingDataObject(Event *e)
 	// Add the data object to the bloomfilter of the one who sent it:
 	NodeRef peer = e->getNode();
 
-	if (!peer || peer->getType() == NODE_TYPE_UNDEF) {
+	if (!peer || peer->getType() == Node::TYPE_UNDEF) {
 		// No valid node in event, try to figure out from interface
 
 		// Find the interface it came from:
@@ -444,7 +447,7 @@ void DataManager::onIncomingDataObject(Event *e)
 	}
 	
 	if (peer) {
-		if (peer->getType() != NODE_TYPE_APPLICATION && peer->getType() != NODE_TYPE_UNDEF) {
+		if (peer->getType() != Node::TYPE_APPLICATION && peer->getType() != Node::TYPE_UNDEF) {
 			// Add the data object to the peer's bloomfilter so that
 			// we do not send the data object back.
 			HAGGLE_DBG("Adding data object [%s] to peer node %s's (%s num=%lu) bloomfilter\n", 

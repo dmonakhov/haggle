@@ -713,7 +713,7 @@ static inline char *SQL_NODE_FROM_ROWID_CMD(const sqlite_int64 node_rowid)
 	return sqlcmd;
 }
 
-static inline char *SQL_NODE_BY_TYPE_CMD(NodeType_t type)
+static inline char *SQL_NODE_BY_TYPE_CMD(Node::Type_t type)
 {
 	snprintf(sqlcmd, SQL_MAX_CMD_SIZE, "SELECT rowid from %s WHERE type=%d;", TABLE_NODES, type);
 
@@ -840,13 +840,13 @@ NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 	sqlite_int64 node_rowid;
 	NodeRef node = NULL;
 	int num_match = 0;
-	NodeId_t node_id;
+	Node::Id_t node_id;
 	Timeval nodedescription_createtime = -1;
 
 	if (!in_stmt)
 		return node;
 
-	memcpy(node_id, sqlite3_column_blob(in_stmt, table_nodes_id), sizeof(NodeId_t));
+	memcpy(node_id, sqlite3_column_blob(in_stmt, table_nodes_id), sizeof(Node::Id_t));
 
 	sqlite_int64 nodedescription_createtime_millisecs = sqlite3_column_int64(in_stmt, table_nodes_nodedescription_createtime);
 	
@@ -857,7 +857,7 @@ NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 	node = kernel->getNodeStore()->retrieve(node_id);
 
 	if (!node) {
-		node = Node::create_with_id((NodeType_t)sqlite3_column_int(in_stmt, table_nodes_type), 
+		node = Node::create_with_id((Node::Type_t)sqlite3_column_int(in_stmt, table_nodes_type), 
 			node_id, (char *)sqlite3_column_text(in_stmt, table_nodes_name), nodedescription_createtime);
 
 		if (!node) {
@@ -925,13 +925,13 @@ NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 	while ((ret = sqlite3_step(stmt)) != SQLITE_DONE) {
 		if (ret == SQLITE_ROW) {
 			const unsigned char *identifier = (const unsigned char *)sqlite3_column_blob(stmt, table_interfaces_mac);
-			InterfaceType_t type = (InterfaceType_t) sqlite3_column_int(stmt, table_interfaces_type);
+			Interface::Type_t type = (Interface::Type_t) sqlite3_column_int(stmt, table_interfaces_type);
 
 			// Try to find the interface from the interface store:
 			InterfaceRef iface = kernel->getInterfaceStore()->retrieve(type, identifier);
 			
 			if (!iface) {
-				iface = new Interface(type, identifier);
+				iface = Interface::create(type, identifier);
 
 				if (!iface) {
 					node = NULL;
@@ -1106,9 +1106,9 @@ Interface *SQLDataStore::getInterfaceFromRowId(const sqlite_int64 ifaceRowId)
 
 			if (num_match == 1) {
 				const unsigned char *identifier = (const unsigned char *)sqlite3_column_blob(stmt, table_interfaces_mac);
-				InterfaceType_t type = (InterfaceType_t) sqlite3_column_int(stmt, table_interfaces_type);
+				Interface::Type_t type = (Interface::Type_t) sqlite3_column_int(stmt, table_interfaces_type);
 
-				iface = new Interface(type, identifier);
+				iface = new Interface::create(type, identifier);
 
 			} else {
 				HAGGLE_DBG("More than on Node with key=" INT64_FORMAT "\n", ifaceRowId);
@@ -1607,7 +1607,7 @@ sqlite_int64 SQLDataStore::getNodeRowId(const NodeRef& node)
 	const char *tail;
 	sqlite_int64 nodeRowId = -1;
 
-	if (node->getType() != NODE_TYPE_UNDEF) {
+	if (node->getType() != Node::TYPE_UNDEF) {
 		// lookup by id
 		ret = sqlite3_prepare_v2(db, SQL_NODE_FROM_ID_CMD, (int) strlen(SQL_NODE_FROM_ID_CMD), &stmt, &tail);
 
@@ -2056,7 +2056,7 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 	node.lock();
 
 	// Do not insert nodes with undefined state/type
-	if (node->getType() == NODE_TYPE_UNDEF) {
+	if (node->getType() == Node::TYPE_UNDEF) {
 		HAGGLE_DBG("Node type undefined. Ignoring INSERT of node %s\n", node->getName().c_str());
 		node.unlock();
 		return -1;
@@ -2626,7 +2626,7 @@ int SQLDataStore::_retrieveNode(NodeRef& refNode, const EventCallback<EventHandl
 	return 1;
 }
 
-int SQLDataStore::_retrieveNode(NodeType_t type, const EventCallback<EventHandler> *callback)
+int SQLDataStore::_retrieveNode(Node::Type_t type, const EventCallback<EventHandler> *callback)
 {
 	NodeRefList *nodes = NULL;
 	int ret;
@@ -2852,7 +2852,7 @@ int SQLDataStore::_doDataObjectQueryStep2(NodeRef &node, NodeRef delegate_node, 
 					
 				//HAGGLE_DBG("Data object rowid=" INT64_FORMAT "\n", dObjRowId);
 				if (dObj->isNodeDescription()) {
-					NodeRef desc_node = Node::create(NODE_TYPE_PEER, dObj);
+					NodeRef desc_node = Node::create(Node::TYPE_PEER, dObj);
 					// Ignore this data object if it is the node description of the target
 					// or a potential delegate
 					if (desc_node == node || (delegate_node && delegate_node == desc_node)) {
@@ -3058,7 +3058,7 @@ int SQLDataStore::_doNodeQuery(DataStoreNodeQuery *q)
 			 Application nodes receive data objects via their
 			 filters....
 			*/
-			if (node && (node->getType() == NODE_TYPE_PEER || node->getType() == NODE_TYPE_GATEWAY)) {
+			if (node && (node->getType() == Node::TYPE_PEER || node->getType() == Node::TYPE_GATEWAY)) {
 				qr->addNode(node);
 				num_match++;
 			}
@@ -3783,7 +3783,7 @@ static void table_nodes_print(sqlite3 *db)
 	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
 		
 		sqlite_int64 rowid = sqlite3_column_int64(stmt, table_nodes_rowid);
-		const char *typestr = Node::typeToStr((NodeType_t)sqlite3_column_int64(stmt, table_nodes_type));
+		const char *typestr = Node::typeToStr((Node::Type_t)sqlite3_column_int64(stmt, table_nodes_type));
 		sqlite_int64 numattr = sqlite3_column_int64(stmt, table_nodes_num_attributes);
 		sqlite_int64 timestamp = sqlite3_column_int64(stmt, table_nodes_timestamp);
 		//const char *idstr = (const char *)sqlite3_column_text(stmt, table_nodes_id_str);

@@ -163,6 +163,9 @@ SecurityHelper::SecurityHelper(SecurityManager *m, const EventType _etype) :
 
 SecurityHelper::~SecurityHelper()
 {
+	if (isRunning())
+		stop();
+	
 	while (!taskQ.empty()) {
 		SecurityTask *task = NULL;
 		taskQ.retrieve(&task);
@@ -718,7 +721,7 @@ void SecurityManager::onIncomingDataObject(Event *e)
 	// In the future, the signing should potentially be handled by the application
 	// itself. But this requires some major rethinking of how to manage certificates 
 	// and keys, etc.
-	if (iface && iface->getType() == IFTYPE_APPLICATION_PORT && dObj->shouldSign()) {
+	if (iface && iface->getType() == Interface::TYPE_APPLICATION_PORT && dObj->shouldSign()) {
 		HAGGLE_DBG("Data object should be signed\n");
 
 		// FIXME: data objects should really be signed in the SecurityHelper thread since
@@ -762,7 +765,7 @@ void SecurityManager::onSendDataObject(Event *e)
 	// description).
 	InterfaceRef iface = dObj->getRemoteInterface();
 	
-	if (dObj->shouldSign() && !(iface && iface->getType() == IFTYPE_APPLICATION_PORT)) {
+	if (dObj->shouldSign() && !(iface && iface->getType() == Interface::TYPE_APPLICATION_PORT)) {
 		// FIXME: data objects should really be signed in the SecurityHelper thread since
 		// it is a potentially CPU intensive operation. But it is currently not possible
 		// to ensure that the signing operation has finished in the helper thread before

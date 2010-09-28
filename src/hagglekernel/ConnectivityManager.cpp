@@ -194,7 +194,7 @@ void ConnectivityManager::onBlacklistDataObject(Event *e)
 			const char *type = blm->getParameter("type");
 			const char *action = blm->getParameter("action");
 			string mac = blm->getContent();
-			InterfaceType_t iftype = Interface::strToType(type);
+			Interface::Type_t iftype = Interface::strToType(type);
 			int act = 3;
 
 			/*
@@ -216,9 +216,9 @@ void ConnectivityManager::onBlacklistDataObject(Event *e)
 					act = 2;
 			}
 
-			if (iftype == IFTYPE_ETHERNET || 
-				iftype == IFTYPE_BLUETOOTH ||
-				iftype == IFTYPE_WIFI) {
+			if (iftype == Interface::TYPE_ETHERNET || 
+				iftype == Interface::TYPE_BLUETOOTH ||
+				iftype == Interface::TYPE_WIFI) {
 					struct ether_addr etha;
 
 					if (ether_aton_r(mac.c_str(), &etha)) {
@@ -245,14 +245,14 @@ void ConnectivityManager::onBlacklistDataObject(Event *e)
 	}
 }
 
-void ConnectivityManager::addToBlacklist(InterfaceType_t type, const unsigned char *identifier)
+void ConnectivityManager::addToBlacklist(Interface::Type_t type, const unsigned char *identifier)
 {
         if (isBlacklisted(type, identifier))
                 return;
 
         blMutex.lock();
 
-        Interface *iface = new Interface(type, identifier);
+        Interface *iface = Interface::create(type, identifier);
 
         blacklist.push_back(iface);
         
@@ -260,7 +260,7 @@ void ConnectivityManager::addToBlacklist(InterfaceType_t type, const unsigned ch
         blMutex.unlock();
 }
 
-bool ConnectivityManager::isBlacklisted(InterfaceType_t type, const unsigned char *identifier)
+bool ConnectivityManager::isBlacklisted(Interface::Type_t type, const unsigned char *identifier)
 {
 	Mutex::AutoLocker l(blMutex);
 
@@ -272,7 +272,7 @@ bool ConnectivityManager::isBlacklisted(InterfaceType_t type, const unsigned cha
         return false;
 }
 
-bool ConnectivityManager::removeFromBlacklist(InterfaceType_t type, const unsigned char *identifier)
+bool ConnectivityManager::removeFromBlacklist(Interface::Type_t type, const unsigned char *identifier)
 {
 	Mutex::AutoLocker l(blMutex);
 
@@ -365,19 +365,19 @@ void ConnectivityManager::spawn_connectivity(const InterfaceRef& iface)
 	// Create new connectivity module:
 	switch (iface->getType()) {
 #if defined(ENABLE_ETHERNET)
-		case IFTYPE_ETHERNET:
-		case IFTYPE_WIFI:
+		case Interface::TYPE_ETHERNET:
+		case Interface::TYPE_WIFI:
                         conn = new ConnectivityEthernet(this, iface);
 			break;
 #endif			
 #if defined(ENABLE_BLUETOOTH)
-		case IFTYPE_BLUETOOTH:
+		case Interface::TYPE_BLUETOOTH:
                         conn = new ConnectivityBluetooth(this, iface);
 			break;
 #endif
 #if defined(ENABLE_MEDIA)
 			// Nothing here yet.
-		case IFTYPE_MEDIA:
+		case Interface::TYPE_MEDIA:
                         conn = new ConnectivityMedia(this, iface);
 			break;
 #endif
@@ -419,11 +419,17 @@ InterfaceStatus_t ConnectivityManager::report_known_interface(const Interface& i
 	return (*p.first).second.isHaggle ? INTERFACE_STATUS_HAGGLE : INTERFACE_STATUS_OTHER;
 }
 
-InterfaceStatus_t ConnectivityManager::report_known_interface(const InterfaceType_t type, const unsigned char *identifier, bool isHaggle)
+InterfaceStatus_t ConnectivityManager::report_known_interface(Interface::Type_t type, const unsigned char *identifier, bool isHaggle)
 {
-	Interface iface(type, identifier);
+	InterfaceStatus_t ret;
 
-	return report_known_interface(iface, isHaggle);
+	Interface *iface = Interface::create(type, identifier);
+
+	ret = report_known_interface(iface, isHaggle);
+
+	delete iface;
+
+	return ret;
 }
 
 InterfaceStatus_t ConnectivityManager::report_known_interface(const InterfaceRef& iface, bool isHaggle)
@@ -547,12 +553,12 @@ void ConnectivityManager::onIncomingDataObject(Event *e)
 		// Check whether this interface is already registered or not
 		if (!have_interface(remoteIface)) {
 			remoteIface->setFlag(IFFLAG_SNOOPED);
-			if (remoteIface->getType() == IFTYPE_BLUETOOTH) {
+			if (remoteIface->getType() == Interface::TYPE_BLUETOOTH) {
 				CM_IFACE_DBG("%s snooped Bluetooth interface [%s] %s\n", 
 					     getName(), remoteIface->getIdentifierStr(), remoteIface->isUp() ? "UP" : "DOWN");
 				report_interface(remoteIface, localIface, new ConnectivityInterfacePolicyTTL(2));
-			} else if (remoteIface->getType() == IFTYPE_ETHERNET ||
-				   remoteIface->getType() == IFTYPE_WIFI) {
+			} else if (remoteIface->getType() == Interface::TYPE_ETHERNET ||
+				   remoteIface->getType() == Interface::TYPE_WIFI) {
 				CM_IFACE_DBG("%s snooped Ethernet/WiFi interface [%s] %s\n", 
 					     getName(), remoteIface->getIdentifierStr(), remoteIface->isUp() ? "UP" : "DOWN");
 				report_interface(remoteIface, localIface, new ConnectivityInterfacePolicyTTL(3));
@@ -647,7 +653,7 @@ void ConnectivityManager::delete_interface(Interface *iface)
 	}
 }
 
-void ConnectivityManager::delete_interface(const InterfaceType_t type, const unsigned char *identifier)
+void ConnectivityManager::delete_interface(Interface::Type_t type, const unsigned char *identifier)
 {
 	InterfaceRefList dead;
         
@@ -669,7 +675,7 @@ void ConnectivityManager::delete_interface(const string name)
 	}
 }
 
-InterfaceStatus_t ConnectivityManager::have_interface(const InterfaceType_t type, const unsigned char *identifier)
+InterfaceStatus_t ConnectivityManager::have_interface(Interface::Type_t type, const unsigned char *identifier)
 {
 	return kernel->getInterfaceStore()->stored(type, identifier) ? INTERFACE_STATUS_HAGGLE : INTERFACE_STATUS_NONE;
 }
@@ -722,11 +728,17 @@ InterfaceStatus_t ConnectivityManager::is_known_interface(const Interface *iface
 	return (*it).second.isHaggle ? INTERFACE_STATUS_HAGGLE : INTERFACE_STATUS_OTHER;
 }
 
-InterfaceStatus_t ConnectivityManager::is_known_interface(const InterfaceType_t type, const unsigned char *identifier)
+InterfaceStatus_t ConnectivityManager::is_known_interface(Interface::Type_t type, const unsigned char *identifier)
 {
-	Interface iface(type, identifier);
+        InterfaceStatus_t ret;
+
+	Interface *iface = Interface::create(type, identifier);
 	
-	return is_known_interface(&iface);
+	ret = is_known_interface(iface);
+
+	delete iface;
+
+	return ret;
 }
 
 void ConnectivityManager::age_interfaces(const InterfaceRef &whose, Timeval *lifetime)

@@ -29,6 +29,11 @@ Metadata::~Metadata()
         }
 }
 
+bool Metadata::isName(const string _name) const
+{
+	return name == _name;
+}
+
 bool Metadata::_addMetadata(Metadata *m)
 { 
         if (!m)

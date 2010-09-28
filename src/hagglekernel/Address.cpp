@@ -12,967 +12,1150 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-#include <string.h>
-#include <stdlib.h>
-
-#include <libcpphaggle/Platform.h>
-
+#include "Trace.h"
 #include "Address.h"
-#include "Debug.h"
+#include "XMLMetadata.h"
 
-long Address::getAddressLength(AddressType_t aType)
+static const char *shortToStr(unsigned short n)
 {
-	switch(aType) {
-		case AddressType_EthMAC:
-			return ETH_ALEN;
-			break;
+	static char buf[10];
 
-		case AddressType_BTMAC:
-			return BT_ALEN;
-			break;
+	snprintf(buf, 10, "%u", n);
 
-		case AddressType_FilePath:
-			return -1;
-			break;
-
-#if defined(ENABLE_IPv6)
-		case AddressType_IPv6:
-			return IPv6_ALEN;
-			break;
-#endif
-		case AddressType_IPv4:
-			return IPv4_ALEN;
-			break;
-
-		default:
-			return -1;
-			break;
-	}
+	return buf;
 }
 
-void Address::create_addr_str(void)
+const char *Transport::type_str[] = 
 {
-	switch(aType) {
-		case AddressType_EthMAC:
-			addr_str = (char *) malloc(ETH_ALEN*3);
-			sprintf(addr_str,
-				"%02X:%02X:%02X:%02X:%02X:%02X",
-				EthMAC[0],
-				EthMAC[1],
-				EthMAC[2],
-				EthMAC[3],
-				EthMAC[4],
-				EthMAC[5]);
-
-			if (has_broadcast) {
-				broadcast_str = (char *) malloc(ETH_ALEN*3);
-				sprintf(broadcast_str,
-					"%02X:%02X:%02X:%02X:%02X:%02X",
-					EthMAC_broadcast[0],
-					EthMAC_broadcast[1],
-					EthMAC_broadcast[2],
-					EthMAC_broadcast[3],
-					EthMAC_broadcast[4],
-					EthMAC_broadcast[5]);
-			}
-			break;
-
-		case AddressType_BTMAC:
-			addr_str = (char *) malloc(BT_ALEN*3);
-			sprintf(addr_str,
-				"%02X:%02X:%02X:%02X:%02X:%02X",
-				BTMAC[0],
-				BTMAC[1],
-				BTMAC[2],
-				BTMAC[3],
-				BTMAC[4],
-				BTMAC[5]);
-
-			if (has_broadcast) {
-				broadcast_str = (char *) malloc(BT_ALEN*3);
-				sprintf(broadcast_str,
-					"%02X:%02X:%02X:%02X:%02X:%02X",
-					BTMAC_broadcast[0],
-					BTMAC_broadcast[1],
-					BTMAC_broadcast[2],
-					BTMAC_broadcast[3],
-					BTMAC_broadcast[4],
-					BTMAC_broadcast[5]);
-			}
-			break;
-
-		case AddressType_FilePath:
-			// Do nothing. The associated get function handles this case.
-			break;
-
-#if defined(ENABLE_IPv6)
-		case AddressType_IPv6:
-			addr_str = (char *) malloc(IPv6_ALEN*3);
-			sprintf(addr_str,
-				"%02X:%02X:%02X:%02X:"
-				"%02X:%02X:%02X:%02X:"
-				"%02X:%02X:%02X:%02X:"
-				"%02X:%02X:%02X:%02X",
-				IPv6[ 0], IPv6[ 1], IPv6[ 2], IPv6[ 3],
-				IPv6[ 4], IPv6[ 5], IPv6[ 6], IPv6[ 7],
-				IPv6[ 8], IPv6[ 9], IPv6[10], IPv6[11],
-				IPv6[12], IPv6[13], IPv6[14], IPv6[15]);
-			if (has_broadcast) {
-				broadcast_str = (char *) malloc(IPv6_ALEN*3);
-				sprintf(broadcast_str,
-					"%02X:%02X:%02X:%02X:"
-					"%02X:%02X:%02X:%02X:"
-					"%02X:%02X:%02X:%02X:"
-					"%02X:%02X:%02X:%02X",
-					IPv6_broadcast[ 0], IPv6_broadcast[ 1], 
-					IPv6_broadcast[ 2], IPv6_broadcast[ 3],
-					IPv6_broadcast[ 4], IPv6_broadcast[ 5], 
-					IPv6_broadcast[ 6], IPv6_broadcast[ 7],
-					IPv6_broadcast[ 8], IPv6_broadcast[ 9], 
-					IPv6_broadcast[10], IPv6_broadcast[11],
-					IPv6_broadcast[12], IPv6_broadcast[13], 
-					IPv6_broadcast[14], IPv6_broadcast[15]);
-			}
-			break;
-#endif
-
-		case AddressType_IPv4:
-			addr_str = (char *) malloc((3 + 1)*4);
-			sprintf(addr_str, "%d.%d.%d.%d", IPv4[0], IPv4[1], IPv4[2], IPv4[3]);
-
-			if (has_broadcast){
-				broadcast_str = (char *) malloc((3 + 1)*4);
-				sprintf(broadcast_str, "%d.%d.%d.%d",
-					IPv4_broadcast[0], IPv4_broadcast[1], 
-					IPv4_broadcast[2], IPv4_broadcast[3]);
-			}
-			break;
-
-		default:
-			// Can't really get here, but still...
-			break;
-	}
-}
-
-#define NUMBER_OF_URI_PREFIX_STRINGS 7
-static char *prefix_str[NUMBER_OF_URI_PREFIX_STRINGS] =
-{
-	(char *) "file://",
-	(char *) "tcp://",
-	(char *) "udp://",
-	(char *) "rfcomm://",
-	(char *) "eth://",
-	(char *) "bt://",
-	(char *) "ip://"
+	"none",
+	"rfcomm",
+	"udp",
+	"tcp",
+	NULL
 };
 
-void Address::create_uri_str(void)
+const char *Transport::typeToStr(Type_t type)
 {
-	if (!addr_str)
-		create_addr_str();
-
-	switch (aType) {
-		case AddressType_EthMAC:
-			uri_str = (char *) malloc(strlen(prefix_str[4]) + 
-				strlen(addr_str) +
-				1);
-			sprintf(uri_str,
-				"%s%s",
-				prefix_str[4],
-				addr_str);
-			break;
-
-		case AddressType_BTMAC:
-			switch(pType) {
-		case ProtocolSpecType_RFCOMM:
-			uri_str = (char *) malloc(strlen(prefix_str[3]) + 
-				strlen(addr_str) +
-				1 + 5 + 1);
-			sprintf(uri_str,
-				"%s%s:%u",
-				prefix_str[3],
-				addr_str,
-				getProtocolPortOrChannel());
-			break;
-		default:
-			uri_str = (char *) malloc(strlen(prefix_str[5]) + 
-				strlen(addr_str) +
-				1);
-			sprintf(uri_str,
-				"%s%s",
-				prefix_str[5],
-				addr_str);
-			break;
-			}
-			break;
-
-		case AddressType_IPv4:
-#if defined(ENABLE_IPv6)
-		case AddressType_IPv6:
-#endif
-			switch(pType) {
-		case ProtocolSpecType_TCP:
-			uri_str = (char *)malloc(strlen(prefix_str[1]) + 
-				strlen(addr_str) +
-				1 + 5 + 1);
-			sprintf(uri_str,
-				"%s%s:%u",
-				prefix_str[1],
-				addr_str,
-				getProtocolPortOrChannel());
-			break;
-
-		case ProtocolSpecType_UDP:
-			uri_str =(char *)malloc(strlen(prefix_str[2]) + 
-				strlen(addr_str) +
-				1 + 5 + 1);
-			sprintf(uri_str,
-				"%s%s:%u",
-				prefix_str[2],
-				addr_str,
-				getProtocolPortOrChannel());
-			break;
-
-		default:
-			uri_str = (char *)malloc(strlen(prefix_str[6]) + 
-				strlen(addr_str) +
-				1);
-			sprintf(uri_str,
-				"%s%s",
-				prefix_str[6],
-				addr_str);
-			break;
-			}
-			break;
-
-		case AddressType_FilePath:
-			uri_str = (char *)malloc(strlen(prefix_str[0]) + 
-				strlen(path) + 1);
-			sprintf(uri_str,
-				"%s%s",
-				prefix_str[0],
-				addr_str);
-			break;
-	}
+	return type_str[type];
 }
 
-Address::Address(AddressType_t addressType, 
-		 const void *Address, 
-		 const void *Address_Broadcast, 
-		 ProtocolSpecType_t protocolType, 
-		 unsigned short portOrChannel) :
-#ifdef DEBUG_LEAKS
-LeakMonitor(LEAK_TYPE_ADDRESS),
-#endif
-aType(addressType), has_broadcast(false), pType(protocolType), 
-addr_str(NULL), broadcast_str(NULL), uri_str(NULL)
+Transport::Type_t Transport::strToType(const char *str)
 {
-	switch(aType) {
-		case AddressType_EthMAC:
+	int i = 0;
 
-			memcpy(EthMAC, Address, ETH_ALEN);
-
-			if (Address_Broadcast != NULL) {
-				memcpy(EthMAC_broadcast, Address_Broadcast, ETH_ALEN);
-				has_broadcast = true;
-			}
-			break;
-
-		case AddressType_BTMAC:
-			memcpy(BTMAC, Address, BT_ALEN);
-			if (Address_Broadcast != NULL) {
-				memcpy(BTMAC_broadcast, Address_Broadcast, BT_ALEN);
-				has_broadcast = true;
-			}
-			break;
-
-		case AddressType_FilePath:
-			path = (char *) malloc(strlen((const char *)Address) + 1);
-			strcpy(path, (const char *)Address);
-			break;
-
-#if defined(ENABLE_IPv6)
-		case AddressType_IPv6:
-			memcpy(IPv6, Address, IPv6_ALEN);
-
-			if (Address_Broadcast != NULL) {
-				memcpy(IPv6_broadcast, Address_Broadcast, IPv6_ALEN);
-				has_broadcast = true;
-			}
-			break;
-#endif 
-		case AddressType_IPv4:
-			memcpy(IPv4, Address, IPv4_ALEN);
-
-			if (Address_Broadcast != NULL) {
-				memcpy(IPv4_broadcast, Address_Broadcast, IPv4_ALEN);
-				has_broadcast = true;
-			}
-			break;
-
-		default:
-			fprintf(stderr, "Unknown address type");
-			break;
+	while (type_str[i]) {
+		if (strcmp(str, type_str[i]) == 0) 
+			return (Type_t)i;
+		i++;
 	}
-
-	switch (pType) {
-		case ProtocolSpecType_None:
-			tcp_port = 0;
-			break;
-
-		case ProtocolSpecType_RFCOMM:
-			rfcomm_channel = portOrChannel;
-			break;
-
-		case ProtocolSpecType_TCP:
-			tcp_port = portOrChannel;
-			break;
-
-		case ProtocolSpecType_UDP:
-			udp_port = portOrChannel;
-			break;
-	}
-	// Just to make sure
-	create_addr_str();
-	create_uri_str();
+	return TYPE_NONE;
 }
 
-Address::Address(const struct sockaddr *ip, const struct sockaddr *ip_broadcast, 
-		 ProtocolSpecType_t protocolType, 
-		 unsigned short portOrChannel) :
-#ifdef DEBUG_LEAKS
-LeakMonitor(LEAK_TYPE_ADDRESS),
-#endif
-aType(AddressType_IPv4), has_broadcast(false), pType(protocolType), 
-addr_str(NULL), broadcast_str(NULL), uri_str(NULL)
+Transport::Transport(Type_t _type, const char *prefix) : type(_type), uri_prefix(NULL) 
 {
-	if (ip->sa_family == AF_INET) {
-		aType = AddressType_IPv4;
-		memcpy(IPv4, &(((struct sockaddr_in *)ip)->sin_addr.s_addr), IPv4_ALEN);
+	uri_prefix = new char[strlen(prefix) + 1];
 
-		if (ip_broadcast != NULL) {
-			memcpy(IPv4_broadcast, &(((struct sockaddr_in *)ip_broadcast)->sin_addr), IPv4_ALEN);
-			has_broadcast = true;
-		}
-	}
-#if defined(ENABLE_IPv6)
-	else if (ip->sa_family == AF_INET6) {
-		aType = AddressType_IPv6;
-		memcpy(IPv6, &(((struct sockaddr_in6 *)ip)->sin6_addr), IPv6_ALEN);
-
-		if (ip_broadcast != NULL) {
-			memcpy(IPv6_broadcast, &(((struct sockaddr_in6 *)ip_broadcast)->sin6_addr), IPv6_ALEN);
-			has_broadcast = true;
-		}
-	}
-#endif
-	switch(pType) {
-		case ProtocolSpecType_None:
-			tcp_port = 0;
-			break;
-		case ProtocolSpecType_RFCOMM:
-			rfcomm_channel = portOrChannel;
-			break;
-		case ProtocolSpecType_TCP:
-			tcp_port = portOrChannel;
-			break;
-		case ProtocolSpecType_UDP:
-			udp_port = portOrChannel;
-			break;
-	}
-
-	// Just to make sure
-	create_addr_str();
-	create_uri_str();
+	if (uri_prefix)
+		strcpy(uri_prefix, prefix);
 }
 
-Address::Address(const char *_path, ProtocolSpecType_t protocolType, unsigned short portOrChannel) :
-#ifdef DEBUG_LEAKS 
-LeakMonitor(LEAK_TYPE_ADDRESS),
-#endif
-has_broadcast(false), addr_str(NULL), broadcast_str(NULL), uri_str(NULL)
+Transport::Transport(const Transport& t) : type(t.type), uri_prefix(NULL)
 {
-	unsigned int i;
+	uri_prefix = new char[strlen(t.uri_prefix) + 1];
+	
+	if (uri_prefix)
+		strcpy(uri_prefix, t.uri_prefix);
+}
 
-	for (i = 0; i < NUMBER_OF_URI_PREFIX_STRINGS; i++) {
-		if (strncmp(_path, prefix_str[i], strlen(prefix_str[i])) == 0) {
-			long prefix_len;
+Transport::~Transport()
+{
+	if (uri_prefix)
+		delete [] uri_prefix;
+}
 
-			prefix_len = strlen(prefix_str[i]);
+Transport* Transport::create(Type_t type, unsigned short arg)
+{
+	Transport *t = NULL;
 
-			switch (i) {
-				case 0:
-					// file:
-					// The whole rest of the string is the path:
-					path = (char *) malloc(strlen(&(_path[prefix_len])) + 1);
-					strcpy(path, &(_path[prefix_len]));
-					break;
+	switch (type) {
+	case TYPE_NONE:
+		t = new TransportNone();
+		break;
+	case TYPE_UDP:
+		t = new TransportUDP(arg);
+		break;
+	case TYPE_TCP:
+		t = new TransportTCP(arg);
+		break;
+	case TYPE_RFCOMM:
+		t = new TransportRFCOMM(arg);
+	}
+	return t;
+}
 
-				case 1:
-					{
-						long j,k;
+TransportNone::TransportNone() : Transport(TYPE_NONE, "none://")
+{
+}
 
-						// tcp:
-						pType = ProtocolSpecType_TCP;
-						// This is a trick to reduce the code size. It's ugly, but
-						// works just fine:
-						if (0) {
-				case 2:
-					// udp:
-					pType = ProtocolSpecType_UDP;
-						}
+TransportNone::TransportNone(const TransportNone& t) : Transport(t)
+{
+}
 
-						// Find the ":" that separates the address from the port 
-						// number
-						for (j = strlen(_path); _path[j] != ':' && j > 0; j--)
-							;
+bool TransportNone::equal(const Transport& t) const
+{
+	return getType() == t.getType();
+}
 
-						if (j <= prefix_len)
-							fprintf(stderr, "Malformed URI: no port number");
+TransportUDP::TransportUDP(unsigned short _port) : Transport(TYPE_UDP, "udp://"), port(_port)
+{
+}
 
-						tcp_port = atoi(&(_path[j+1]));
+TransportUDP::TransportUDP(const TransportUDP& t) : Transport(t), port(t.port)
+{
+}
 
-						if (0) {
-				case 6:
-					pType = ProtocolSpecType_None;
-					j = strlen(_path);
-						}
-						// Try to figure out if this is an IPv4 address or IPv6 
-						// address:
-						aType = AddressType_EthMAC;
-						for (k = prefix_len; k < j && aType == AddressType_EthMAC; k++) {
-							if(_path[k] == '.')
-								aType = AddressType_IPv4;
-#if defined(ENABLE_IPv6) 
-							if(_path[k] == ':')
-								aType = AddressType_IPv6;
-#endif
-						}
-						if (aType == AddressType_EthMAC)
-							fprintf(stderr, "Malformed URI: not IP address");
+Metadata *TransportUDP::toMetadata() const
+{
+	Metadata *m;
 
-						if (aType == AddressType_IPv4) {
-							long l;
-							l = 0;
-							for (k = prefix_len; k < j; k++) {
-								if (k == prefix_len || _path[k-1] == '.') {
-									IPv4[l] = atoi(&(_path[k]));
-									l++;
-								}
-							}
-						}
+	m = new XMLMetadata(TRANSPORT_METADATA);
 
-#if defined(ENABLE_IPv6)
-						if (aType == AddressType_IPv6) {
-							long l;
-							l = 0;
-							for (k = prefix_len; k < j; k++) {
-								if (k == prefix_len || _path[k-1] == ':') {
-									IPv6[l] = (unsigned char) strtol(&(_path[k]), NULL, 16);
-									l++;
-								}
-							}
-						}
-#endif 
-					}
-					break;
-
-					// This uses the same trick as above, except it also uses the
-					// information that the BTMAC and EthMAC addresses are the same
-					// and that Bluetooth and Ethernet MAC addresses are the same
-					// length.
-				case 3:
-					{
-						long	j,k;
-
-						// rfcomm:
-
-						// Find the ":" that separates the address from the port 
-						// number
-						for (j = strlen(_path); _path[j] != ':' && j > 0; j--)
-							;
-
-						if (j <= prefix_len)
-							fprintf(stderr, "Malformed URI: no port number");
-
-						rfcomm_channel = atoi(&(_path[j+1]));
-						break;
-
-						if (0) {
-				case 4:
-					// eth:
-					aType = AddressType_EthMAC;
-					if (0) {
-				case 5:
-					// bt:
-					aType = AddressType_BTMAC;
-					}
-					pType = ProtocolSpecType_None;
-					j = strlen(_path);
-						}
-						{
-							long l;
-							l = 0;
-							for (k = prefix_len; k < j; k++) {
-								if (k == prefix_len || _path[k-1] == ':') {
-									BTMAC[l] = (unsigned char) strtol(&(_path[k]), NULL, 16);
-									l++;
-								}
-							}
-						}
-					}
-					break;
-
-				default:
-					// WHOA! shouldn't be able to get here!
-					fprintf(stderr, "Unknown URI format");
-					break;
-			}
-			if (pType == ProtocolSpecType_None && 
-				protocolType != ProtocolSpecType_None) {
-					pType = protocolType;
-					switch(pType) {
-					case ProtocolSpecType_None:
-						tcp_port = 0;
-						break;
-
-					case ProtocolSpecType_RFCOMM:
-						rfcomm_channel = portOrChannel;
-						break;
-
-					case ProtocolSpecType_TCP:
-						tcp_port = portOrChannel;
-						break;
-
-					case ProtocolSpecType_UDP:
-						udp_port = portOrChannel;
-						break;
-					}
-			}
-			// Already done.
-			goto done;
-		}
+	if (m) {
+		m->setParameter(TRANSPORT_METADATA_TYPE_PARAM, getTypeStr());
+		m->setParameter(TRANSPORT_METADATA_PORT_PARAM, shortToStr(port));
 	}
 
-	aType = AddressType_FilePath;
-	path = (char *) malloc(strlen(_path) + 1);
-	strcpy(path, _path);
-
-	switch(pType) {
-		case ProtocolSpecType_None:
-			tcp_port = 0;
-			break;
-
-		case ProtocolSpecType_RFCOMM:
-			rfcomm_channel = portOrChannel;
-			break;
-
-		case ProtocolSpecType_TCP:
-			tcp_port = portOrChannel;
-			break;
-
-		case ProtocolSpecType_UDP:
-			udp_port = portOrChannel;
-			break;
-	}
-
-done:
-	// Just to make sure
-	create_addr_str();
-	create_uri_str();
+	return m;
 }
 
-Address::Address(const Address &_original) :
-#ifdef DEBUG_LEAKS 
-LeakMonitor(LEAK_TYPE_ADDRESS),
-#endif 
-aType(_original.aType),
-has_broadcast(_original.has_broadcast),
-pType(_original.pType),
-addr_str(NULL),
-broadcast_str(NULL),
-uri_str(NULL)
+TransportUDP *TransportUDP::fromMetadata(const Metadata& m)
 {
-	switch(aType) {
-		case AddressType_EthMAC:
-			memcpy(EthMAC, _original.EthMAC, ETH_ALEN);
-			if (has_broadcast) {
-				memcpy(EthMAC_broadcast, _original.EthMAC_broadcast, ETH_ALEN);
-			}
-			break;
+	TransportUDP *t = NULL;
+	const char *param;
 
-		case AddressType_BTMAC:
-			memcpy(BTMAC, _original.BTMAC, BT_ALEN);
-			if (has_broadcast) {
-				memcpy(BTMAC_broadcast, _original.BTMAC_broadcast, BT_ALEN);
-			}
-			break;
-
-		case AddressType_FilePath:
-			path = (char *) malloc(strlen(_original.path) + 1);
-			strcpy(path, _original.path);
-			break;
-
-#if defined(ENABLE_IPv6)
-		case AddressType_IPv6:
-			memcpy(IPv6, _original.IPv6, IPv6_ALEN);
-			if (has_broadcast) {
-				memcpy(IPv6_broadcast, _original.IPv6_broadcast, IPv6_ALEN);
-			}
-			break;
-#endif
-
-		case AddressType_IPv4:
-			memcpy(IPv4, _original.IPv4, IPv4_ALEN);
-			if (has_broadcast) {
-				memcpy(IPv4_broadcast, _original.IPv4_broadcast, IPv4_ALEN);
-			}
-			break;
-
-		default:
-			fprintf(stderr, "Unknown address type");
-			break;
-	}
-
-	switch(pType) {
-		case ProtocolSpecType_None:
-			tcp_port = 0;
-			break;
-		case ProtocolSpecType_RFCOMM:
-			rfcomm_channel = _original.rfcomm_channel;
-			break;
-		case ProtocolSpecType_TCP:
-			tcp_port = _original.tcp_port;
-			break;
-		case ProtocolSpecType_UDP:
-			udp_port = _original.udp_port;
-			break;
-	}
-	// Just to make sure
-	create_addr_str();
-	create_uri_str();
-}
-
-Address::~Address()
-{
-	if (aType == AddressType_FilePath)
-		free(path);
-	if (addr_str)
-		free(addr_str);
-	if (broadcast_str)
-		free(broadcast_str);
-	if (uri_str)
-		free(uri_str);
-}
-
-void Address::mergeWith(const Address *addr)
-{
-	// The addresses must already match, or we shouldn't get to here.
-
-	// Does the given address have a broadcast address, but this address does 
-	// not?
-	if (!has_broadcast && addr->has_broadcast) {
-		// Copy broadcast address:
-		memcpy(IPv4_broadcast, addr->IPv4_broadcast, addr->getLength());
-		create_addr_str();
-	}
-
-	// Merge protocol (if none is set):
-	if(pType == ProtocolSpecType_None && addr->pType != ProtocolSpecType_None) {
-		pType = addr->pType;
-
-		switch(pType) {
-			case ProtocolSpecType_None:
-				tcp_port = 0;
-				break;
-
-			case ProtocolSpecType_RFCOMM:
-				rfcomm_channel = addr->rfcomm_channel;
-				break;
-
-			case ProtocolSpecType_TCP:
-				tcp_port = addr->tcp_port;
-				break;
-
-			case ProtocolSpecType_UDP:
-				udp_port = addr->udp_port;
-				break;
-		}
-	}
-}
-
-Address *Address::copy(void) const
-{
-	return new Address(*this);
-}
-
-AddressType_t Address::getType(void) const
-{
-	return aType;
-}
-
-ProtocolSpecType_t Address::getProtocolType(void) const
-{
-	return pType;
-}
-
-unsigned short Address::getProtocolPortOrChannel(void) const
-{
-	if(pType == ProtocolSpecType_None)
-		return 0;
-	return tcp_port;
-}
-
-long Address::getLength(void) const
-{
-	return Address::getAddressLength(aType);
-}
-
-const unsigned char *Address::getRaw(void) const
-{
-	switch(aType) {
-		default:
-			return IPv4;
-			break;
-		case AddressType_FilePath:
-			return (unsigned char *)path;
-			break;
-	}
-}
-
-const unsigned char *Address::getRawBroadcast(void) const
-{
-	if (!has_broadcast)
+	if (!m.isName(TRANSPORT_METADATA))
 		return NULL;
 
-	switch(aType) {
-		default:
-			return IPv4_broadcast;
-			break;
+	param = m.getParameter(TRANSPORT_METADATA_TYPE_PARAM);
 
-		case AddressType_FilePath:
-			return NULL;
-			break;
-	}
+	if (param && strcmp(param, typeToStr(TYPE_UDP)) == 0) {
+		param = m.getParameter(TRANSPORT_METADATA_PORT_PARAM);
+
+		if (param && strlen(param) > 0) {
+			char *endptr = NULL;
+			unsigned short port = (unsigned short)strtoul(param, &endptr, 10);
+			if (endptr == '\0') {
+				t = new TransportUDP(port);
+			}
+		}
+	}		       
+	return t;	
 }
 
-const char *Address::getAddrStr(void) const
+bool TransportUDP::equal(const Transport& t) const
 {
-	switch(aType)  {
-		default:
-			return addr_str;
-			break;
-
-		case AddressType_FilePath:
-			return path;
-			break;
-	}
+	return getType() == t.getType() && port == static_cast<const TransportUDP&>(t).port;
 }
 
-const char *Address::getBroadcastStr(void) const
+TransportTCP::TransportTCP(unsigned short _port) : Transport(TYPE_TCP, "tcp://"), port(_port) 
 {
-	if (!has_broadcast)
+}
+
+TransportTCP::TransportTCP(const TransportTCP& t) : Transport(t), port(t.port)
+{
+}
+
+Metadata *TransportTCP::toMetadata() const
+{
+	Metadata *m;
+
+	m = new XMLMetadata(TRANSPORT_METADATA);
+
+	if (m) {
+		m->setParameter(TRANSPORT_METADATA_TYPE_PARAM, getTypeStr());
+		m->setParameter(TRANSPORT_METADATA_PORT_PARAM, shortToStr(port));
+	}
+
+	return m;
+}
+
+TransportTCP *TransportTCP::fromMetadata(const Metadata& m)
+{
+	TransportTCP *t = NULL;
+	const char *param;
+
+	if (!m.isName(TRANSPORT_METADATA))
 		return NULL;
 
-	switch(aType) {
+	param = m.getParameter(TRANSPORT_METADATA_TYPE_PARAM);
+
+	if (param && strcmp(param, typeToStr(TYPE_TCP)) == 0) {
+		param = m.getParameter(TRANSPORT_METADATA_PORT_PARAM);
+
+		if (param && strlen(param) > 0) {
+			char *endptr = NULL;
+			unsigned short port = (unsigned short)strtoul(param, &endptr, 10);
+			if (endptr == '\0') {
+				t = new TransportTCP(port);
+			}
+		}
+	}		       
+	return t;	
+}
+
+bool TransportTCP::equal(const Transport& t) const
+{
+	return getType() == t.getType() && port == static_cast<const TransportTCP&>(t).port;
+}
+
+TransportRFCOMM::TransportRFCOMM(unsigned short _channel) : Transport(TYPE_RFCOMM, "rfcomm://"), channel(_channel) 
+{
+}
+
+TransportRFCOMM::TransportRFCOMM(const TransportRFCOMM& t) : Transport(t), channel(t.channel)
+{
+}
+
+bool TransportRFCOMM::equal(const Transport& t) const
+{
+	return getType() == t.getType() && channel == static_cast<const TransportRFCOMM&>(t).channel;
+}
+
+Metadata *TransportRFCOMM::toMetadata() const
+{
+	Metadata *m;
+
+	m = new XMLMetadata(TRANSPORT_METADATA);
+
+	if (m) {
+		m->setParameter(TRANSPORT_METADATA_TYPE_PARAM, getTypeStr());
+		m->setParameter(TRANSPORT_METADATA_CHANNEL_PARAM, shortToStr(channel));
+	}
+
+	return m;
+}
+
+TransportRFCOMM *TransportRFCOMM::fromMetadata(const Metadata& m)
+{
+	TransportRFCOMM *t = NULL;
+	const char *param;
+
+	if (!m.isName(TRANSPORT_METADATA))
+		return NULL;
+
+	param = m.getParameter(TRANSPORT_METADATA_TYPE_PARAM);
+
+	if (param && strcmp(param, typeToStr(TYPE_RFCOMM)) == 0) {
+		param = m.getParameter(TRANSPORT_METADATA_CHANNEL_PARAM);
+
+		if (param && strlen(param) > 0) {
+			char *endptr = NULL;
+			unsigned short channel = (unsigned short)strtoul(param, &endptr, 10);
+			if (endptr == '\0') {
+				t = new TransportRFCOMM(channel);
+			}
+		}
+	}		       
+	return t;	
+}
+
+bool operator==(const Transport& t1, const Transport& t2)
+{
+	return t1.equal(t2);
+}
+
+Transport *Transport::fromMetadata(const Metadata& m)
+{
+	Transport *t = NULL;
+	const char *param;
+
+	if (!m.isName(TRANSPORT_METADATA))
+		return NULL;
+	
+	param = m.getParameter(TRANSPORT_METADATA_TYPE_PARAM);
+
+	if (!param)
+		return NULL;
+
+	switch (strToType(param)) {
+	case TYPE_UDP:
+		t = TransportUDP::fromMetadata(m);
+		break;
+	case TYPE_TCP:
+		t = TransportTCP::fromMetadata(m);
+		break;
+	case TYPE_RFCOMM:
+		t = TransportRFCOMM::fromMetadata(m);
+		break;
+	default:
+		break;
+	}
+	return t;
+}
+
+const char *Address::type_str[] = {
+	"undefined",
+	"ethernet",
+	"ethernet_broadcast",
+	"bluetooth",
+	"ipv4",
+	"ipv4_broadcast",
+	"ipv6",
+	"ipv6_broadcast",
+	"filepath",
+	"unix",
+	NULL
+};
+
+const char *Address::uri_prefix[] = {
+	"undef://",
+	"eth://",
+	"eth://",
+	"bt://",
+	"inet://",
+	"inet://",
+	"inet6://",
+	"inet6://",
+	"file://",
+	"unix://",
+	NULL
+};
+
+const char *Address::typeToStr(Type_t type)
+{
+	return type_str[type];
+}
+
+Address::Type_t Address::strToType(const char *str)
+{
+	int i = 0;
+
+	while (type_str[i]) {
+		if (strcmp(str, type_str[i]) == 0)
+			return (Type_t)i;
+		i++;
+	}
+	return TYPE_UNDEFINED;
+}
+
+Address::Address(Type_t _type, const void *_raw, const Transport& t) : 
+#ifdef DEBUG_LEAKS
+	LeakMonitor(LEAK_TYPE_ADDRESS),
+#endif
+	type(_type), raw(static_cast<const unsigned char *>(_raw)), transport(t.copy()), uri(NULL), straddr(NULL)
+{
+}
+
+Address::Address(const Address& a) : 
+#ifdef DEBUG_LEAKS
+	LeakMonitor(LEAK_TYPE_ADDRESS),
+#endif
+	type(a.type), raw(NULL), transport(NULL), uri(NULL), straddr(NULL)
+{
+	if (a.uri && strlen(a.uri)) {
+		if (allocURI(strlen(a.uri) + 1))
+			strcpy(uri, a.uri);
+	}
+
+	if (a.straddr && strlen(a.straddr)) {
+		if (allocStr(strlen(a.straddr) + 1))
+			strcpy(straddr, a.straddr);
+	}
+
+	if (a.transport)
+		transport = a.transport->copy();
+}
+
+bool Address::allocURI(size_t len) const
+{
+	if (!uri || sizeof(uri) < len) {
+		if (uri)
+			delete [] uri;
+		
+		const_cast<Address *>(this)->uri = new char[len];
+	}
+	return uri != NULL;
+}
+
+bool Address::allocStr(size_t len) const
+{
+	if (!straddr || sizeof(straddr) < len) {
+		if (straddr)
+			delete [] straddr;
+		
+		const_cast<Address *>(this)->straddr = new char[len];
+	}
+	return straddr != NULL;
+}
+
+Address::~Address() 
+{
+	if (transport)
+		delete transport;
+
+	if (uri)
+		delete [] uri;
+
+	if (straddr)
+		delete [] straddr;
+}
+
+Metadata *Address::toMetadata() const
+{
+	Metadata *m;
+	const Transport *t;
+
+	m = new XMLMetadata(ADDRESS_METADATA);
+	
+	if (!m)
+		return NULL;
+	
+	m->setParameter(ADDRESS_METADATA_NETWORK_PARAM, getStr());
+	m->setParameter(ADDRESS_METADATA_TYPE_PARAM, type_str[type]);
+	
+	t = getTransport();
+
+	if (t) {
+		m->addMetadata(t->toMetadata());
+	}
+
+	return m;
+}
+
+Address *Address::fromMetadata(const Metadata& m)
+{
+	Address *a = NULL;
+
+	if (!m.isName(ADDRESS_METADATA))
+		return NULL;
+
+	const char *param = m.getParameter(ADDRESS_METADATA_TYPE_PARAM);
+
+	if (!param)
+		return NULL;
+	
+	switch (strToType(param)) {
+#if defined(ENABLE_ETHERNET)
+	case TYPE_ETHERNET:
+	case TYPE_ETHERNET_BROADCAST:
+		a = EthernetAddress::fromMetadata(m);
+		break;
+#endif
+#if defined(ENABLE_BLUETOOTH)
+	case TYPE_BLUETOOTH:
+		a = BluetoothAddress::fromMetadata(m);
+		break;
+#endif
+	case TYPE_IPV4:
+	case TYPE_IPV4_BROADCAST:
+		a = IPv4Address::fromMetadata(m);
+		break;
+#if defined(ENABLE_IPv6)
+	case TYPE_IPV6:
+	case TYPE_IPV6_BROADCAST:
+		a = IPv6Address::fromMetadata(m);
+		break;
+#endif
+#if defined(OS_UNIX)
+	case TYPE_UNIX:
+		a = UnixAddress::fromMetadata(m);
+		break;
+#endif
+	case TYPE_FILEPATH:
+		a = FileAddress::fromMetadata(m);
+		break;
+	default:
+		break;
+	}
+	
+	return a;
+}
+
+bool operator==(const Address &a1, const Address &a2)
+{
+	return a1.equal(a2);
+}
+
+SocketAddress::SocketAddress(Address::Type_t type, const void *raw, const Transport& t) : Address(type, raw, t)
+{
+}
+
+SocketAddress::SocketAddress(const SocketAddress& a) : Address(a)
+{
+}
+
+SocketAddress::~SocketAddress()
+{
+}
+
+int SocketAddress::family() const
+{
+	int f = 0;
+	
+	switch (getType()) {
+	case Address::TYPE_IPV4:
+		f = AF_INET;
+		break;
+#if defined(ENABLE_IPV6)
+	case Address::TYPE_IPV6:
+		f = AF_INET;
+		break;
+#endif
+#if defined(ENABLE_BLUETOOTH)
+	case Address::TYPE_BLUETOOTH:
+		f = AF_BLUETOOTH;
+		break;
+#endif
+#if defined(OS_UNIX)
+	case Address::TYPE_UNIX:
+		f = AF_UNIX;
+		break;
+#endif
+	default:
+		break;
+	}
+	return f;
+}
+
+#if defined(ENABLE_ETHERNET)
+EthernetAddress::EthernetAddress(unsigned char _mac[ETH_ALEN]) : SocketAddress(Address::TYPE_ETHERNET, mac)
+{
+	memcpy(mac, _mac, ETH_ALEN);
+}
+
+EthernetAddress::EthernetAddress(const EthernetAddress& a) : SocketAddress(a)
+{
+	memcpy(mac, a.mac, ETH_ALEN);
+	raw = mac;
+}
+
+EthernetAddress::~EthernetAddress()
+{
+}
+
+static bool str_to_mac(unsigned char *mac, const char *str)
+{
+	unsigned int i, j = 0;
+
+	for (i = 0; i < strlen(str); i++) {
+		if (i == 0 || str[i-1] == ':') {
+			char *endptr = NULL;
+			mac[j++] = (unsigned char) strtol(&(str[i]), &endptr, 16);
+			if (endptr == &str[i])
+				break;
+		}
+	}
+
+	return j == 6 ? true : false;
+}
+
+EthernetAddress *EthernetAddress::fromMetadata(const Metadata& m)
+{
+	EthernetAddress *a = NULL;
+	const char *param;
+
+	if (!m.isName(ADDRESS_METADATA))
+		return NULL;
+	
+	param = m.getParameter(ADDRESS_METADATA_TYPE_PARAM);
+
+	if (param && strcmp(param, typeToStr(TYPE_ETHERNET)) == 0) {
+		param = m.getParameter(ADDRESS_METADATA_NETWORK_PARAM);
+
+		if (param) {
+			unsigned char mac[ETH_MAC_LEN];
+			
+			if (str_to_mac(mac, param)) {
+				a = new EthernetAddress(mac);
+			}
+		}
+	}
+
+	return a;
+}
+
+const char *EthernetAddress::getURI() const
+{
+	if (!uri && allocURI(strlen(uri_prefix[type]) + strlen(getStr()) + 1)) {
+		sprintf(uri, "%s%s", uri_prefix[type], getStr());
+	}
+
+	return uri;
+}
+
+const char *EthernetAddress::getStr() const
+{
+	if (!straddr && allocStr(18)) {
+		sprintf(straddr, "%02x:%02x:%02x:%02x:%02x:%02x", 
+			mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+	}
+	
+	return straddr;
+}
+
+socklen_t EthernetAddress::fillInSockaddr(struct sockaddr *sa) const
+{
+	if (!sa)
+		return 0;
+	
+	memset(sa, 0, sizeof(*sa));
+
+#if defined(OS_MACOSX)
+	sa->sa_family = AF_LINK;
+#elif defined(OS_LINUX)
+	// AF_LINK does not exist in Linux
+	//sa->sa_family = AF_LINK;
+#endif
+	memcpy(sa->sa_data, mac, ETH_ALEN);
+
+	return sizeof(sa->sa_family) + ETH_ALEN;
+}
+
+bool EthernetAddress::equal(const Address& a) const
+{
+	return (type == a.getType() && memcmp(mac, static_cast<const EthernetAddress&>(a).mac, ETH_ALEN) == 0);
+}
+
+#endif /* ENABLE_ETHERNET */
+
+#if defined(ENABLE_BLUETOOTH)
+BluetoothAddress::BluetoothAddress(unsigned char _mac[BT_ALEN], const Transport& t) : SocketAddress(Address::TYPE_BLUETOOTH, mac, t)
+{
+	memcpy(mac, _mac, BT_ALEN);
+}
+
+BluetoothAddress::BluetoothAddress(const BluetoothAddress& a) : SocketAddress(a)
+{
+	memcpy(mac, a.mac, BT_ALEN);
+	raw = mac;
+}
+
+BluetoothAddress::~BluetoothAddress()
+{
+}
+
+const char *BluetoothAddress::getURI() const
+{
+	if (!uri && allocURI(strlen(uri_prefix[type]) + strlen(getStr()) + 1)) {
+		sprintf(uri, "%s%s", uri_prefix[type], getStr());
+	}
+	
+	return uri;
+}
+
+const char *BluetoothAddress::getStr() const
+{
+	if (!straddr && allocStr(18)) {
+		sprintf(straddr, "%02x:%02x:%02x:%02x:%02x:%02x", 
+			mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+	}
+	
+	return straddr;
+}
+
+socklen_t BluetoothAddress::fillInSockaddr(struct sockaddr *sa, unsigned short channel) const
+{
+	if (!sa)
+		return 0;
+
+	memset(sa, 0, sizeof(*sa));
+
+#if defined(OS_LINUX) || defined(OS_WINDOWS)
+	struct sockaddr_bt *sa_bt = (struct sockaddr_bt *)sa;
+	sa_bt->bt_family = AF_BLUETOOTH;
+
+	if (channel != 0)
+		sa_bt->bt_channel = channel;
+	else if (getTransport()) {
+		switch (getTransport()->getType()) {
+		case Transport::TYPE_RFCOMM:
+			sa_bt->bt_channel = htons(reinterpret_cast<const TransportRFCOMM *>(getTransport())->getChannel());
+			break;
 		default:
-			return broadcast_str;
 			break;
-
-		case AddressType_FilePath:
-			return NULL;
-			break;
-	}
-}
-
-const char *Address::getURI(void) const
-{
-	return uri_str;
-}
-
-bool Address::hasBroadcast(void) const
-{
-	return has_broadcast;
-}
-
-socklen_t Address::fillInSockaddr(struct sockaddr *sa, unsigned short port) const
-{
-	if (aType == AddressType_IPv4) {
-		struct sockaddr_in *sa4;
-
-		sa4 = (struct sockaddr_in *) sa;
-
-		memset(sa4, 0, sizeof(*sa4));
-		sa4->sin_family = AF_INET;
-		memcpy(&(sa4->sin_addr), IPv4, IPv4_ALEN);
-		if (port != 0) {
-			sa4->sin_port = htons(port);
-		} else {
-			switch(pType) {
-				default:
-					sa4->sin_port = htons(0);
-					break;
-
-				case ProtocolSpecType_TCP:
-					sa4->sin_port = htons(tcp_port);
-					break;
-
-				case ProtocolSpecType_UDP:
-					sa4->sin_port = htons(udp_port);
-					break;
-			}
 		}
-		return sizeof(*sa4);
-#if defined(ENABLE_IPv6)
-	} else if (aType == AddressType_IPv6) {
-		struct sockaddr_in6 *sa6;
-
-		sa6 = (struct sockaddr_in6 *) sa;
-
-		memset(sa6, 0, sizeof(*sa6));
-		sa6->sin6_family = AF_INET6;
-#if defined(OS_MACOSX)
-		sa6->sin6_len = sizeof((*sa6));
+	} 
+	memcpy(&sa_bt->bt_bdaddr, mac, BT_ALEN);	
+	return sizeof(struct sockaddr_bt);
+#else
+	return 0;
 #endif
-		memcpy(&(sa6->sin6_addr), IPv6, IPv6_ALEN);
-		if(port != 0)
-		{
-			sa6->sin6_port = htons(port);
-		} else {
-			switch(pType) {
-					default:
-						sa6->sin6_port = htons(0);
-						break;
 
-					case ProtocolSpecType_TCP:
-						sa6->sin6_port = htons(tcp_port);
-						break;
-
-					case ProtocolSpecType_UDP:
-						sa6->sin6_port = htons(udp_port);
-						break;
-			}
-		}
-		return sizeof(*sa6);
-#endif 
-	} else {
-		return 0;
-	}
 }
 
-socklen_t Address::fillInBroadcastSockaddr(struct sockaddr *sa, unsigned short port)
+socklen_t BluetoothAddress::fillInSockaddr(struct sockaddr *sa) const
 {
-	if(!has_broadcast)
-		return 0;
+	return fillInSockaddr(sa, 0);
+}
 
-	if (aType == AddressType_IPv4) {
-		struct sockaddr_in *sa4;
+bool BluetoothAddress::equal(const Address& a) const
+{
+	return (type == a.getType() && memcmp(mac, a.getRaw(), BT_ALEN) == 0 && 
+		((transport && a.getTransport() && *transport == *a.getTransport()) || 
+		 (!transport && !a.getTransport())));
+}
 
-		sa4 = (struct sockaddr_in *) sa;
+BluetoothAddress *BluetoothAddress::fromMetadata(const Metadata& m)
+{
+	BluetoothAddress *a = NULL;
+	const char *param;
 
-		memset(sa4, 0, sizeof(*sa4));
-		sa4->sin_family = AF_INET;
-		memcpy(&(sa4->sin_addr), IPv4_broadcast, IPv4_ALEN);
-		if (port != 0) {
-			sa4->sin_port = htons(port);
-		} else {
-			switch(pType) {
-				default:
-					sa4->sin_port = htons(0);
-					break;
+	if (!m.isName(ADDRESS_METADATA))
+		return NULL;
+	
+	param = m.getParameter(ADDRESS_METADATA_TYPE_PARAM);
 
-				case ProtocolSpecType_TCP:
-					sa4->sin_port = htons(tcp_port);
-					break;
+	if (param && strToType(param) == TYPE_BLUETOOTH) {
+		param = m.getParameter(ADDRESS_METADATA_NETWORK_PARAM);
 
-				case ProtocolSpecType_UDP:
-					sa4->sin_port = htons(udp_port);
-					break;
+		if (param) {
+			unsigned char mac[BT_MAC_LEN];
+			
+			if (str_to_mac(mac, param)) {
+				const Metadata *tm = m.getMetadata(ADDRESS_METADATA_TRANSPORT);
+				Transport *t = NULL;
+
+				if (tm) {
+					t = Transport::fromMetadata(*tm);
+				}
+				
+				a = t ? new BluetoothAddress(mac, *t) : new BluetoothAddress(mac);
 			}
 		}
-		return sizeof(*sa4);
+	}
+
+	return a;
+}
+
+#endif /* ENABLE_BLUETOOTH */
+
+IPv4Address::IPv4Address(struct sockaddr_in& saddr, const Transport& t) : SocketAddress(Address::TYPE_IPV4, &ipv4, t)
+{
+	memcpy(&ipv4, &saddr.sin_addr, sizeof(ipv4));
+}
+
+IPv4Address::IPv4Address(struct in_addr& inaddr, const Transport& t) : SocketAddress(Address::TYPE_IPV4, &ipv4, t)
+{
+	memcpy(&ipv4, &inaddr, sizeof(ipv4));
+}
+
+IPv4Address::IPv4Address(const IPv4Address& a) : SocketAddress(a)
+{
+	memcpy(&ipv4, &a.ipv4, sizeof(ipv4));
+	raw = (unsigned char *)&ipv4;
+}
+
+IPv4Address::~IPv4Address()
+{
+}
+
+const char *IPv4Address::getURI() const
+{
+	if (!uri && allocURI(strlen(uri_prefix[type]) + strlen(getStr()) + 1)) {
+		sprintf(uri, "%s%s", uri_prefix[type], getStr());
+	}
+	return uri;
+}
+
+const char *IPv4Address::getStr() const
+{
+	if (!straddr && allocStr(16)) {
+		sprintf(straddr, "%u.%u.%u.%u", raw[0], raw[1], raw[2], raw[3]);
+	}
+	
+	return straddr;
+}
+
+socklen_t IPv4Address::fillInSockaddr(struct sockaddr_in *inaddr, unsigned short port) const
+{
+	if (!inaddr || !getTransport())
+		return 0;
+
+	memset(inaddr, 0, sizeof(*inaddr));
+	
+	inaddr->sin_family = AF_INET;
+	
+	if (port == 0) {
+		switch (getTransport()->getType()) {
+		case Transport::TYPE_UDP:
+			inaddr->sin_port = htons(reinterpret_cast<const TransportUDP *>(getTransport())->getPort());
+			break;
+		case Transport::TYPE_TCP:
+			inaddr->sin_port = htons(reinterpret_cast<const TransportTCP *>(getTransport())->getPort());
+			break;
+		default:
+			inaddr->sin_port = htons(port);
+			break;
+		}
+	} else {
+		inaddr->sin_port = htons(port);
+	}
+
+	memcpy(&inaddr->sin_addr.s_addr, &ipv4, sizeof(ipv4));
+	
+	return sizeof(struct sockaddr_in);
+}
+
+socklen_t IPv4Address::fillInSockaddr(struct sockaddr *sa, unsigned short port) const
+{ 
+	return fillInSockaddr(reinterpret_cast<struct sockaddr_in *>(sa), port); 
+}
+
+socklen_t IPv4Address::fillInSockaddr(struct sockaddr *sa) const
+{
+	return fillInSockaddr(reinterpret_cast<struct sockaddr_in *>(sa), 0);
+}
+										    
+bool IPv4Address::equal(const Address& a) const
+{
+	return (type == a.getType() && memcmp(&ipv4, a.getRaw(), sizeof(ipv4)) == 0 && 
+		((transport && a.getTransport() && *transport == *a.getTransport()) || 
+		 (!transport && !a.getTransport())));
+}
+
+IPv4Address *IPv4Address::fromMetadata(const Metadata& m)
+{
+	IPv4Address *a = NULL;
+	const char *param;
+
+	if (!m.isName(ADDRESS_METADATA))
+		return NULL;
+	
+	param = m.getParameter(ADDRESS_METADATA_TYPE_PARAM);
+
+	if (param && (strToType(param) == TYPE_IPV4 || strToType(param) == TYPE_IPV4_BROADCAST)) {
+		const char *nparam = m.getParameter(ADDRESS_METADATA_NETWORK_PARAM);
+
+		if (nparam) {
+			struct in_addr ip;
+			
+			if (inet_pton(AF_INET, nparam, &ip) == 1) {
+				const Metadata *tm = m.getMetadata(ADDRESS_METADATA_TRANSPORT);
+				Transport *t = NULL;
+				
+				if (tm) {
+					t = Transport::fromMetadata(*tm);
+				}
+				
+				if (strToType(param) == TYPE_IPV4)
+					a = t ? new IPv4Address(ip, *t) : new IPv4Address(ip);
+				else
+					a = new IPv4BroadcastAddress(ip);
+			}
+		}
+	}
+
+	return a;
+}
+
 #if defined(ENABLE_IPv6)
-	} else if (aType == AddressType_IPv6) {
-		struct sockaddr_in6 *sa6;
-
-		sa6 = (struct sockaddr_in6 *) sa;
-
-		memset(sa6, 0, sizeof(*sa6));
-		sa6->sin6_family = AF_INET6;
-#if defined(OS_MACOSX)
-		sa6->sin6_len = sizeof((*sa6));
-#endif
-		memcpy(&(sa6->sin6_addr), IPv6_broadcast, IPv6_ALEN);
-		if (port != 0){
-			sa6->sin6_port = htons(port);
-		} else{
-			switch(pType) {
-				default:
-					sa6->sin6_port = htons(0);
-					break;
-
-				case ProtocolSpecType_TCP:
-					sa6->sin6_port = htons(tcp_port);
-					break;
-
-				case ProtocolSpecType_UDP:
-					sa6->sin6_port = htons(udp_port);
-					break;
-			}
-		}
-		return sizeof(*sa6);
-#endif 
-	} else {
-		return 0;
+IPv6Address::IPv6Address(struct sockaddr_in6& saddr, const Transport& t) : SocketAddress(Address::TYPE_IPV6, &ipv6, t)
+{
+	memcpy(&ipv6, &saddr.sin6_addr, sizeof(ipv6));
+	
+	if (t.getType() != Transport::TYPE_UDP &&
+	    t.getType() != Transport::TYPE_TCP &&
+	    t.getType() != Transport::TYPE_NONE) {
+		HAGGLE_ERR("Bad IPv6 transport type %s\n", t.getURIPrefix());
 	}
 }
 
-bool operator==(const Address &i1, const Address &i2)
+IPv6Address::IPv6Address(struct in6_addr& inaddr, const Transport& t) : SocketAddress(Address::TYPE_IPV6, &ipv6, t)
 {
-	if(&i1 == NULL && &i2 == NULL)
-		return true;
-	if(&i1 == NULL || &i2 == NULL)
-		return false;
-	if(i1.aType != i2.aType)
-		return false;
-	if(memcmp(i1.IPv4, i2.IPv4, ((Address&) i1).getLength()) != 0)
-		return false;
-	if(i1.pType == ProtocolSpecType_None || i2.pType == ProtocolSpecType_None)
-		return true;
-	if(i1.pType != i2.pType)
-		return false;
+	memcpy(&ipv6, &inaddr.s6_addr, sizeof(ipv6));
+}
 
-	switch(i1.pType) {
-		case ProtocolSpecType_None:
-			break;
+IPv6Address::IPv6Address(const IPv6Address& a) : SocketAddress(a)
+{
+	memcpy(&ipv6, &a.ipv6, sizeof(ipv6));
+	raw = (unsigned char *)&ipv6;
+}
 
-		case ProtocolSpecType_RFCOMM:
-			if(i1.rfcomm_channel != i2.rfcomm_channel)
-				return false;
-			break;
+IPv6Address::~IPv6Address()
+{
+}
 
-		case ProtocolSpecType_TCP:
-			if(i1.tcp_port != i2.tcp_port)
-				return false;
-			break;
-
-		case ProtocolSpecType_UDP:
-			if(i1.udp_port != i2.udp_port)
-				return false;
-			break;
+const char *IPv6Address::getURI() const
+{
+	if (!uri && allocURI(strlen(uri_prefix[type]) + strlen(getStr()) + 1)) {
+		sprintf(uri, "%s%s", uri_prefix[type], getStr());
 	}
 
-	return true;
+	return uri;
+}
+
+const char *IPv6Address::getStr() const
+{
+	if (!straddr && allocStr(48)) {
+		sprintf(straddr, "%02x:%02x:%02x:%02x:"
+			"%02x:%02x:%02x:%02x:"
+			"%02x:%02x:%02x:%02x:"
+			"%02x:%02x:%02x:%02x", 
+			raw[0], raw[1], raw[2], raw[3],
+			raw[4], raw[5], raw[6], raw[7],
+			raw[8], raw[9], raw[10], raw[11],
+			raw[12], raw[13], raw[14], raw[15]);
+	}
+	
+	return straddr;
+}
+
+socklen_t IPv6Address::fillInSockaddr(struct sockaddr_in6 *in6addr, unsigned short port) const
+{
+	if (!in6addr || !getTransport())
+		return 0;
+
+	memset(in6addr, 0, sizeof(*in6addr));
+
+	in6addr->sin6_family = AF_INET6;
+	
+	if (port == 0) {
+		switch (getTransport()->getType()) {
+		case Transport::TYPE_UDP:
+			in6addr->sin6_port = htons(reinterpret_cast<const TransportUDP *>(getTransport())->getPort());
+			break;
+		case Transport::TYPE_TCP:
+			in6addr->sin6_port = htons(reinterpret_cast<const TransportTCP *>(getTransport())->getPort());
+			break;
+		default:
+			in6addr->sin6_port = htons(port);
+			break;
+		}
+	} else {
+		in6addr->sin6_port = htons(port);
+	}
+
+	memcpy(&in6addr->sin6_addr, &ipv6, sizeof(ipv6));
+
+	return sizeof(struct sockaddr_in6);
+}
+
+socklen_t IPv6Address::fillInSockaddr(struct sockaddr *sa, unsigned short port) const
+{ 
+	return fillInSockaddr(reinterpret_cast<struct sockaddr_in6 *>(sa), port); 
+}
+
+socklen_t IPv6Address::fillInSockaddr(struct sockaddr *sa) const
+{
+	return fillInSockaddr(reinterpret_cast<struct sockaddr_in6 *>(sa), 0);
+}
+
+bool IPv6Address::equal(const Address& a) const
+{
+	return (type == a.getType() && memcmp(&ipv6, a.getRaw(), sizeof(ipv6)) == 0 && 
+		((transport && a.getTransport() && *transport == *a.getTransport()) || 
+		 (!transport && !a.getTransport())));
+}
+
+IPv6Address *IPv6Address::fromMetadata(const Metadata& m)
+{
+	IPv6Address *a = NULL;
+	const char *param;
+
+	if (!m.isName(ADDRESS_METADATA))
+		return NULL;
+	
+	param = m.getParameter(ADDRESS_METADATA_TYPE_PARAM);
+
+	if (param && (strToType(param) == TYPE_IPV6 || strToType(param) == TYPE_IPV6_BROADCAST)) {
+		const char *nparam = m.getParameter(ADDRESS_METADATA_NETWORK_PARAM);
+
+		if (nparam) {
+			struct in6_addr ip;
+			
+			if (inet_pton(AF_INET6, nparam, &ip) == 1) {
+				const Metadata *tm = m.getMetadata(ADDRESS_METADATA_TRANSPORT);
+				Transport *t = NULL;
+				
+				if (tm) {
+					t = Transport::fromMetadata(*tm);
+				}
+				
+				if (strToType(param) == TYPE_IPV6)
+					a = t ? new IPv6Address(ip, *t) : new IPv6Address(ip);
+				else
+					a = new IPv6BroadcastAddress(ip);
+			}
+		}
+	}
+
+	return a;
+}
+
+#endif
+
+FileAddress::FileAddress(const char *path) : Address(Address::TYPE_FILEPATH, filepath)
+{
+	if (path && strlen(path) > 0) {
+		filepath = new char[strlen(path) + 1];
+
+		if (filepath) {
+			strcpy(const_cast<char *>(filepath), path);
+		}
+	}
+}
+
+FileAddress::FileAddress(const FileAddress& a) : Address(a)
+{
+	if (a.filepath && strlen(a.filepath) > 0) {
+		filepath = new char[strlen(a.filepath) + 1];
+
+		if (filepath) {
+			strcpy(const_cast<char *>(filepath), a.filepath);
+		}
+	}
+	raw = reinterpret_cast<const unsigned char *>(filepath);
+}
+
+FileAddress::~FileAddress()
+{
+	if (filepath)
+		delete [] filepath;
+}
+
+const char *FileAddress::getURI() const
+{
+	if (!uri && allocURI(strlen(uri_prefix[type]) + strlen(getStr()) + 1)) {
+		sprintf(uri, "%s%s", uri_prefix[type], getStr());
+	}
+
+	return uri;
+}
+
+const char *FileAddress::getStr() const
+{
+	return filepath;
+}
+
+bool FileAddress::equal(const Address& a) const
+{
+	return (type == a.getType() && 
+		((filepath && a.getRaw() && strcmp(filepath, (char*)a.getRaw()) == 0) || 
+		 (!filepath && !a.getRaw())));
+}
+
+FileAddress *FileAddress::fromMetadata(const Metadata& m)
+{
+	FileAddress *a = NULL;
+	const char *param;
+
+	if (!m.isName(ADDRESS_METADATA))
+		return NULL;
+	
+	param = m.getParameter(ADDRESS_METADATA_TYPE_PARAM);
+
+	if (param && strToType(param) == TYPE_FILEPATH) {
+		// TODO
+	}
+
+	return a;
+}
+
+UnixAddress::UnixAddress(struct sockaddr_un& saddr) : SocketAddress(Address::TYPE_UNIX, filepath)
+{
+	if (strlen(saddr.sun_path) > 0) {
+		filepath = new char[strlen(saddr.sun_path) + 1];
+
+		if (filepath) {
+			strcpy(const_cast<char *>(filepath), saddr.sun_path);
+		}
+	}
+}
+
+UnixAddress::UnixAddress(const char *path) : SocketAddress(Address::TYPE_UNIX, filepath)
+{
+	if (path && strlen(path) > 0) {
+		filepath = new char[strlen(path) + 1];
+		
+		if (filepath) {
+			strcpy(const_cast<char *>(filepath), path);
+		}
+	}
+}
+
+UnixAddress::UnixAddress(const UnixAddress& a) : SocketAddress(a)
+{
+	if (a.filepath && strlen(a.filepath) > 0) {
+		filepath = new char[strlen(a.filepath) + 1];
+
+		if (filepath) {
+			strcpy(const_cast<char *>(filepath), a.filepath);
+		}
+	}
+	raw = reinterpret_cast<const unsigned char *>(filepath);
+}
+
+UnixAddress::~UnixAddress()
+{
+	if (filepath)
+		delete [] filepath;
+}
+
+const char *UnixAddress::getURI() const
+{
+	if (!uri && allocURI(strlen(uri_prefix[type]) + strlen(getStr()) + 1)) {
+		sprintf(uri, "%s%s", uri_prefix[type], getStr());
+	}
+
+	return uri;
+}
+
+const char *UnixAddress::getStr() const
+{
+	return filepath;
+}
+
+socklen_t UnixAddress::fillInSockaddr(struct sockaddr *sa) const
+{
+	return fillInSockaddr((struct sockaddr_un *)sa);
+}
+
+socklen_t UnixAddress::fillInSockaddr(struct sockaddr_un *unaddr) const
+{
+	if (!unaddr)
+		return 0;
+
+	memset(unaddr, 0, sizeof(*unaddr));
+
+	if (!filepath || strlen(filepath) == 0)
+		return 0;
+
+	unaddr->sun_family = AF_UNIX;
+	strcpy(unaddr->sun_path, filepath);
+	
+	return sizeof(struct sockaddr_un);
+}
+
+bool UnixAddress::equal(const Address& a) const
+{
+	return (type == a.getType() && 
+		((filepath && a.getRaw() && strcmp(filepath, (char*)a.getRaw()) == 0) || 
+		 (!filepath && !a.getRaw())));
+}
+
+UnixAddress *UnixAddress::fromMetadata(const Metadata& m)
+{
+	UnixAddress *a = NULL;
+	const char *param;
+
+	if (!m.isName(ADDRESS_METADATA))
+		return NULL;
+	
+	param = m.getParameter(ADDRESS_METADATA_TYPE_PARAM);
+
+	if (param && strToType(param) == TYPE_UNIX) {
+		// TODO
+	}
+
+	return a;
 }
 
 // Container list
 Addresses::Addresses(const Addresses& adds) : List<Address *>()
 {
 	for (Addresses::const_iterator it = adds.begin();
-		it != adds.end();
-		it++) {
-			push_back((*it)->copy());
+		it != adds.end(); it++) {
+		push_back((*it)->copy());
 	}
 }
 

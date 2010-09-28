@@ -43,17 +43,17 @@ ConnectivityBluetoothBase::~ConnectivityBluetoothBase()
 }
 
 Mutex ConnectivityBluetoothBase::sdpListMutex;
-InterfaceRefList ConnectivityBluetoothBase::sdpWhiteList;
-InterfaceRefList ConnectivityBluetoothBase::sdpBlackList;
+BluetoothInterfaceRefList ConnectivityBluetoothBase::sdpWhiteList;
+BluetoothInterfaceRefList ConnectivityBluetoothBase::sdpBlackList;
 bool ConnectivityBluetoothBase::ignoreNonListedInterfaces = false;
 unsigned long ConnectivityBluetoothBase::baseTimeBetweenScans = DEFAULT_BASE_TIME_BETWEEN_SCANS;
 unsigned long ConnectivityBluetoothBase::randomTimeBetweenScans = DEFAULT_RANDOM_TIME_BETWEEN_SCANS;
 
-int ConnectivityBluetoothBase::classifyAddress(const Interface &iface)
+int ConnectivityBluetoothBase::classifyAddress(const BluetoothInterface &iface)
 {
 	Mutex::AutoLocker l(sdpListMutex);
 	
-	for (InterfaceRefList::iterator it = sdpWhiteList.begin();
+	for (BluetoothInterfaceRefList::iterator it = sdpWhiteList.begin();
 		it != sdpWhiteList.end(); it++) {
 		if (*it == iface)
 			return BLUETOOTH_ADDRESS_IS_HAGGLE_NODE;
@@ -61,7 +61,7 @@ int ConnectivityBluetoothBase::classifyAddress(const Interface &iface)
 	if (ignoreNonListedInterfaces)
 		return BLUETOOTH_ADDRESS_IS_NOT_HAGGLE_NODE;
 	
-	for (InterfaceRefList::iterator it = sdpBlackList.begin();
+	for (BluetoothInterfaceRefList::iterator it = sdpBlackList.begin();
 		it != sdpBlackList.end(); it++) {
 		if (*it == iface)
 			return BLUETOOTH_ADDRESS_IS_NOT_HAGGLE_NODE;
@@ -69,9 +69,12 @@ int ConnectivityBluetoothBase::classifyAddress(const Interface &iface)
 	return BLUETOOTH_ADDRESS_IS_UNKNOWN;
 }
 
-int ConnectivityBluetoothBase::classifyAddress(const InterfaceType_t type, const unsigned char *identifier)
+int ConnectivityBluetoothBase::classifyAddress(const Interface::Type_t type, const unsigned char identifier[6])
 {
-	Interface iface(type, identifier);
+	if (type != Interface::TYPE_BLUETOOTH)
+		return -1;
+	
+	BluetoothInterface iface(identifier);
 	
 	return classifyAddress(iface);
 }
@@ -146,7 +149,7 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 		sdpWhiteList.clear();
 	
 	if (bl)  {
-		InterfaceRef i;		
+		BluetoothInterfaceRef i;		
 		Metadata *iface = bl->getMetadata("Interface");
 		
 		while (iface) {
@@ -158,14 +161,18 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 			} else if (strcmp(type, "bluetooth") != 0) {
 				HAGGLE_ERR("Interface type is \'%s\', and not \'bluetooth\'\n", type);
 			} else {			
-				Address a(iface->getContent().c_str());
-				if (a.getType() == AddressType_BTMAC) {
-					i = new Interface(IFTYPE_BLUETOOTH, a.getRaw(), &a);
-
-					if (i) {
-						sdpBlackList.push_back(i);
-						LOG_ADD("# ConnectivityManager: black-listing interface [type=%s identifier=%s name=%s]\n", type, i->getIdentifierStr(), name);
+				Address *a = Address::create(iface->getContent().c_str());
+				
+				if (a) {
+					if (a->getType() == Address::TYPE_BLUETOOTH) {
+						i = new BluetoothInterface(a->getRaw(), "Blacklist", a);
+						
+						if (i) {
+							sdpBlackList.push_back(i);
+							LOG_ADD("# ConnectivityManager: black-listing interface [type=%s identifier=%s name=%s]\n", type, i->getIdentifierStr(), name);
+						}
 					}
+					delete a;
 				}
 			}
 			iface = bl->getNextMetadata();
@@ -173,7 +180,7 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 	}
 
 	if (wl) {
-		InterfaceRef i;
+		BluetoothInterfaceRef i;
 		Metadata *iface = wl->getMetadata("Interface");
 		
 		while (iface) {
@@ -185,16 +192,20 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 			} else if (strcmp(type, "bluetooth") != 0) {
 				HAGGLE_ERR("Interface type is \'%s\', and not \'bluetooth\'\n", type);
 			} else {
-				Address a(iface->getContent().c_str());
-				if (a.getType() == AddressType_BTMAC) {
-					i = new Interface(IFTYPE_BLUETOOTH, a.getRaw(), &a);
-
-					if (i) {
-						sdpWhiteList.push_back(i);
-
-						LOG_ADD("# ConnectivityManager: white-listing interface [type=%s address=%s name=%s]\n", 
-							type, i->getIdentifierStr(), name);
+				Address *a = Address::create(iface->getContent().c_str());
+				
+				if (a) {
+					if (a->getType() == Address::TYPE_BLUETOOTH) {
+						i = new BluetoothInterface(a->getRaw(), "Whitelist", a);
+						
+						if (i) {
+							sdpWhiteList.push_back(i);
+							
+							LOG_ADD("# ConnectivityManager: white-listing interface [type=%s address=%s name=%s]\n", 
+								type, i->getIdentifierStr(), name);
+						}
 					}
+					delete a;
 				}
 			}
 			iface = wl->getNextMetadata();

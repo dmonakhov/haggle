@@ -25,136 +25,185 @@
 
 #include "ProtocolLOCAL.h"
 
-ProtocolLOCAL::ProtocolLOCAL(const char *path, ProtocolManager * m) : 
-	ProtocolSocket(PROT_TYPE_LOCAL, "ProtocolLOCAL", NULL, NULL,
-		       PROT_FLAG_SERVER | PROT_FLAG_CLIENT, m)
+ProtocolLOCAL::ProtocolLOCAL(SOCKET _sock, const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
+			 const char *_path, const short flags, ProtocolManager * m) :
+	ProtocolSocket(PROT_TYPE_LOCAL, "ProtocolLOCAL", _localIface, _peerIface, flags, m, _sock), uaddr(_path)
 {
-	if (!openSocket(PF_LOCAL, SOCK_DGRAM, 0), true) {
-#if HAVE_EXCEPTION
-		throw ProtocolSocket::SocketException(-1, "Could not create Haggle control socket\n");
-#else
-                return;
-#endif
-	}
+}
 
-	if (strlen(path) > sizeof(un_addr.sun_path))
-                return;
-
-	memset(&un_addr, 0, sizeof(struct sockaddr_un));
-
-	un_addr.sun_family = PF_LOCAL;
-	strcpy(un_addr.sun_path, path);
-
-	if (!bindSocket((struct sockaddr *) &un_addr, sizeof(struct sockaddr_un))) {
-		unlink(path);
-		closeSocket();
-#if HAVE_EXCEPTION
-		throw BindException(-1, "Could not bind Haggle control socket\n");
-#else
-                return;
-#endif
-	}
-
-	Address addr(un_addr.sun_path);
-
-	localIface = new Interface(IFTYPE_APPLICATION_LOCAL, un_addr.sun_path, &addr, "Application", IFFLAG_UP);
-
-#if HAVE_EXCEPTION
-	if (!localIface)
-		throw ProtocolException(-1, "Could not create local Protocol interface");
-#endif
+ProtocolLOCAL::ProtocolLOCAL(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
+			 const char *_path, const short flags, ProtocolManager * m) : 
+	ProtocolSocket(PROT_TYPE_LOCAL, "ProtocolLOCAL", _localIface, _peerIface, flags, m), uaddr(_path)
+{
 }
 
 ProtocolLOCAL::~ProtocolLOCAL()
 {
-	unlink(un_addr.sun_path);
+	unlink(uaddr.getStr());
 }
 
-ProtocolEvent ProtocolLOCAL::receiveDataObject()
+bool ProtocolLOCAL::initbase()
 {
-	int len = 0;
-	DataObject *dObj;
+	int optval = 1;
+	struct sockaddr_un local_addr;
+        socklen_t addrlen = 0;
+        
+	uaddr.fillInSockaddr(&local_addr);
+
+	if (!localIface) {
+		HAGGLE_ERR("Local interface is NULL\n");
+                return false;
+        }
+	
+	// Check if we are already connected, i.e., we are a client
+	// that was created from acceptClient()
+	if (isConnected()) {
+		// Nothing to initialize
+		return true;
+	}
+	
+	if (localIface->getType() != Interface::TYPE_APPLICATION_LOCAL) {
+		HAGGLE_ERR("Local interface type is not LOCAL\n");
+		return false;
+	}
+		
+	if (!openSocket(local_addr.sun_family, SOCK_STREAM, 0, isServer())) {
+		HAGGLE_ERR("Could not create LOCAL socket\n");
+                return false;
+	}
+	
+	if (!setSocketOption(SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval))) {
+		closeSocket();
+		HAGGLE_ERR("setsockopt SO_REUSEADDR failed\n");
+                return false;
+	}
+	
+	if (!setSocketOption(SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval))) {
+		closeSocket();
+		HAGGLE_ERR("setsockopt SO_KEEPALIVE failed\n");
+                return false;
+	}
+	
+	if (!bind((struct sockaddr *)&local_addr, addrlen)) {
+		closeSocket();
+		HAGGLE_ERR("Could not bind LOCAL socket\n");
+                return false;
+        }
+	
+   
+	HAGGLE_DBG("%s Created LOCAL socket - %s\n", getName(), uaddr.getStr());
+   	
+	return true;
+}
+
+bool ProtocolLOCALClient::init_derived()
+{
+	if (!peerIface) {
+		HAGGLE_ERR("Client has no peer interface\n");
+		return false;
+	}
+	return initbase();
+}
+
+ProtocolEvent ProtocolLOCALClient::connectToPeer()
+{
+	socklen_t addrlen;
 	struct sockaddr_un peer_addr;
-	ProtocolEvent pEvent;
-
-	pEvent = receiveData(buffer, bufferSize, &peer_addr, MSG_DONTWAIT, &len);
-
-	if (pEvent != PROT_EVENT_SUCCESS)
-		return pEvent;
-
-// FIXME: fix this:
-#if 0
-        Interface peerIface(localIface->getType(), NULL, NULL, -1, "ApplicationInterface", IFFLAG_UP);
-        dObj = new DataObject(buffer, len, &peerIface);
-#else
-	dObj = NULL;
-#endif
-        if (!dObj) {
-		HAGGLE_DBG("%s:%lu Could not create data object\n", getName(), getId());
+	InterfaceRef pIface; 
+	UnixAddress *addr;
+	
+	if (!peerIface || peerIface->getType() != Interface::TYPE_APPLICATION_LOCAL)
+		return PROT_EVENT_ERROR;
+	    
+	addr = peerIface->getAddress<UnixAddress>();
+		
+	if (!addr) {
+		HAGGLE_DBG("No LOCAL address to connect to\n");
 		return PROT_EVENT_ERROR;
 	}
 	
+        addrlen = addr->fillInSockaddr(&peer_addr);
 	
-	// Generate first an incoming event to conform with the base Protocol class
-	getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_INCOMING, dObj));
+	ProtocolEvent ret = openConnection((struct sockaddr *)&peer_addr, addrlen);
 	
-	// Since there is no data following, we generate the received event immediately 
-	// following the incoming one
-	getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_RECEIVED, dObj));
-
-	return PROT_EVENT_SUCCESS;
-}
-
-int ProtocolLOCAL::sendSingleDataObject(const DataObjectRef& dObj, const InterfaceRef& _peerIface)
-{
-	int ret;
-
-	if (peerIface)
-		return -1;
+	if (ret != PROT_EVENT_SUCCESS) {
+		HAGGLE_DBG("%s Connection failed to LOCAL [%s]\n", 
+			   getName(), addr->getStr());
+		return ret;
+	}
 	
-	peerIface = _peerIface;
-
-	/* Call send function */
-	ret = sendDataObjectNow(dObj);
-
-	peerIface = NULL;
-
+	HAGGLE_DBG("%s Connected to LOCAL [%s]\n", getName(), addr->getStr());
+	
 	return ret;
 }
 
-ProtocolEvent ProtocolLOCAL::sendData(const void *buf, const int len, const int flags, int *bytes)
+ProtocolLOCALServer::ProtocolLOCALServer(const InterfaceRef& _localIface, ProtocolManager *m, const char *_path, int _backlog) :
+	ProtocolLOCAL(_localIface, NULL, _path, PROT_FLAG_SERVER, m), backlog(_backlog) 
 {
-	if (!buf || !peerIface)
-		return PROT_EVENT_ERROR;
-
-	*bytes = sendTo(buf, len, flags, (struct sockaddr *) &un_addr, sizeof(un_addr));
-
-	if (*bytes < 0) {
-		*bytes = 0;
-		return PROT_EVENT_ERROR;
-	} else if (*bytes == 0)
-		return PROT_EVENT_PEER_CLOSED;
-
-	return PROT_EVENT_SUCCESS;
 }
 
-ProtocolEvent ProtocolLOCAL::receiveData(void *buf, const int buflen, struct sockaddr_un *addr, const int flags, int *bytes)
+ProtocolLOCALServer::~ProtocolLOCALServer()
 {
-	socklen_t addrlen = sizeof(struct sockaddr_un);
+}
 
-	memset(addr, 0, sizeof(struct sockaddr_un));
 
-	addr->sun_family = PF_LOCAL;
-
-	*bytes = recvFrom(buf, buflen, flags, (struct sockaddr *) addr, &addrlen);
+bool ProtocolLOCALServer::init_derived()
+{
+	if (!initbase())
+		return false;
 	
-	if (*bytes < 0) {
-		*bytes = 0;
-		return PROT_EVENT_ERROR;
-	} else if (*bytes == 0)
-		return PROT_EVENT_PEER_CLOSED;
+	if (!setListen(backlog))  {
+		HAGGLE_ERR("Could not set listen mode on socket\n");
+        }
+	return true;
+}
 
-	return PROT_EVENT_SUCCESS;
+ProtocolEvent ProtocolLOCALServer::acceptClient()
+{
+	struct sockaddr_un peer_addr;
+	socklen_t len;
+	SOCKET clientsock;
+	ProtocolLOCALClient *p = NULL;
+	
+	HAGGLE_DBG("In LOCALServer receive\n");
+	
+	if (getMode() != PROT_MODE_LISTENING) {
+		HAGGLE_DBG("Error: LOCALServer not in LISTEN mode\n");
+		return PROT_EVENT_ERROR;
+	}
+	
+	len = sizeof(struct sockaddr_un);
+	
+	clientsock = accept((struct sockaddr *)&peer_addr, &len);
+	
+	if (clientsock == SOCKET_ERROR)
+		return PROT_EVENT_ERROR;
+	
+	if (!getManager()) {
+		HAGGLE_DBG("Error: No manager for protocol!\n");
+		CLOSE_SOCKET(clientsock);
+		return PROT_EVENT_ERROR;
+	}
+		
+	UnixAddress addr(peer_addr);
+
+        p = new ProtocolLOCALReceiver(clientsock, localIface, resolvePeerInterface(addr), peer_addr.sun_path, getManager());
+	
+	if (!p || !p->init()) {
+		HAGGLE_DBG("Unable to create new LOCAL client on socket %d\n", clientsock);
+		CLOSE_SOCKET(clientsock);
+		
+		if (p)
+			delete p;
+		
+		return PROT_EVENT_ERROR;
+	}
+	
+	p->registerWithManager();
+	
+	HAGGLE_DBG("Accepted client with socket %d, starting client thread\n", clientsock);
+	
+	return p->startTxRx();
 }
 
 #endif
