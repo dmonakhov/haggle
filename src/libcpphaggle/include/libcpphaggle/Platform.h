@@ -124,10 +124,10 @@ typedef SSIZE_T ssize_t;
 #include <errno.h>
 
 typedef int SOCKET; /* This makes it easier to be compatible to the Windows API */
-#define CLOSE_SOCKET(sock) ::close(sock)
-#define CLOSE_FILE(fd) ::close(fd)
 #define SOCKET_ERROR -1 // For compatibility with Windows
 #define INVALID_SOCKET -1
+#define CLOSE_SOCKET(sock) close(sock);
+#define CLOSE_FILE(fd) close(fd)
 #define ERRNO errno
 #define STRERROR(err) strerror(err)
 #define SIZE_T_CONVERSION "%zu"

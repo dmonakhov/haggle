@@ -467,11 +467,21 @@ void DebugManager::onWatchableEvent(const Watchable& wbl)
 		if (res == 0)
 			return;
 #else
-		res = getc(stdin);
+		res = getchar();
 		c = res;
 		
-		if (res < 0) {
-			fprintf(stderr, "Could not read character: %s\n", strerror(errno));
+		if (res == EOF) {
+			if (ferror(stdin) != 0) {
+				fprintf(stderr, "ferror: Could not read character - %s\n", 
+					strerror(errno));
+				clearerr(stdin);
+				return;
+			} else if (feof(stdin) != 0) {
+				fprintf(stderr, "EOF on stdin\n");
+				clearerr(stdin);
+				return;
+			}
+			fprintf(stderr, "Unknown error on stdin\n");
 			return;
 		}
 #endif

@@ -86,7 +86,7 @@ static int setrawtty()
 {	
 	// Set non-buffered operation on stdin so that we notice one character keypresses
 	int res;
-	
+
 	res = tcgetattr(STDIN_FILENO, &org_opts);
 	
 	if (res != 0) {

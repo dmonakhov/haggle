@@ -114,7 +114,6 @@ bool ProtocolSocket::setSocket(SOCKET _sock, bool registersock)
 	return true;
 }
 
-
 bool ProtocolSocket::bind(const struct sockaddr *saddr, socklen_t addrlen)
 {
 	if (!saddr)

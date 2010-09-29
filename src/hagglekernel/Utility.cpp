@@ -620,8 +620,7 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
                
                 addrs.add(new EthernetAddress((unsigned char *)item->ifr_hwaddr.sa_data));
 		
-		InterfaceRef iface = Interface::create<EthernetInterface>(item->ifr_hwaddr.sa_data, 
-									  item->ifr_name, IFFLAG_LOCAL | ((item->ifr_flags & IFF_UP) ? IFFLAG_UP : 0));
+		InterfaceRef iface = Interface::create<EthernetInterface>(item->ifr_hwaddr.sa_data, item->ifr_name, IFFLAG_LOCAL | ((item->ifr_flags & IFF_UP) ? IFFLAG_UP : 0));
 
 		if (iface) {
 			iface->addAddresses(addrs);

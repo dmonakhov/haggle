@@ -336,7 +336,8 @@ bool ConnectivityEthernet::isBeaconMine(struct haggle_beacon *b)
 }
 
 ConnectivityEthernet::ConnectivityEthernet(ConnectivityManager * m, const InterfaceRef& iface) :
-	Connectivity(m, iface, "Ethernet connectivity"), seqno(0), beaconInterval(15)
+	Connectivity(m, iface, "Ethernet connectivity"), listenSock(INVALID_SOCKET), 
+	seqno(0), beaconInterval(15)
 {
 }
 
@@ -349,7 +350,8 @@ ConnectivityEthernet::~ConnectivityEthernet()
 		ifaceList.pop_front();
 		delete elem;
 	}
-	CLOSE_SOCKET(listenSock);
+	if (listenSock != INVALID_SOCKET)
+		CLOSE_SOCKET(listenSock);
 }
 
 bool ConnectivityEthernet::init()

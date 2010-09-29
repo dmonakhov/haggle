@@ -433,7 +433,7 @@ int ConnectivityLocal::read_netlink()
 				
 				addrs.add(new EthernetAddress(ifinfo.mac));
 				addrs.add(new IPv4Address(ifinfo.ip));
-				//addrs.add(new IPv4BroadcastAddress(ifinfo.broadcast));
+				addrs.add(new IPv4BroadcastAddress(ifinfo.broadcast));
 
 				/*
 				HAGGLE_DBG("New interface %s %s/%s [%s]\n", ifinfo.ifname, ip_to_str(ifinfo.ip), 

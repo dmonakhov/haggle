@@ -62,7 +62,7 @@ bool ProtocolUDP::init_derived()
 	}
 
 	// For application IPC socket we need a large receive buffer.
-	if (!multiplyReceiveBufferSize(4)) {
+	if (!multiplyReceiveBufferSize(2)) {
 		HAGGLE_ERR("Could not increase receive buffer size.\n");
 	}
 	
@@ -80,10 +80,6 @@ bool ProtocolUDP::init_derived()
 	
 	if (!bind(sa, sa_len)) {
 		closeSocket();
-		/*
-		HAGGLE_ERR("bind failed : ip=%s port=%u\n", 
-			   inet_ntoa(((struct sockaddr_in *)sa)->sin_addr), ntohs(((struct sockaddr_in *)sa)->sin_port));
-		 */
 		return false;
 	}
 
