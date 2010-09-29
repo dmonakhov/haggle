@@ -74,8 +74,7 @@ static bool isBlacklistDeviceName(const char *devname)
 void ConnectivityLocal::findLocalBluetoothInterfaces()
 {
 	IOReturn ret;
-//	unsigned char macaddr[6] = { 0x00, 0x16, 0xcb, 0x2c, 0x99, 0x65 };
-	unsigned char macaddr[6] = { 0x00, 0x1e, 0xc2, 0xb5, 0xd6, 0xd7 };
+	unsigned char macaddr[BT_MAC_LEN];
 	const char *name = "LocalBluetoothDevice";
 	ret = IOBluetoothLocalDeviceAvailable();
 
@@ -86,10 +85,12 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 	BluetoothHCIPowerState powerState;
 	IOBluetoothLocalDeviceGetPowerState(&powerState);
 
+	printf("read power state\n");
+
 	// return if the bluetooth interface is not switched on
-	if (powerState != kBluetoothHCIPowerStateON)
+	if (powerState != kBluetoothHCIPowerStateON) {
 		return;
-	
+	}
 	
 	/*
 	 READ This!!!!!! Information about IOBluetooth limitations...
@@ -112,7 +113,6 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 	 the machine, but has the effect described above. Therefore,
 	 the code is disabled with a macro.
 	 */
-#ifdef ENABLE_BLUETOOTH_INTERFACE_DISCOVERY
 	/*
 	   Get the device name:
 	 */
@@ -121,13 +121,12 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 
  	ret = IOBluetoothLocalDeviceReadName(localDevName, NULL, NULL, NULL);
 
+	printf("read the device name\n");
  	// if we don't get a good return value here, the bluetooth device is off.
  	if (ret != kIOReturnSuccess)
  		return;
 	
 	name = (char *)localDevName;
-	
-	
 	/*
 	   Get the device adress:
 	 */
@@ -140,63 +139,17 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
  		CM_DBG("Could not get local Bluetooth device address\n");
  		return;
  	}
-	
 
- 	memcpy(macaddr, &btAddr, 6);
-#endif /* ENABLE_BLUETOOTH_INTERFACE_DISCOVERY */
-	
-#if 1 && !defined(OS_MACOSX_IPHONE)
-	/*
-		This is a REALLY ugly way of finding out the MAC address of the local
-		bluetooth module. But it does work.
-		
-		Perhaps this information could be obtained in a similar way but from
-		IOKit?
-	*/
-	char addressStr[32];
-	FILE *fp;
-	int c;
-	
-	fp = popen("system_profiler SPBluetoothDataType | "
-			"grep \"Address: 00\" | "
-			"awk '{ print $2}' | "
-			"awk -F- '{print \"bt://\"$1\":\"$2\":\"$3\":\"$4\":\"$5\":\"$6}'", 
-		"r");
-	for (int i = 0; i < 32; i++)	{
-		c = fgetc(fp);
-		if (c == 4 || c < 0) {
-			addressStr[i] = 0;
-			break;
-		} else {
-			addressStr[i] = (char) c;
-		}
-	}
+ 	memcpy(macaddr, &btAddr, BT_MAC_LEN);
 
-	Address *addr = Address::create(addressStr);
-
-	if (addr) {
-		const unsigned char *rawaddr = addr->getRaw();
-		macaddr[0] = rawaddr[0];
-		macaddr[1] = rawaddr[1];
-		macaddr[2] = rawaddr[2];
-		macaddr[3] = rawaddr[3];
-		macaddr[4] = rawaddr[4];
-		macaddr[5] = rawaddr[5];
-	}
-
-	
-#else
-	BluetoothAddress btaddr(macaddr);
-#endif
+	BluetoothAddress addr(macaddr);
 	/*
 	   Put it in the found devices table:
 	 */
-	BluetoothInterface iface(macaddr, name, addr, IFFLAG_UP | IFFLAG_LOCAL);
+	BluetoothInterface iface(macaddr, name, &addr, IFFLAG_UP | IFFLAG_LOCAL);
 	
  	report_interface(&iface, rootInterface, new ConnectivityInterfacePolicyTTL(1));	
-	
-	if (addr)
-		delete addr;
+
 	// TODO: Check return values
 }
 #endif

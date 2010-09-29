@@ -516,14 +516,18 @@ EthernetInterface::EthernetInterface(Interface::Type_t type, const unsigned char
 EthernetInterface::EthernetInterface(const unsigned char _mac[ETH_MAC_LEN], const string name, const Address *a, flag_t flags) : 
 	Interface(Interface::TYPE_ETHERNET, mac, ETH_MAC_LEN, name, a, flags)
 {
-	memcpy(mac, _mac, ETH_MAC_LEN);
-	setIdentifierStr();
+	if (_mac) {
+		memcpy(mac, _mac, ETH_MAC_LEN);
+		setIdentifierStr();
+	}
 }
 
 EthernetInterface::EthernetInterface(const EthernetInterface& iface) :
 	Interface(iface, mac)
 {
-	memcpy(mac, iface.mac, ETH_MAC_LEN);
+	if (iface.mac) {
+		memcpy(mac, iface.mac, ETH_MAC_LEN);
+	}
 }
 
 EthernetInterface::~EthernetInterface()
@@ -623,14 +627,18 @@ BluetoothInterface::BluetoothInterface(const void *identifier, size_t identifier
 BluetoothInterface::BluetoothInterface(const unsigned char _mac[BT_MAC_LEN], const string name, const Address *a, flag_t flags) :
 	Interface(Interface::TYPE_BLUETOOTH, mac, BT_MAC_LEN, name, a, flags)
 {
-	memcpy(mac, _mac, BT_MAC_LEN);
-	setIdentifierStr();
+	if (_mac) {
+		memcpy(mac, _mac, BT_MAC_LEN);
+		setIdentifierStr();
+	}
 }
 
 BluetoothInterface::BluetoothInterface(const BluetoothInterface& iface) :
 	Interface(iface, mac)
 {
-	memcpy(mac, iface.mac, BT_MAC_LEN);
+	if (iface.mac) {
+		memcpy(mac, iface.mac, BT_MAC_LEN);
+	}
 }
 
 BluetoothInterface::~BluetoothInterface()

@@ -1607,7 +1607,7 @@ sqlite_int64 SQLDataStore::getNodeRowId(const NodeRef& node)
 	const char *tail;
 	sqlite_int64 nodeRowId = -1;
 
-	if (node->getType() != Node::TYPE_UNDEF) {
+	if (node->getType() != Node::TYPE_UNDEFINED) {
 		// lookup by id
 		ret = sqlite3_prepare_v2(db, SQL_NODE_FROM_ID_CMD, (int) strlen(SQL_NODE_FROM_ID_CMD), &stmt, &tail);
 
@@ -2056,7 +2056,7 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 	node.lock();
 
 	// Do not insert nodes with undefined state/type
-	if (node->getType() == Node::TYPE_UNDEF) {
+	if (node->getType() == Node::TYPE_UNDEFINED) {
 		HAGGLE_DBG("Node type undefined. Ignoring INSERT of node %s\n", node->getName().c_str());
 		node.unlock();
 		return -1;

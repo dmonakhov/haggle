@@ -63,17 +63,14 @@ public:
 	// Different types of nodes. Determines among other things how to deal
 	// with the ID
 	typedef enum {
-		TYPE_UNDEF, // An uninitilized state of the node
+		TYPE_UNDEFINED = 0, // An uninitilized state of the node
 		TYPE_THIS_NODE,
 		TYPE_APPLICATION,
 		TYPE_PEER,
 		TYPE_GATEWAY,
 		_NUM_NODE_TYPES
 	} Type_t;
-	
-#define NODE_TYPE_MIN NODE_TYPE_UNDEF
-#define NODE_TYPE_MAX (_NUM_NODE_TYPES-1)
-	
+		
 #define NODE_ID_LEN SHA_DIGEST_LENGTH
 #define MAX_NODE_ID_STR_LEN (2*NODE_ID_LEN+1) // +1 for null termination
 	typedef unsigned char Id_t[NODE_ID_LEN];
@@ -184,7 +181,7 @@ protected:
         Node(Type_t _type, const string name = "Unnamed node", Timeval _nodeDescriptionCreateTime = -1);
 public:
 	static Node *create(Type_t type, const DataObjectRef& dObj);
-	static Node *create(Type_t type = TYPE_UNDEF, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
+	static Node *create(Type_t type = TYPE_UNDEFINED, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
 	static Node *create_with_id(Type_t type, const Node::Id_t id, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
 	static Node *create_with_id(Type_t type, const char *idStr, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
 
@@ -315,6 +312,17 @@ public:
 
 typedef Reference<Node> NodeRef;
 typedef ReferenceList<Node> NodeRefList;
+
+class UndefinedNode : public Node
+{
+	friend class Node;
+	UndefinedNode(const string name = "undefined node", Timeval _nodeDescriptionCreateTime = -1) : 
+		Node(TYPE_UNDEFINED, name, _nodeDescriptionCreateTime) {}
+	~UndefinedNode() {}
+};
+
+typedef Reference<UndefinedNode> UndefinedNodeRef;
+typedef ReferenceList<UndefinedNode> UndefinedNodeRefList;
 
 class ThisNode : public Node
 {

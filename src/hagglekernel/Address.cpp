@@ -490,7 +490,7 @@ SocketAddress::~SocketAddress()
 
 int SocketAddress::family() const
 {
-	int f = 0;
+	int f = AF_NONE;
 	
 	switch (getType()) {
 	case Address::TYPE_IPV4:

@@ -195,7 +195,7 @@ bool DataManager::init_derived()
 		return false;
 	}
 	
-	localBF = Bloomfilter::create(Bloomfilter::BF_TYPE_COUNTING);
+	localBF = Bloomfilter::create(Bloomfilter::TYPE_COUNTING);
 	
 	if (!localBF) {
 		HAGGLE_ERR("Could not create data manager bloomfilter\n");
@@ -433,7 +433,7 @@ void DataManager::onIncomingDataObject(Event *e)
 	// Add the data object to the bloomfilter of the one who sent it:
 	NodeRef peer = e->getNode();
 
-	if (!peer || peer->getType() == Node::TYPE_UNDEF) {
+	if (!peer || peer->getType() == Node::TYPE_UNDEFINED) {
 		// No valid node in event, try to figure out from interface
 
 		// Find the interface it came from:
@@ -447,7 +447,7 @@ void DataManager::onIncomingDataObject(Event *e)
 	}
 	
 	if (peer) {
-		if (peer->getType() != Node::TYPE_APPLICATION && peer->getType() != Node::TYPE_UNDEF) {
+		if (peer->getType() != Node::TYPE_APPLICATION && peer->getType() != Node::TYPE_UNDEFINED) {
 			// Add the data object to the peer's bloomfilter so that
 			// we do not send the data object back.
 			HAGGLE_DBG("Adding data object [%s] to peer node %s's (%s num=%lu) bloomfilter\n", 

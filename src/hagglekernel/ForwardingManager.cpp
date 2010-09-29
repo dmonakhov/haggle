@@ -670,7 +670,7 @@ void ForwardingManager::onNewNeighbor(Event *e)
 {
 	NodeRef node = e->getNode();
 	
-	if (node->getType() == Node::TYPE_UNDEF)
+	if (node->getType() == Node::TYPE_UNDEFINED)
 		return;
 	
 	// Tell the forwarding module that we've got a new neighbor:
@@ -692,7 +692,7 @@ void ForwardingManager::onNewNeighbor(Event *e)
 
 void ForwardingManager::onEndNeighbor(Event *e)
 {	
-	if (e->getNode()->getType() == Node::TYPE_UNDEF)
+	if (e->getNode()->getType() == Node::TYPE_UNDEFINED)
 		return;
 	
 	NodeRef node = e->getNode();
@@ -729,7 +729,7 @@ void ForwardingManager::onNodeUpdated(Event *e)
 	NodeRef node = e->getNode();
 	NodeRefList &replaced = e->getNodeList();
 	
-	if (node->getType() == Node::TYPE_UNDEF) {
+	if (node->getType() == Node::TYPE_UNDEFINED) {
 		HAGGLE_DBG("%s Node is undefined, deferring dataObjectQuery\n", getName());
 		return;
 	} 
@@ -743,7 +743,7 @@ void ForwardingManager::onNodeUpdated(Event *e)
 	
 	while (it != replaced.end()) {
 		// Was this undefined?
-		if ((*it)->getType() == Node::TYPE_UNDEF && node->isNeighbor()) {
+		if ((*it)->getType() == Node::TYPE_UNDEFINED && node->isNeighbor()) {
 			// Yep. Tell the forwarding module that we've got a new neighbor:
 			if (forwardingModule) {
 				forwardingModule->newNeighbor(node);

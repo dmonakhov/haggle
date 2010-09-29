@@ -63,7 +63,6 @@ void bluetoothDiscoverySDPCompleteCallback(void *userRefCon, IOBluetoothDeviceRe
 
 	IOBluetoothDeviceCloseConnection(foundDevRef);
 	IOBluetoothObjectRelease(foundDevRef);
-
 	IOBluetoothObjectRelease(uuid);
 }
 
@@ -207,7 +206,8 @@ bool ConnectivityBluetooth::run()
 		tmp = htons(0x0003);	// RFCOMM
 		CFArrayAppendValue(tmp_array, IOBluetoothSDPUUIDCreateWithBytes(&tmp, sizeof(tmp)));
 		tmp = RFCOMM_DEFAULT_CHANNEL;	// Channel
-		CFArrayAppendValue(tmp_array, CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt16Type, &tmp));
+		CFNumberRef n = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt16Type, &tmp);
+		CFArrayAppendValue(tmp_array, n);
 	}
 	i++;
 	if (i > MAX_PROPERTY_KEYS)

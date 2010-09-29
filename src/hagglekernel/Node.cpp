@@ -69,7 +69,7 @@ const char *Node::typestr[] = {
 
 inline bool Node::init_node(const unsigned char *_id)
 {
-	memset(id, 0, sizeof(Node::Id_t));
+	memset(id, 0, sizeof(Id_t));
 	memset(idStr, 0, MAX_NODE_ID_STR_LEN);
 
 	if (createdFromNodeDescription) {
@@ -143,20 +143,20 @@ inline bool Node::init_node(const unsigned char *_id)
 	if (type == TYPE_THIS_NODE) {
 		dObj->setIsThisNodeDescription(true);
 		calcId();
-	} else if (type == Node::TYPE_UNDEF) {
+	} else if (type == TYPE_UNDEFINED) {
 		if (_id) {
 			HAGGLE_DBG("Attempted to create undefined node with ID. ID ignored.\n");
 		}
 		strncpy(idStr, "[Unknown id]", MAX_NODE_ID_STR_LEN);
 	} else if (_id) {
-		memcpy(id, _id, sizeof(Node::Id_t));
+		memcpy(id, _id, sizeof(Id_t));
 		calcIdStr();
 	} 
 
 	return true;
 }
 
-Node::Node(const Node::Type_t _type, const string _name, Timeval _nodeDescriptionCreateTime) : 
+Node::Node(const Type_t _type, const string _name, Timeval _nodeDescriptionCreateTime) : 
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_NODE),
 #endif
@@ -213,6 +213,9 @@ Node *Node::create(Type_t type, const DataObjectRef& dObj)
 		case TYPE_GATEWAY:
 			node = new GatewayNode();
 			break;
+		case TYPE_UNDEFINED:
+			node = new UndefinedNode();
+			break;
 		default:
 			break;
 			
@@ -246,6 +249,9 @@ Node *Node::create(Type_t type, const string name, Timeval _nodeDescriptionCreat
 			break;
 		case TYPE_GATEWAY:
 			node = new GatewayNode(name, _nodeDescriptionCreateTime);
+			break;
+		case TYPE_UNDEFINED:
+			node = new UndefinedNode(name, _nodeDescriptionCreateTime);
 			break;
 		default:
 			break;			
@@ -284,6 +290,9 @@ Node *Node::create_with_id(Type_t type, const Id_t id, const string name, Timeva
 			break;
 		case TYPE_GATEWAY:
 			node = new GatewayNode(name, _nodeDescriptionCreateTime);
+			break;
+		case TYPE_UNDEFINED:
+			node = new UndefinedNode(name, _nodeDescriptionCreateTime);
 			break;
 		default:
 			break;			
@@ -350,6 +359,9 @@ Node *Node::create_with_id(Type_t type, const char *_idStr, const string name, T
 			break;
 		case TYPE_GATEWAY:
 			node = new GatewayNode(name, _nodeDescriptionCreateTime);
+			break;
+		case TYPE_UNDEFINED:
+			node = new UndefinedNode(name, _nodeDescriptionCreateTime);
 			break;
 		default:
 			break;			
@@ -844,7 +856,7 @@ bool Node::isAvailable() const
 
 bool Node::isNeighbor() const
 {
-	return ((type == Node::TYPE_PEER) || (type == Node::TYPE_UNDEF) || (type == Node::TYPE_GATEWAY)) && isAvailable();
+	return ((type == TYPE_PEER) || (type == TYPE_UNDEFINED) || (type == TYPE_GATEWAY)) && isAvailable();
 }
 
 DataObjectRef Node::getDataObject(bool withBloomfilter) const
@@ -879,8 +891,8 @@ Bloomfilter *Node::getBloomfilter(void)
 	if (!doBF) {
 		/* Init Bloomfilter */
 		doBF = Bloomfilter::create(type == Node::TYPE_APPLICATION ? 
-					   Bloomfilter::BF_TYPE_COUNTING : 
-					   Bloomfilter::BF_TYPE_NORMAL);
+					   Bloomfilter::TYPE_COUNTING : 
+					   Bloomfilter::TYPE_NORMAL);
 	}
 
 	return doBF;
@@ -900,7 +912,7 @@ bool Node::setBloomfilter(const char *base64, const bool set_create_time)
 		if (!doBF->fromBase64(base64))
 			return false;
 	} else {
-		Bloomfilter *tmpBF = Bloomfilter::create_from_base64(Bloomfilter::BF_TYPE_NORMAL, base64);
+		Bloomfilter *tmpBF = Bloomfilter::create_from_base64(Bloomfilter::TYPE_NORMAL, base64);
 
 		if (!tmpBF)
 			return false;
@@ -965,7 +977,7 @@ Timeval Node::getNodeDescriptionCreateTime() const
 
 bool operator==(const Node &n1, const Node &n2)
 {
-	if (n1.type == Node::TYPE_UNDEF || n2.type == Node::TYPE_UNDEF) {
+	if (n1.type == Node::TYPE_UNDEFINED || n2.type == Node::TYPE_UNDEFINED) {
 		// Check if the interfaces overlap:
 		
 		for (InterfaceRefList::const_iterator it = n1.interfaces.begin(); it != n1.interfaces.end(); it++) {

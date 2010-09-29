@@ -366,9 +366,10 @@ void NodeManager::onRetrieveNode(Event *e)
 		
 		node = Node::create();
 		
-		if (!node) 
+		if (!node) {
+			HAGGLE_ERR("Could not create peer node\n");
 			return;
-		
+		}
 		node->addInterface(iface);
 		
 	} else {
@@ -421,7 +422,7 @@ void NodeManager::onNewNodeContact(Event *e)
 	NodeRef neigh = e->getNode();
 
 	switch (neigh->getType()) {
-	case Node::TYPE_UNDEF:
+	case Node::TYPE_UNDEFINED:
 		HAGGLE_DBG("%s - New node contact. Have not yet received node description!\n", getName());
 		break;
 	case Node::TYPE_PEER:
@@ -532,7 +533,7 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 		// If the existing neighbor node was undefined, we merge the bloomfilters
 		// of the undefined node and the node created from the node description
 		if (neighbor) {
-			if (neighbor->getType() == Node::TYPE_UNDEF) {
+			if (neighbor->getType() == Node::TYPE_UNDEFINED) {
 				HAGGLE_DBG("Merging bloomfilter of node %s with its previously undefined node\n", 
 					node->getName().c_str());
 				node->getBloomfilter()->merge(*neighbor->getBloomfilter());

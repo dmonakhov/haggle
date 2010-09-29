@@ -40,8 +40,8 @@ class Bloomfilter
 {
 public:
 	typedef enum {
-		BF_TYPE_NORMAL,
-		BF_TYPE_COUNTING
+		TYPE_NORMAL,
+		TYPE_COUNTING
 	} BloomfilterType_t;
 private:	
 	static double default_error_rate;
@@ -58,7 +58,7 @@ private:
 	/*
 	  Creates a bloomfilter with the given error rate and capacity.
 	*/
-	Bloomfilter(BloomfilterType_t _type = BF_TYPE_NORMAL, double error_rate = default_error_rate, 
+	Bloomfilter(BloomfilterType_t _type = TYPE_NORMAL, double error_rate = default_error_rate, 
 		    unsigned int capacity = default_capacity);
 	Bloomfilter(double _error_rate, unsigned int _capacity, struct bloomfilter *_bf);
 	Bloomfilter(double _error_rate, unsigned int _capacity, struct counting_bloomfilter *_cbf);	
@@ -72,7 +72,7 @@ public:
 	/**
 		Creates a bloomfilter with the given error rate and capacity.
 	*/
-	static Bloomfilter *create(BloomfilterType_t _type = BF_TYPE_NORMAL, double error_rate = default_error_rate, 
+	static Bloomfilter *create(BloomfilterType_t _type = TYPE_NORMAL, double error_rate = default_error_rate, 
 				   unsigned int capacity = default_capacity);	
 	static Bloomfilter *create(const unsigned char *bf, size_t len);
 	static Bloomfilter *create_from_base64(BloomfilterType_t _type, const string &base64);

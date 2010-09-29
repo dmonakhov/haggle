@@ -480,7 +480,7 @@ void NodeStore::print()
                 printf("Node: %d type=\'%s\' name=\'%s\' - %s stored=%s\n", 
                        n++, nr->node->getTypeStr(),
                        nr->node->getName().c_str(),
-                       (nr->node->isAvailable() && (nr->node->getType() == Node::TYPE_PEER || nr->node->getType() == Node::TYPE_UNDEF)) ? "Neighbor" : "Unconfirmed neighbor",
+                       (nr->node->isAvailable() && (nr->node->getType() == Node::TYPE_PEER || nr->node->getType() == Node::TYPE_UNDEFINED)) ? "Neighbor" : "Unconfirmed neighbor",
                        nr->node->isStored() ? "Yes" : "No");
 		printf("Num objects in bloomfilter=%lu\n", nr->node->getBloomfilter()->numObjects());
                 printf("id=%s\n", nr->node->getIdStr());

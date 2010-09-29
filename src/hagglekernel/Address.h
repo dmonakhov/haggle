@@ -28,6 +28,11 @@
 #include <sys/un.h>
 #endif
 
+#define AF_NONE 0
+#if defined(OS_MACOSX)
+#define AF_BLUETOOTH AF_NONE
+#endif
+
 using namespace haggle;
 class Address;
 
