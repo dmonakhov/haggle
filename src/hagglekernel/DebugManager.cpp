@@ -462,12 +462,12 @@ void DebugManager::onWatchableEvent(const Watchable& wbl)
 			}
 		}
 
-		delete[] inrec;
+		delete [] inrec;
 
 		if (res == 0)
 			return;
 #else
-		res = getchar();
+		res = getc(stdin);
 		c = res;
 		
 		if (res < 0) {

@@ -175,7 +175,6 @@ static void daemonize()
 	f = freopen("/dev/null", "w", stderr);
 }
 
-
 #endif /* OS_UNIX */
 
 #if defined(OS_WINDOWS)

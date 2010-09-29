@@ -186,13 +186,12 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 			} else if (strcmp(type, "bluetooth") != 0) {
 				HAGGLE_ERR("Interface type is \'%s\', and not \'bluetooth\'\n", type);
 			} else {
-				
 				iface = BluetoothInterface::fromMetadata(*m);
 						
 				if (iface) {
 					sdpWhiteList.push_back(iface);
 					
-					LOG_ADD("# ConnectivityManager: white-listing interface [type=%s address=%s name=%s]\n", type, iface->getIdentifierStr(), name);
+					LOG_ADD("# ConnectivityManager: white-listing interface [type=%s identifier=%s name=%s]\n", type, iface->getIdentifierStr(), name);
 				}
 			}
 			m = wl->getNextMetadata();
