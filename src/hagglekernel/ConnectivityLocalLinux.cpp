@@ -543,8 +543,8 @@ void ConnectivityLocal::findLocalEthernetInterfaces()
 		
 		Addresses addrs;
 		addrs.add(new EthernetAddress(macaddr));
-		addrs.add(new IPv4Address(ip /*, &broadcast */));
-		//addrs.add(new IPv4BroadcastAddress(broadcast));
+		addrs.add(new IPv4Address(ip));
+		addrs.add(new IPv4BroadcastAddress(broadcast));
 		
 		// Create the interface
 		InterfaceRef iface = Interface::create<EthernetInterface>(macaddr, ifr->ifr_name, 
