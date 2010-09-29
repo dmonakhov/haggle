@@ -417,8 +417,7 @@ ApplicationInterface::~ApplicationInterface()
 {
 }
 
-ApplicationPortInterface::ApplicationPortInterface(const void *identifier, size_t identifier_len, 
-						   const string name, flag_t flags) :
+ApplicationPortInterface::ApplicationPortInterface(const void *identifier, size_t identifier_len, const string name, flag_t flags) :
 	ApplicationInterface(Interface::TYPE_APPLICATION_PORT, identifier, identifier_len, name, NULL, flags), port(0)
 {
 	if (identifier && identifier_len == sizeof(port)) {
@@ -427,8 +426,7 @@ ApplicationPortInterface::ApplicationPortInterface(const void *identifier, size_
 	}
 }
 
-ApplicationPortInterface::ApplicationPortInterface(const unsigned short _port, const string name, 
-						   const Address *a, flag_t flags) : 
+ApplicationPortInterface::ApplicationPortInterface(const unsigned short _port, const string name, const Address *a, flag_t flags) : 
 	ApplicationInterface(Interface::TYPE_APPLICATION_PORT, &port, sizeof(port), name, a, flags), port(_port)
 {
 	setIdentifierStr();
@@ -455,8 +453,7 @@ Interface *ApplicationPortInterface::copy() const
 	return new ApplicationPortInterface(*this);
 }
 
-ApplicationLocalInterface::ApplicationLocalInterface(const void *identifier, size_t identifier_len, 
-						   const string name, flag_t flags) :
+ApplicationLocalInterface::ApplicationLocalInterface(const void *identifier, size_t identifier_len, const string name, flag_t flags) :
 	ApplicationInterface(Interface::TYPE_APPLICATION_LOCAL, path, identifier_len, name, NULL, flags)
 {
 	if (identifier && identifier_len > 0 && identifier_len < LOCAL_PATH_MAX) {
@@ -498,36 +495,35 @@ Interface *ApplicationLocalInterface::copy() const
 
 EthernetInterface::EthernetInterface(const void *identifier, size_t identifier_len, 
 				     const string name, flag_t flags) :
-	Interface(Interface::TYPE_ETHERNET, mac, GENERIC_MAC_LEN, name, NULL, flags)
+	Interface(Interface::TYPE_ETHERNET, mac, ETH_MAC_LEN, name, NULL, flags)
 {	
-	if (identifier && identifier_len == GENERIC_MAC_LEN) {
-		memcpy(mac, identifier, GENERIC_MAC_LEN);
+	if (identifier && identifier_len == ETH_MAC_LEN) {
+		memcpy(mac, identifier, ETH_MAC_LEN);
 		setIdentifierStr();
 	}
 }
 
 EthernetInterface::EthernetInterface(Interface::Type_t type, const unsigned char *_mac, 
 				     const string name, const Address *a, flag_t flags) :
-	Interface(type, mac, GENERIC_MAC_LEN, name, a, flags)
+	Interface(type, mac, ETH_MAC_LEN, name, a, flags)
 {
 	if (_mac) {
-		memcpy(mac, _mac, GENERIC_MAC_LEN);
+		memcpy(mac, _mac, ETH_MAC_LEN);
 		setIdentifierStr();
 	}
 }
 
-EthernetInterface::EthernetInterface(const unsigned char _mac[GENERIC_MAC_LEN], const string name, 
-				     const Address *a, flag_t flags) : 
-	Interface(Interface::TYPE_ETHERNET, mac, GENERIC_MAC_LEN, name, a, flags)
+EthernetInterface::EthernetInterface(const unsigned char _mac[ETH_MAC_LEN], const string name, const Address *a, flag_t flags) : 
+	Interface(Interface::TYPE_ETHERNET, mac, ETH_MAC_LEN, name, a, flags)
 {
-	memcpy(mac, _mac, GENERIC_MAC_LEN);
+	memcpy(mac, _mac, ETH_MAC_LEN);
 	setIdentifierStr();
 }
 
 EthernetInterface::EthernetInterface(const EthernetInterface& iface) :
 	Interface(iface, mac)
 {
-	memcpy(mac, iface.mac, GENERIC_MAC_LEN);
+	memcpy(mac, iface.mac, ETH_MAC_LEN);
 }
 
 EthernetInterface::~EthernetInterface()
@@ -577,7 +573,7 @@ WiFiInterface::WiFiInterface(const void *identifier, size_t identifier_len, cons
 {
 }
 
-WiFiInterface::WiFiInterface(const unsigned char _mac[GENERIC_MAC_LEN], const string name, 
+WiFiInterface::WiFiInterface(const unsigned char _mac[ETH_MAC_LEN], const string name, 
 			     const Address *a, flag_t flags) :
 	EthernetInterface(Interface::TYPE_WIFI, _mac, name, a, flags)
 {
@@ -616,20 +612,25 @@ WiFiInterface *WiFiInterface::fromMetadata(const Metadata& m)
 
 BluetoothInterface::BluetoothInterface(const void *identifier, size_t identifier_len, 
 				       const string name, flag_t flags) :
-	Interface(Interface::TYPE_BLUETOOTH, mac, GENERIC_MAC_LEN, name, NULL, flags)
+	Interface(Interface::TYPE_BLUETOOTH, mac, BT_MAC_LEN, name, NULL, flags)
 {
-	if (identifier && identifier_len == GENERIC_MAC_LEN) {
-		memcpy(mac, identifier, GENERIC_MAC_LEN);
+	if (identifier && identifier_len == BT_MAC_LEN) {
+		memcpy(mac, identifier, BT_MAC_LEN);
 		setIdentifierStr();
 	}
 }
 
-BluetoothInterface::BluetoothInterface(const unsigned char _mac[GENERIC_MAC_LEN], const string name, 
-				       const Address *a, flag_t flags) :
-	Interface(Interface::TYPE_BLUETOOTH, mac, GENERIC_MAC_LEN, name, a, flags)
+BluetoothInterface::BluetoothInterface(const unsigned char _mac[BT_MAC_LEN], const string name, const Address *a, flag_t flags) :
+	Interface(Interface::TYPE_BLUETOOTH, mac, BT_MAC_LEN, name, a, flags)
 {
-	memcpy(mac, _mac, GENERIC_MAC_LEN);
+	memcpy(mac, _mac, BT_MAC_LEN);
 	setIdentifierStr();
+}
+
+BluetoothInterface::BluetoothInterface(const BluetoothInterface& iface) :
+	Interface(iface, mac)
+{
+	memcpy(mac, iface.mac, BT_MAC_LEN);
 }
 
 BluetoothInterface::~BluetoothInterface()

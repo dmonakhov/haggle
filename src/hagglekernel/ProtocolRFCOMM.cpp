@@ -83,7 +83,7 @@ bool ProtocolRFCOMM::initbase()
 		localAddr.bt_channel = channel & 0xff;
    
              	/* If this is a server we bing to a specific channel to listen on */
-                if (!bindSocket((struct sockaddr *)&localAddr, sizeof(localAddr))) {
+                if (!bind((struct sockaddr *)&localAddr, sizeof(localAddr))) {
                         closeSocket();
 #ifdef OS_WINDOWS
                         HAGGLE_ERR("Bind failed for local address WSA error=%s\n", StrError(WSAGetLastError()));

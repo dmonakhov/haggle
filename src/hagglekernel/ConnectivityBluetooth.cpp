@@ -120,10 +120,10 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 	 <ClearBlacklist/>
 	 <ClearWhitelist/>
 	 <Blacklist>
-	 <Interface>bt://11:22:33:44:55:66</interface>
+	 <Interface type="bluetooth" mac="11:22:33:44:55:66"/>
 	 </Blacklist>
 	 <Whitelist>
-	 <Interface>bt://77:88:99:AA:BB:CC</interface>
+	 <Interface type="bluetooth" mac="77:88:99:AA:BB:CC"/>
 	 </Whitelist>
 	 <IgnoreNonListedInterfaces>yes</IgnoreNonListedInterfaces>
 	 </Bluetooth>
@@ -153,8 +153,8 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 		Metadata *m = bl->getMetadata("Interface");
 		
 		while (m) {
-			const char *type = iface->getParameter("type");
-			const char *name = iface->getParameter("name") ? iface->getParameter("name") : "noname";
+			const char *type = m->getParameter("type");
+			const char *name = m->getParameter("name") ? m->getParameter("name") : "noname";
 
 			if (!type) {
 				HAGGLE_ERR("No type specified for interface \'%s\'... ignoring\n", name);
@@ -174,35 +174,28 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 	}
 
 	if (wl) {
-		BluetoothInterfaceRef i;
-		Metadata *iface = wl->getMetadata("Interface");
+		BluetoothInterfaceRef iface;
+		Metadata *m = wl->getMetadata("Interface");
 		
-		while (iface) {
-			const char *type = iface->getParameter("type");
-			const char *name = iface->getParameter("name") ? iface->getParameter("name") : "noname";
+		while (m) {
+			const char *type = m->getParameter("type");
+			const char *name = m->getParameter("name") ? m->getParameter("name") : "noname";
 
 			if (!type) {
 				HAGGLE_ERR("No type specified for interface \'%s\'... ignoring\n", name);
 			} else if (strcmp(type, "bluetooth") != 0) {
 				HAGGLE_ERR("Interface type is \'%s\', and not \'bluetooth\'\n", type);
 			} else {
-				Address *a = Address::create(iface->getContent().c_str());
 				
-				if (a) {
-					if (a->getType() == Address::TYPE_BLUETOOTH) {
-						i = new BluetoothInterface(a->getRaw(), "Whitelist", a);
+				iface = BluetoothInterface::fromMetadata(*m);
 						
-						if (i) {
-							sdpWhiteList.push_back(i);
-							
-							LOG_ADD("# ConnectivityManager: white-listing interface [type=%s address=%s name=%s]\n", 
-								type, i->getIdentifierStr(), name);
-						}
-					}
-					delete a;
+				if (iface) {
+					sdpWhiteList.push_back(iface);
+					
+					LOG_ADD("# ConnectivityManager: white-listing interface [type=%s address=%s name=%s]\n", type, iface->getIdentifierStr(), name);
 				}
 			}
-			iface = wl->getNextMetadata();
+			m = wl->getNextMetadata();
 		}
 	}
 	

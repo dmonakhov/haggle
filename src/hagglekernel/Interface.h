@@ -331,7 +331,7 @@ public:
 class EthernetInterface : public Interface {
 	friend class Interface;
 protected:
-	unsigned char mac[GENERIC_MAC_LEN];
+	unsigned char mac[ETH_MAC_LEN];
 	void setIdentifierStr();
 	EthernetInterface(const void *identifier = NULL, size_t identifier_len = 0, 
 			  const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
@@ -339,7 +339,7 @@ protected:
 			  const string name = DEFAULT_INTERFACE_NAME, 
 			  const Address *a = NULL, flag_t flags = 0);
 public:
-	EthernetInterface(const unsigned char _mac[GENERIC_MAC_LEN], const string name = DEFAULT_INTERFACE_NAME, 
+	EthernetInterface(const unsigned char _mac[ETH_MAC_LEN], const string name = DEFAULT_INTERFACE_NAME, 
 			  const Address *a = NULL, flag_t flags = 0);
 	EthernetInterface(const EthernetInterface& iface);
 	~EthernetInterface();
@@ -356,7 +356,7 @@ class WiFiInterface : public EthernetInterface {
 	WiFiInterface(const void *identifier = NULL, size_t identifier_len = 0, 
 		      const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
 public:
-	WiFiInterface(const unsigned char _mac[GENERIC_MAC_LEN], const string name = DEFAULT_INTERFACE_NAME, 
+	WiFiInterface(const unsigned char _mac[ETH_MAC_LEN], const string name = DEFAULT_INTERFACE_NAME, 
 		      const Address *a = NULL, flag_t flags = 0);
 	WiFiInterface(const WiFiInterface& iface);
 	~WiFiInterface();
@@ -372,12 +372,12 @@ typedef ReferenceList<WiFiInterface> WiFiInterfaceRefList;
 #if defined(ENABLE_BLUETOOTH)
 class BluetoothInterface : public Interface {
 	friend class Interface;
-	unsigned char mac[GENERIC_MAC_LEN];
+	unsigned char mac[BT_MAC_LEN];
 	void setIdentifierStr();
 	BluetoothInterface(const void *identifier = NULL, size_t identifier_len = 0, 
 			   const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
 public:
-	BluetoothInterface(const unsigned char _mac[GENERIC_MAC_LEN], const string name = DEFAULT_INTERFACE_NAME, 
+	BluetoothInterface(const unsigned char _mac[BT_MAC_LEN], const string name = DEFAULT_INTERFACE_NAME, 
 			   const Address *a = NULL, flag_t flags = 0);
 	BluetoothInterface(const BluetoothInterface& iface);
 	~BluetoothInterface();
@@ -431,15 +431,15 @@ inline T *Interface::create(const void *identifier, const char *name, flag_t fla
 		break;
 #if defined(ENABLE_ETHERNET)
 	case TYPE_ETHERNET:
-		identifier_len = GENERIC_MAC_LEN;
+		identifier_len = ETH_MAC_LEN;
 		break;
 	case TYPE_WIFI:
-		identifier_len = GENERIC_MAC_LEN;
+		identifier_len = ETH_MAC_LEN;
 		break;
 #endif
 #if defined(ENABLE_BLUETOOTH)
 	case TYPE_BLUETOOTH:
-		identifier_len = GENERIC_MAC_LEN;
+		identifier_len = BT_MAC_LEN;
 		break;
 #endif
 #if defined(ENABLE_MEDIA)
