@@ -100,7 +100,7 @@ class ConnectivityManager : public Manager
 		some garbage collection of interfaces that have not been seen for 
 		some time.
 	*/
-	typedef Map<Interface, InterfaceStats> known_interface_registry_t;
+	typedef Map<InterfaceRef, InterfaceStats> known_interface_registry_t;
 	known_interface_registry_t known_interface_registry;
 
         Mutex blMutex; // Protects blacklist

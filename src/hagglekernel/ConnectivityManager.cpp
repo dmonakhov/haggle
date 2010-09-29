@@ -405,7 +405,7 @@ InterfaceStatus_t ConnectivityManager::report_known_interface(const Interface& i
 	Mutex::AutoLocker l(ifMutex);
 	InterfaceStats stats(isHaggle);
 
-	Pair<known_interface_registry_t::iterator, bool> p = known_interface_registry.insert(make_pair(iface, stats));
+	Pair<known_interface_registry_t::iterator, bool> p = known_interface_registry.insert(make_pair(iface.copy(), stats));
 
 	// The interface was not known since before.
 	if (p.second)
@@ -708,7 +708,7 @@ InterfaceStatus_t ConnectivityManager::have_interface(const InterfaceRef& iface)
 InterfaceStatus_t ConnectivityManager::is_known_interface(const Interface *iface)
 {
 	Mutex::AutoLocker l(ifMutex);
-	known_interface_registry_t::iterator it = known_interface_registry.find(*iface);
+	known_interface_registry_t::iterator it = known_interface_registry.find(iface);
 
 	if (it == known_interface_registry.end())
 		return INTERFACE_STATUS_UNKNOWN;
@@ -717,7 +717,7 @@ InterfaceStatus_t ConnectivityManager::is_known_interface(const Interface *iface
 	// This hopefully protects against mistakenly classifying devices as non-Haggle ones,
 	// although they really are Haggle devices.
 	if ((*it).second.numTimesSeen > KNOWN_INTERFACE_TIMES_CACHED_MAX) {
-		HAGGLE_DBG("Interface %s removed from interface cache\n", (*it).first.getIdentifierStr());
+		HAGGLE_DBG("Interface %s removed from interface cache\n", (*it).first->getIdentifierStr());
 		known_interface_registry.erase(it);
 		return INTERFACE_STATUS_UNKNOWN;
 	}

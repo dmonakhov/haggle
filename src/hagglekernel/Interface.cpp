@@ -15,6 +15,9 @@
 #include <string.h>
 
 #include <libcpphaggle/Platform.h>
+#include <base64.h>
+#include "XMLMetadata.h"
+
 #include "Interface.h"
 
 using namespace haggle;
@@ -36,6 +39,22 @@ const char *Interface::typestr[] = {
 	NULL,
 };
 
+static bool str_to_mac(unsigned char *mac, const char *str)
+{
+	unsigned int i, j = 0;
+	
+	for (i = 0; i < strlen(str); i++) {
+		if (i == 0 || str[i-1] == ':') {
+			char *endptr = NULL;
+			mac[j++] = (unsigned char) strtol(&(str[i]), &endptr, 16);
+			if (endptr == &str[i])
+				break;
+		}
+	}
+	
+	return j == 6 ? true : false;
+}
+
 Interface::Interface(Interface::Type_t _type, const void *_identifier, size_t _identifier_len,
 		     const string& _name, const Address *addr, const flag_t _flags) :
 #ifdef DEBUG_LEAKS
@@ -47,6 +66,16 @@ Interface::Interface(Interface::Type_t _type, const void *_identifier, size_t _i
 {
 	if (addr)
 		addAddress(*addr);
+}
+
+Interface::Interface(const Interface &iface) :
+#ifdef DEBUG_LEAKS
+	LeakMonitor(LEAK_TYPE_INTERFACE),
+#endif
+	type(iface.type), name(iface.name), identifier(NULL), 
+	identifier_len(iface.identifier_len), flags(iface.flags & (IFFLAG_ALL ^ IFFLAG_STORED)),  
+	identifier_str(iface.identifier_str), addresses(iface.addresses)
+{
 }
 
 Interface::Interface(const Interface &iface, const void *_identifier) :
@@ -114,13 +143,6 @@ Interface *Interface::create(Type_t type, const void *identifier, const char *na
 	return iface;
 }
 
-/*
-void Interface::setName(const string _name)
-{
-	name = _name;
-}
-*/
-
 const char *Interface::typeToStr(Interface::Type_t type)
 {
 	return typestr[type];
@@ -137,6 +159,18 @@ Interface::Type_t Interface::strToType(const char *str)
 		i++;
 	}
 	return Interface::TYPE_UNDEFINED;
+}
+
+bool Interface::str_to_identifier(const char *id_str, void **identifier, size_t *identifier_len)
+{
+	struct base64_decode_context b64_ctx;
+	
+	base64_decode_ctx_init(&b64_ctx);
+	
+	if (!base64_decode_alloc(&b64_ctx, id_str, strlen(id_str), (char**)identifier, identifier_len))
+		return false;
+	
+	return true;
 }
 
 size_t Interface::getIdentifierLen() const
@@ -196,26 +230,6 @@ bool Interface::hasAddress(const Address &add) const
 	return false;
 }
 
-/*
-
-template<typename T>
-T *Interface::getAddress() {
-	T a;
-	
-	for (Addresses::iterator it = addresses.begin(); it != addresses.end(); it++) {
-		if ((*it)->getType() == a.getType()) {
-			return static_cast<T*>(*it);
-		}
-	}
-	return NULL;
-}
-
-template<typename T> 
-const T *Interface::getAddress() const
-{
-	return const_cast<T *>(this)->getAddress();
-}
-*/
 const char *Interface::getName() const
 {
 	return name.c_str();
@@ -276,6 +290,90 @@ bool Interface::isSnooped() const
 	return (flags & IFFLAG_SNOOPED) != 0;
 }
 
+Interface *Interface::fromMetadata(const Metadata& m)
+{
+	Addresses addrs;
+	Interface *iface = NULL;
+	void *identifier = NULL;
+	
+	if (!m.isName(INTERFACE_METADATA))
+		return NULL;
+	
+	const char *param = m.getParameter(INTERFACE_METADATA_TYPE_PARAM);
+	
+	if (!param)
+		return NULL;
+	
+	Type_t type = strToType(param);
+	
+	if (type == TYPE_UNDEFINED)
+		return NULL;
+		
+	param = m.getParameter(INTERFACE_METADATA_IDENTIFIER_PARAM);
+		
+	if (param) {
+		size_t identifier_len;
+		
+		if (!str_to_identifier(param, &identifier, &identifier_len)) {
+			return NULL;
+		}
+	} else if ((param = m.getParameter(INTERFACE_METADATA_MAC_PARAM))) {
+		identifier = malloc(GENERIC_MAC_LEN);
+		
+		if (!identifier || !str_to_mac((unsigned char *)identifier, param))
+			return NULL;
+	}
+
+	const Metadata *am = m.getMetadata(ADDRESS_METADATA);
+			
+	while (am) {
+		Address *addr = Address::fromMetadata(*am);
+		
+		if (addr)
+			addrs.push_back(addr);
+		
+		am = m.getNextMetadata();
+	}
+
+	param = m.getParameter(INTERFACE_METADATA_NAME_PARAM);
+	iface = create(type, identifier, param ? param : DEFAULT_INTERFACE_NAME, addrs, 0);
+	free(identifier);
+	
+	return iface;
+}
+
+Metadata *Interface::toMetadata() const
+{
+	char *b64str = NULL;
+	int b64len = 0;
+	
+	Metadata *m = new XMLMetadata(INTERFACE_METADATA); 
+	
+	if (!m)
+		return NULL;
+	
+	m->setParameter(INTERFACE_METADATA_TYPE_PARAM, getTypeStr());
+	
+	b64len = base64_encode_alloc((const char *)getIdentifier(), getIdentifierLen(), &b64str);
+	
+	if (!b64str) {
+		delete m;
+		return NULL;
+	}
+	
+	m->setParameter(INTERFACE_METADATA_IDENTIFIER_PARAM, b64str);
+	
+	free(b64str);
+	
+	const Addresses *adds = getAddresses();
+	
+	for (Addresses::const_iterator it = adds->begin(); it != adds->end(); it++) {
+		m->addMetadata((*it)->toMetadata());
+	}
+	
+	return m;
+}
+
 bool Interface::equal(const Interface::Type_t type, const unsigned char *identifier) const
 {
 	if (!identifierIsValid || type != this->type)
@@ -303,40 +401,6 @@ bool operator<(const Interface& i1, const Interface& i2)
 
 	return memcmp(i1.identifier, i2.identifier, i1.identifier_len) < 0;
 }
-
-#if 0
-UndefinedInterface::UndefinedInterface(const string name, flag_t flags) : 
-	Interface(Interface::TYPE_UNDEFINED, NULL, 0, name, NULL, flags)
-{
-	setIdentifierStr();
-}
-
-UndefinedInterface::UndefinedInterface(const UndefinedInterface& iface) :
-	Interface(iface, NULL)
-{
-}
-
-UndefinedInterface::~UndefinedInterface()
-{
-}
-
-/*
-Interface *UndefinedInterface::copy() const
-{
-	return new UndefinedInterface(*this);
-}
-*/
-UndefinedInterface *UndefinedInterface::copy() const
-{
-	return new UndefinedInterface(*this);
-}
-
-void UndefinedInterface::setIdentifierStr()
-{
-	identifier_str = "undefined interface";
-}
-
-#endif
 
 ApplicationInterface::ApplicationInterface(Interface::Type_t type, const void *identifier, size_t identifier_len, 
 					   const string name, const Address *a, flag_t flags) : 
@@ -485,6 +549,29 @@ Interface *EthernetInterface::copy() const
 	return new EthernetInterface(*this);
 }
 
+Metadata *EthernetInterface::toMetadata(bool with_mac) const
+{
+	Metadata *m = this->Interface::toMetadata();
+	
+	if (m && with_mac) {
+		m->setParameter(INTERFACE_METADATA_MAC_PARAM, getIdentifierStr());
+	}
+	
+	return m;
+}
+
+EthernetInterface *EthernetInterface::fromMetadata(const Metadata& m)
+{
+	Interface *iface = Interface::fromMetadata(m);
+	
+	if (iface && iface->getType() != TYPE_ETHERNET) {
+		delete iface;
+		return NULL;
+	}
+	
+	return static_cast<EthernetInterface *>(iface);
+}
+
 WiFiInterface::WiFiInterface(const void *identifier, size_t identifier_len, const string name, flag_t flags) :
 	EthernetInterface(Interface::TYPE_WIFI, static_cast<const unsigned char *>(identifier), name, NULL, flags)
 {
@@ -509,6 +596,19 @@ Interface *WiFiInterface::copy() const
 {
 	return new WiFiInterface(*this);
 }
+
+WiFiInterface *WiFiInterface::fromMetadata(const Metadata& m)
+{
+	Interface *iface = Interface::fromMetadata(m);
+	
+	if (iface && iface->getType() != TYPE_WIFI) {
+		delete iface;
+		return NULL;
+	}
+	
+	return static_cast<WiFiInterface *>(iface);
+}
+
 
 #endif // ENABLE_ETHERNET
 
@@ -550,6 +650,30 @@ Interface *BluetoothInterface::copy() const
 {
 	return new BluetoothInterface(*this);
 }
+
+Metadata *BluetoothInterface::toMetadata(bool with_mac) const
+{
+	Metadata *m = this->Interface::toMetadata();
+	
+	if (m && with_mac) {
+		m->setParameter(INTERFACE_METADATA_MAC_PARAM, getIdentifierStr());
+	}
+	
+	return m;
+}
+
+BluetoothInterface *BluetoothInterface::fromMetadata(const Metadata& m)
+{
+	Interface *iface = Interface::fromMetadata(m);
+	
+	if (iface && iface->getType() != TYPE_BLUETOOTH) {
+		delete iface;
+		return NULL;
+	}
+	
+	return static_cast<BluetoothInterface *>(iface);
+}
+
 #endif // ENABLE_BLUETOOTH
 
 #if defined(ENABLE_MEDIA)

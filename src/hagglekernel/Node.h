@@ -45,11 +45,6 @@ using namespace haggle;
 #define NODE_METADATA_NAME_PARAM "name"
 #define NODE_METADATA_THRESHOLD_PARAM "resolution_threshold"
 #define NODE_METADATA_MAX_DATAOBJECTS_PARAM "resolution_limit"
-
-#define NODE_METADATA_INTERFACE "Interface"
-#define NODE_METADATA_INTERFACE_TYPE_PARAM "type"
-#define NODE_METADATA_INTERFACE_IDENTIFIER_PARAM "identifier"
-#define NODE_METADATA_INTERFACE_NAME_PARAM "name"
 #define NODE_METADATA_BLOOMFILTER "Bloomfilter"
 
 #define NODE_DEFAULT_DATAOBJECTS_PER_MATCH 10

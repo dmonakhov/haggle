@@ -149,10 +149,10 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 		sdpWhiteList.clear();
 	
 	if (bl)  {
-		BluetoothInterfaceRef i;		
-		Metadata *iface = bl->getMetadata("Interface");
+		BluetoothInterfaceRef iface;		
+		Metadata *m = bl->getMetadata("Interface");
 		
-		while (iface) {
+		while (m) {
 			const char *type = iface->getParameter("type");
 			const char *name = iface->getParameter("name") ? iface->getParameter("name") : "noname";
 
@@ -161,21 +161,15 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 			} else if (strcmp(type, "bluetooth") != 0) {
 				HAGGLE_ERR("Interface type is \'%s\', and not \'bluetooth\'\n", type);
 			} else {			
-				Address *a = Address::create(iface->getContent().c_str());
-				
-				if (a) {
-					if (a->getType() == Address::TYPE_BLUETOOTH) {
-						i = new BluetoothInterface(a->getRaw(), "Blacklist", a);
+				iface = BluetoothInterface::fromMetadata(*m);
 						
-						if (i) {
-							sdpBlackList.push_back(i);
-							LOG_ADD("# ConnectivityManager: black-listing interface [type=%s identifier=%s name=%s]\n", type, i->getIdentifierStr(), name);
-						}
-					}
-					delete a;
+				if (iface) {
+					sdpBlackList.push_back(iface);
+					LOG_ADD("# ConnectivityManager: black-listing interface [type=%s identifier=%s name=%s]\n", type, iface->getIdentifierStr(), name);
 				}
 			}
-			iface = bl->getNextMetadata();
+			
+			m = bl->getNextMetadata();
 		}
 	}
 

@@ -48,8 +48,12 @@ using namespace haggle;
 
 #define DEFAULT_INTERFACE_NAME "Unnamed Interface"
 
-#define CREATE(ClassName) {				\
-		create<ClassName>()
+#define INTERFACE_METADATA "Interface"
+#define INTERFACE_METADATA_TYPE_PARAM "type"
+#define INTERFACE_METADATA_IDENTIFIER_PARAM "identifier"
+#define INTERFACE_METADATA_NAME_PARAM "mac"
+#define INTERFACE_METADATA_MAC_PARAM "mac"
+
 /**
 	Interface class.
 	
@@ -91,23 +95,17 @@ protected:
 	// The addresses associated with this interface.
 	Addresses addresses;
 	/**
-		Constructors. Differs in taking one or multiple addresses.
+		Constructors.
 	*/
 	Interface(Type_t type, const void *identifier = NULL, size_t identifier_len = 0, 
 		  const string& name = DEFAULT_INTERFACE_NAME, 
 		  const Address *addr = NULL, flag_t flags = 0);
-	/*
-	Interface(Type_t type, const void *identifier, size_t identifier_len, 
-		  const string& name = DEFAULT_INTERFACE_NAME,  
-		  const Addresses *addrs = NULL, flag_t flags = 0);
-	*/
+
 	Interface(const Interface &iface, const void *identifier);
 	
-	//void setIdentifier(const void *identifier, size_t identifier_len) = 0;
-	//void setName(const string name);
+	static bool str_to_identifier(const char *id_str, void **identifier, size_t *identifier_len);
 public:
 	/* Template create functions. These return an interface of a specified type */
-	
 	template<typename T>
 	static T *create(const void *identifier, const char *name, flag_t flags);
 
@@ -117,7 +115,7 @@ public:
 	template<typename T>
 	static T *create(const void *identifier, const char *name, const Addresses& addrs, flag_t flags);
 
-	/* Create functions that return an interface down-casted to base type. */
+	/* Create functions that return an interface down-cast to base type. */
 	static Interface *create(Type_t type, const void *identifier, const char *name = DEFAULT_INTERFACE_NAME, 
 				 flag_t flags = 0); 
 	static Interface *create(Type_t type, const void *identifier, const char *name, 
@@ -125,17 +123,18 @@ public:
 	static Interface *create(Type_t type, const void *identifier, const char *name, 
 				 const Addresses& addrs, flag_t flags = 0); 
 	
+	Interface(const Interface& iface);
 	/**
 		Destructor.
 	*/
-	~Interface();
+	virtual ~Interface();
 
-	virtual Interface *copy() const { return new Interface(*this); }
+	virtual Interface *copy() const = 0;
 	static Interface::Type_t strToType(const char *str);
 	static const char *typeToStr(Type_t type);
 
 	/**
-	Gets the currently set name for this interface.
+		Gets the currently set name for this interface.
 	*/
 	const char *getName() const;
 
@@ -202,7 +201,6 @@ public:
 		
 		The returned address is the property of the interface.
 	*/
-
 	template<typename T>
 	T *getAddress() {
 		T a;
@@ -277,6 +275,8 @@ public:
 	/**
 		Returns true if the type and identifier match.
 	*/
+	static Interface *fromMetadata(const Metadata& m);
+	virtual Metadata *toMetadata() const;
 	bool equal(Type_t type, const unsigned char *identifier) const;
 	/**
 		Equality operator.
@@ -284,22 +284,6 @@ public:
 	friend bool operator==(const Interface& i1, const Interface& i2);
 	friend bool operator<(const Interface& i1, const Interface& i2);
 };
-
-#if 0
-class UndefinedInterface : public Interface {
-	friend class Interface;
-	void setIdentifierStr();
-public:
-	UndefinedInterface(const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
-	UndefinedInterface(const UndefinedInterface& iface);
-	~UndefinedInterface();
-//	Interface *copy() const;
-	UndefinedInterface *copy() const;
-};
-
-typedef Reference<UndefinedInterface> UndefinedInterfaceRef;
-typedef ReferenceList<UndefinedInterface> UndefinedInterfaceRefList;
-#endif
 
 class ApplicationInterface : public Interface {
 	friend class Interface;
@@ -360,6 +344,8 @@ public:
 	EthernetInterface(const EthernetInterface& iface);
 	~EthernetInterface();
 	Interface *copy() const;
+	Metadata *toMetadata(bool with_mac = false) const;
+	static EthernetInterface *fromMetadata(const Metadata& m);
 };
 
 typedef Reference<EthernetInterface> EthernetInterfaceRef;
@@ -375,6 +361,7 @@ public:
 	WiFiInterface(const WiFiInterface& iface);
 	~WiFiInterface();
 	Interface *copy() const;
+	static WiFiInterface *fromMetadata(const Metadata& m);
 };
 
 typedef Reference<WiFiInterface> WiFiInterfaceRef;
@@ -392,9 +379,11 @@ class BluetoothInterface : public Interface {
 public:
 	BluetoothInterface(const unsigned char _mac[GENERIC_MAC_LEN], const string name = DEFAULT_INTERFACE_NAME, 
 			   const Address *a = NULL, flag_t flags = 0);
-	BluetoothInterface(const WiFiInterface& iface);
+	BluetoothInterface(const BluetoothInterface& iface);
 	~BluetoothInterface();
 	Interface *copy() const;
+	Metadata *toMetadata(bool with_mac = false) const;
+	static BluetoothInterface *fromMetadata(const Metadata& m);
 };
 
 typedef Reference<BluetoothInterface> BluetoothInterfaceRef;

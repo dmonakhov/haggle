@@ -125,45 +125,17 @@ inline bool Node::init_node(const unsigned char *_id)
 			getBloomfilter()->fromBase64(bm->getContent());
 		}
 
-		Metadata *im = nm->getMetadata(NODE_METADATA_INTERFACE);
+		Metadata *im = nm->getMetadata(INTERFACE_METADATA);
 
 		// A node without interfaces should not really be valid
 		if (!im)
 			return false;
 
 		while (im) {
-			Addresses addrs;
-			char *identifier = NULL;
-			const char *type, *name;
+			Interface *iface = Interface::fromMetadata(*im);
 
-			base64_decode_ctx_init(&b64_ctx);
-
-			type = im->getParameter(NODE_METADATA_INTERFACE_TYPE_PARAM);
-
-			if (!type)
-				return false;
-
-			pval = im->getParameter(NODE_METADATA_INTERFACE_IDENTIFIER_PARAM);
-
-			if (!pval || !base64_decode_alloc(&b64_ctx, pval, strlen(pval), &identifier, &decodelen))
-				return false;
-
-			name = im->getParameter(NODE_METADATA_INTERFACE_NAME_PARAM);
-
-			Metadata *am = im->getMetadata(ADDRESS_METADATA);
-
-			while (am) {
-				Address *addr = Address::fromMetadata(*am);
-
-				if (addr)
-					addrs.push_back(addr);
-
-				am = im->getNextMetadata();
-			}
-
-			addInterface(Interface::create(Interface::strToType(type), identifier, name, addrs));
-
-			free(identifier);
+			if (iface)
+				addInterface(iface);
 
 			im = nm->getNextMetadata();
 		}
@@ -514,30 +486,11 @@ Metadata *Node::toMetadata(bool withBloomfilter) const
         nm->setParameter(NODE_METADATA_MAX_DATAOBJECTS_PARAM, numberOfDataObjectsPerMatch);
 
         for (InterfaceRefList::const_iterator it = interfaces.begin(); it != interfaces.end(); it++) {
-
-                Metadata *im = nm->addMetadata(NODE_METADATA_INTERFACE); 
-                
-                if (!im)
-                        return NULL;
-
-                im->setParameter(NODE_METADATA_INTERFACE_TYPE_PARAM, (*it)->getTypeStr());
-
-                b64len = base64_encode_alloc((const char *)(*it)->getIdentifier(), (*it)->getIdentifierLen(), &b64str);
-                
-		if (!b64str) {
-			HAGGLE_ERR("Could not convert interface to metadata\n");
-			return NULL;
-		}
-                im->setParameter(NODE_METADATA_INTERFACE_IDENTIFIER_PARAM, b64str);
-                
-                free(b64str);
-
-                const Addresses *adds = (*it)->getAddresses();
-
-		for (Addresses::const_iterator jt = adds->begin(); jt != adds->end(); jt++) {
-			im->addMetadata((*jt)->toMetadata());
-		}
-        }
+		Metadata *im = (*it)->toMetadata();
+		
+		if (im)
+			nm->addMetadata(im);
+	}
 
         if (withBloomfilter)
                 nm->addMetadata(NODE_METADATA_BLOOMFILTER, getBloomfilter()->toBase64());
