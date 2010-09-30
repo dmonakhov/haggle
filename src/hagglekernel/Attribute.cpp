@@ -46,7 +46,7 @@ Attribute::Attribute(const string _name, const string _value, const unsigned lon
 }
 
 // Copy-constructor
-Attribute::Attribute(const Attribute & attr) : 
+Attribute::Attribute(const Attribute& attr) : 
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_ATTRIBUTE),
 #endif

@@ -107,7 +107,8 @@ DataObject::DataObject(InterfaceRef _localIface, InterfaceRef _remoteIface, cons
                 localIface(_localIface), remoteIface(_remoteIface), rxTime(0), 
                 persistent(true), duplicate(false), stored(false), isNodeDesc(false), isThisNodeDesc(false),
 		controlMessage(false), putData_data(NULL), dataState(DATA_STATE_UNKNOWN)
-{	
+{
+	memset(id, 0, sizeof(DataObjectId_t));
 }
 
 // Copy constructor

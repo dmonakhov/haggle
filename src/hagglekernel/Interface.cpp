@@ -376,7 +376,7 @@ Metadata *Interface::toMetadata() const
 
 bool Interface::equal(const Interface::Type_t type, const unsigned char *identifier) const
 {
-	if (!identifierIsValid || type != this->type)
+	if (type != this->type)
 		return false;
 	
 	return memcmp(this->identifier, identifier, identifier_len) == 0;

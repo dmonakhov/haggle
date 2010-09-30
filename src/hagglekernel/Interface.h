@@ -87,9 +87,7 @@ protected:
 	// Flag field to show certain boolean things.
 	flag_t flags;
 
-	// Set to true if there is a valid identifier set for this interface
-	bool identifierIsValid;
-
+	// Identifier in string format
 	string identifier_str;
 
 	// The addresses associated with this interface.

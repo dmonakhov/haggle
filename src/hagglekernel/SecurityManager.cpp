@@ -246,7 +246,13 @@ void SecurityHelper::doTask(SecurityTask *task)
 	
         switch (task->type) {
                 case SECURITY_TASK_GENERATE_CERTIFICATE:
-                        HAGGLE_DBG("Creating certificate\n");
+                        HAGGLE_DBG("Creating certificate for id=%s\n", 
+				   getManager()->getKernel()->getThisNode()->getIdStr());
+
+			if (strlen(getManager()->getKernel()->getThisNode()->getIdStr()) == 0) {
+				HAGGLE_ERR("Certificate creation failed: This node's id is not valid!\n");
+				break;
+			}
                         task->cert = Certificate::create(getManager()->getKernel()->getThisNode()->getIdStr(), getManager()->ca_issuer, "forever", getManager()->getKernel()->getThisNode()->getId(), &task->privKey);
                         
 			if (task->cert) {

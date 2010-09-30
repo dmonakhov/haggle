@@ -113,7 +113,7 @@ void ResourceManager::onCheckStatusEvent(Event *e)
 	// Check to see if any values changed:
 	PolicyRef newPolicy = new Policy(battPol, memPol);
 
-	if (newPolicy != kernel->getCurrentPolicy()) {
+	if (newPolicy && newPolicy != kernel->getCurrentPolicy()) {
 		// Alert the other managers:
 		kernel->addEvent(new Event(EVENT_TYPE_RESOURCE_POLICY_NEW, newPolicy));
 		// Keep the new value around:
@@ -123,4 +123,4 @@ void ResourceManager::onCheckStatusEvent(Event *e)
 	// Check again in 5 minutes:
 	if (!kernel->isShuttingDown())
 		kernel->addEvent(new Event(onCheckStatusCallback, NULL, 5*60));
-	}
+}

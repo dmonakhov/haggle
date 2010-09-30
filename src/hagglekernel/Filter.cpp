@@ -35,10 +35,15 @@ LeakMonitor(LEAK_TYPE_FILTER),
                 end = filter.find(" ", start);
                 namevalue = filter.substr(start, end - start);
                 start = end + 1;
+
+		if (namevalue.length() > 0)
+			attrs.add(Attribute(namevalue));
         }
 	// Also insert the last name-value pair (or the first if there was only one pair)
 	namevalue = filter.substr(start);
-	attrs.add(Attribute(namevalue.c_str()));
+	
+	if (namevalue.length() > 0)
+		attrs.add(Attribute(namevalue));
 }
 
 Filter::Filter(const Attributes *inAttrs, const long _etype) : 

@@ -16,16 +16,15 @@
 
 Policy::Policy(PolicyType_t _powerPolicy, PolicyType_t _storagePolicy) :
 #ifdef DEBUG_LEAKS
-LeakMonitor(LEAK_TYPE_POLICY),
+	LeakMonitor(LEAK_TYPE_POLICY),
 #endif
-powerPolicy(_powerPolicy),
-storagePolicy(_storagePolicy)
+	powerPolicy(_powerPolicy),
+	storagePolicy(_storagePolicy)
 {
 }
 
 bool operator==(const Policy& p1, const Policy& p2)
 {
-	return 
-		(p1.powerPolicy == p2.powerPolicy) &&
+	return (p1.powerPolicy == p2.powerPolicy) &&
 		(p1.storagePolicy == p2.storagePolicy);
 }

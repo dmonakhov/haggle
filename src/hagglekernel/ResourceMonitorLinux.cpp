@@ -23,7 +23,6 @@ ResourceMonitor::ResourceMonitor(ResourceManager *resMan) :
 {
 }
 
-
 ResourceMonitor::~ResourceMonitor()
 {
 }

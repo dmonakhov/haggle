@@ -219,7 +219,7 @@ ProtocolEvent ProtocolTCPServer::acceptClient()
 	ProtocolTCPClient *p = NULL;
 	unsigned char *rawaddr = NULL;
 	socklen_t addrlen = 0;
-	SocketAddress *addr;
+	SocketAddress *addr = NULL;
 	unsigned short port;
 
 	HAGGLE_DBG("In TCPServer receive\n");
@@ -262,7 +262,12 @@ ProtocolEvent ProtocolTCPServer::acceptClient()
 		return PROT_EVENT_ERROR;
 	}
 
+	if (!addr)
+		return PROT_EVENT_ERROR;
+
         p = new ProtocolTCPReceiver(clientsock, localIface, resolvePeerInterface(*addr), port, getManager());
+	
+      	delete addr;
 
 	if (!p || !p->init()) {
 		HAGGLE_DBG("Unable to create new TCP client on socket %d\n", clientsock);
