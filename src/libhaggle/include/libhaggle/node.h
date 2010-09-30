@@ -47,9 +47,6 @@ typedef struct HAGGLE_API node {
 struct metadata;
 #endif
 
-/*
-HAGGLE_API struct node *haggle_node_new(const char *name);
-*/
 HAGGLE_API struct node *haggle_node_new_from_metadata(struct metadata *m);
 
 /**

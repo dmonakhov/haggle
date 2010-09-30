@@ -716,6 +716,10 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
                 if (onlyUp && !(ifr->ifr_flags & IFF_UP)) 
                         continue;
 
+		if (addrs.size() == 0) {
+			// No addresses on interface --> ignore it
+			continue;
+		}
 		// FIXME: separate 802.3 (wired) from 802.11 (wireless) ethernet
 		iflist.push_back(InterfaceRef(Interface::create(Interface::TYPE_ETHERNET, macaddr, 
 								ifr->ifr_name, addrs, IFFLAG_UP | IFFLAG_LOCAL)));

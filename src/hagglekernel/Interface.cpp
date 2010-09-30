@@ -219,11 +219,11 @@ void Interface::addAddresses(const Addresses& addrs)
 	}
 }
 
-bool Interface::hasAddress(const Address &add) const
+bool Interface::hasAddress(const Address& add) const
 {
 	for (Addresses::const_iterator it = addresses.begin(); it != addresses.end(); it++) {
 		// Are these the same?
-		if(add == *(*it)) {
+		if (add == *(*it)) {
 			return true;
 		}
 	}

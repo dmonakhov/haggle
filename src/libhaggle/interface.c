@@ -18,25 +18,28 @@
 #include <stdio.h>
 
 #define LIBHAGGLE_INTERNAL
+#include <metadata.h>
 #include <libhaggle/haggle.h>
 #include <libhaggle/debug.h>
+#include <libhaggle/interface.h>
+#include <base64.h>
 
 static const char *interface_typestr[] = {
 	"undefined",
 	"application[port]",
 	"application[local]",
-	"bluetooth",
 	"ethernet",
 	"wifi",
+	"bluetooth",
 	"media",
-	NULL,
+	NULL
 };
 
 static const char *interface_statusstr[] = {
-"undefined",
-"up",
-"down",
-NULL,
+	"undefined",
+	"up",
+	"down",
+	NULL
 };
 
 haggle_interface_type_t haggle_interface_str_to_type(const char *str)
@@ -44,14 +47,14 @@ haggle_interface_type_t haggle_interface_str_to_type(const char *str)
 	int i = 0;
 
         if (!str)
-                return IF_TYPE_UNDEF;
+                return IF_TYPE_UNDEFINED;
 
 	while (interface_typestr[i]) {
 		if (strcmp(str, interface_typestr[i]) == 0)
 			return i;
 		i++;
 	}
-	return IF_TYPE_UNDEF;
+	return IF_TYPE_UNDEFINED;
 }
 
 char *haggle_interface_get_identifier_str(const haggle_interface_t *iface)
@@ -78,7 +81,7 @@ static inline int interface_identifier_strlen(haggle_interface_type_t type)
         return 0;
 }
 
-haggle_interface_t *haggle_interface_new(haggle_interface_type_t type, char *name, char *identifier, int identifier_len)
+haggle_interface_t *haggle_interface_new(haggle_interface_type_t type, const char *name, const char *identifier, size_t identifier_len)
 {
 	haggle_interface_t *iface;
 	
@@ -91,7 +94,7 @@ haggle_interface_t *haggle_interface_new(haggle_interface_type_t type, char *nam
 		return NULL;
 
 	iface->type = type;
-	iface->status = IF_STATUS_UNDEF;
+	iface->status = IF_STATUS_UNDEFINED;
 	iface->identifier_len = identifier_len;
 	memcpy(iface->identifier, identifier, identifier_len);
 	iface->name = iface->identifier + identifier_len;
@@ -112,6 +115,52 @@ haggle_interface_t *haggle_interface_new(haggle_interface_type_t type, char *nam
 		break;		
 	}
 
+	return iface;
+}
+
+haggle_interface_t *haggle_interface_new_from_metadata(const metadata_t *m)
+{
+	haggle_interface_type_t type;
+	haggle_interface_t *iface = NULL;
+	struct base64_decode_context b64_ctx;
+	char *identifier = NULL;
+	const char *id, *status, *name;
+	size_t len;
+	
+	type = haggle_interface_str_to_type(metadata_get_parameter(m, "type"));
+	
+	if (type == IF_TYPE_UNDEFINED)
+		return NULL;
+	
+	id = metadata_get_parameter(m, "identifier");
+	
+	if (!id)
+		return NULL;
+		
+	base64_decode_ctx_init(&b64_ctx);
+	
+	if (!base64_decode_alloc(&b64_ctx, id, strlen(id), &identifier, &len))
+		return NULL;
+	
+	name = metadata_get_parameter(m, "name");
+	
+	// Add interface to node
+	iface = haggle_interface_new(type, name ? name : "Unnamed interface", identifier, len);
+	free(identifier);
+	
+	if (!iface) 
+		return NULL;
+	
+	status = metadata_get_parameter(m, "status");
+	
+	if (status) {
+		if (!strcmp(status, "up")) {
+			iface->status = IF_STATUS_UP;
+		} else {
+			iface->status = IF_STATUS_DOWN;
+		}
+	}
+	
 	return iface;
 }
 
@@ -142,7 +191,7 @@ haggle_interface_t *haggle_interface_copy(const haggle_interface_t *iface)
 
 haggle_interface_type_t haggle_interface_get_type(const haggle_interface_t *iface)
 {
-	return (iface ? iface->type : IF_TYPE_UNDEF);
+	return (iface ? iface->type : IF_TYPE_UNDEFINED);
 }
 
 const char *haggle_interface_get_type_name(const haggle_interface_t *iface)
@@ -152,7 +201,7 @@ const char *haggle_interface_get_type_name(const haggle_interface_t *iface)
 
 haggle_interface_status_t haggle_interface_get_status(const haggle_interface_t *iface)
 {
-	return (iface ? iface->status : IF_STATUS_UNDEF);
+	return (iface ? iface->status : IF_STATUS_UNDEFINED);
 }
 
 const char *haggle_interface_get_status_name(const haggle_interface_t *iface)
@@ -170,7 +219,7 @@ const char *haggle_interface_get_identifier(const haggle_interface_t *iface)
 	return (iface ? iface->identifier : NULL);
 }
 
-int haggle_interface_get_identifier_length(const haggle_interface_t *iface)
+size_t haggle_interface_get_identifier_length(const haggle_interface_t *iface)
 {
-	return (iface ? iface->identifier_len : -1);
+	return (iface ? iface->identifier_len : 0);
 }

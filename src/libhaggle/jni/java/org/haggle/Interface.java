@@ -11,9 +11,9 @@ public class Interface {
         public final static int IFTYPE_UNDEF = 0;
 	public final static int IFTYPE_APPLICATION_PORT = 1;
 	public final static int IFTYPE_APPLICATION_LOCAL = 2;
-	public final static int IFTYPE_BLUETOOTH = 3;
-	public final static int IFTYPE_ETHERNET = 4;
-	public final static int IFTYPE_WIFI = 5;
+	public final static int IFTYPE_ETHERNET = 3;
+	public final static int IFTYPE_WIFI = 4;
+	public final static int IFTYPE_BLUETOOTH = 5;
 	public final static int IFTYPE_MEDIA = 6;
 	public final static int _IFTYPE_MAX = 7;
 

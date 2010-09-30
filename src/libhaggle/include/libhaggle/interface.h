@@ -39,19 +39,19 @@ extern "C" {
 	The interface types be synchronized with Interface.h in Haggle.
 */
 typedef enum HAGGLE_API haggle_interface_type {
-	IF_TYPE_UNDEF = 0,
+	IF_TYPE_UNDEFINED = 0,
 	IF_TYPE_APPLICATION_PORT,
 	IF_TYPE_APPLICATION_LOCAL,
-	IF_TYPE_BLUETOOTH,
 	IF_TYPE_ETHERNET,
 	IF_TYPE_WIFI,
+	IF_TYPE_BLUETOOTH,
 	IF_TYPE_MEDIA,
 	_IF_TYPE_MAX,
 } haggle_interface_type_t;
 
 
 typedef enum HAGGLE_API haggle_interface_status {
-	IF_STATUS_UNDEF,
+	IF_STATUS_UNDEFINED,
 	IF_STATUS_UP,
 	IF_STATUS_DOWN,
 	_IF_STATUS_MAX,
@@ -64,7 +64,7 @@ typedef struct HAGGLE_API haggle_interface {
 	haggle_interface_status_t status;
 	char *name;
 	char *identifier_str;
-	int identifier_len;
+	size_t identifier_len;
 	char identifier[0];
 } haggle_interface_t;
 
@@ -72,8 +72,12 @@ typedef struct HAGGLE_API haggle_interface {
 #pragma warning( pop )
 #endif
 
+#if !defined(_LIBHAGGLE_METADATA_H)
+struct metadata;
+#endif
+	
 HAGGLE_API haggle_interface_type_t haggle_interface_str_to_type(const char *str);
-HAGGLE_API haggle_interface_t *haggle_interface_new(haggle_interface_type_t type, char *name, char *identifier, int identifier_len);
+HAGGLE_API haggle_interface_t *haggle_interface_new(haggle_interface_type_t type, const char *name, const char *identifier, size_t identifier_len);
 HAGGLE_API haggle_interface_t *haggle_interface_copy(const haggle_interface_t *iface);
 HAGGLE_API haggle_interface_type_t haggle_interface_get_type(const haggle_interface_t *iface);
 HAGGLE_API const char *haggle_interface_get_type_name(const haggle_interface_t *iface);
@@ -81,9 +85,10 @@ HAGGLE_API haggle_interface_status_t haggle_interface_get_status(const haggle_in
 HAGGLE_API const char *haggle_interface_get_status_name(const haggle_interface_t *iface);
 HAGGLE_API const char *haggle_interface_get_name(const haggle_interface_t *iface);
 HAGGLE_API const char *haggle_interface_get_identifier(const haggle_interface_t *iface);
-HAGGLE_API int haggle_interface_get_identifier_length(const haggle_interface_t *iface);
+HAGGLE_API size_t haggle_interface_get_identifier_length(const haggle_interface_t *iface);
 HAGGLE_API char *haggle_interface_get_identifier_str(const haggle_interface_t *iface);
 HAGGLE_API void haggle_interface_free(haggle_interface_t *iface);
+HAGGLE_API haggle_interface_t *haggle_interface_new_from_metadata(const struct metadata *m);
 
 /*@}*/
 

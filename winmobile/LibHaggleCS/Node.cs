@@ -147,9 +147,9 @@ namespace Haggle
                         public const int IFTYPE_UNDEF = 0;
                         public const int IFTYPE_APPLICATION_PORT = 1;
                         public const int IFTYPE_APPLICATION_LOCAL = 2;
-                        public const int IFTYPE_BLUETOOTH = 3;
-                        public const int IFTYPE_ETHERNET = 4;
-                        public const int IFTYPE_WIFI = 5;
+                        public const int IFTYPE_ETHERNET = 3;
+                        public const int IFTYPE_WIFI = 4;
+                        public const int IFTYPE_BLUETOOTH = 5;
                         public const int IFTYPE_MEDIA = 6;
                         public const int _IFTYPE_MAX = 7;
 

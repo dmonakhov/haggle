@@ -150,7 +150,7 @@ struct node *haggle_node_new_from_metadata(metadata_t *m)
 {
 	struct node *n;
         metadata_t *mi;
-        const char *name, *id, *status;
+        const char *name, *id;
 
 
         if (!m || !metadata_name_is(m, "Node"))
@@ -192,44 +192,12 @@ struct node *haggle_node_new_from_metadata(metadata_t *m)
 	mi = metadata_get(m, "Interface");
 
 	while (mi) {
-		haggle_interface_type_t type;
-		haggle_interface_t *iface = NULL;
-
-		type = haggle_interface_str_to_type(metadata_get_parameter(mi, "type"));
-
-		id = metadata_get_parameter(mi, "identifier");
-
-		if (id) {
-			struct base64_decode_context b64_ctx;
-			char *identifier = NULL;
-			size_t len;
-			bool ret;
-
-			base64_decode_ctx_init(&b64_ctx);
-
-			ret = base64_decode_alloc(&b64_ctx, id, strlen(id), &identifier, &len);
-
-			if (ret) {
-				// Add interface to node
-				iface = haggle_interface_new(type, "Unnamed interface", identifier, len);
-				free(identifier);
-
-				if (iface) {
-					haggle_node_add_interface(n, iface);
-				}
-			}
+		haggle_interface_t *iface = haggle_interface_new_from_metadata(mi);
+		
+		if (iface) {
+			haggle_node_add_interface(n, iface);
 		}
-
-		status = metadata_get_parameter(mi, "status");
-
-		if (status && iface) {
-			if (!strcmp(status, "up")) {
-				iface->status = IF_STATUS_UP;
-			} else {
-				iface->status = IF_STATUS_DOWN;
-			}
-		}
-
+		
 		mi = metadata_get_next(m);
 	}
 #ifdef DEBUG

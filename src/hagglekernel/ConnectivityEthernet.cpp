@@ -110,20 +110,13 @@ bool ConnEthIfaceListElement::openBroadcastSocket()
 	struct sockaddr	*my_addr = NULL;
 	socklen_t my_addr_len = -1;
 	bool has_broadcast = false;
-	const EthernetAddress *eth_addr;
 	const SocketAddress *addr;
 	int on = 1;
 
 	if (broadcastSocket != INVALID_SOCKET)
 		return false;
 
-	eth_addr = iface->getAddress<EthernetAddress>();
-
-	if (!eth_addr) {
-		HAGGLE_ERR("No ethernet MAC address in interface!");
-		return false;
-	}
-	memcpy(broadcast_packet.mac, eth_addr->getRaw(), eth_addr->getLength());
+	memcpy(broadcast_packet.mac, iface->getIdentifier(), iface->getIdentifierLen());
 
 #if defined(ENABLE_IPv6)
 	// Prefer IPv6 addresses:
@@ -324,10 +317,7 @@ bool ConnectivityEthernet::isBeaconMine(struct haggle_beacon *b)
 		List<ConnEthIfaceListElement *>::iterator it = ifaceList.begin();
 		
 		for (;it != ifaceList.end(); it++) {
-			
-			const EthernetAddress *addr = (*it)->iface->getAddress<EthernetAddress>();
-			
-			if (addr && memcmp(addr->getRaw(), b->mac, addr->getLength()) == 0) {
+			if (memcmp((*it)->iface->getIdentifier(), b->mac, (*it)->iface->getIdentifierLen()) == 0) {
 				return true;
 			}
 		}
