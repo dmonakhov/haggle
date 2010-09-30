@@ -432,7 +432,7 @@ public:
 	
         // Attribute functions
         bool addAttribute(const Attribute &a);
-        bool addAttribute(const string name, const string value, unsigned long weight = 1);
+        bool addAttribute(const string name, const string value = "", unsigned long weight = 1);
 	size_t removeAttribute(const Attribute &a);
 	size_t removeAttribute(const string name, const string value = "*");
 	const Attribute *getAttribute(const string name, const string value = "*", unsigned int n = 0) const;

@@ -24,20 +24,7 @@
 #include "Interface.h"
 #include "Attribute.h"
 
-Attribute::Attribute(const char *_nameValue, const unsigned long _weight) : 
-#ifdef DEBUG_LEAKS
-	LeakMonitor(LEAK_TYPE_ATTRIBUTE),
-#endif
-	name(""), value(""), weight(_weight)
-{
-	size_t pos;
-
-	name = _nameValue;
-	pos = name.find("=");
-	value = name.substr(pos + 1);
-	name = name.substr(0, pos);}
-
-Attribute::Attribute(const string _name, const string _value, const unsigned long _weight) : 
+Attribute::Attribute(const string _name, const string _value, unsigned long _weight) : 
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_ATTRIBUTE),
 #endif
@@ -77,7 +64,7 @@ string Attribute::getString() const
 	return string(name + "=" + value + ":" + weightstr); 
 }
 
-bool operator==(const Attribute & a, const Attribute & b)
+bool operator==(const Attribute& a, const Attribute& b)
 {
 	if (a.getName() != b.getName())
 		return false;
@@ -89,7 +76,7 @@ bool operator==(const Attribute & a, const Attribute & b)
 	}
 }
 
-bool operator<(const Attribute & a, const Attribute & b)
+bool operator<(const Attribute& a, const Attribute& b)
 {
 	if (a.getName() != b.getName())
 		return (a.getName() < b.getName());

@@ -701,7 +701,7 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
 #if defined(ENABLE_IPv6)
 		ifr->ifr_addr.sa_family = AF_INET6;
 		
-		if (ioctl(sock, SIOCGIFADDR, ifr) == -1) {
+		if (ioctl(sock, SIOCGIFADDR, ifr) != -1) {
 			addrs.add(new IPv6Address(((struct sockaddr_in6 *) &ifr->ifr_addr)->sin6_addr));
 		}
 		
@@ -716,8 +716,8 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
                 if (onlyUp && !(ifr->ifr_flags & IFF_UP)) 
                         continue;
 
-		if (addrs.size() == 0) {
-			// No addresses on interface --> ignore it
+		if (addrs.size() <= 1) {
+			// No IPv4 or IPv6 addresses on interface --> ignore it
 			continue;
 		}
 		// FIXME: separate 802.3 (wired) from 802.11 (wireless) ethernet

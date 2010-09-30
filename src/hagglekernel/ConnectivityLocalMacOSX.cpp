@@ -293,7 +293,7 @@ bool ConnectivityLocal::run()
 		
                 int num = getLocalInterfaceList(iflist, true);
                 
-		CM_DBG("Found %d local interfaces\n", num);
+		//CM_DBG("Found %d local interfaces\n", num);
 
                 if (num) {
                         while (!iflist.empty()) {

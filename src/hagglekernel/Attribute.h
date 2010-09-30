@@ -48,93 +48,82 @@ private:
         string value;
         unsigned long weight;
 public:
-		/**
-			Constructor that takes a string of type "ABC=DEF" and creates an
-			attribute from it.
-		*/
-        Attribute(const char* nameValue, const unsigned long _weight = 1);
-		/**
-			Constructor that takes two strings of type "ABC" and "DEF" and 
-			creates an attribute of type "ABC=DEF" from it.
-		*/
-        Attribute(const string _name = "", const string _value = "", const unsigned long _weight = 1);
+	/**
+		Constructor that takes two strings of type "ABC" and "DEF" and 
+		creates an attribute of type "ABC=DEF" from it.
+	*/
+        Attribute(const string _name = "", const string _value = "", unsigned long _weight = 1);
         /// Copy-constructor
-        Attribute(const Attribute &attr);
-		/**
-			Destructor.
-		*/
+        Attribute(const Attribute& attr);
+	/**
+		Destructor.
+	*/
         ~Attribute();
-		/**
-			Copying function, returns a copy of the attribute.
-		*/
+	/**
+		Copying function, returns a copy of the attribute.
+	*/
         Attribute *copy() const {
                 return new Attribute(*this);
         }
 		
-		/**
-			Returns the name part of the attribute.
-			
-			In an attribute of type "ABC=DEF:1", "ABC" is the name part.
-		*/
-        const string &getName() const {
+	/**
+		Returns the name part of the attribute.
+		In an attribute of type "ABC=DEF:1", "ABC" is the name part.
+	*/
+        const string& getName() const {
                 return name;
         }
 		
-		/**
-			Returns the value part of the attribute.
-			
-			In an attribute of type "ABC=DEF:1", "DEF" is the value part.
-		*/
-        const string &getValue() const {
+	/**
+		Returns the value part of the attribute.
+		In an attribute of type "ABC=DEF:1", "DEF" is the value part.
+	*/
+        const string& getValue() const {
                 return value;
         }
-		/**
-			Returns the weight part of the attribute.
-			
-			In an attribute of type "ABC=DEF:1", "1" is the weight part.
-		*/
-        const unsigned long &getWeight() const {
+	/**
+		Returns the weight part of the attribute.
+		In an attribute of type "ABC=DEF:1", "1" is the weight part.
+	*/
+        unsigned long getWeight() const {
                 return weight;
         }
 	
 	string getWeightAsString() const;
 		
-		/**
-			Sets the name part of the attribute.
-			
-			In an attribute of type "ABC=DEF:1", "ABC" is the name part.
-		*/
+	/**
+		Sets the name part of the attribute.
+		In an attribute of type "ABC=DEF:1", "ABC" is the name part.
+	*/
         void setName(const char *_name) {
                 name = _name;
         }
-		/**
-			Sets the value part of the attribute.
-			
-			In an attribute of type "ABC=DEF:1", "DEF" is the value part.
-		*/
+	/**
+		Sets the value part of the attribute.
+		In an attribute of type "ABC=DEF:1", "DEF" is the value part.
+	*/
         void setValue(const char *_value) {
                 value = _value;
         }
-		/**
-			Sets the weight part of the attribute.
-			
-			In an attribute of type "ABC=DEF:1", "1" is the weight part.
-		*/
-        void setWeight(const unsigned long _weight) {
+	/**
+		Sets the weight part of the attribute.
+		In an attribute of type "ABC=DEF:1", "1" is the weight part.
+	*/
+        void setWeight(unsigned long _weight) {
                 weight = _weight;
         }
-		/**
-			Returns a string describing the attribute. It is given in the same
-			format as is read by the constructor that only takes one string.
-		*/
+	/**
+		Returns a string describing the attribute. It is given in the same
+		format as is read by the constructor that only takes one string.
+	*/
 	string getString() const;
-		/**
-			Equality operator
-		*/
+	/**
+		Equality operator
+	*/
         friend bool operator==(const Attribute &a, const Attribute &b);
-		/**
-			Less-than operator
-		*/
+	/**
+		Less-than operator
+	*/
         friend bool operator<(const Attribute &a, const Attribute &b);
 };
 

@@ -28,22 +28,22 @@ LeakMonitor(LEAK_TYPE_FILTER),
 	etype(_etype)
 {
 	string filter = filterString;
-	string namevalue;
+	string namevalue, name, value;
 	size_t start = 0, end = 0;
 
         while (end != string::npos) {
                 end = filter.find(" ", start);
                 namevalue = filter.substr(start, end - start);
                 start = end + 1;
-
-		if (namevalue.length() > 0)
-			attrs.add(Attribute(namevalue));
         }
 	// Also insert the last name-value pair (or the first if there was only one pair)
 	namevalue = filter.substr(start);
-	
-	if (namevalue.length() > 0)
-		attrs.add(Attribute(namevalue));
+
+	start = namevalue.find("=");
+	value = namevalue.substr(start + 1);
+	name = namevalue.substr(0, start);
+
+	attrs.add(Attribute(name, value));
 }
 
 Filter::Filter(const Attributes *inAttrs, const long _etype) : 

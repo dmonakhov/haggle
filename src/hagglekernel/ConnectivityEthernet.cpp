@@ -113,8 +113,10 @@ bool ConnEthIfaceListElement::openBroadcastSocket()
 	const SocketAddress *addr;
 	int on = 1;
 
-	if (broadcastSocket != INVALID_SOCKET)
+	if (broadcastSocket != INVALID_SOCKET) {
+		HAGGLE_ERR("Socket already set\n");
 		return false;
+	}
 
 	memcpy(broadcast_packet.mac, iface->getIdentifier(), iface->getIdentifierLen());
 
@@ -178,6 +180,7 @@ bool ConnEthIfaceListElement::openBroadcastSocket()
 
 	if (setsockopt(broadcastSocket, SOL_SOCKET, SO_BROADCAST, (const char *) &on, sizeof(on)) == -1) {
 		CLOSE_SOCKET(broadcastSocket);
+		HAGGLE_ERR("Could not set socket option SO_BROADCAST\n");
 		return false;
 	}
 #if defined(OS_LINUX)
@@ -190,12 +193,14 @@ bool ConnEthIfaceListElement::openBroadcastSocket()
 #endif
 	if (setsockopt(broadcastSocket, SOL_SOCKET, SO_PRIORITY, (const char *) &priority, sizeof(priority)) == -1) {
 		CLOSE_SOCKET(broadcastSocket);
+		HAGGLE_ERR("Could not set socket option SO_PRIORITY\n");
 		return false;
 	}
 #endif
 	// Bind the socket to the address:
 	if (bind(broadcastSocket, my_addr, my_addr_len) == -1) {
 		CLOSE_SOCKET(broadcastSocket);
+		HAGGLE_ERR("Could not bind socket\n");
 		return false;
 	}
 

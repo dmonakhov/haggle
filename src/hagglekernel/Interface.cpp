@@ -296,18 +296,23 @@ Interface *Interface::fromMetadata(const Metadata& m)
 	Interface *iface = NULL;
 	void *identifier = NULL;
 	
-	if (!m.isName(INTERFACE_METADATA))
+	if (!m.isName(INTERFACE_METADATA)) {
+		fprintf(stderr, "Not interface metadata\n");
 		return NULL;
+	}
 	
 	const char *param = m.getParameter(INTERFACE_METADATA_TYPE_PARAM);
 	
-	if (!param)
+	if (!param) {
+		fprintf(stderr, "No type parameter in interface metadata\n");
 		return NULL;
-	
+	}
 	Type_t type = strToType(param);
 	
-	if (type == TYPE_UNDEFINED)
+	if (type == TYPE_UNDEFINED) {
+		fprintf(stderr, "Interface type is undefined\n");
 		return NULL;
+	}
 		
 	param = m.getParameter(INTERFACE_METADATA_IDENTIFIER_PARAM);
 		
@@ -315,6 +320,7 @@ Interface *Interface::fromMetadata(const Metadata& m)
 		size_t identifier_len;
 		
 		if (!str_to_identifier(param, &identifier, &identifier_len)) {
+			fprintf(stderr, "Could not parse identifier string in interface metadata\n");
 			return NULL;
 		}
 	} else if ((param = m.getParameter(INTERFACE_METADATA_MAC_PARAM))) {
@@ -339,6 +345,9 @@ Interface *Interface::fromMetadata(const Metadata& m)
 	iface = create(type, identifier, param ? param : DEFAULT_INTERFACE_NAME, addrs, 0);
 	free(identifier);
 	
+	if (!iface) {
+		fprintf(stderr, "Interface creation failed\n");
+	}
 	return iface;
 }
 

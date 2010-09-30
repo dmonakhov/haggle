@@ -1738,7 +1738,7 @@ int SQLDataStore::evaluateFilters(const DataObjectRef& dObj, sqlite_int64 dataob
 
                         kernel->addEvent(new Event(eventType, dObjs));
 		} else if (ret == SQLITE_ERROR) {
-			HAGGLE_DBG("Could not insert DO Error: %s\n", sqlite3_errmsg(db));
+			HAGGLE_DBG("Could not evaluate filter result, Error: %s\n", sqlite3_errmsg(db));
 			sqlite3_finalize(stmt);
 			return -1;
 		}

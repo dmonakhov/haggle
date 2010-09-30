@@ -617,13 +617,13 @@ void ConnectivityManager::report_dead(InterfaceRef iface)
                         }
                 }
 		
-		CM_IFACE_DBG("Local interface [%s/%s] deleted.", 
+		CM_IFACE_DBG("Local interface [%s/%s] deleted.\n", 
 			     iface->getIdentifierStr(), iface->getName());
 		
 		// Tell the rest of haggle that this interface has gone down:
 		kernel->addEvent(new Event(EVENT_TYPE_LOCAL_INTERFACE_DOWN, iface));
 	} else {
-		CM_IFACE_DBG("Neighbour interface [%s/%s] deleted.", 
+		CM_IFACE_DBG("Neighbour interface [%s/%s] deleted.\n", 
 			     iface->getIdentifierStr(), iface->getName());
 		
 		// Tell the rest of haggle that this interface has gone down:

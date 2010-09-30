@@ -287,6 +287,7 @@ InterfaceRef ProtocolSocket::resolvePeerInterface(const SocketAddress& addr)
 			
 			if (pIface) {
 				pIface->addAddress(eth_addr);
+				pIface->addAddress(addr);
 				HAGGLE_DBG("Peer interface is [%s]\n", pIface->getIdentifierStr());
 			}
 		}
