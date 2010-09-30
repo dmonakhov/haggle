@@ -242,7 +242,7 @@ public:
 		INTERFACE_STATUS_HAGGLE if the interface is known to belong to a haggle device,
 		or INTERFACE_STATUS_OTHER if it is known to be a non-Haggle device.
 	*/
-	InterfaceStatus_t is_known_interface(const Interface *iface);
+	InterfaceStatus_t is_known_interface(const InterfaceRef& iface);
 
 	/**
         	Utility function to delete an interface

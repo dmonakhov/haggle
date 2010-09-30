@@ -218,6 +218,9 @@ Node *Node::create(Type_t type, const DataObjectRef& dObj)
 		case TYPE_UNDEFINED:
 			node = new UndefinedNode();
 			break;
+		case TYPE_APPLICATION:
+			node = new ApplicationNode();
+			break;
 		default:
 			break;
 			
@@ -254,6 +257,9 @@ Node *Node::create(Type_t type, const string name, Timeval _nodeDescriptionCreat
 			break;
 		case TYPE_UNDEFINED:
 			node = new UndefinedNode(name, _nodeDescriptionCreateTime);
+			break;
+		case TYPE_APPLICATION:
+			node = new ApplicationNode(name, _nodeDescriptionCreateTime);
 			break;
 		default:
 			break;			
@@ -295,6 +301,9 @@ Node *Node::create_with_id(Type_t type, const Id_t id, const string name, Timeva
 			break;
 		case TYPE_UNDEFINED:
 			node = new UndefinedNode(name, _nodeDescriptionCreateTime);
+			break;
+		case TYPE_APPLICATION:
+			node = new ApplicationNode(name, _nodeDescriptionCreateTime);
 			break;
 		default:
 			break;			

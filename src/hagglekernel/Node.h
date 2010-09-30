@@ -354,4 +354,15 @@ class GatewayNode : public Node
 typedef Reference<GatewayNode> GatewayNodeRef;
 typedef ReferenceList<GatewayNode> GatewayNodeRefList;
 
+class ApplicationNode : public Node
+{
+	friend class Node;
+	ApplicationNode(const string name = "application node", Timeval _nodeDescriptionCreateTime = -1) : 
+	Node(TYPE_APPLICATION, name, _nodeDescriptionCreateTime) {}
+	~ApplicationNode() {}
+};
+
+typedef Reference<ApplicationNode> ApplicationNodeRef;
+typedef ReferenceList<ApplicationNode> ApplicationNodeRefList;
+
 #endif /* _NODE_H */

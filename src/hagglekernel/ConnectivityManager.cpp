@@ -400,12 +400,12 @@ void ConnectivityManager::spawn_connectivity(const InterfaceRef& iface)
 	}
 }
 
-InterfaceStatus_t ConnectivityManager::report_known_interface(const Interface& iface, bool isHaggle)
+InterfaceStatus_t ConnectivityManager::report_known_interface(const InterfaceRef& iface, bool isHaggle)
 {
 	Mutex::AutoLocker l(ifMutex);
 	InterfaceStats stats(isHaggle);
 
-	Pair<known_interface_registry_t::iterator, bool> p = known_interface_registry.insert(make_pair(iface.copy(), stats));
+	Pair<known_interface_registry_t::iterator, bool> p = known_interface_registry.insert(make_pair(iface, stats));
 
 	// The interface was not known since before.
 	if (p.second)
@@ -421,26 +421,25 @@ InterfaceStatus_t ConnectivityManager::report_known_interface(const Interface& i
 
 InterfaceStatus_t ConnectivityManager::report_known_interface(Interface::Type_t type, const unsigned char *identifier, bool isHaggle)
 {
-	InterfaceStatus_t ret;
+	InterfaceStatus_t ret = INTERFACE_STATUS_ERROR;
 
-	Interface *iface = Interface::create(type, identifier);
+	InterfaceRef iface = Interface::create(type, identifier);
 
-	ret = report_known_interface(iface, isHaggle);
-
-	delete iface;
+	if (iface) {
+		ret = report_known_interface(iface, isHaggle);
+	}
 
 	return ret;
 }
 
-InterfaceStatus_t ConnectivityManager::report_known_interface(const InterfaceRef& iface, bool isHaggle)
+InterfaceStatus_t ConnectivityManager::report_known_interface(const Interface& report_iface, bool isHaggle)
 {
-	InterfaceStatus_t ret;
-
-	iface.lock();
-
-	ret = report_known_interface(*iface.getObj(), isHaggle);
-
-	iface.unlock();
+	InterfaceStatus_t ret = INTERFACE_STATUS_ERROR;
+	InterfaceRef iface = report_iface.copy();
+	
+	if (iface) {
+		ret = report_known_interface(iface, isHaggle);
+	}
 
 	return ret;
 }
@@ -705,7 +704,7 @@ InterfaceStatus_t ConnectivityManager::have_interface(const InterfaceRef& iface)
 */
 #define KNOWN_INTERFACE_TIMES_CACHED_MAX 6
 
-InterfaceStatus_t ConnectivityManager::is_known_interface(const Interface *iface)
+InterfaceStatus_t ConnectivityManager::is_known_interface(const InterfaceRef& iface)
 {
 	Mutex::AutoLocker l(ifMutex);
 	known_interface_registry_t::iterator it = known_interface_registry.find(iface);
@@ -730,13 +729,15 @@ InterfaceStatus_t ConnectivityManager::is_known_interface(const Interface *iface
 
 InterfaceStatus_t ConnectivityManager::is_known_interface(Interface::Type_t type, const unsigned char *identifier)
 {
-        InterfaceStatus_t ret;
+        InterfaceStatus_t ret = INTERFACE_STATUS_ERROR;
 
-	Interface *iface = Interface::create(type, identifier);
+	InterfaceRef iface = Interface::create(type, identifier);
 	
-	ret = is_known_interface(iface);
-
-	delete iface;
+	if (iface) {
+		ret = is_known_interface(iface);
+	} else {
+		HAGGLE_ERR("Could not create interface of type %s\n", Interface::typeToStr(type));
+	}
 
 	return ret;
 }

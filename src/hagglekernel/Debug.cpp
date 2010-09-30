@@ -125,7 +125,7 @@ LeakMonitor::~LeakMonitor()
 		}
 	}
 	
-        HAGGLE_ERR("LeakMonitor object of type %lu not found\n", type);
+        HAGGLE_ERR("LeakMonitor object of type %s not found\n", leaktypestr[type]);
 }
 
 void LeakMonitor::listRegistry()

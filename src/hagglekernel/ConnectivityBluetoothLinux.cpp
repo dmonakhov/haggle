@@ -449,6 +449,8 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
                 return;
         }
         
+	CM_DBG("Inquiry returned %d devices\n", ret);
+
 	for (i = 0; i < ret; i++) {
                 bool report_interface = false;
 		unsigned char macaddr[BT_ALEN];
@@ -473,7 +475,6 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
                         switch(ConnectivityBluetoothBase::classifyAddress(Interface::TYPE_BLUETOOTH, macaddr)) {
                         case BLUETOOTH_ADDRESS_IS_UNKNOWN:
                                 channel = find_haggle_service(ii[i].bdaddr);
-                    
                                 if (channel > 0) {
                                         report_interface = true;
                                         conn->report_known_interface(Interface::TYPE_BLUETOOTH, macaddr, true);

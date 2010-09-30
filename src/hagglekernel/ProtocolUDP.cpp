@@ -101,14 +101,6 @@ ProtocolUDP::ProtocolUDP(const char *ipaddr, unsigned short _port, ProtocolManag
 	if (inet_pton(AF_INET, ipaddr, &addr) != 1) {
 		HAGGLE_ERR("Bad IP address %s\n", ipaddr);
 	}
-	/*
-#ifdef OS_WINDOWS
-	unsigned long tmp_addr = inet_addr(ipaddr);
-	memcpy(&addr, &tmp_addr, sizeof(struct in_addr));
-#else
-	inet_aton(ipaddr, &addr);
-#endif
-	 */
 	
 	IPv4Address address(addr, TransportUDP(_port));
 	
