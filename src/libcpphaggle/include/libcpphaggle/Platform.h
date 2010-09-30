@@ -75,6 +75,7 @@ typedef UINT64 u_int64_t;
 typedef DWORD pid_t;
 
 #define inet_pton(af, src, dst) InetPton(af, src, dst)
+#define inet_ntop(af, src, dst, len) InetNtop(af, src, dst, len)
 
 #if defined(OS_WINDOWS_MOBILE)
 typedef unsigned int uintptr_t;

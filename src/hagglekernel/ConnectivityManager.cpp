@@ -37,7 +37,7 @@
 */
 #if 1
 #define CM_IFACE_DBG(f, ...)					\
-	HAGGLE_DBG("***CM_IFACE*** " f "\n", ## __VA_ARGS__)
+	HAGGLE_DBG("***CM_IFACE*** " f "", ## __VA_ARGS__)
 #else
 #define CM_IFACE_DBG(f, ...)
 #endif

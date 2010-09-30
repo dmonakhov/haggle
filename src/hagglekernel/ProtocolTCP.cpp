@@ -51,7 +51,8 @@ bool ProtocolTCP::initbase()
         socklen_t addrlen = 0;
         int af = AF_INET;
         unsigned short port = isClient() ? 0 : localport;
-
+	char ip_str[50];
+	
         if (!localIface) {
 		HAGGLE_ERR("Local interface is NULL\n");
                 return false;
@@ -65,7 +66,7 @@ bool ProtocolTCP::initbase()
 	}
         // Figure out the address type based on the local interface
 #if defined(ENABLE_IPv6)
-	if (localIface->getAddress<IPv6Address>())
+	if (localIface->getAddress<IPv6Address>() && peerIface && peerIface->getAddress<IPv6Address>())
                 af = AF_INET6;
 #endif
 
@@ -112,11 +113,11 @@ bool ProtocolTCP::initbase()
                 return false;
         }
 
-        if (af == AF_INET) {
-                HAGGLE_DBG("%s Created TCP socket - %s:%d\n", 
-			getName(), ip_to_str(((struct sockaddr_in *)local_addr)->sin_addr), port);
-        }
-
+	if (inet_ntop(af, &((struct sockaddr_in *)local_addr)->sin_addr, ip_str, sizeof(ip_str))) {
+		HAGGLE_DBG("%s Created %s TCP socket - %s:%d\n", 
+			   getName(), af == AF_INET ? "AF_INET" : "AF_INET6", ip_str, port);
+	}
+		
 	return true;
 }
 
@@ -153,16 +154,21 @@ ProtocolEvent ProtocolTCPClient::connectToPeer()
 
 #if defined(ENABLE_IPv6)
 	IPv6Address *addr6 = peerIface->getAddress<IPv6Address>();
-	addrlen = addr6->fillInSockaddr((struct sockaddr_in6 *)peer_addr, peerPort);
-	addr = addr6;
+	if (addr6) {
+		addrlen = addr6->fillInSockaddr((struct sockaddr_in6 *)peer_addr, peerPort);
+		addr = addr6;
+		HAGGLE_DBG("Using IPv6 address %s to connect to peer\n", addr6->getStr());
+	}
 #endif
 	
 	if (!addr) {
 		// Since the check above passed, we know there has to be an IPv4 or an 
 		// IPv6 address associated with the interface, and since there was no IPv6...
 		IPv4Address *addr4 = peerIface->getAddress<IPv4Address>();
-		addrlen = addr4->fillInSockaddr((struct sockaddr_in *)peer_addr, peerPort);
-		addr = addr4;
+		if (addr4) {
+			addrlen = addr4->fillInSockaddr((struct sockaddr_in *)peer_addr, peerPort);
+			addr = addr4;
+		}
 	}
 
 	if (!addr) {
@@ -183,7 +189,8 @@ ProtocolEvent ProtocolTCPClient::connectToPeer()
 	return ret;
 }
 
-ProtocolTCPServer::ProtocolTCPServer(const InterfaceRef& _localIface, ProtocolManager *m, const unsigned short _port, int _backlog) :
+ProtocolTCPServer::ProtocolTCPServer(const InterfaceRef& _localIface, ProtocolManager *m, 
+				     const unsigned short _port, int _backlog) :
 	ProtocolTCP(_localIface, NULL, _port, PROT_FLAG_SERVER, m), backlog(_backlog) 
 {
 }
@@ -191,7 +198,6 @@ ProtocolTCPServer::ProtocolTCPServer(const InterfaceRef& _localIface, ProtocolMa
 ProtocolTCPServer::~ProtocolTCPServer()
 {
 }
-
 
 bool ProtocolTCPServer::init_derived()
 {

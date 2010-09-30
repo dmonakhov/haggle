@@ -760,7 +760,9 @@ const char *IPv4Address::getURI() const
 const char *IPv4Address::getStr() const
 {
 	if (!straddr && allocStr(16)) {
-		sprintf(straddr, "%u.%u.%u.%u", raw[0], raw[1], raw[2], raw[3]);
+		if (!inet_ntop(AF_INET, raw, straddr, 16)) {
+			delete [] straddr;
+		}
 	}
 	
 	return straddr;
@@ -887,14 +889,9 @@ const char *IPv6Address::getURI() const
 const char *IPv6Address::getStr() const
 {
 	if (!straddr && allocStr(48)) {
-		sprintf(straddr, "%02x:%02x:%02x:%02x:"
-			"%02x:%02x:%02x:%02x:"
-			"%02x:%02x:%02x:%02x:"
-			"%02x:%02x:%02x:%02x", 
-			raw[0], raw[1], raw[2], raw[3],
-			raw[4], raw[5], raw[6], raw[7],
-			raw[8], raw[9], raw[10], raw[11],
-			raw[12], raw[13], raw[14], raw[15]);
+		if (!inet_ntop(AF_INET6, raw, straddr, 48)) {
+			delete [] straddr;
+		}
 	}
 	
 	return straddr;

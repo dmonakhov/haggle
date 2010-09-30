@@ -551,7 +551,7 @@ bool ConnectivityEthernet::run()
 					  ipv4->getURI(), (received_lifetime - Timeval::now()).getTimeAsSecondsDouble());
 					*/
 					
-					EthernetInterface iface(beacon->mac,"Remote Ethernet", NULL, IFFLAG_UP);
+					EthernetInterface iface(beacon->mac, "Remote Ethernet", NULL, IFFLAG_UP);
 					iface.addAddresses(addrs);
 					report_interface(&iface, fakeRootInterface, new ConnectivityInterfacePolicyTime(received_lifetime));
 				}

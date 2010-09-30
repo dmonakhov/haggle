@@ -669,9 +669,9 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
 	int len = 0;
 	
 	for (; req.ifc.ifc_len != 0; ifr = (struct ifreq *) ((char *) ifr + len), req.ifc.ifc_len -= len) {
+		Addresses addrs;
 		unsigned char macaddr[6];
-		struct in_addr ip, bc;
-
+			
 		len = (sizeof(ifr->ifr_name) + max(sizeof(struct sockaddr),
 						       ifr->ifr_addr.sa_len));
 
@@ -687,32 +687,34 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
 		}
 
 		memcpy(macaddr, LLADDR(ifaddr), 6);
+		
+		addrs.add(new EthernetAddress(macaddr));
 
 		ifr->ifr_addr.sa_family = AF_INET;
 
+		if (ioctl(sock, SIOCGIFADDR, ifr) != -1) {
+			addrs.add(new IPv4Address(((struct sockaddr_in *) &ifr->ifr_addr)->sin_addr));
+		}
+		if (ioctl(sock, SIOCGIFBRDADDR, ifr) != -1) {
+			addrs.add(new IPv4BroadcastAddress(((struct sockaddr_in *) &ifr->ifr_broadaddr)->sin_addr));
+		}
+#if defined(ENABLE_IPv6)
+		ifr->ifr_addr.sa_family = AF_INET6;
+		
 		if (ioctl(sock, SIOCGIFADDR, ifr) == -1) {
-			// No IP adress!
-			continue;
+			addrs.add(new IPv6Address(((struct sockaddr_in6 *) &ifr->ifr_addr)->sin6_addr));
 		}
-		memcpy(&ip, &((struct sockaddr_in *) &ifr->ifr_addr)->sin_addr, sizeof(struct in_addr));
-
-		if (ioctl(sock, SIOCGIFBRDADDR, ifr) == -1) {
-			// No Broadcast adress!
-			continue;
+		
+		if (ioctl(sock, SIOCGIFBRDADDR, ifr) != -1) {
+			addrs.add(new IPv6BroadcastAddress(((struct sockaddr_in6 *) &ifr->ifr_broadaddr)->sin6_addr));
 		}
-		memcpy(&bc, &((struct sockaddr_in *) &ifr->ifr_broadaddr)->sin_addr, sizeof(struct in_addr));
-
+#endif
 		if (ioctl(sock, SIOCGIFFLAGS, ifr) == -1) {
                         continue;
                 }
 
                 if (onlyUp && !(ifr->ifr_flags & IFF_UP)) 
                         continue;
-
-		Addresses addrs;
-		addrs.add(new EthernetAddress(macaddr));
-		addrs.add(new IPv4Address(ip));
-		addrs.add(new IPv4BroadcastAddress(bc));
 
 		// FIXME: separate 802.3 (wired) from 802.11 (wireless) ethernet
 		iflist.push_back(InterfaceRef(Interface::create(Interface::TYPE_ETHERNET, macaddr, 
@@ -797,10 +799,15 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
 		EthernetInterface *ethIface = new EthernetInterface(ipAA->PhysicalAddress, 
 								    ipAA->AdapterName, mac, 
 								    IFFLAG_LOCAL | ((ipAA->OperStatus == IfOperStatusUp) ? IFFLAG_UP : 0));
+		
+		if (!ethIface)
+			continue;
+		
 		/*	
 		HAGGLE_DBG("LOCAL Interface type=%d index=%d name=%s mtu=%d mac=%s\n", 
 			ipAA->IfType, ipAA->IfIndex, ipAA->AdapterName, ipAA->Mtu, mac.getAddrStr());
 		*/	
+		
 		IP_ADAPTER_UNICAST_ADDRESS *ipAUA;
 		IP_ADAPTER_PREFIX *ipAP;
 
@@ -839,7 +846,7 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
 #endif
 			}
 		}
-                iflist.push_back(InterfaceRef(ethIface));
+                iflist.push_back(ethIface);
                 num++;
 	}
 
