@@ -9,7 +9,7 @@ if OS_IPHONEOS
 SUBDIRS += $(OPENSSL_DIR)
 endif
 
-SUBDIRS += doc src
+SUBDIRS += doc src android
 
 EXTRA_DIST = bin lib extlibs winmobile windows iphone android macosx resources README Android.mk
 DIST_SUBDIRS = $(SUBDIRS) testsuite

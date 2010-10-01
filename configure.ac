@@ -309,6 +309,13 @@ fi
 
 AM_CONDITIONAL(HAVE_EXTRACTOR, [test x$have_extractor = xyes])
 
+# Check for Android SDK and NDK
+have_android_sdk=no
+
+AC_CHECK_FILE([android], have_android_sdk=yes, AC_MSG_RESULT(Android SDK not found in path))
+AM_CONDITIONAL(HAVE_ANDROID_SDK, [test x$have_android_sdk = xyes])
+AC_DEFINE(HAVE_ANDROID_SDK, [test x$have_android_sdk = xyes], [Android SDK found])
+
 # MacOSX specific stuff
 if test x$haggle_os_macosx = xtrue
 then
@@ -632,6 +639,9 @@ AC_CONFIG_FILES([Makefile
 		 testsuite/test_dObj/Makefile
 		 testsuite/test_kernel/Makefile
 		 testsuite/test_security/Makefile
+		 android/Makefile
+		 android/PhotoShare/Makefile
+		 android/LuckyMe/Makefile
                  $extra_config_files])
 AC_OUTPUT
 
