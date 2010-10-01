@@ -798,10 +798,12 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
 			continue;
 		}
 		// Ok, this interface seems to be interesting
-		EthernetAddress mac(ipAA->PhysicalAddress);
+		unsigned char macaddr[ETH_MAC_LEN];
+		memcpy(macaddr, ipAA->PhysicalAddress, ETH_MAC_LEN); 
+		EthernetAddress addr(macaddr);
 
-		EthernetInterface *ethIface = new EthernetInterface(ipAA->PhysicalAddress, 
-								    ipAA->AdapterName, mac, 
+		EthernetInterface *ethIface = new EthernetInterface(macaddr, 
+								    ipAA->AdapterName, &addr, 
 								    IFFLAG_LOCAL | ((ipAA->OperStatus == IfOperStatusUp) ? IFFLAG_UP : 0));
 		
 		if (!ethIface)

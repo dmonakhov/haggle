@@ -18,11 +18,11 @@
 #include <stdio.h>
 
 #define LIBHAGGLE_INTERNAL
-#include <metadata.h>
+#include "metadata.h"
+#include "base64.h"
 #include <libhaggle/haggle.h>
 #include <libhaggle/debug.h>
 #include <libhaggle/interface.h>
-#include <base64.h>
 
 static const char *interface_typestr[] = {
 	"undefined",

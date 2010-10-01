@@ -439,14 +439,14 @@ void ProtocolRFCOMMClient::OnDataReceived(void *p_data, UINT16 len)
 
 ProtocolEvent ProtocolRFCOMMClient::connectToPeer()
 {
-	Address	*addr;
+	BluetoothAddress *addr;
 	
 	if (!peerIface) {
 		protocol_error = PROT_ERROR_UNKNOWN;
 		return PROT_EVENT_ERROR;
 	}
 
-	addr = peerIface->getAddressByType(AddressType_BTMAC);
+	addr = peerIface->getAddress<BluetoothAddress>();
 
 	if (!addr) {
 		protocol_error = PROT_ERROR_UNKNOWN;
@@ -455,7 +455,7 @@ ProtocolEvent ProtocolRFCOMMClient::connectToPeer()
 
 	if (!rfCommConn->connect(channel, addr->getRaw())) {
 		HAGGLE_DBG("%s Connection failed to [%s] channel=%u\n", 
-			   getName(), addr->getAddrStr(), channel);
+			   getName(), addr->getStr(), channel);
 	}
 	/*
 		Check for a connection msg on the message queue.
@@ -466,7 +466,7 @@ ProtocolEvent ProtocolRFCOMMClient::connectToPeer()
 	if (!ReadMsgQueue(hReadQ, &msg, sizeof(struct QMsg), &bytes_read, 5000, &flags)) {
 		if (GetLastError() == ERROR_TIMEOUT) {
 			HAGGLE_DBG("%s Connection attempt to [%s] channel=%u timed out\n", 
-				getName(), addr->getAddrStr(), channel);
+				getName(), addr->getStr(), channel);
 			return PROT_EVENT_TIMEOUT;
 		}
 
@@ -483,7 +483,7 @@ ProtocolEvent ProtocolRFCOMMClient::connectToPeer()
 	}
 
 	HAGGLE_DBG("%s Connected to [%s] channel=%u\n", 
-		   getName(), addr->getAddrStr(), channel);
+		   getName(), addr->getStr(), channel);
 
 	// Do not set PROT_FLAG_CONNECTED here, wait until we receive a
 	// connection successful event.
@@ -504,7 +504,7 @@ void ProtocolRFCOMMClient::closeConnection()
 
 	if (retcode != CRfCommPort::SUCCESS && retcode != CRfCommPort::NOT_OPENED) {
 		HAGGLE_ERR("Could not close connection to [%s]\n", 
-			peerIface->getAddressByType(AddressType_BTMAC)->getAddrStr());
+			peerIface->getAddress<BluetoothAddress>()->getStr());
 	} 
 }
 
@@ -857,9 +857,9 @@ void ProtocolRFCOMMServer::OnEventReceived(UINT32 event_code)
 
 			mutex.unlock();
 
-			Address addr(AddressType_BTMAC, remote_addr);
+			BluetoothAddress addr(remote_addr);
 
-			InterfaceRef iface = new Interface(IFTYPE_BLUETOOTH, remote_addr, &addr, "Peer Bluetooth", IFFLAG_UP);
+			InterfaceRef iface = Interface::create<BluetoothInterface>(remote_addr, "Peer Bluetooth", addr, IFFLAG_UP);
 	
 			if (!iface) {
 				HAGGLE_ERR("Could not create new peer interface!!!\n");

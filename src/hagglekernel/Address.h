@@ -20,18 +20,14 @@
 #include "Debug.h"
 #include "Metadata.h"
 
+#if defined(OS_UNIX)
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-
-#if defined(OS_UNIX)
 #include <sys/un.h>
 #endif
 
 #define AF_NONE 0
-#if defined(OS_MACOSX)
-#define AF_BLUETOOTH AF_NONE
-#endif
 
 using namespace haggle;
 class Address;
@@ -219,7 +215,9 @@ public:
 
 #if defined(ENABLE_BLUETOOTH)
 
-#if defined(OS_LINUX)
+#if defined(OS_MACOSX)
+#define AF_BLUETOOTH AF_NONE
+#elif defined(OS_LINUX)
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
 
@@ -231,19 +229,23 @@ public:
 #define bt_bdaddr rc_bdaddr
 
 #elif defined(OS_WINDOWS)
+#if !defined(WIDCOMM_BLUETOOTH)
 #include <ws2bth.h>
 #define sockaddr_bt _SOCKADDR_BTH
 #define bt_channel port
 #define bt_family addressFamily
 #define bt_bdaddr btAddr
+#endif
 #if defined(OS_WINDOWS_MOBILE)
+#if defined(WIDCOMM_BLUETOOTH)
+#define AF_BLUETOOTH 0
+#else
 #define AF_BLUETOOTH AF_BT
+#endif
 #elif defined(OS_WINDOWS_DESKTOP)
 #define AF_BLUETOOTH AF_BTH
-
-#endif /* OS_LINUX */
-
 #endif
+#endif /* OS_LINUX */
 
 class BluetoothAddress : public SocketAddress {
 	unsigned char mac[BT_ALEN];

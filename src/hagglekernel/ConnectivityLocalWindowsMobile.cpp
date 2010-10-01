@@ -112,11 +112,11 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 	if (btIface)
 		btIface = NULL;
 
-	btIface = InterfaceRef(new Interface(IFTYPE_BLUETOOTH, macaddr, &addr, btName, IFFLAG_LOCAL | IFFLAG_UP));
+	BluetoothInterface btIface(macaddr, btName, &addr, IFFLAG_LOCAL | IFFLAG_UP);
 	
 	HAGGLE_DBG("Adding new LOCAL Bluetooth Interface: %s\n", btName);
 
-	report_interface(btIface, rootInterface, new ConnectivityInterfacePolicyAgeless());
+	report_interface(&btIface, rootInterface, new ConnectivityInterfacePolicyAgeless());
 }
 
 #else
@@ -176,7 +176,7 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 		return;		//-1;
 	}
 
-	btAddr2Mac(addr.btAddr, macaddr);
+	btAddr2Mac(addr.btAddr, (char *)macaddr);
 
 	// Should probably find a better way to discover that something is wrong here.
 	if (macaddr[0] == 0 && 
@@ -193,16 +193,16 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 		return;		//-1;
 	}
 	
-	BluetoothAddress addr(macaddr);
+	BluetoothAddress btAddr(macaddr);
 
 	if (btIface)
 		btIface = NULL;
 
-	btIface = InterfaceRef(new Interface(IFTYPE_BLUETOOTH, macaddr, &addr, btName, IFFLAG_LOCAL | IFFLAG_UP));
+	BluetoothInterface btIface(macaddr, btName, &btAddr, IFFLAG_LOCAL | IFFLAG_UP);
 	
 	HAGGLE_DBG("Adding new LOCAL Bluetooth Interface: %s\n", btName);
 
-	report_interface(btIface, rootInterface, new ConnectivityInterfacePolicyAgeless());
+	report_interface(&btIface, rootInterface, new ConnectivityInterfacePolicyAgeless());
 
 	closesocket(s);
 

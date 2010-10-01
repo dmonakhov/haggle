@@ -112,12 +112,10 @@ bool ProtocolTCP::initbase()
 		HAGGLE_ERR("Could not bind TCP socket\n");
                 return false;
         }
-
 	if (inet_ntop(af, &((struct sockaddr_in *)local_addr)->sin_addr, ip_str, sizeof(ip_str))) {
 		HAGGLE_DBG("%s Created %s TCP socket - %s:%d\n", 
 			   getName(), af == AF_INET ? "AF_INET" : "AF_INET6", ip_str, port);
 	}
-		
 	return true;
 }
 

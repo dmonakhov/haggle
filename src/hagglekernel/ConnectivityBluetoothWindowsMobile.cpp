@@ -442,7 +442,7 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 		CHAR buf[4096];
 		SOCKADDR_BTH __unused;
 	};
-	const Address *addr;
+	const BluetoothAddress *addr;
 
 	blob.cbSize = sizeof(queryBlob);
 	blob.pBlobData = (BYTE *) & queryBlob;
@@ -453,12 +453,12 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 	wsaq.lpcsaBuffer = NULL;
 	wsaq.lpBlob = &blob;
 	
-	addr = conn->rootInterface->getAddressByType(Address::TYPE_BLUETOOTH);
+	addr = conn->rootInterface->getAddress<BluetoothAddress>();
 
 	if (!addr)
 		return;
 
-	CM_DBG("Doing scan on device %s - %s\n", conn->rootInterface->getName(), addr->getAddrStr());
+	CM_DBG("Doing scan on device %s - %s\n", conn->rootInterface->getName(), addr->getStr());
 
 	if (ERROR_SUCCESS != WSALookupServiceBegin(&wsaq, LUP_CONTAINERS, &hScan)) {
 		CM_DBG("WSALookupServiceBegin failed\n");
@@ -499,7 +499,7 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 		btAddr2Mac(btAddr, macaddr);
 		BluetoothAddress addr(macaddr);
 
-		status = conn->is_known_interface(IFTYPE_BLUETOOTH, macaddr);
+		status = conn->is_known_interface(Interface::TYPE_BLUETOOTH, macaddr);
 
 		if (status == INTERFACE_STATUS_HAGGLE) {
 			report_interface = true;
@@ -509,23 +509,23 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 			
 			if (ret > 0) {
 				report_interface = true;
-				conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, true);
+				conn->report_known_interface(Interface::TYPE_BLUETOOTH, macaddr, true);
 			} else if (ret == 0) {
-				conn->report_known_interface(IFTYPE_BLUETOOTH, macaddr, false);
+				conn->report_known_interface(Interface::TYPE_BLUETOOTH, macaddr, false);
 			}
 		}
 		if (report_interface) {
 			CM_DBG("Found Haggle Bluetooth device [%s:%s]\n", 
-				addr.getAddrStr(), name.c_str());
+				addr.getStr(), name.c_str());
 
-			Interface foundInterface(IFTYPE_BLUETOOTH, macaddr, &addr, name.c_str(), IFFLAG_UP);
+			BluetoothInterface foundInterface(macaddr, name, &addr, IFFLAG_UP);
 
 			conn->report_interface(&foundInterface, 
                                                conn->rootInterface, new ConnectivityInterfacePolicyTTL(2));
 			count++;
 		} else {
 			CM_DBG("Bluetooth device [%s] is not a Haggle device\n", 
-				addr.getAddrStr());
+				addr.getStr());
 		}
 	}
 

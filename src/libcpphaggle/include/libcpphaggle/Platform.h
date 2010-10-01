@@ -74,8 +74,40 @@ typedef INT64 int64_t;
 typedef UINT64 u_int64_t;
 typedef DWORD pid_t;
 
-#define inet_pton(af, src, dst) InetPton(af, src, dst)
-#define inet_ntop(af, src, dst, len) InetNtop(af, src, dst, len)
+#if defined(OS_WINDOWS_MOBILE) || (_WIN32_WINNT < _WIN32_WINNT_LONGHORN)
+inline int inet_pton(int af, const char *src, void *dst)
+{
+	if (af == AF_INET) {
+		struct in_addr ip;
+		ip.s_addr = inet_addr(src);
+		memcpy(dst, &ip, sizeof(struct in_addr));
+		return 1;
+	} else if (af == AF_INET6) {
+#if defined(ENABLE_IPv6)
+#warning "Must implement IPv6 version of inet_pton"
+#endif
+		// TODO: fill in for IPv6 support
+	}
+	return -1;
+}
+#endif
+
+inline const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
+{
+	if (af == AF_INET) {
+		if (size < 16)
+			return NULL;
+
+		struct in_addr *ip = (struct in_addr *)src;
+		strncpy(dst, inet_ntoa(*ip), size);
+		return dst;
+	} else if (af == AF_INET6) {
+#if defined(ENABLE_IPv6)
+#warning "Must implement IPv6 version of inet_ntop"
+#endif
+	}
+	return NULL;
+}
 
 #if defined(OS_WINDOWS_MOBILE)
 typedef unsigned int uintptr_t;

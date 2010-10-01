@@ -661,7 +661,7 @@ socklen_t BluetoothAddress::fillInSockaddr(struct sockaddr *sa, unsigned short c
 
 	memset(sa, 0, sizeof(*sa));
 
-#if defined(OS_LINUX) || defined(OS_WINDOWS)
+#if defined(OS_LINUX) || (defined(OS_WINDOWS) && !defined(WIDCOMM_BLUETOOTH))
 	struct sockaddr_bt *sa_bt = (struct sockaddr_bt *)sa;
 	sa_bt->bt_family = AF_BLUETOOTH;
 
@@ -1049,6 +1049,7 @@ FileAddress *FileAddress::fromMetadata(const Metadata& m)
 	return a;
 }
 
+#if defined(OS_UNIX)
 UnixAddress::UnixAddress(struct sockaddr_un& saddr) : SocketAddress(class_type, filepath)
 {
 	if (strlen(saddr.sun_path) > 0) {
@@ -1147,6 +1148,7 @@ UnixAddress *UnixAddress::fromMetadata(const Metadata& m)
 
 	return a;
 }
+#endif // OS_UNIX
 
 // Container list
 Addresses::Addresses(const Addresses& adds) : List<Address *>()

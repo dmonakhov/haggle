@@ -159,16 +159,16 @@ NodeRef BenchmarkManager::createNode(unsigned int numAttr)
 
 	id++;
 	
-	char macaddr[6];
-	macaddr[0] = (char) RANDOM_INT(255);
-	macaddr[1] = (char) RANDOM_INT(255);
-	macaddr[2] = (char) RANDOM_INT(255);
-	macaddr[3] = (char) RANDOM_INT(255);
-	macaddr[4] = (char) RANDOM_INT(255);
-	macaddr[5] = (char) RANDOM_INT(255);
+	unsigned char macaddr[6];
+	macaddr[0] = (unsigned char) RANDOM_INT(255);
+	macaddr[1] = (unsigned char) RANDOM_INT(255);
+	macaddr[2] = (unsigned char) RANDOM_INT(255);
+	macaddr[3] = (unsigned char) RANDOM_INT(255);
+	macaddr[4] = (unsigned char) RANDOM_INT(255);
+	macaddr[5] = (unsigned char) RANDOM_INT(255);
 	
-	Address addr(AddressType_EthMAC, (unsigned char *) macaddr);
-	InterfaceRef iface = new Interface(IFTYPE_ETHERNET, macaddr, &addr);
+	EthernetAddress addr(macaddr);
+	InterfaceRef iface = Interface::create<EthernetInterface>(macaddr, "eth", addr, 0);
 	sprintf(nodeid, "%ld", id);
 	sprintf(nodename, "node %ld", id);
 	
@@ -198,7 +198,6 @@ NodeRef BenchmarkManager::createNode(unsigned int numAttr)
 	return node;
 }
 
-
 void BenchmarkManager::insertDataobject(Event* e) 
 {
 	static unsigned int n = 0;
@@ -221,33 +220,32 @@ void BenchmarkManager::insertDataobject(Event* e)
 	}
 }
 
-
 DataObjectRef BenchmarkManager::createDataObject(unsigned int numAttr)
 {
 	char name[128];
 	char value[128];
 	unsigned int r;
 
-	char macaddr[6];
-	macaddr[0] = (char) RANDOM_INT(255);
-	macaddr[1] = (char) RANDOM_INT(255);
-	macaddr[2] = (char) RANDOM_INT(255);
-	macaddr[3] = (char) RANDOM_INT(255);
-	macaddr[4] = (char) RANDOM_INT(255);
-	macaddr[5] = (char) RANDOM_INT(255);
+	unsigned char macaddr[6];
+	macaddr[0] = (unsigned char) RANDOM_INT(255);
+	macaddr[1] = (unsigned char) RANDOM_INT(255);
+	macaddr[2] = (unsigned char) RANDOM_INT(255);
+	macaddr[3] = (unsigned char) RANDOM_INT(255);
+	macaddr[4] = (unsigned char) RANDOM_INT(255);
+	macaddr[5] = (unsigned char) RANDOM_INT(255);
 	
-	char macaddr2[6];
-	macaddr2[0] = (char) RANDOM_INT(255);
-	macaddr2[1] = (char) RANDOM_INT(255);
-	macaddr2[2] = (char) RANDOM_INT(255);
-	macaddr2[3] = (char) RANDOM_INT(255);
-	macaddr2[4] = (char) RANDOM_INT(255);
-	macaddr2[5] = (char) RANDOM_INT(255);
+	unsigned char macaddr2[6];
+	macaddr2[0] = (unsigned char) RANDOM_INT(255);
+	macaddr2[1] = (unsigned char) RANDOM_INT(255);
+	macaddr2[2] = (unsigned char) RANDOM_INT(255);
+	macaddr2[3] = (unsigned char) RANDOM_INT(255);
+	macaddr2[4] = (unsigned char) RANDOM_INT(255);
+	macaddr2[5] = (unsigned char) RANDOM_INT(255);
 	
-	Address addr(AddressType_EthMAC, (unsigned char *) macaddr);
-	Address addr2(AddressType_EthMAC, (unsigned char *) macaddr2);
-	InterfaceRef localIface = new Interface(IFTYPE_ETHERNET, macaddr, &addr);		
-	InterfaceRef remoteIface = new Interface(IFTYPE_ETHERNET, macaddr2, &addr2);		
+	EthernetAddress addr(macaddr);
+	EthernetAddress addr2(macaddr2);
+	InterfaceRef localIface = Interface::create<EthernetInterface>(macaddr, "eth", addr, 0);		
+	InterfaceRef remoteIface = Interface::create<EthernetInterface>(macaddr2, "eth2", addr2, 0);		
 	DataObjectRef dObj = DataObject::create(NULL, 0, localIface, remoteIface);
 
 	for (unsigned int i = 0; i < numAttr; i++) {
@@ -267,7 +265,6 @@ DataObjectRef BenchmarkManager::createDataObject(unsigned int numAttr)
 
 	return dObj;
 }
-
 
 void BenchmarkManager::onEvaluate(Event *e)
 {

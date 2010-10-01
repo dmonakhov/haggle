@@ -120,7 +120,7 @@ bool ProtocolSocket::bind(const struct sockaddr *saddr, socklen_t addrlen)
 		return false;
 
 	if (::bind(sock, saddr, addrlen) == SOCKET_ERROR) {
-		HAGGLE_ERR("%s: could not bind socket %d : %s\n", getName(), errno, STRERROR(ERRNO));
+		HAGGLE_ERR("%s: could not bind socket: %s\n", getName(), STRERROR(ERRNO));
 		return false;
 	}
 	return true;
