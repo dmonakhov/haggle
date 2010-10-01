@@ -325,7 +325,6 @@ public:
 	Interface *copy() const;
 };
 
-#if defined(ENABLE_ETHERNET)
 class EthernetInterface : public Interface {
 	friend class Interface;
 protected:
@@ -367,7 +366,6 @@ public:
 typedef Reference<WiFiInterface> WiFiInterfaceRef;
 typedef ReferenceList<WiFiInterface> WiFiInterfaceRefList;
 
-#endif // ENABLE_ETHERNET
 
 #if defined(ENABLE_BLUETOOTH)
 class BluetoothInterface : public Interface {

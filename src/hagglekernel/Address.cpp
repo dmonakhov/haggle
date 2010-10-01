@@ -517,7 +517,6 @@ int SocketAddress::family() const
 	return f;
 }
 
-#if defined(ENABLE_ETHERNET)
 EthernetAddress::EthernetAddress(unsigned char _mac[ETH_ALEN]) : SocketAddress(class_type, mac)
 {
 	memcpy(mac, _mac, ETH_ALEN);
@@ -615,8 +614,6 @@ bool EthernetAddress::equal(const Address& a) const
 {
 	return (type == a.getType() && memcmp(mac, static_cast<const EthernetAddress&>(a).mac, ETH_ALEN) == 0);
 }
-
-#endif /* ENABLE_ETHERNET */
 
 #if defined(ENABLE_BLUETOOTH)
 BluetoothAddress::BluetoothAddress(unsigned char _mac[BT_ALEN], const Transport& t) : 

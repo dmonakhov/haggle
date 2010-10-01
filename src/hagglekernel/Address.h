@@ -184,7 +184,6 @@ public:
 	int family() const;
 };
 
-#if defined(ENABLE_ETHERNET)
 class EthernetAddress : public SocketAddress {
 	unsigned char mac[ETH_ALEN];
 public:
@@ -210,8 +209,6 @@ public:
 	EthernetBroadcastAddress(const EthernetBroadcastAddress& a) : EthernetAddress(a) {}
 	~EthernetBroadcastAddress() {}
 };
-
-#endif
 
 #if defined(ENABLE_BLUETOOTH)
 

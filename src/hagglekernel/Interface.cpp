@@ -26,16 +26,10 @@ const char *Interface::typestr[] = {
 	"undefined",
 	"application[port]",
 	"application[local]",
-#if defined(ENABLE_ETHERNET)
 	"ethernet",
 	"wifi",
-#endif
-#if defined(ENABLE_BLUETOOTH)
 	"bluetooth",
-#endif
-#if defined(ENABLE_MEDIA)
 	"media",
-#endif
 	NULL,
 };
 
@@ -493,8 +487,6 @@ Interface *ApplicationLocalInterface::copy() const
 	return new ApplicationLocalInterface(*this);
 }
 
-#if defined(ENABLE_ETHERNET)
-
 EthernetInterface::EthernetInterface(const void *identifier, size_t identifier_len, 
 				     const string name, flag_t flags) :
 	Interface(Interface::TYPE_ETHERNET, mac, ETH_MAC_LEN, name, NULL, flags)
@@ -610,9 +602,6 @@ WiFiInterface *WiFiInterface::fromMetadata(const Metadata& m)
 	
 	return static_cast<WiFiInterface *>(iface);
 }
-
-
-#endif // ENABLE_ETHERNET
 
 #if defined(ENABLE_BLUETOOTH)
 
