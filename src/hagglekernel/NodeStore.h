@@ -132,7 +132,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
-        bool stored(const NodeRef &node, bool mustBeNeighbor = false);
+        bool stored(const NodeRef& node, bool mustBeNeighbor = false);
 	/**
 		Check if a node is currently stored in the store. The caller
 		may optionally specify whether the given node must be marked
@@ -142,7 +142,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
-        bool stored(const Node &node, bool mustBeNeighbor = false);
+        bool stored(const Node& node, bool mustBeNeighbor = false);
 	/**
 		Check if a node is currently stored in the store. The caller
 		may optionally specify whether the given node must be marked
@@ -169,7 +169,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
-        bool add(NodeRef &node);
+        bool add(NodeRef& node);
 	/**
 		Add a new node to the node store.
 		
@@ -187,7 +187,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
-        NodeRef retrieve(const NodeRef &node, bool mustBeNeighbor = false);
+        NodeRef retrieve(const NodeRef& node, bool mustBeNeighbor = false);
 	/**
 		Retrieve a node from the node store. The caller may optionally 
 		specify to only retrieve current neighbors.
@@ -197,7 +197,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
-        NodeRef retrieve(const Node &node, bool mustBeNeighbor = false);
+        NodeRef retrieve(const Node& node, bool mustBeNeighbor = false);
 	/**
 		Retrieve a node from the node store. The caller may optionally 
 		specify to only retrieve current neighbors.
@@ -217,7 +217,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
-	NodeRef retrieve(const string &id, bool mustBeNeighbor = false);
+	NodeRef retrieve(const string& id, bool mustBeNeighbor = false);
 	/**
 		Retrieve a node from the node store. The caller may optionally 
 		specify to only retrieve current neighbors.
@@ -227,7 +227,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
-        NodeRef retrieve(const InterfaceRef &iface, bool mustBeNeighbor = false);
+        NodeRef retrieve(const InterfaceRef& iface, bool mustBeNeighbor = false);
 
 	/**
 		Retrieve a list of all nodes matching a specific criteria.
@@ -246,7 +246,27 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
-	size_type retrieve(const Node::Type_t type, NodeRefList& nl);
+	size_type retrieve(Node::Type_t type, NodeRefList& nl);
+	
+	template<typename T>
+	size_type retrieve(ReferenceList<T>& nl)
+	{
+		Mutex::AutoLocker l(mutex);
+		size_type n = 0;
+		
+		for (NodeStore::iterator it = begin(); it != end(); it++) {
+			const NodeRecord *nr = *it;
+			
+			if (nr->node->getType() == T::class_type) {
+				n++;
+				nl.add(nr->node);
+			}
+		}
+		
+		return n;
+	}
+	
+	
 	/**
 		Retrieve a list of all current and confirmed neighbors.
 		Returns NULL if there are no neighbors. The list has to be freed 
@@ -270,7 +290,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
-	bool remove(const NodeRef &node);
+	bool remove(const NodeRef& node);
 	/**
 		Remove all nodes in the store of a specific type.
 
@@ -289,7 +309,7 @@ public:
 		DEADLOCK WARNING: the calling thread may not hold the lock on a object 
 		reference or an interface reference while calling this function.
 	*/
-        NodeRef remove(const InterfaceRef &iface);
+        NodeRef remove(const InterfaceRef& iface);
 	/**
 		Update a node in the node store given a "fresher" version
 		of the node. The interfaces of the node given as in-argument is matched

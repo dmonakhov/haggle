@@ -45,7 +45,7 @@ typedef List< Pair<NodeRef, DataObjectRef> > SentToApplicationList;
 class ApplicationHandle
 {
         bool event_types[_LIBHAGGLE_NUM_EVENTS];
-        NodeRef app;
+        ApplicationNodeRef app;
 	// NOTE: Using the map here is not optimal as we do not
 	// need the value. However, this works until we have a non-stl
 	// version of set.
@@ -54,7 +54,7 @@ class ApplicationHandle
         eventTypeRegistry eventTypes;
         int id;
 public:
-        const NodeRef getNode() const {
+        const ApplicationNodeRef getNode() const {
                 return app;
         }
         int getId() const {
@@ -80,7 +80,7 @@ public:
                 return &eventTypes;
         }
 
-        ApplicationHandle(NodeRef _app, int _id) : app(_app), id(_id) {
+        ApplicationHandle(ApplicationNodeRef& _app, int _id) : app(_app), id(_id) {
                 for (int i = 0; i < _LIBHAGGLE_NUM_EVENTS; i++) event_types[i] = false;
         }
         ~ApplicationHandle() {}
@@ -98,11 +98,11 @@ class ApplicationManager : public Manager
 	EventCallback<EventHandler> *onRetrieveAppNodesCallback;
 	EventType ipcFilterEvent;
 	void onDataStoreFinishedProcessing(Event *e);
-        int deRegisterApplication(NodeRef& app);
-        void sendToApplication(DataObjectRef& dObj, NodeRef& app);
+        int deRegisterApplication(ApplicationNodeRef& app);
+        void sendToApplication(DataObjectRef& dObj, ApplicationNodeRef& app);
         int sendToAllApplications(DataObjectRef& dObj, long eid);
-        int addApplicationEventInterest(NodeRef& app, long eid);
-        int updateApplicationInterests(NodeRef& app);
+        int addApplicationEventInterest(ApplicationNodeRef& app, long eid);
+        int updateApplicationInterests(ApplicationNodeRef& app);
 	Metadata *addControlMetadata(const control_type_t type, const string app_name, Metadata *parent);
 
         /* Event handler functions */

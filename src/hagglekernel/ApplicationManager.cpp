@@ -56,8 +56,12 @@ public:
 	EventCriteria(EventType _etype) : etype(_etype) {}
 	bool operator() (const NodeRef& n) const
 	{
-		return (n->getType() == Node::TYPE_APPLICATION && 
-			n->hasEventInterest(etype));
+		if (n->getType() == Node::TYPE_APPLICATION)  {
+			const ApplicationNode *a = static_cast<const ApplicationNode*>(n.getObj());
+			if (a->hasEventInterest(etype))
+				return true;
+		}
+		return false;
 	}
 };
 
@@ -67,25 +71,15 @@ class EventCriteria2 : public NodeStore::Criteria
 	EventType etype2;
 public:
 	EventCriteria2(EventType _etype1, EventType _etype2) : etype1(_etype1), etype2(_etype2) {}
-	bool operator() (const NodeRef& n1) const
+	bool operator() (const NodeRef& n) const
 	{
-		return (n1->getType() == Node::TYPE_APPLICATION && 
-			n1->hasEventInterest(etype1) && 
-			n1->hasEventInterest(etype2));
-	}
-};
-class NeighborCriteria : public NodeStore::Criteria
-{
-	EventType etype1;
-	EventType etype2;
-public:
-	NeighborCriteria(EventType _etype1, EventType _etype2) : etype1(_etype1), etype2(_etype2) {}
-	bool operator() (const NodeRef& n1) const
-	{
-		return (n1->getType() == Node::TYPE_PEER && 
-			n1->isAvailable() &&
-			n1->hasEventInterest(etype1) && 
-			n1->hasEventInterest(etype2));
+		if (n->getType() == Node::TYPE_APPLICATION) {
+		 	const ApplicationNode *a = static_cast<const ApplicationNode*>(n.getObj());
+			if (a->hasEventInterest(etype1) && 
+			    a->hasEventInterest(etype2))
+				return true;
+		}
+		return false;
 	}
 };
 
@@ -360,11 +354,12 @@ void ApplicationManager::onDeletedDataObject(Event *e)
 		// bloomfilter
 	}
 }
-void ApplicationManager::sendToApplication(DataObjectRef& dObj, NodeRef& app)
+void ApplicationManager::sendToApplication(DataObjectRef& dObj, ApplicationNodeRef& app)
 {
+	NodeRef node = app;
 	pendingDOs.push_back(make_pair(app, dObj));
 	HAGGLE_DBG("Sending data object [%s] to application %s\n", dObj->getIdStr(), app->getName().c_str());
-	kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, app));
+	kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, node));
 }
 
 void ApplicationManager::onPrepareShutdown()
@@ -392,14 +387,14 @@ void ApplicationManager::onPrepareShutdown()
 	sendToAllApplications(dObj, LIBHAGGLE_EVENT_SHUTDOWN);
 
 	// Retrieve all application nodes from the Node store.
-	NodeRefList lst;
+	ApplicationNodeRefList lst;
 	unsigned long num;
 	
-        num = kernel->getNodeStore()->retrieve(Node::TYPE_APPLICATION, lst);
+        num = kernel->getNodeStore()->retrieve(lst);
 	
 	if (num) {
-		for (NodeRefList::iterator it = lst.begin(); it != lst.end(); it++) {
-			NodeRef& app = *it;
+		for (ApplicationNodeRefList::iterator it = lst.begin(); it != lst.end(); it++) {
+			ApplicationNodeRef app = *it;
 			deRegisterApplication(app);
 		}
 		
@@ -408,8 +403,9 @@ void ApplicationManager::onPrepareShutdown()
 		 has finished processing what deRegisterApplication sent it, not to
 		 get the actual data.
 		 */
-		HAGGLE_DBG("Retrieving node %s to determine when data store has finished\n", (*lst.begin())->getName().c_str());
-		kernel->getDataStore()->retrieveNode(*(lst.begin()), onDataStoreFinishedProcessingCallback, true);
+		NodeRef appnode = *lst.begin();
+		HAGGLE_DBG("Retrieving node %s to determine when data store has finished\n", appnode->getName().c_str());
+		kernel->getDataStore()->retrieveNode(appnode, onDataStoreFinishedProcessingCallback, true);
 		
 	} else {
 		// There where no registered applications, and therefore there
@@ -433,21 +429,21 @@ void ApplicationManager::onShutdown()
 	unregisterWithKernel();
 }
 
-int ApplicationManager::deRegisterApplication(NodeRef& app)
+int ApplicationManager::deRegisterApplication(ApplicationNodeRef& app)
 {
 	HAGGLE_DBG("Removing Application node %s id=%s\n", app->getName().c_str(), app->getIdStr());
 	
 	numClients--;
-
-	// Remove the application node
-	kernel->getNodeStore()->remove(app);
-
+	
 	// We need to modify the node that we insert, so we make a copy first in case
 	// someone else is relying on the node that was in the node store
 	NodeRef app_copy = app->copy();
-
+	
+	// Remove the application node
+	kernel->getNodeStore()->remove(app_copy);
+		
 	// Remove the application's filter
-	kernel->getDataStore()->deleteFilter(app_copy->getFilterEvent());
+	kernel->getDataStore()->deleteFilter(app->getFilterEvent());
 	
         const InterfaceRefList *lst = app_copy->getInterfaces();
         
@@ -474,7 +470,7 @@ static EventType translate_event(int eid)
 	return -1;
 }
 
-int ApplicationManager::addApplicationEventInterest(NodeRef& app, long eid)
+int ApplicationManager::addApplicationEventInterest(ApplicationNodeRef& app, long eid)
 {
 	HAGGLE_DBG("Application %s registered event interest %d\n", app->getName().c_str(), eid);
 
@@ -506,12 +502,12 @@ int ApplicationManager::sendToAllApplications(DataObjectRef& dObj, long eid)
 		return 0;
 	}
 	for (NodeRefList::iterator it = apps.begin(); it != apps.end(); it++) {
-		NodeRef& app = *it;
+		ApplicationNodeRef app = *it;
 
 		DataObjectRef sendDO = dObj->copy();
 
 #ifdef DEBUG_APPLICATION_API
-                       sendDO->print();
+		sendDO->print();
 #endif
 		sendToApplication(sendDO, app);
 		numSent++;
@@ -522,7 +518,7 @@ int ApplicationManager::sendToAllApplications(DataObjectRef& dObj, long eid)
 	return numSent;
 }
 
-int ApplicationManager::updateApplicationInterests(NodeRef& app)
+int ApplicationManager::updateApplicationInterests(ApplicationNodeRef& app)
 {
 	if (!app)
 		return -1;
@@ -568,7 +564,7 @@ void ApplicationManager::onApplicationFilterMatchEvent(Event *e)
 		return;
 	}
 	for (NodeRefList::iterator it = apps.begin(); it != apps.end(); it++) {
-		NodeRef& app = *it;
+		ApplicationNodeRef app = *it;
 
 		HAGGLE_DBG("Application %s's filter matched %lu data objects\n", 
 			app->getName().c_str(), dObjs.size());
@@ -746,12 +742,17 @@ void ApplicationManager::onRetrieveNode(Event *e)
 	if (!e || !e->hasData())
 		return;
 	
-	NodeRef	appNode = e->getNode();
+	if (e->getNode()->getType() != Node::TYPE_APPLICATION) {
+		HAGGLE_ERR("ERROR: Retrieved node is not application\n");
+		return;
+	}
+	
+	ApplicationNodeRef appNode = e->getNode();
 	
 	HAGGLE_DBG("Sending registration reply to application %s\n", appNode->getName().c_str());
 	
 	appNode->getBloomfilter()->reset();
-	kernel->getNodeStore()->add(appNode);
+	kernel->getNodeStore()->add(e->getNode());
 	updateApplicationInterests(appNode);
 	numClients++;
 	
@@ -904,7 +905,14 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 
 		// Check if the node is in the node store. The result will be a null-node 
 		// in case the application is not registered.
-		NodeRef appNode = kernel->getNodeStore()->retrieve(id);
+		NodeRef node = kernel->getNodeStore()->retrieve(id);
+		
+		if (node && node->getType() != Node::TYPE_APPLICATION) {
+			HAGGLE_ERR("Node in store, which matches application's id, is not an application node\n");
+			return;
+		}
+		
+		ApplicationNodeRef appNode = node;
 		
 		Metadata *mc = m->getMetadata(DATAOBJECT_METADATA_APPLICATION_CONTROL);
 		
@@ -956,13 +964,14 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 						Metadata *ctrl_m = addControlMetadata(CTRL_TYPE_REGISTRATION_REPLY, name_str, dObjReply->getMetadata());
 						
 						if (ctrl_m) {
+							ApplicationNodeRef node = newAppNode;
 							ctrl_m->addMetadata(DATAOBJECT_METADATA_APPLICATION_CONTROL_MESSAGE, "Already registered");
-							sendToApplication(dObjReply, newAppNode);
+							sendToApplication(dObjReply, node);
 						}
 					} else {
 						HAGGLE_DBG("app name=\'%s\'\n", name_str);
 						
-						appNode = Node::create_with_id(Node::TYPE_APPLICATION, id, name_str);
+						NodeRef appNode = Node::create_with_id(Node::TYPE_APPLICATION, id, name_str);
 						
 						if (!appNode)
 							break;
@@ -1058,7 +1067,8 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 							// has to be inserted first. This is not very efficient, as we should
 							// keep the current node in memory and only insert it when the application
 							// deregisters.
-							kernel->getDataStore()->insertNode(appNode);
+							NodeRef node = appNode;
+							kernel->getDataStore()->insertNode(node);
 							
 							// Update the node description and send it to all 
 							// neighbors.

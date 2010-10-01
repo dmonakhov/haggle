@@ -93,7 +93,7 @@ class Reference {
 		/**
                    The object being refcounted.
 		*/
-		T *obj;
+		void *obj;
 		
 		/**
                    An identifying integer for the object being pointed to.
@@ -105,7 +105,7 @@ class Reference {
 		/**
                    Constructor.
 		*/
-		RefCounter(T *_obj, unsigned long _identifier) : 
+		RefCounter(void *_obj, unsigned long _identifier) : 
 			countMutex(),
 			refcount(1),
 			objectMutex(),
@@ -113,7 +113,7 @@ class Reference {
 			identifier(_identifier)
 		{
                         Mutex::AutoLocker l(Reference<T>::objectsMutex);
-			Reference<T>::objects.insert(ReferencePair(obj, this));
+			Reference<T>::objects.insert(ReferencePair(static_cast<T *>(obj), this));
 		}
 		/**
                    Destructor.
@@ -126,10 +126,11 @@ class Reference {
 				REFERENCE_DBG("Deleted reference count that wasn't 0! ERROR!\n");
 			}
 #endif
-			Reference<T>::objects.erase(obj);
-			delete obj;
+			Reference<T>::objects.erase(static_cast<T *>(obj));
+			delete static_cast<T *>(obj);
 		}
 		
+		T *object() { return static_cast<T *>(obj); }
 		/**
                    This function increases the reference count atomically.
 		*/
@@ -212,8 +213,9 @@ class Reference {
 	/**
            The data for this reference
 	*/
+public:
 	RefCounter *refCount;
-	
+private:
 	// Called by constructor(s)
 	void inline init(T *_obj)
 	{
@@ -297,15 +299,32 @@ class Reference {
 	/**
            Copy constructor. 
 	*/
+	
 	Reference(const Reference<T> &eo) : refCount(NULL)
 	{
 		if (!eo.refCount)
 			return;
-
+		
 		eo.refCount->inc_count();
 		refCount = eo.refCount;
-	};
+	}
 	
+	template<typename TT>
+	Reference(const Reference<TT> &eo) : refCount(NULL)
+	{
+		if (!eo.refCount)
+			return;
+		// This is a compiler check to see if static casting is allowed.
+		// Such casting is only allowed between objects related through
+		// inheritence.
+		const T *obj = static_cast<const T *>(eo.getObj());
+		
+		if (!obj)
+			return;
+				
+		eo.refCount->inc_count();
+		refCount = reinterpret_cast<RefCounter *>(eo.refCount);
+	}
 	
 	/**
            Destructor.
@@ -322,12 +341,12 @@ class Reference {
 	   This function accesses the referenced object directly. USE WITH CARE,
 	   for example, by locking the reference while accessing the object.
 	*/
-	const T *getObj() const { return refCount->obj; }
+	const T *getObj() const { return refCount->object(); }
 	/**
 	   This function accesses the referenced object directly. USE WITH CARE,
 	   for example, by locking the reference while accessing the object.
 	*/
-	T *getObj() { return refCount->obj; }
+	T *getObj() { return refCount->object(); }
 	/**
            This function will return a heap-allocated copy of this reference.
 	*/
@@ -344,7 +363,7 @@ class Reference {
 	LockProxy operator->()
 	{
 		if (refCount != NULL)
-			return LockProxy(const_cast<T *>(refCount->obj), &refCount->objectMutex);
+			return LockProxy(const_cast<T *>(refCount->object()), &refCount->objectMutex);
 		else
 			return LockProxy(NULL, NULL);
 	}
@@ -352,7 +371,7 @@ class Reference {
 	const LockProxy operator->() const
 	{
 		if (refCount != NULL)
-			return LockProxy(refCount->obj, &refCount->objectMutex);
+			return LockProxy(refCount->object(), &refCount->objectMutex);
 		else
 			return LockProxy(NULL, NULL);
 	}
@@ -402,7 +421,7 @@ class Reference {
 			return true;
 		if (eo1.refCount == NULL || eo2.refCount == NULL)
 			return false;
-		return *(eo1.refCount->obj) == *(eo2.refCount->obj);
+		return *(eo1.refCount->object()) == *(eo2.refCount->object());
 	}
 	
 	/**
@@ -415,7 +434,7 @@ class Reference {
 			return true;
 		if (eo1.refCount == NULL || eo2 == NULL)
 			return false;
-		return *(eo1.refCount->obj) == *eo2;
+		return *(eo1.refCount->object()) == *eo2;
 	}
 	
 	friend bool operator==(const Reference<T>& eo1, const T &eo2)
@@ -424,7 +443,7 @@ class Reference {
 			return true;
 		if (eo1.refCount == NULL || &eo2 == NULL)
 			return false;
-		return *(eo1.refCount->obj) == eo2;
+		return *(eo1.refCount->object()) == eo2;
 	}
 	
 	/**

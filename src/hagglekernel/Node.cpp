@@ -60,7 +60,7 @@ using namespace haggle;
 unsigned long Node::totNum = 0;
 const char *Node::typestr[] = {
 	"undefined",
-	"this node",
+	"peer", // Local device node is really a peer
 	"application",
 	"peer",
 	"gateway",
@@ -119,10 +119,13 @@ inline bool Node::init_node(const unsigned char *_id)
 		numberOfDataObjectsPerMatch = NODE_DEFAULT_DATAOBJECTS_PER_MATCH;
 		*/
 
-		Metadata *bm = nm->getMetadata(NODE_METADATA_BLOOMFILTER);
+		Metadata *bm = nm->getMetadata(BLOOMFILTER_METADATA);
 
 		if (bm) {
-			getBloomfilter()->fromBase64(bm->getContent());
+			if (!setBloomfilter(Bloomfilter::fromMetadata(*bm))) {
+				HAGGLE_ERR("Bad bloomfilter metadata\n");
+				return false;
+			}
 		}
 
 		Metadata *im = nm->getMetadata(INTERFACE_METADATA);
@@ -142,7 +145,7 @@ inline bool Node::init_node(const unsigned char *_id)
 			im = nm->getNextMetadata();
 		}
 	}
-	if (type == TYPE_THIS_NODE) {
+	if (isLocalDevice()) {
 		dObj->setIsThisNodeDescription(true);
 		calcId();
 	} else if (type == TYPE_UNDEFINED) {
@@ -163,10 +166,9 @@ Node::Node(const Type_t _type, const string _name, Timeval _nodeDescriptionCreat
 	LeakMonitor(LEAK_TYPE_NODE),
 #endif
 	type(_type), num(totNum++), name(_name), nodeDescExch(false), 
-	dObj(NULL), doBF(NULL), eventid(-1),
-	stored(false), createdFromNodeDescription(false),
-	nodeDescriptionCreateTime(_nodeDescriptionCreateTime),
-	filterEventId(-1), matchThreshold(NODE_DEFAULT_MATCH_THRESHOLD), 
+	dObj(NULL), doBF(NULL), stored(false), createdFromNodeDescription(false),
+	nodeDescriptionCreateTime(_nodeDescriptionCreateTime), 
+	matchThreshold(NODE_DEFAULT_MATCH_THRESHOLD), 
 	numberOfDataObjectsPerMatch(NODE_DEFAULT_DATAOBJECTS_PER_MATCH)
 {
 	
@@ -180,12 +182,9 @@ Node::Node(const Node& n) :
 	nodeDescExch(n.nodeDescExch), 
 	dObj(NULL), interfaces(n.interfaces), 
 	doBF(doBF ? Bloomfilter::create(*n.doBF) : NULL), 
-	eventInterests(n.eventInterests),
-	eventid(n.eventid),
 	stored(n.stored), 
         createdFromNodeDescription(n.createdFromNodeDescription),
 	nodeDescriptionCreateTime(n.nodeDescriptionCreateTime),
-	filterEventId(n.filterEventId),
 	matchThreshold(n.matchThreshold),
 	numberOfDataObjectsPerMatch(n.numberOfDataObjectsPerMatch)
 {
@@ -206,8 +205,8 @@ Node *Node::create(Type_t type, const DataObjectRef& dObj)
 	}
 
 	switch (type) {
-		case TYPE_THIS_NODE:
-			node = new ThisNode();
+		case TYPE_LOCAL_DEVICE:
+			node = new LocalDeviceNode();
 			break;
 		case TYPE_PEER:
 			node = new PeerNode();
@@ -246,8 +245,8 @@ Node *Node::create(Type_t type, const string name, Timeval _nodeDescriptionCreat
 	Node *node = NULL;
 	
 	switch (type) {
-		case TYPE_THIS_NODE:
-			node = new ThisNode(name, _nodeDescriptionCreateTime);
+		case TYPE_LOCAL_DEVICE:
+			node = new LocalDeviceNode(name, _nodeDescriptionCreateTime);
 			break;
 		case TYPE_PEER:
 			node = new PeerNode(name, _nodeDescriptionCreateTime);
@@ -290,8 +289,8 @@ Node *Node::create_with_id(Type_t type, const Id_t id, const string name, Timeva
 	Node *node = NULL;
 	
 	switch (type) {
-		case TYPE_THIS_NODE:
-			node = new ThisNode(name, _nodeDescriptionCreateTime);
+		case TYPE_LOCAL_DEVICE:
+			node = new LocalDeviceNode(name, _nodeDescriptionCreateTime);
 			break;
 		case TYPE_PEER:
 			node = new PeerNode(name, _nodeDescriptionCreateTime);
@@ -362,8 +361,8 @@ Node *Node::create_with_id(Type_t type, const char *_idStr, const string name, T
 	Node *node = NULL;
 	
 	switch (type) {
-		case TYPE_THIS_NODE:
-			node = new ThisNode(name, _nodeDescriptionCreateTime);
+		case TYPE_LOCAL_DEVICE:
+			node = new LocalDeviceNode(name, _nodeDescriptionCreateTime);
 			break;
 		case TYPE_PEER:
 			node = new PeerNode(name, _nodeDescriptionCreateTime);
@@ -400,49 +399,8 @@ Node *Node::create_with_id(Type_t type, const char *_idStr, const string name, T
 
 Node::~Node()
 {
-    	while (eventInterests.size()) {
-		Pair<long, long> p = *eventInterests.begin();
-
-		if (EVENT_TYPE_PRIVATE(p.second)) 
-			Event::unregisterType(p.second);
-
-		eventInterests.erase(p.first);
-	}
 	if (doBF)
 		delete doBF;
-}
-
-
-Node& Node::operator=(const Node &node)
-{
-	if (this == &node)
-		return *this;
-
-	type = node.type;
-	num = node.num;
-	name = node.name;
-	nodeDescExch = node.nodeDescExch;
-	
-	if (doBF) {
-		delete doBF;
-		doBF = Bloomfilter::create(*node.doBF);
-	}
-	stored = node.stored;
-	interfaces = node.interfaces;
-	createdFromNodeDescription = node.createdFromNodeDescription;
-	nodeDescriptionCreateTime = node.nodeDescriptionCreateTime;
-	filterEventId = node.filterEventId;
-	eventInterests = node.eventInterests;
-	eventid = node.eventid;
-	matchThreshold = node.matchThreshold;
-	numberOfDataObjectsPerMatch = node.numberOfDataObjectsPerMatch;
-	memcpy(id, node.id, NODE_ID_LEN);
-	strncpy(idStr, node.idStr, MAX_NODE_ID_STR_LEN);
-	
-	if (node.dObj)
-		dObj = node.dObj->copy();
-
-	return *this;
 }
 
 Node::Type_t Node::getType() const
@@ -450,7 +408,7 @@ Node::Type_t Node::getType() const
 	return type;
 }
 
-const char *Node::typeToStr(const Node::Type_t type)
+const char *Node::typeToStr(Type_t type)
 {
         return typestr[type];
 }
@@ -460,7 +418,7 @@ const unsigned char *Node::getId() const
 	return id;
 }
 
-void Node::setId(const Node::Id_t _id)
+void Node::setId(const Id_t _id)
 {
 	memcpy(id, _id, sizeof(Node::Id_t));
 	calcIdStr();
@@ -498,6 +456,8 @@ Metadata *Node::toMetadata(bool withBloomfilter) const
 		return NULL;
 	}
 	
+	nm->setParameter(NODE_METADATA_TYPE_PARAM, getTypeStr());
+	
 	nm->setParameter(NODE_METADATA_ID_PARAM, b64str);
 	
 	free(b64str);
@@ -516,9 +476,93 @@ Metadata *Node::toMetadata(bool withBloomfilter) const
 	}
 
         if (withBloomfilter)
-                nm->addMetadata(NODE_METADATA_BLOOMFILTER, getBloomfilter()->toBase64());
+                nm->addMetadata(getBloomfilter()->toMetadata());
 
         return nm;        
+}
+
+/*
+   TODO: the fromMetadata() function should ideally exist to adhere to the general
+   model of converting Metadata to objects, as used in other classes. However, for 
+   the node, most metadata parsing is done in init_node(), where access to an 
+   instanciated node object is possible. Therefore, this function is currently
+   unimplemented.
+ 
+ */
+Node *Node::fromMetadata(const Metadata& m)
+{
+	Node *node = NULL;
+#if 0
+	struct base64_decode_context b64_ctx;
+	size_t decodelen;
+	const char *pval;
+	Node::Id_t id;
+	
+	if (!m.isName(NODE_METADATA))
+		return NULL;
+	
+	pval = m.getParameter(NODE_METADATA_ID_PARAM);
+	
+	if (pval) {
+		decodelen = NODE_ID_LEN;
+		base64_decode_ctx_init(&b64_ctx);
+		
+		if (!base64_decode(&b64_ctx, pval, strlen(pval), (char *)id, &decodelen))
+			return NULL;
+		
+		//calcIdStr();
+	}
+	
+	pval = m.getParameter(NODE_METADATA_NAME_PARAM);
+	/*
+	if (pval)
+		name = pval;
+	*/
+	pval =m.getParameter(NODE_METADATA_THRESHOLD_PARAM);
+	
+	/*
+	if (pval)
+		matchThreshold = strtoul(pval, NULL, 10);
+	*/
+	pval = m.getParameter(NODE_METADATA_MAX_DATAOBJECTS_PARAM);
+	
+	/*
+	if (pval)
+		numberOfDataObjectsPerMatch = strtoul(pval, NULL, 10);
+	*/
+	/*
+	 Should we really override the wish of another node to receive all
+	 matching data objects? And in that case, why set it to our rather
+	 conservative default value?
+	 if (numberOfDataObjectsPerMatch == 0)
+	 numberOfDataObjectsPerMatch = NODE_DEFAULT_DATAOBJECTS_PER_MATCH;
+	 */
+	
+	const Metadata *bm = m.getMetadata(BLOOMFILTER_METADATA);
+	
+	if (bm) {
+		/*
+		if (!setBloomfilter(Bloomfilter::fromMetadata(*bm))) {
+			HAGGLE_ERR("Bad bloomfilter metadata\n");
+			return false;
+		}
+		 */
+	}
+	
+	const Metadata *im = m.getMetadata(INTERFACE_METADATA);
+	
+	while (im) {
+		InterfaceRef iface = Interface::fromMetadata(*im);
+		
+		if (iface) {
+			//addInterface(iface);
+		} else {
+			HAGGLE_ERR("Could not create interface from metadata\n");	
+		}
+		im = m.getNextMetadata();
+	}
+#endif
+	return node;
 }
 
 int Node::addAttribute(const Attribute & a)
@@ -717,34 +761,6 @@ void Node::calcIdStr()
 	for (int i = 0; i < NODE_ID_LEN; i++) {
 		len += sprintf(idStr + len, "%02x", id[i] & 0xff);
 	}
-}
-
-bool Node::setFilterEvent(long feid) 
-{ 
-	if (filterEventId != -1)
-		return false; 
-	
-	filterEventId = feid;
-
-	return true;
-}
-
-bool Node::addEventInterest(long type)
-{
-	return eventInterests.insert(make_pair(type, '\0')).second;
-}
-
-void Node::removeEventInterest(long type)
-{
-	eventInterests.erase(type);
-
-	if (EVENT_TYPE_PRIVATE(type)) 
-		Event::unregisterType(type);
-}
-
-bool Node::hasEventInterest(long type) const
-{
-	return eventInterests.find(type) != eventInterests.end();
 }
 
 #ifdef DEBUG
@@ -951,6 +967,23 @@ bool Node::setBloomfilter(const char *base64, const bool set_create_time)
 	return true;
 }
 
+bool Node::setBloomfilter(Bloomfilter *bf, const bool set_create_time)
+{
+	if (!bf)
+		return false;
+	
+	if (doBF)
+		delete doBF;
+	
+	doBF = bf;
+	
+	/* See not above about setting the create time here. */
+	if (set_create_time)
+		setNodeDescriptionCreateTime();
+	
+	return true;
+}
+
 bool Node::setBloomfilter(const Bloomfilter& bf, const bool set_create_time)
 {
 	Bloomfilter *tmpBF;
@@ -974,7 +1007,7 @@ bool Node::setBloomfilter(const Bloomfilter& bf, const bool set_create_time)
 
 void Node::setNodeDescriptionCreateTime(Timeval t)
 {
-	if (type == Node::TYPE_THIS_NODE) {
+	if (isLocalDevice()) {
 		//HAGGLE_DBG("SETTING create time on node description\n");
 		dObj->setCreateTime(t);
 		nodeDescriptionCreateTime = t;
@@ -1007,3 +1040,44 @@ bool operator!=(const Node & n1, const Node & n2)
 {
 	return (!(n1 == n2));
 }
+
+ApplicationNode::~ApplicationNode()
+{
+	while (eventInterests.size()) {
+		Pair<long, long> p = *eventInterests.begin();
+		
+		if (EVENT_TYPE_PRIVATE(p.second)) 
+			Event::unregisterType(p.second);
+		
+		eventInterests.erase(p.first);
+	}
+}
+
+bool ApplicationNode::setFilterEvent(long feid) 
+{ 
+	if (filterEventId != -1)
+		return false; 
+	
+	filterEventId = feid;
+	
+	return true;
+}
+
+bool ApplicationNode::addEventInterest(long type)
+{
+	return eventInterests.insert(make_pair(type, '\0')).second;
+}
+
+void ApplicationNode::removeEventInterest(long type)
+{
+	eventInterests.erase(type);
+	
+	if (EVENT_TYPE_PRIVATE(type)) 
+		Event::unregisterType(type);
+}
+
+bool ApplicationNode::hasEventInterest(long type) const
+{
+	return eventInterests.find(type) != eventInterests.end();
+}
+

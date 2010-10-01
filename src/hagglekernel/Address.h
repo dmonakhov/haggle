@@ -180,7 +180,7 @@ public:
 
 class SocketAddress : public Address {
 protected:
-	SocketAddress(Address::Type_t type, const void *raw, const Transport& t = TransportNone());
+	SocketAddress(Type_t type, const void *raw, const Transport& t = TransportNone());
 	SocketAddress(const SocketAddress& a);
 public:
 	virtual socklen_t fillInSockaddr(struct sockaddr *sa) const { return 0; };
@@ -192,7 +192,8 @@ public:
 class EthernetAddress : public SocketAddress {
 	unsigned char mac[ETH_ALEN];
 public:
-	EthernetAddress() : SocketAddress(Address::TYPE_ETHERNET, mac) {}
+	static const Type_t class_type = TYPE_ETHERNET;
+	EthernetAddress() : SocketAddress(class_type, mac) {}
 	EthernetAddress(unsigned char _mac[ETH_ALEN]);
 	EthernetAddress(const EthernetAddress& a);
 	~EthernetAddress();
@@ -207,8 +208,9 @@ public:
 
 class EthernetBroadcastAddress : public EthernetAddress {
 public:
+	static const Type_t class_type = TYPE_ETHERNET_BROADCAST;
 	EthernetBroadcastAddress() : EthernetAddress() {}
-	EthernetBroadcastAddress(unsigned char _mac[ETH_ALEN]) : EthernetAddress(_mac) { type = TYPE_ETHERNET_BROADCAST; }
+	EthernetBroadcastAddress(unsigned char _mac[ETH_ALEN]) : EthernetAddress(_mac) { type = class_type; }
 	EthernetBroadcastAddress(const EthernetBroadcastAddress& a) : EthernetAddress(a) {}
 	~EthernetBroadcastAddress() {}
 };
@@ -246,7 +248,8 @@ public:
 class BluetoothAddress : public SocketAddress {
 	unsigned char mac[BT_ALEN];
 public:
-	BluetoothAddress() : SocketAddress(Address::TYPE_BLUETOOTH, mac) {}
+	static const Type_t class_type = TYPE_BLUETOOTH;
+	BluetoothAddress() : SocketAddress(class_type, mac) {}
 	BluetoothAddress(unsigned char _mac[BT_ALEN], const Transport& t = TransportNone());
 	BluetoothAddress(const BluetoothAddress& a);
 	~BluetoothAddress();
@@ -266,7 +269,8 @@ class IPv4Address : public SocketAddress {
 	friend class Address;
 	struct in_addr ipv4;
 public:
-	IPv4Address() : SocketAddress(Address::TYPE_IPV4, &ipv4) {}
+	static const Type_t class_type = TYPE_IPV4;
+	IPv4Address() : SocketAddress(class_type, &ipv4) {}
 	IPv4Address(struct sockaddr_in& saddr, const Transport& t = TransportNone());
 	IPv4Address(struct in_addr& inaddr, const Transport& t = TransportNone());
 	IPv4Address(const IPv4Address& a);
@@ -284,9 +288,10 @@ public:
 
 class IPv4BroadcastAddress : public IPv4Address {
 public:
-	IPv4BroadcastAddress() : IPv4Address() { type = TYPE_IPV4_BROADCAST; }
-	IPv4BroadcastAddress(struct sockaddr_in& saddr) : IPv4Address(saddr) { type = TYPE_IPV4_BROADCAST; }
-	IPv4BroadcastAddress(struct in_addr& inaddr) : IPv4Address(inaddr) { type = TYPE_IPV4_BROADCAST; }
+	static const Type_t class_type = TYPE_IPV4_BROADCAST;
+	IPv4BroadcastAddress() : IPv4Address() { type = class_type; }
+	IPv4BroadcastAddress(struct sockaddr_in& saddr) : IPv4Address(saddr) { type = class_type; }
+	IPv4BroadcastAddress(struct in_addr& inaddr) : IPv4Address(inaddr) { type = class_type; }
 	IPv4BroadcastAddress(const IPv4BroadcastAddress& a) : IPv4Address(a) {}
 	~IPv4BroadcastAddress() {}
 };
@@ -295,7 +300,8 @@ public:
 class IPv6Address : public SocketAddress {	
 	struct in6_addr ipv6;
 public:
-	IPv6Address() : SocketAddress(Address::TYPE_IPV6, &ipv6) {}
+	static const Type_t class_type = TYPE_IPV6;
+	IPv6Address() : SocketAddress(class_type, &ipv6) {}
 	IPv6Address(struct sockaddr_in6& saddr, const Transport& t = TransportNone());
 	IPv6Address(struct in6_addr& inaddr, const Transport& t = TransportNone());
 	IPv6Address(const IPv6Address& a);
@@ -313,9 +319,10 @@ public:
 
 class IPv6BroadcastAddress : public IPv6Address {
 public:
-	IPv6BroadcastAddress() : IPv6Address() { type = TYPE_IPV6_BROADCAST; }
-	IPv6BroadcastAddress(struct sockaddr_in6& saddr) : IPv6Address(saddr) { type = TYPE_IPV6_BROADCAST; }
-	IPv6BroadcastAddress(struct in6_addr& inaddr) : IPv6Address(inaddr) { type = TYPE_IPV6_BROADCAST; }
+	static const Type_t class_type = TYPE_IPV6_BROADCAST;
+	IPv6BroadcastAddress() : IPv6Address() { type = class_type; }
+	IPv6BroadcastAddress(struct sockaddr_in6& saddr) : IPv6Address(saddr) { type = class_type; }
+	IPv6BroadcastAddress(struct in6_addr& inaddr) : IPv6Address(inaddr) { type = class_type; }
 	IPv6BroadcastAddress(const IPv6Address& a) : IPv6Address(a) {}
 	~IPv6BroadcastAddress() {}
 };
@@ -325,7 +332,8 @@ public:
 class FileAddress : public Address {
 	const char *filepath;
 public:
-	FileAddress() : Address(Address::TYPE_FILEPATH, filepath), filepath("none") {}
+	static const Type_t class_type = TYPE_FILEPATH;
+	FileAddress() : Address(class_type, filepath), filepath("none") {}
 	FileAddress(const char *path);
 	FileAddress(const FileAddress& a);
 	~FileAddress();
@@ -341,7 +349,8 @@ public:
 class UnixAddress : public SocketAddress {
 	const char *filepath;
 public:
-	UnixAddress() : SocketAddress(Address::TYPE_UNIX, filepath), filepath("none") {}
+	static const Type_t class_type = TYPE_UNIX;
+	UnixAddress() : SocketAddress(class_type, filepath), filepath("none") {}
 	UnixAddress(struct sockaddr_un& saddr);
 	UnixAddress(const char *path);
 	UnixAddress(const UnixAddress& a);

@@ -476,7 +476,7 @@ bool operator==(const Address &a1, const Address &a2)
 	return a1.equal(a2);
 }
 
-SocketAddress::SocketAddress(Address::Type_t type, const void *raw, const Transport& t) : Address(type, raw, t)
+SocketAddress::SocketAddress(Type_t type, const void *raw, const Transport& t) : Address(type, raw, t)
 {
 }
 
@@ -518,7 +518,7 @@ int SocketAddress::family() const
 }
 
 #if defined(ENABLE_ETHERNET)
-EthernetAddress::EthernetAddress(unsigned char _mac[ETH_ALEN]) : SocketAddress(Address::TYPE_ETHERNET, mac)
+EthernetAddress::EthernetAddress(unsigned char _mac[ETH_ALEN]) : SocketAddress(class_type, mac)
 {
 	memcpy(mac, _mac, ETH_ALEN);
 }
@@ -559,7 +559,7 @@ EthernetAddress *EthernetAddress::fromMetadata(const Metadata& m)
 	
 	param = m.getParameter(ADDRESS_METADATA_TYPE_PARAM);
 
-	if (param && strcmp(param, typeToStr(TYPE_ETHERNET)) == 0) {
+	if (param && strToType(param) == class_type) {
 		param = m.getParameter(ADDRESS_METADATA_NETWORK_PARAM);
 
 		if (param) {
@@ -619,7 +619,8 @@ bool EthernetAddress::equal(const Address& a) const
 #endif /* ENABLE_ETHERNET */
 
 #if defined(ENABLE_BLUETOOTH)
-BluetoothAddress::BluetoothAddress(unsigned char _mac[BT_ALEN], const Transport& t) : SocketAddress(Address::TYPE_BLUETOOTH, mac, t)
+BluetoothAddress::BluetoothAddress(unsigned char _mac[BT_ALEN], const Transport& t) : 
+	SocketAddress(class_type, mac, t)
 {
 	memcpy(mac, _mac, BT_ALEN);
 }
@@ -705,7 +706,7 @@ BluetoothAddress *BluetoothAddress::fromMetadata(const Metadata& m)
 	
 	param = m.getParameter(ADDRESS_METADATA_TYPE_PARAM);
 
-	if (param && strToType(param) == TYPE_BLUETOOTH) {
+	if (param && strToType(param) == class_type) {
 		param = m.getParameter(ADDRESS_METADATA_NETWORK_PARAM);
 
 		if (param) {
@@ -729,12 +730,12 @@ BluetoothAddress *BluetoothAddress::fromMetadata(const Metadata& m)
 
 #endif /* ENABLE_BLUETOOTH */
 
-IPv4Address::IPv4Address(struct sockaddr_in& saddr, const Transport& t) : SocketAddress(Address::TYPE_IPV4, &ipv4, t)
+IPv4Address::IPv4Address(struct sockaddr_in& saddr, const Transport& t) : SocketAddress(class_type, &ipv4, t)
 {
 	memcpy(&ipv4, &saddr.sin_addr, sizeof(ipv4));
 }
 
-IPv4Address::IPv4Address(struct in_addr& inaddr, const Transport& t) : SocketAddress(Address::TYPE_IPV4, &ipv4, t)
+IPv4Address::IPv4Address(struct in_addr& inaddr, const Transport& t) : SocketAddress(class_type, &ipv4, t)
 {
 	memcpy(&ipv4, &inaddr, sizeof(ipv4));
 }
@@ -825,7 +826,7 @@ IPv4Address *IPv4Address::fromMetadata(const Metadata& m)
 	
 	param = m.getParameter(ADDRESS_METADATA_TYPE_PARAM);
 
-	if (param && (strToType(param) == TYPE_IPV4 || strToType(param) == TYPE_IPV4_BROADCAST)) {
+	if (param && (strToType(param) == class_type || strToType(param) == TYPE_IPV4_BROADCAST)) {
 		const char *nparam = m.getParameter(ADDRESS_METADATA_NETWORK_PARAM);
 
 		if (nparam) {
@@ -839,7 +840,7 @@ IPv4Address *IPv4Address::fromMetadata(const Metadata& m)
 					t = Transport::fromMetadata(*tm);
 				}
 				
-				if (strToType(param) == TYPE_IPV4)
+				if (strToType(param) == class_type)
 					a = t ? new IPv4Address(ip, *t) : new IPv4Address(ip);
 				else
 					a = new IPv4BroadcastAddress(ip);
@@ -851,7 +852,7 @@ IPv4Address *IPv4Address::fromMetadata(const Metadata& m)
 }
 
 #if defined(ENABLE_IPv6)
-IPv6Address::IPv6Address(struct sockaddr_in6& saddr, const Transport& t) : SocketAddress(Address::TYPE_IPV6, &ipv6, t)
+IPv6Address::IPv6Address(struct sockaddr_in6& saddr, const Transport& t) : SocketAddress(class_type, &ipv6, t)
 {
 	memcpy(&ipv6, &saddr.sin6_addr, sizeof(ipv6));
 	
@@ -862,7 +863,7 @@ IPv6Address::IPv6Address(struct sockaddr_in6& saddr, const Transport& t) : Socke
 	}
 }
 
-IPv6Address::IPv6Address(struct in6_addr& inaddr, const Transport& t) : SocketAddress(Address::TYPE_IPV6, &ipv6, t)
+IPv6Address::IPv6Address(struct in6_addr& inaddr, const Transport& t) : SocketAddress(class_type, &ipv6, t)
 {
 	memcpy(&ipv6, &inaddr.s6_addr, sizeof(ipv6));
 }
@@ -954,7 +955,7 @@ IPv6Address *IPv6Address::fromMetadata(const Metadata& m)
 	
 	param = m.getParameter(ADDRESS_METADATA_TYPE_PARAM);
 
-	if (param && (strToType(param) == TYPE_IPV6 || strToType(param) == TYPE_IPV6_BROADCAST)) {
+	if (param && (strToType(param) == class_type || strToType(param) == TYPE_IPV6_BROADCAST)) {
 		const char *nparam = m.getParameter(ADDRESS_METADATA_NETWORK_PARAM);
 
 		if (nparam) {
@@ -968,7 +969,7 @@ IPv6Address *IPv6Address::fromMetadata(const Metadata& m)
 					t = Transport::fromMetadata(*tm);
 				}
 				
-				if (strToType(param) == TYPE_IPV6)
+				if (strToType(param) == class_type)
 					a = t ? new IPv6Address(ip, *t) : new IPv6Address(ip);
 				else
 					a = new IPv6BroadcastAddress(ip);
@@ -981,7 +982,7 @@ IPv6Address *IPv6Address::fromMetadata(const Metadata& m)
 
 #endif
 
-FileAddress::FileAddress(const char *path) : Address(Address::TYPE_FILEPATH, filepath)
+FileAddress::FileAddress(const char *path) : Address(class_type, filepath)
 {
 	if (path && strlen(path) > 0) {
 		filepath = new char[strlen(path) + 1];
@@ -1041,14 +1042,14 @@ FileAddress *FileAddress::fromMetadata(const Metadata& m)
 	
 	param = m.getParameter(ADDRESS_METADATA_TYPE_PARAM);
 
-	if (param && strToType(param) == TYPE_FILEPATH) {
+	if (param && strToType(param) == class_type) {
 		// TODO
 	}
 
 	return a;
 }
 
-UnixAddress::UnixAddress(struct sockaddr_un& saddr) : SocketAddress(Address::TYPE_UNIX, filepath)
+UnixAddress::UnixAddress(struct sockaddr_un& saddr) : SocketAddress(class_type, filepath)
 {
 	if (strlen(saddr.sun_path) > 0) {
 		filepath = new char[strlen(saddr.sun_path) + 1];
@@ -1059,7 +1060,7 @@ UnixAddress::UnixAddress(struct sockaddr_un& saddr) : SocketAddress(Address::TYP
 	}
 }
 
-UnixAddress::UnixAddress(const char *path) : SocketAddress(Address::TYPE_UNIX, filepath)
+UnixAddress::UnixAddress(const char *path) : SocketAddress(class_type, filepath)
 {
 	if (path && strlen(path) > 0) {
 		filepath = new char[strlen(path) + 1];
@@ -1140,7 +1141,7 @@ UnixAddress *UnixAddress::fromMetadata(const Metadata& m)
 	
 	param = m.getParameter(ADDRESS_METADATA_TYPE_PARAM);
 
-	if (param && strToType(param) == TYPE_UNIX) {
+	if (param && strToType(param) == class_type) {
 		// TODO
 	}
 

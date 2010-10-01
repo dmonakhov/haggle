@@ -17,11 +17,36 @@
 #include <haggleutils.h>
 #include "Debug.h"
 #include "Trace.h"
+#include "XMLMetadata.h"
 
 double Bloomfilter::default_error_rate = DEFAULT_BLOOMFILTER_ERROR_RATE;
 unsigned int Bloomfilter::default_capacity = DEFAULT_BLOOMFILTER_CAPACITY;
 
-Bloomfilter::Bloomfilter(BloomfilterType_t _type, double _error_rate, unsigned int _capacity) :
+const char *Bloomfilter::type_str[] = {
+	"normal",
+	"counting",
+	"undefined",
+	NULL
+};
+
+Bloomfilter::Type_t Bloomfilter::strToType(const char *str)
+{
+	int i = 0;
+	
+	if (!str)
+		return TYPE_UNDEFINED;
+	
+	while (type_str[i]) {
+		if (strcmp(str, type_str[i]) == 0)
+			return (Type_t)i;
+	
+		i++;
+	}
+	
+	return TYPE_UNDEFINED;
+}
+
+Bloomfilter::Bloomfilter(Type_t _type, double _error_rate, unsigned int _capacity) :
 #ifdef DEBUG_LEAKS
 	LeakMonitor(LEAK_TYPE_BLOOMFILTER),
 #endif
@@ -92,7 +117,7 @@ Bloomfilter *Bloomfilter::create(double error_rate, unsigned int capacity, struc
 /**
    Creates a bloomfilter with the given error rate and capacity.
 */
-Bloomfilter *Bloomfilter::create(BloomfilterType_t type, double error_rate, unsigned int capacity)
+Bloomfilter *Bloomfilter::create(Type_t type, double error_rate, unsigned int capacity)
 {
 	Bloomfilter *bf = new Bloomfilter(type, error_rate, capacity);
 	
@@ -146,9 +171,9 @@ Bloomfilter *Bloomfilter::create(const unsigned char *raw_bf, size_t len)
 	return bf;
 }
 
-Bloomfilter *Bloomfilter::create_from_base64(BloomfilterType_t type, const string& b64)
+Bloomfilter *Bloomfilter::create_from_base64(Type_t type, const string& b64, double _error_rate, unsigned int _capacity)
 {
-	Bloomfilter *bf = new Bloomfilter(type);
+	Bloomfilter *bf = new Bloomfilter(type, _error_rate, _capacity);
 	
 	if (!bf)
 		return NULL;
@@ -359,6 +384,93 @@ string Bloomfilter::toBase64NonCounting(void) const
 		}
 	} 
 	return retval;
+}
+
+Metadata *Bloomfilter::toMetadata(bool keep_counting) const
+{
+	char buf[40];
+	string b64;
+	Metadata *m = new XMLMetadata(BLOOMFILTER_METADATA);
+	
+	if (!m)
+		return NULL;
+	
+	if (keep_counting) {
+		b64 = toBase64();
+		m->setParameter(BLOOMFILTER_METADATA_TYPE_PARAM, getTypeStr());
+	} else {
+		b64 = toBase64NonCounting();
+		m->setParameter(BLOOMFILTER_METADATA_TYPE_PARAM, typeToStr(TYPE_NORMAL));
+	}
+	
+	if (b64.length() == 0) {
+		delete m;
+		return NULL;
+	}
+	
+	m->setContent(b64);
+
+	snprintf(buf, 40, "%lf", error_rate);
+	m->setParameter(BLOOMFILTER_METADATA_ERROR_RATE_PARAM, buf);
+	snprintf(buf, 40, "%u", capacity);
+	m->setParameter(BLOOMFILTER_METADATA_CAPACITY_PARAM, buf);
+	snprintf(buf, 40, "%lu", numObjects());
+	m->setParameter(BLOOMFILTER_METADATA_NUM_OBJECTS_PARAM, buf);
+	
+	return m;
+}
+
+Bloomfilter *Bloomfilter::fromMetadata(const Metadata& m)
+{
+	const char *param;
+	double error_rate = default_error_rate;
+	unsigned int capacity = default_capacity;
+	Type_t type;
+	
+	if (!m.isName(BLOOMFILTER_METADATA))
+		return NULL;
+	
+	param = m.getParameter(BLOOMFILTER_METADATA_TYPE_PARAM);
+	
+	if (!param)
+		return NULL;
+	
+	type = strToType(param);
+	
+	if (type == TYPE_UNDEFINED)
+		return NULL;
+	
+	param = m.getParameter(BLOOMFILTER_METADATA_ERROR_RATE_PARAM);
+	
+	if (param) {
+		char *endptr = NULL;
+#if defined(OS_WINDOWS)
+		error_rate = atof(param);
+		endptr = (char *)(param + strlen(param));
+#else		
+		error_rate = strtod(param, &endptr);
+#endif
+		if (endptr != '\0') {
+			error_rate = default_error_rate;
+		}
+	}
+	
+	param = m.getParameter(BLOOMFILTER_METADATA_CAPACITY_PARAM);
+	
+	if (param) {
+		char *endptr = NULL;
+		capacity = (unsigned int)strtoul(param, &endptr, 10);
+		
+		if (endptr != '\0') {
+			capacity = default_capacity;
+		}
+	}
+	
+	// We do not need to parse the NUM_OBJECTS_PARAM since that information 
+	// is stored in the bloomfilter struct anyway. The PARAM is only for 
+	// human readability
+	
+	return create_from_base64(type, m.getContent().c_str(), error_rate, capacity);
 }
 
 unsigned long Bloomfilter::numObjects(void) const

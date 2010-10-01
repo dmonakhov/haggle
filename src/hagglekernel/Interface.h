@@ -201,10 +201,8 @@ public:
 	*/
 	template<typename T>
 	T *getAddress() {
-		T a;
-		
 		for (Addresses::iterator it = addresses.begin(); it != addresses.end(); it++) {
-			if ((*it)->getType() == a.getType()) {
+			if ((*it)->getType() == T::class_type) {
 				return static_cast<T*>(*it);
 			}
 		}
@@ -304,6 +302,7 @@ class ApplicationPortInterface : public ApplicationInterface {
 	ApplicationPortInterface(const void *identifier = NULL, size_t identifier_len = 0, 
 				 const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
 public:
+	static const Type_t class_type = TYPE_APPLICATION_PORT;
 	ApplicationPortInterface(const unsigned short port, const string name = DEFAULT_INTERFACE_NAME, 
 				 const Address *a = NULL, flag_t flags= 0);
 	ApplicationPortInterface(const ApplicationPortInterface& iface);
@@ -318,6 +317,7 @@ class ApplicationLocalInterface : public ApplicationInterface {
 	ApplicationLocalInterface(const void *identifier = NULL, size_t identifier_len = 0, 
 				  const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
 public:
+	static const Type_t class_type = TYPE_APPLICATION_LOCAL;
 	ApplicationLocalInterface(const string _path, const string name = DEFAULT_INTERFACE_NAME, 
 				  const Address *a = NULL, flag_t flags = 0);
 	ApplicationLocalInterface(const ApplicationLocalInterface& iface);
@@ -337,6 +337,7 @@ protected:
 			  const string name = DEFAULT_INTERFACE_NAME, 
 			  const Address *a = NULL, flag_t flags = 0);
 public:
+	static const Type_t class_type = TYPE_ETHERNET;
 	EthernetInterface(const unsigned char _mac[ETH_MAC_LEN], const string name = DEFAULT_INTERFACE_NAME, 
 			  const Address *a = NULL, flag_t flags = 0);
 	EthernetInterface(const EthernetInterface& iface);
@@ -354,6 +355,7 @@ class WiFiInterface : public EthernetInterface {
 	WiFiInterface(const void *identifier = NULL, size_t identifier_len = 0, 
 		      const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
 public:
+	static const Type_t class_type = TYPE_WIFI;
 	WiFiInterface(const unsigned char _mac[ETH_MAC_LEN], const string name = DEFAULT_INTERFACE_NAME, 
 		      const Address *a = NULL, flag_t flags = 0);
 	WiFiInterface(const WiFiInterface& iface);
@@ -375,6 +377,7 @@ class BluetoothInterface : public Interface {
 	BluetoothInterface(const void *identifier = NULL, size_t identifier_len = 0, 
 			   const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
 public:
+	static const Type_t class_type = TYPE_BLUETOOTH;
 	BluetoothInterface(const unsigned char _mac[BT_MAC_LEN], const string name = DEFAULT_INTERFACE_NAME, 
 			   const Address *a = NULL, flag_t flags = 0);
 	BluetoothInterface(const BluetoothInterface& iface);
@@ -397,6 +400,7 @@ class MediaInterface : public Interface {
 	MediaInterface(const void *identifier = NULL, size_t identifier_len = 0, 
 		       const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
 public:
+	static const Type_t class_type = TYPE_MEDIA;
 	MediaInterface(const string _path, const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
 	MediaInterface(const MediaInterface& iface);
 	~MediaInterface();
@@ -414,13 +418,12 @@ typedef ReferenceList<Interface> InterfaceRefList;
 template<typename T>
 inline T *Interface::create(const void *identifier, const char *name, flag_t flags)
 {
-	T type_iface;
 	size_t identifier_len = 0;
 	
 	if (!name)
 		name = DEFAULT_INTERFACE_NAME;
 
-	switch (type_iface.type) {
+	switch (T::class_type) {
 	case TYPE_APPLICATION_PORT:
 		identifier_len = sizeof(unsigned short);
 		break;

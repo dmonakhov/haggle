@@ -38,19 +38,16 @@ using namespace haggle;
 
 /* Some attribute strings in a node's metadata */
 #define NODE_DESC_ATTR "NodeDescription"
-#define NODE_DESC_SOURCE_ID_ATTR "SrcId"
 
 #define NODE_METADATA "Node"
+#define NODE_METADATA_TYPE_PARAM "type"
 #define NODE_METADATA_ID_PARAM "id"
 #define NODE_METADATA_NAME_PARAM "name"
 #define NODE_METADATA_THRESHOLD_PARAM "resolution_threshold"
 #define NODE_METADATA_MAX_DATAOBJECTS_PARAM "resolution_limit"
-#define NODE_METADATA_BLOOMFILTER "Bloomfilter"
 
 #define NODE_DEFAULT_DATAOBJECTS_PER_MATCH 10
 #define NODE_DEFAULT_MATCH_THRESHOLD 10
-
-
 
 /** */
 #ifdef DEBUG_LEAKS
@@ -64,7 +61,7 @@ public:
 	// with the ID
 	typedef enum {
 		TYPE_UNDEFINED = 0, // An uninitilized state of the node
-		TYPE_THIS_NODE,
+		TYPE_LOCAL_DEVICE,
 		TYPE_APPLICATION,
 		TYPE_PEER,
 		TYPE_GATEWAY,
@@ -143,17 +140,6 @@ protected:
 	Bloomfilter *doBF;
 
 	/**
-		This is a set of private events that correspond to filters that
-		are registered by some manager on behalf of the node.
-
-		For example, if the node is an application, these event types are 
-		the public events and private filter events that the application 
-		is interested in.
-	*/
-	Map<long, char> eventInterests;
-	long eventid;
-
-	/**
 		A utility function to calculate the node ID based on the information
 		in the node object.
 		(Currently only makes sense for nodes of type Node::TYPE_THIS_NODE)
@@ -173,25 +159,23 @@ protected:
 	bool stored;
         bool createdFromNodeDescription;
 	Timeval nodeDescriptionCreateTime;
-	long filterEventId;
 	inline bool init_node(const Node::Id_t _id);
 	unsigned long matchThreshold;
 	unsigned long numberOfDataObjectsPerMatch;
 
         Node(Type_t _type, const string name = "Unnamed node", Timeval _nodeDescriptionCreateTime = -1);
+        Node(const Node &n); // Copy constructor
 public:
 	static Node *create(Type_t type, const DataObjectRef& dObj);
 	static Node *create(Type_t type = TYPE_UNDEFINED, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
 	static Node *create_with_id(Type_t type, const Node::Id_t id, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
 	static Node *create_with_id(Type_t type, const char *idStr, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
 
-        Node(const Node &n); // Copy constructor
-        Node& operator=(const Node &);
-	~Node();
-	Node *copy() { return new Node(*this); }
-        static const unsigned char *strIdToRaw(const char *strId);
-	static const char *typeToStr(const Type_t type);
-        Node::Type_t getType() const;
+	virtual ~Node() = 0;
+	
+	static const unsigned char *strIdToRaw(const char *strId);
+	static const char *typeToStr(Type_t type);
+        Type_t getType() const;
 	const char *getTypeStr() const { return typestr[type]; }
         const unsigned char *getId() const;
 	void setId(const Id_t _id);
@@ -204,16 +188,8 @@ public:
 
         // Create a metadata object from this node
         Metadata *toMetadata(bool withBloomfilter = true) const;
-
-	/**
-		Add an event interests to this node.
-	*/
-	bool addEventInterest(long type);
-	void removeEventInterest(long type);
-
-	bool setFilterEvent(long feid);
-	long getFilterEvent() const { return filterEventId; }
-	bool hasEventInterest(long type) const;
+	// Create a node from metadata
+	static Node *fromMetadata(const Metadata& m);
 
 	// Functions to access and manipulate the node's interfaces
 	/**
@@ -265,6 +241,10 @@ public:
 		Returns true iff this node is considered a neighbor node.
 	*/
         bool isNeighbor() const;
+	/**
+		Returns true iff the node represents the local device.
+	 */
+	virtual bool isLocalDevice() const { return false; }
 
         DataObjectRef getDataObject(bool withBloomfilter = true) const;
 		
@@ -287,6 +267,7 @@ public:
 	const Bloomfilter *getBloomfilter() const;
 	Bloomfilter *getBloomfilter();
 	bool setBloomfilter(const char *base64, const bool set_create_time = false);
+	bool setBloomfilter(Bloomfilter *bf, const bool set_create_time = false);
 	bool setBloomfilter(const Bloomfilter& bf, const bool set_create_time = false);
 	
 	/**
@@ -317,37 +298,50 @@ class UndefinedNode : public Node
 {
 	friend class Node;
 	UndefinedNode(const string name = "undefined node", Timeval _nodeDescriptionCreateTime = -1) : 
-		Node(TYPE_UNDEFINED, name, _nodeDescriptionCreateTime) {}
+		Node(class_type, name, _nodeDescriptionCreateTime) {}
+public:
+	static const Type_t class_type = TYPE_UNDEFINED;
 	~UndefinedNode() {}
 };
 
 typedef Reference<UndefinedNode> UndefinedNodeRef;
 typedef ReferenceList<UndefinedNode> UndefinedNodeRefList;
 
-class ThisNode : public Node
-{
-	friend class Node;
-	ThisNode(const string name = "this node", Timeval _nodeDescriptionCreateTime = -1) : 
-		Node(TYPE_THIS_NODE, name, _nodeDescriptionCreateTime) {}
-	~ThisNode() {}
-};
-
 class PeerNode : public Node
 {
 	friend class Node;
+protected:
+	PeerNode(Type_t type, const string name = "peer node", Timeval _nodeDescriptionCreateTime = -1) : 
+		Node(type, name, _nodeDescriptionCreateTime) {}
 	PeerNode(const string name = "peer node", Timeval _nodeDescriptionCreateTime = -1) : 
-		Node(TYPE_PEER, name, _nodeDescriptionCreateTime) {}
+		Node(class_type, name, _nodeDescriptionCreateTime) {}
+public:
+	static const Type_t class_type = TYPE_PEER;
 	~PeerNode() {}
 };
 
 typedef Reference<PeerNode> PeerNodeRef;
 typedef ReferenceList<PeerNode> PeerNodeRefList;
 
+class LocalDeviceNode : public PeerNode
+{
+	friend class Node;
+	friend class PeerNode;
+	LocalDeviceNode(const string name = "local device node", Timeval _nodeDescriptionCreateTime = -1) : 
+		PeerNode(class_type, name, _nodeDescriptionCreateTime) {}
+public:
+	static const Type_t class_type = TYPE_LOCAL_DEVICE;
+	~LocalDeviceNode() {}
+	bool isLocalDevice() const { return true; }
+};
+
 class GatewayNode : public Node
 {
 	friend class Node;
 	GatewayNode(const string name = "gateway node", Timeval _nodeDescriptionCreateTime = -1) : 
-		Node(TYPE_GATEWAY, name, _nodeDescriptionCreateTime) {}
+		Node(class_type, name, _nodeDescriptionCreateTime) {}
+public:
+	static const Type_t class_type = TYPE_GATEWAY;
 	~GatewayNode() {}
 };
 
@@ -357,9 +351,44 @@ typedef ReferenceList<GatewayNode> GatewayNodeRefList;
 class ApplicationNode : public Node
 {
 	friend class Node;
+	long filterEventId, eventId;
+	
+	/**
+	 This is a set of private events that correspond to filters that
+	 are registered by some manager on behalf of the node.
+	 
+	 For example, if the node is an application, these event types are 
+	 the public events and private filter events that the application 
+	 is interested in.
+	 */
+	Map<long, char> eventInterests;
+	
 	ApplicationNode(const string name = "application node", Timeval _nodeDescriptionCreateTime = -1) : 
-	Node(TYPE_APPLICATION, name, _nodeDescriptionCreateTime) {}
-	~ApplicationNode() {}
+		Node(class_type, name, _nodeDescriptionCreateTime), filterEventId(-1), eventId(-1) {}
+public:
+	static const Type_t class_type = TYPE_APPLICATION;
+	ApplicationNode(const ApplicationNode& n) : Node(n), filterEventId(n.filterEventId), 
+		eventId(n.eventId), eventInterests(n.eventInterests) {}
+	
+	~ApplicationNode();
+	ApplicationNode *copy() const { return new ApplicationNode(*this); }
+	/**
+	
+		Add event interest to this application node.
+	 */
+	bool addEventInterest(long type);
+	/**
+		Remove event interest from this application node.
+	 */
+	void removeEventInterest(long type);
+	/**
+		Check whether application node is interested in a particular event.
+	 */
+	bool hasEventInterest(long type) const;
+
+	bool setFilterEvent(long feid);
+	long getFilterEvent() const { return filterEventId; }
+	
 };
 
 typedef Reference<ApplicationNode> ApplicationNodeRef;

@@ -617,6 +617,7 @@ void DataManager::onConfig(Metadata *m)
 	Metadata *dm = m->getMetadata("Bloomfilter");
 
 	if (dm) {
+		bool reset_bloomfilter = false;
 		const char *param = dm->getParameter("default_error_rate");
 
 		if (param) {
@@ -631,6 +632,7 @@ void DataManager::onConfig(Metadata *m)
 				Bloomfilter::setDefaultErrorRate(error_rate);
 				HAGGLE_DBG("config default bloomfilter error rate %.3f\n", 
 					   Bloomfilter::getDefaultErrorRate());
+				reset_bloomfilter = true;
 			}
 		}
 		
@@ -644,6 +646,18 @@ void DataManager::onConfig(Metadata *m)
 				Bloomfilter::setDefaultCapacity(capacity);
 				HAGGLE_DBG("config default bloomfilter capacity %u\n", 
 					   Bloomfilter::getDefaultCapacity());
+				reset_bloomfilter = true;
+			}
+		}
+		
+		if (reset_bloomfilter) {
+			if (localBF)
+				delete localBF;
+			
+			localBF = Bloomfilter::create(Bloomfilter::TYPE_COUNTING);
+			
+			if (!localBF) {
+				HAGGLE_ERR("Could not create data manager bloomfilter\n");
 			}
 		}
 	}

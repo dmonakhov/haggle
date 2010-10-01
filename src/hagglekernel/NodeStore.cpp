@@ -95,7 +95,7 @@ bool NodeStore::_stored(const string idStr, bool mustBeNeighbor)
 	return false;
 }
 
-bool NodeStore::stored(const NodeRef &node, bool mustBeNeighbor)
+bool NodeStore::stored(const NodeRef& node, bool mustBeNeighbor)
 {
         Mutex::AutoLocker l(mutex);
 
@@ -266,7 +266,7 @@ NodeRef NodeStore::retrieve(const InterfaceRef &iface, bool mustBeNeighbor)
 	return NULL;
 }
 
-NodeStore::size_type NodeStore::retrieve(const Node::Type_t type, NodeRefList& nl)
+NodeStore::size_type NodeStore::retrieve(Node::Type_t type, NodeRefList& nl)
 {
         Mutex::AutoLocker l(mutex);
 	size_type n = 0;

@@ -25,11 +25,18 @@ class Bloomfilter;
 
 #include "Debug.h"
 #include "DataObject.h"
+#include "Metadata.h"
 
 using namespace haggle;
 
 #define DEFAULT_BLOOMFILTER_ERROR_RATE  (0.01)
 #define DEFAULT_BLOOMFILTER_CAPACITY    (1000)
+
+#define BLOOMFILTER_METADATA "Bloomfilter"
+#define BLOOMFILTER_METADATA_TYPE_PARAM "type"
+#define BLOOMFILTER_METADATA_ERROR_RATE_PARAM "error_rate"
+#define BLOOMFILTER_METADATA_CAPACITY_PARAM "capacity"
+#define BLOOMFILTER_METADATA_NUM_OBJECTS_PARAM "num_objects"
 
 /** */
 #ifdef DEBUG_LEAKS
@@ -41,12 +48,14 @@ class Bloomfilter
 public:
 	typedef enum {
 		TYPE_NORMAL,
-		TYPE_COUNTING
-	} BloomfilterType_t;
+		TYPE_COUNTING,
+		TYPE_UNDEFINED
+	} Type_t;
 private:	
 	static double default_error_rate;
 	static unsigned int default_capacity;
-	BloomfilterType_t type;
+	static const char *type_str[];
+	Type_t type;
 	double error_rate;
 	unsigned int capacity;
 	const unsigned long init_n;
@@ -58,7 +67,7 @@ private:
 	/*
 	  Creates a bloomfilter with the given error rate and capacity.
 	*/
-	Bloomfilter(BloomfilterType_t _type = TYPE_NORMAL, double error_rate = default_error_rate, 
+	Bloomfilter(Type_t _type = TYPE_NORMAL, double error_rate = default_error_rate, 
 		    unsigned int capacity = default_capacity);
 	Bloomfilter(double _error_rate, unsigned int _capacity, struct bloomfilter *_bf);
 	Bloomfilter(double _error_rate, unsigned int _capacity, struct counting_bloomfilter *_cbf);	
@@ -72,17 +81,21 @@ public:
 	/**
 		Creates a bloomfilter with the given error rate and capacity.
 	*/
-	static Bloomfilter *create(BloomfilterType_t _type = TYPE_NORMAL, double error_rate = default_error_rate, 
+	static Bloomfilter *create(Type_t _type = TYPE_NORMAL, double error_rate = default_error_rate, 
 				   unsigned int capacity = default_capacity);	
 	static Bloomfilter *create(const unsigned char *bf, size_t len);
-	static Bloomfilter *create_from_base64(BloomfilterType_t _type, const string &base64);
+	static Bloomfilter *create_from_base64(Type_t _type, const string &base64, double error_rate = default_error_rate, 
+					       unsigned int capacity = default_capacity);
 	static Bloomfilter *create(const Bloomfilter &bf);
 	/**
 		Destroys the bloomfilter.
 	*/
 	~Bloomfilter();
 	
-	BloomfilterType_t getType() const { return type; }
+	Type_t getType() const { return type; }
+	static const char *typeToStr(Type_t type) { return type_str[type]; }
+	static Type_t strToType(const char *str);
+	const char *getTypeStr() const { return type_str[type]; }
 	
 	static void setDefaultErrorRate(double error_rate) { if (error_rate > 0.0) default_error_rate = error_rate; }
 	static double getDefaultErrorRate() { return default_error_rate; }
@@ -160,6 +173,8 @@ public:
 	*/
 	string toBase64NonCounting() const;
 	
+	Metadata *toMetadata(bool keep_counting = false) const;
+	static Bloomfilter *fromMetadata(const Metadata& m);
 	/**
 		Returns the number of data objects in the bloomfilter.
 	*/
