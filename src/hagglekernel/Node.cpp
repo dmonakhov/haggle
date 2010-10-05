@@ -60,7 +60,7 @@ using namespace haggle;
 unsigned long Node::totNum = 0;
 const char *Node::typestr[] = {
 	"undefined",
-	"peer", // Local device node is really a peer
+	"local_device", // Local device node is really a peer
 	"application",
 	"peer",
 	"gateway",
@@ -456,7 +456,12 @@ Metadata *Node::toMetadata(bool withBloomfilter) const
 		return NULL;
 	}
 	
-	nm->setParameter(NODE_METADATA_TYPE_PARAM, getTypeStr());
+	if (type == TYPE_LOCAL_DEVICE) {
+		// Make sure local device node looks like a peer to other nodes.
+		nm->setParameter(NODE_METADATA_TYPE_PARAM, typeToStr(TYPE_PEER));
+	} else {
+		nm->setParameter(NODE_METADATA_TYPE_PARAM, getTypeStr());
+	}
 	
 	nm->setParameter(NODE_METADATA_ID_PARAM, b64str);
 	
