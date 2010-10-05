@@ -312,7 +312,7 @@ AM_CONDITIONAL(HAVE_EXTRACTOR, [test x$have_extractor = xyes])
 # Check for Android SDK and NDK
 have_android_sdk=no
 
-AC_CHECK_FILE([android], have_android_sdk=yes, AC_MSG_RESULT(Android SDK not found in path))
+AC_CHECK_FILE([apkbuilder], have_android_sdk=yes, AC_MSG_RESULT(Android SDK not found in path))
 AM_CONDITIONAL(HAVE_ANDROID_SDK, [test x$have_android_sdk = xyes])
 AC_DEFINE(HAVE_ANDROID_SDK, [test x$have_android_sdk = xyes], [Android SDK found])
 

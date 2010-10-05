@@ -42,7 +42,8 @@ RefCounter *RefCounter::create(void *_obj)
 	
 	if (it != objects.end()) {
 		refCount = (RefCounter *) (*it).second;
-		refCount->inc_count();
+		if (refCount->inc_count() == 0)
+			return NULL;
 		return refCount;
 	}
 	return new RefCounter(_obj);
@@ -52,13 +53,6 @@ RefCounter *RefCounter::create(void *_obj)
 */
 RefCounter::~RefCounter()
 {
-	Mutex::AutoLocker l(objectsMutex);
-#ifdef DEBUG
-	if (refcount != 0) {
-		REFERENCE_DBG("Deleted reference count that wasn't 0! ERROR!\n");
-	}
-#endif
-	objects.erase(obj);
 }
 	
 }; // namespace haggle

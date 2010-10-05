@@ -105,6 +105,8 @@ public:
 	unsigned long inc_count()
 	{
 		Mutex::AutoLocker l(countMutex);
+		if (refcount == 0)
+			return 0;
 		return ++refcount;
 	}
 	
@@ -114,13 +116,26 @@ public:
 	template<typename T>
 	unsigned long dec_count()
 	{
-		Mutex::AutoLocker l(countMutex);
-		unsigned long ret = --refcount;
-		
-		if (ret == 0) {
-			delete static_cast<T *>(obj);
-			delete this;
+		unsigned long ret;
+		countMutex.lock();
+
+		if (refcount == 0) {
+			countMutex.unlock();
+			return 0;
 		}
+
+		ret = --refcount;
+
+		countMutex.unlock();
+
+		if (ret == 0) {	
+			objectsMutex.lock();
+			objects.erase(obj);
+			T * tmp_obj = static_cast<T *>(obj);
+			objectsMutex.unlock();			
+			delete this;
+			delete tmp_obj;
+		} 
 		return ret;
 	}
 	
@@ -204,8 +219,10 @@ private:
 	*/
 	void lock() const
 	{
-		Reference<T> *thisObj = const_cast< Reference<T> *>(this);
-		thisObj->refCount->objectMutex.lock();
+		if (refCount) {
+			Reference<T> *thisObj = const_cast< Reference<T> *>(this);
+			thisObj->refCount->objectMutex.lock();
+		}
 	}
 	
 	/**
@@ -215,8 +232,10 @@ private:
 	*/
 	void unlock() const
 	{
-		Reference<T> *thisObj = const_cast< Reference<T> *>(this);
-		thisObj->refCount->objectMutex.unlock();
+		if (refCount) {
+			Reference<T> *thisObj = const_cast< Reference<T> *>(this);
+			thisObj->refCount->objectMutex.unlock();
+		}
 	}
 	
 	/**
@@ -226,8 +245,11 @@ private:
 	*/
 	bool trylock() const
 	{
-		Reference<T> *thisObj = const_cast< Reference<T> *>(this);
-		return thisObj->refCount->objectMutex.trylock();
+		if (refCount) {
+			Reference<T> *thisObj = const_cast< Reference<T> *>(this);
+			return thisObj->refCount->objectMutex.trylock();
+		}
+		return false;
 	}
 	
 	/**
@@ -238,12 +260,10 @@ private:
 	/**
            Returns the identifying integer associated with this object.
 	*/
-	unsigned long getId() const { return refCount->identifier; }
+	unsigned long getId() const { return refCount ? refCount->identifier : 0; }
 	
 	/**
-           Constructor.
-		
-           Will throw an exception if the given object is already refcounted.
+           Constructor
 	*/
 	Reference(const T *obj = NULL) : refCount(RefCounter::create(const_cast<T *>(obj)))
 	{
@@ -297,12 +317,12 @@ private:
 	   This function accesses the referenced object directly. USE WITH CARE,
 	   for example, by locking the reference while accessing the object.
 	*/
-	const T *getObj() const { return refCount->object<T>(); }
+	const T *getObj() const { return refCount ? refCount->object<T>() : NULL; }
 	/**
 	   This function accesses the referenced object directly. USE WITH CARE,
 	   for example, by locking the reference while accessing the object.
 	*/
-	T *getObj() { return refCount->object<T>(); }
+	T *getObj() { return refCount ? refCount->object<T>() : NULL; }
 	/**
            This function will return a heap-allocated copy of this reference.
 	*/
@@ -318,7 +338,7 @@ private:
 	*/
 	LockProxy operator->()
 	{
-		if (refCount != NULL)
+		if (refCount)
 			return LockProxy(const_cast<T *>(refCount->object<T>()), &refCount->objectMutex);
 		else
 			return LockProxy(NULL, NULL);
@@ -326,7 +346,7 @@ private:
 	
 	const LockProxy operator->() const
 	{
-		if (refCount != NULL)
+		if (refCount)
 			return LockProxy(refCount->object<T>(), &refCount->objectMutex);
 		else
 			return LockProxy(NULL, NULL);
