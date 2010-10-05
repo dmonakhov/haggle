@@ -173,30 +173,27 @@ Bloomfilter *Bloomfilter::create(const unsigned char *raw_bf, size_t len)
 
 Bloomfilter *Bloomfilter::create_from_base64(Type_t type, const string& b64, double _error_rate, unsigned int _capacity)
 {
-	Bloomfilter *bf = new Bloomfilter(type, _error_rate, _capacity);
-	
-	if (!bf)
-		return NULL;
+	Bloomfilter *bloomfilter = NULL;
 
 	if (type == TYPE_NORMAL) {
-	        bf->bf = base64_to_bloomfilter(b64.c_str(), b64.length());
-
-		if (bf->bf == NULL) {
+		struct bloomfilter *bf = base64_to_bloomfilter(b64.c_str(), b64.length());
+		if (bf) {
+			bloomfilter = new Bloomfilter(_error_rate, _capacity, bf);		
+		} else {
 			HAGGLE_ERR("Bloomfilter assignment failed!\n");
-			delete bf;
-			bf = NULL;
-		} 
-	} else {
-		bf->cbf = base64_to_counting_bloomfilter(b64.c_str(), b64.length());
+		}
 
-		if (bf->cbf == NULL) {
+	} else {
+		struct counting_bloomfilter *cbf = base64_to_counting_bloomfilter(b64.c_str(), b64.length());
+
+		if (cbf) {
+			bloomfilter = new Bloomfilter(_error_rate, _capacity, cbf);		
+		} else {
 			HAGGLE_ERR("Bloomfilter (counting) assignment failed!\n");
-			delete bf;
-			bf = NULL;
-		} 
+		}
 	} 
 
-	return bf;
+	return bloomfilter;
 }
 
 Bloomfilter *Bloomfilter::create(const Bloomfilter &bf)
