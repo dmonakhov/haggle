@@ -1,0 +1,33 @@
+APP=LuckyMe
+JAR_PATH=@top_srcdir@/src/libhaggle/jni/haggle.jar
+EXTRA_JARS=$(patsubst %,libs/%,$(notdir ${JAR_PATH}))
+SRC=src/org/haggle/${APP}/*.java
+DEBUG=bin/${APP}-debug
+RELEASE=bin/${APP}
+ANT=ant -q
+TOP_BIN_DIR=@top_builddir@/bin
+
+debug: ${DEBUG}.apk
+release: ${RELEASE}.apk
+all: debug
+
+${EXTRA_JARS}:
+	mkdir -p libs
+	cp -f ${JAR_PATH} libs/
+
+${DEBUG}.apk: ${EXTRA_JARS} build.xml ${SRC}
+	${ANT} debug
+	cp -f $@ ${TOP_BIN_DIR}
+
+${RELEASE}.apk: ${EXTRA_JARS} build.xml ${SRC}
+	${ANT} release
+	cp -f $@ ${TOP_BIN_DIR}
+
+deploy: debug
+	adb uninstall org.haggle.${APP}
+	adb install ${DEBUG}.apk
+
+clean:
+	rm -f *~
+	ant -q clean
+
