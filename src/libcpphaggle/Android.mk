@@ -12,7 +12,8 @@ LOCAL_SRC_FILES := \
 	Watch.cpp \
 	Mutex.cpp \
 	Condition.cpp \
-	Signal.cpp
+	Signal.cpp \
+	Reference.cpp
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include $(LOCAL_PATH)/../utils
 

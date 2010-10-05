@@ -1700,6 +1700,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\libcpphaggle\Reference.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\libcpphaggle\Signal.cpp"
 				>
 			</File>

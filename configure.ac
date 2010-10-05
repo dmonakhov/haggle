@@ -671,7 +671,7 @@ echo Ethernet support........... : $have_ethernet
 echo IPv6 support............... : $ipv6
 echo USB media support.......... : $have_media
 echo Filedrop support........... : $enable_filedrop
-
+echo Android applications....... : $have_android_sdk
 echo
 echo "Type make to compile"
 echo "Then su to root and type: make install" if you want to.

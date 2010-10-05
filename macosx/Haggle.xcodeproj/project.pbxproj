@@ -14,6 +14,7 @@
 		425C159C0E79406400D9D1AB /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 425C159B0E79406400D9D1AB /* IOKit.framework */; };
 		42829F080E76FD3200AC9875 /* libhaggleutils.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D3CAD5590E23E37B00E9B3D9 /* libhaggleutils.a */; };
 		42BC121B0E902EDD00C7D7ED /* filedropMacOSX.c in Sources */ = {isa = PBXBuildFile; fileRef = 42BC121A0E902EDD00C7D7ED /* filedropMacOSX.c */; };
+		4D24C384125A81CA00DA9283 /* Reference.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4D24C383125A81CA00DA9283 /* Reference.cpp */; };
 		4DCCF69A1162478B00CD7F6D /* ApplicationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4DCCF6991162478B00CD7F6D /* ApplicationServices.framework */; };
 		D318485B0E5BB8A2002AE6D6 /* libpthread.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D3CAD5870E23E63800E9B3D9 /* libpthread.dylib */; };
 		D318485C0E5BB8B1002AE6D6 /* libxml2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D3CAD5850E23E61000E9B3D9 /* libxml2.dylib */; };
@@ -233,6 +234,7 @@
 		423B09690F4A277000D04E7B /* libssl.0.9.7.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libssl.0.9.7.dylib; path = usr/lib/libssl.0.9.7.dylib; sourceTree = SDKROOT; };
 		425C159B0E79406400D9D1AB /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		42BC121A0E902EDD00C7D7ED /* filedropMacOSX.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = filedropMacOSX.c; path = ../src/filedrop/filedropMacOSX.c; sourceTree = SOURCE_ROOT; };
+		4D24C383125A81CA00DA9283 /* Reference.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Reference.cpp; path = ../src/libcpphaggle/Reference.cpp; sourceTree = SOURCE_ROOT; };
 		4DCCF6991162478B00CD7F6D /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = System/Library/Frameworks/ApplicationServices.framework; sourceTree = SDKROOT; };
 		8DD76F6C0486A84900D96B5E /* Haggle */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Haggle; sourceTree = BUILT_PRODUCTS_DIR; };
 		D3056C630F4E2FC700EF864F /* GenericQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GenericQueue.h; path = ../src/libcpphaggle/include/libcpphaggle/GenericQueue.h; sourceTree = SOURCE_ROOT; };
@@ -646,6 +648,7 @@
 		D32C3E100F1630FC00D028F9 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				4D24C383125A81CA00DA9283 /* Reference.cpp */,
 				D32C3E980F163CF700D028F9 /* String.cpp */,
 				D3D6554F0F01B399007E9220 /* Condition.cpp */,
 				D3D655530F01B399007E9220 /* Mutex.cpp */,
@@ -1358,6 +1361,7 @@
 				D3F44FC50E83F350005981E6 /* Thread.cpp in Sources */,
 				D3F44FC70E83F350005981E6 /* Timeval.cpp in Sources */,
 				D3F44FCB0E83F350005981E6 /* Watch.cpp in Sources */,
+				4D24C384125A81CA00DA9283 /* Reference.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

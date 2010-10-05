@@ -34,6 +34,105 @@
 #endif
 
 namespace haggle {
+	
+/**
+ This class is for keeping a reference count to the object being 
+ referenced. It is allocated on the heap, so that there is only one 
+ reference count and one mutex to protect that reference count.
+ */
+class RefCounter {
+	typedef Pair<void *, RefCounter *> RefcountPair;
+	typedef HashMap<void *, RefCounter *> RefcountMap;
+	/**
+	 This is a store of objects that have already been refcounted. It is 
+	 used to ensure that objects have only one reference counter.
+	 */
+	static RefcountMap objects;
+	
+	/**
+	 This is a mutex to protect the store above from being manipulated by 
+	 more than one thread at a time.
+	 */
+	static Mutex objectsMutex;
+	/**
+	 The total number of such object having been refcounted.
+	 Used for debugging purposes.
+	*/
+	static unsigned long totNum;
+	/**
+	 The mutex protecting the reference count
+	 */
+	Mutex countMutex;
+	/**
+	 The reference count. This will start at 1, and when it reaches 0, 
+	 the object will be deleted.
+	 */
+	unsigned long refcount;
+	
+	/**
+	 Constructor.
+	 */
+	RefCounter(void *_obj);
+public:
+	
+	/**
+	 The mutex protecting the object
+	 */
+	RecursiveMutex objectMutex;
+	
+	/**
+	 The object being refcounted.
+	 */
+	void *obj;
+	
+	/**
+	 An identifying integer for the object being pointed to.
+	 Used for debugging purposes.
+	 */
+	const unsigned long identifier;
+	
+	static RefCounter *create(void *_obj);
+	/**
+	 Destructor.
+	 */
+	~RefCounter();
+	
+	template<typename T>
+	T *object() { return static_cast<T *>(obj); }
+	/**
+	 This function increases the reference count atomically.
+	 */
+	unsigned long inc_count()
+	{
+		Mutex::AutoLocker l(countMutex);
+		return ++refcount;
+	}
+	
+	/**
+	 This function decreases the reference count atomically.
+	 */
+	template<typename T>
+	unsigned long dec_count()
+	{
+		Mutex::AutoLocker l(countMutex);
+		unsigned long ret = --refcount;
+		
+		if (ret == 0) {
+			delete static_cast<T *>(obj);
+			delete this;
+		}
+		return ret;
+	}
+	
+	/**
+	 This function returns the current reference count:
+	 */
+	unsigned long count()
+	{
+		return refcount;
+	}
+};
+	
 /**
    The Reference class is used for refcounting any type of object. This is done
    without having to make any changes at all to the class being refcounted.
@@ -50,123 +149,8 @@ namespace haggle {
    allocated on the stack, since it tries to assume control of destruction of 
    the object, so some care must be taken to make sure that doesn't happen.
 */
-template<class T>
-class Reference {
-	class RefCounter;
-	
-	typedef Pair<T *, void *> ReferencePair;
-	typedef HashMap<T *, void *> ReferenceMap;
-	/**
-           This is a store of objects that have already been refcounted. It is 
-           used to ensure that objects have only one reference count.
-	*/
-	static ReferenceMap objects;
-	
-	/**
-           This is a mutex to protect the store above from being manipulated by 
-           more than one thread at a time.
-	*/
-	static Mutex objectsMutex;
-	
-	/**
-           This class is for keeping a reference count to the object being 
-           referenced. It is allocated on the heap, so that there is only one 
-           reference count and one mutex to protect that reference count.
-	*/
-	class RefCounter {
-		/**
-                   The mutex protecting the reference count
-		*/
-		Mutex countMutex;
-		/**
-                   The reference count. This will start at 1, and when it reaches 0, 
-                   the object will be deleted.
-		*/
-		volatile long refcount;
-            public:
-		
-		/**
-                   The mutex protecting the object
-		*/
-		RecursiveMutex objectMutex;
-		
-		/**
-                   The object being refcounted.
-		*/
-		void *obj;
-		
-		/**
-                   An identifying integer for the object being pointed to.
-			
-                   Used for debugging purposes.
-		*/
-		unsigned long identifier;
-		
-		/**
-                   Constructor.
-		*/
-		RefCounter(void *_obj, unsigned long _identifier) : 
-			countMutex(),
-			refcount(1),
-			objectMutex(),
-			obj(_obj), 
-			identifier(_identifier)
-		{
-                        Mutex::AutoLocker l(Reference<T>::objectsMutex);
-			Reference<T>::objects.insert(ReferencePair(static_cast<T *>(obj), this));
-		}
-		/**
-                   Destructor.
-		*/
-		~RefCounter()
-		{
-                        Mutex::AutoLocker l(Reference<T>::objectsMutex);
-#ifdef DEBUG
-			if (refcount != 0) {
-				REFERENCE_DBG("Deleted reference count that wasn't 0! ERROR!\n");
-			}
-#endif
-			Reference<T>::objects.erase(static_cast<T *>(obj));
-			delete static_cast<T *>(obj);
-		}
-		
-		T *object() { return static_cast<T *>(obj); }
-		/**
-                   This function increases the reference count atomically.
-		*/
-		long inc_count()
-		{
-                        Mutex::AutoLocker l(countMutex);
-			return ++refcount;
-		}
-		
-		/**
-                   This function decreases the reference count atomically.
-		*/
-		long dec_count()
-		{
-                        countMutex.lock();
-
-                        long ret = --refcount;
-                         
-                        // Must unlock mutex first, since it is part of "this" object
-                        countMutex.unlock();
-
-			if (ret == 0)  
-                                delete this;
-
-			return ret;
-		}
-		
-		/**
-                   This function returns the current reference count:
-		*/
-		long count()
-		{
-			return refcount;
-		}
-	};
-	
+template<typename T>
+class Reference {		
 	/**
            This class is used to make sure only one thread at a time is accessing
            the refcounted object. It is used in conjunction with the 
@@ -204,41 +188,11 @@ class Reference {
 	};
 	
 	/**
-           The total number of such object having been refcounted.
-		
-           Used for debugging purposes.
-	*/
-	static unsigned long totNum;
-	
-	/**
            The data for this reference
 	*/
 public:
 	RefCounter *refCount;
 private:
-	// Called by constructor(s)
-	void inline init(T *_obj)
-	{
-		// NULL is ok, but we don't need a RefCounter to it.
-		if (!_obj)
-			return;
-		
-		objectsMutex.lock();
-		typename ReferenceMap::iterator it = objects.find(_obj);
-		
-		if (it != objects.end()) {
-			refCount = (RefCounter *) (*it).second;
-			refCount->inc_count();
-			objectsMutex.unlock();
-			return;
-		}
-		
-		objectsMutex.unlock();
-		
-		refCount = new RefCounter(_obj, totNum);
-		
-		totNum++;
-	}
     public:
 
 	/**
@@ -279,7 +233,7 @@ private:
 	/**
            Returns the current reference count of the object referenced.
 	*/
-	long refcount() const { return refCount ? refCount->count() : 0; }
+	unsigned long refcount() const { return refCount ? refCount->count() : 0; }
 	
 	/**
            Returns the identifying integer associated with this object.
@@ -291,9 +245,11 @@ private:
 		
            Will throw an exception if the given object is already refcounted.
 	*/
-	Reference(const T *_obj = NULL) : refCount(NULL)
+	Reference(const T *obj = NULL) : refCount(RefCounter::create(const_cast<T *>(obj)))
 	{
-		init(const_cast<T *>(_obj));
+		if (!refCount) {
+			// ERROR!
+		}
 	}
 	
 	/**
@@ -323,7 +279,7 @@ private:
 			return;
 				
 		eo.refCount->inc_count();
-		refCount = reinterpret_cast<RefCounter *>(eo.refCount);
+		refCount = eo.refCount;
 	}
 	
 	/**
@@ -334,19 +290,19 @@ private:
 		if (!refCount)
 			return;
 
-		refCount->dec_count();
+		refCount->dec_count<T>();
 	}
 
 	/**
 	   This function accesses the referenced object directly. USE WITH CARE,
 	   for example, by locking the reference while accessing the object.
 	*/
-	const T *getObj() const { return refCount->object(); }
+	const T *getObj() const { return refCount->object<T>(); }
 	/**
 	   This function accesses the referenced object directly. USE WITH CARE,
 	   for example, by locking the reference while accessing the object.
 	*/
-	T *getObj() { return refCount->object(); }
+	T *getObj() { return refCount->object<T>(); }
 	/**
            This function will return a heap-allocated copy of this reference.
 	*/
@@ -363,7 +319,7 @@ private:
 	LockProxy operator->()
 	{
 		if (refCount != NULL)
-			return LockProxy(const_cast<T *>(refCount->object()), &refCount->objectMutex);
+			return LockProxy(const_cast<T *>(refCount->object<T>()), &refCount->objectMutex);
 		else
 			return LockProxy(NULL, NULL);
 	}
@@ -371,7 +327,7 @@ private:
 	const LockProxy operator->() const
 	{
 		if (refCount != NULL)
-			return LockProxy(refCount->object(), &refCount->objectMutex);
+			return LockProxy(refCount->object<T>(), &refCount->objectMutex);
 		else
 			return LockProxy(NULL, NULL);
 	}
@@ -393,7 +349,7 @@ private:
 		// Then decrease the reference count of the object we were pointing at 
 		// before this operation.
 		if (refCount)
-			refCount->dec_count();
+			refCount->dec_count<T>();
 		// Do the actual assignment:
 		refCount = eo.refCount;
 		
@@ -415,49 +371,53 @@ private:
            Equality operator. Returns true iff the two references point to the 
            same object, or what the references point to are equal.
 	*/
-	friend bool operator==(const Reference<T>& eo1, const Reference<T>& eo2)
+	template<typename TT>
+	friend bool operator==(const Reference<T>& eo1, const Reference<TT>& eo2)
 	{
 		if (eo1.refCount == eo2.refCount)
 			return true;
 		if (eo1.refCount == NULL || eo2.refCount == NULL)
 			return false;
-		return *(eo1.refCount->object()) == *(eo2.refCount->object());
+		return *eo1.getObj() == *eo2.getObj();
 	}
 	
 	/**
            Equality operator. Returns true iff the reference points to the object,
            or what the reference points to equals the object.
 	*/
-	friend bool operator==(const Reference<T>& eo1, const T *eo2)
+	template<typename TT>
+	friend bool operator==(const Reference<T>& eo1, const TT *eo2)
 	{
 		if (eo1.refCount == NULL && eo2 == NULL)
 			return true;
 		if (eo1.refCount == NULL || eo2 == NULL)
 			return false;
-		return *(eo1.refCount->object()) == *eo2;
+		return eo1.getObj() == *eo2;
 	}
-	
-	friend bool operator==(const Reference<T>& eo1, const T &eo2)
+	template<typename TT>
+	friend bool operator==(const Reference<T>& eo1, const TT &eo2)
 	{
 		if (eo1.refCount == NULL && &eo2 == NULL)
 			return true;
 		if (eo1.refCount == NULL || &eo2 == NULL)
 			return false;
-		return *(eo1.refCount->object()) == eo2;
+		return *eo1.getObj() == eo2;
 	}
 	
 	/**
            Inequality operator. Returns false iff the two references point to the 
            same object.
 	*/
-	friend bool operator!=(const Reference<T>& eo1, const Reference<T>& eo2) {
+	template<typename TT>
+	friend bool operator!=(const Reference<T>& eo1, const Reference<TT>& eo2) {
 		return !(eo1 == eo2); 
 	}
 	/**
            Inequality operator. Returns false iff the reference points to the 
            object, or what the reference points to equals the object.
 	*/
-	friend bool operator!=(const Reference<T>& eo1, const T *eo2) {
+	template<typename TT>
+	friend bool operator!=(const Reference<T>& eo1, const TT *eo2) {
 		return !(eo1 == eo2); 
 	}
 	
@@ -472,15 +432,6 @@ private:
 	}
 	//static void *operator new(size_t size) { throw Exception(0, "Heap allocation not allowed"); }
 };
-
-template<class T> 
-HashMap<T *, void *> Reference<T>::objects;
-template<class T> 
-Mutex Reference<T>::objectsMutex;
-
-template<class T> 
-unsigned long Reference<T>::totNum = 0;
-
 
 // A generic container class for references
 template<class T >

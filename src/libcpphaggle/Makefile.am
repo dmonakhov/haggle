@@ -1,6 +1,6 @@
 noinst_LIBRARIES = libcpphaggle.a
 libcpphaggle_a_SOURCES = Thread.cpp Timeval.cpp Watch.cpp Heap.cpp \
-	Signal.cpp Condition.cpp Mutex.cpp String.cpp
+	Signal.cpp Condition.cpp Mutex.cpp String.cpp Reference.cpp
 EXTRA_DIST = \
 	Doxyfile.in \
 	include/libcpphaggle/Condition.h \
