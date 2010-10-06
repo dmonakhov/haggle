@@ -1632,7 +1632,6 @@ done:
 #endif
 }
 
-
 /* A blocking event loop. Application does threading if necessary. */
 int haggle_event_loop_run(haggle_handle_t hh)
 {

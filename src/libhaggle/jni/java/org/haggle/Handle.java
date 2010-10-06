@@ -29,7 +29,9 @@ public class Handle {
 	public native int sendNodeDescription();
 
         // Should probably make the eventLoop functions throw some exceptions
+	public native boolean eventLoopRunAsync(EventHandler handler); 
 	public native boolean eventLoopRunAsync(); 
+	public native boolean eventLoopRun(EventHandler handler);
 	public native boolean eventLoopRun();
 	public native boolean eventLoopStop();
         public native boolean eventLoopIsRunning();

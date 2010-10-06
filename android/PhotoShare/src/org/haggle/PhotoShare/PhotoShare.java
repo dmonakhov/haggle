@@ -126,11 +126,7 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 		hh.registerEventInterest(EVENT_INTEREST_LIST_UPDATE, this);
 		hh.registerEventInterest(EVENT_HAGGLE_SHUTDOWN, this);
 		
-		hh.eventLoopRunAsync();
-
-		hh.getApplicationInterestsAsync();
-		
-		Log.d(PhotoShare.LOG_TAG, "Haggle event loop started");   
+		hh.eventLoopRunAsync(this);
 
 		return STATUS_OK;
 	}
@@ -213,6 +209,9 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 	public void onShutdown(int reason) {
 		Log.d(PhotoShare.LOG_TAG, "Shutdown event, reason=" + reason);
 		if (hh != null) {
+			if (hh.eventLoopIsRunning())
+				hh.eventLoopStop();
+			
 			hh.dispose();
 			hh = null;
 		}
@@ -237,5 +236,16 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 		// TODO Auto-generated method stub
 		Log.d(PhotoShare.LOG_TAG, "Setting interests (size=" + interests.length + ")");
 		InterestView.setInterests(interests);
+	}
+
+	public void onEventLoopStart() {
+		// TODO Auto-generated method stub
+		Log.d(PhotoShare.LOG_TAG, "Event loop started.");
+		hh.getApplicationInterestsAsync();
+	}
+
+	public void onEventLoopStop() {
+		// TODO Auto-generated method stub
+		Log.d(PhotoShare.LOG_TAG, "Event loop stopped.");
 	}
 }

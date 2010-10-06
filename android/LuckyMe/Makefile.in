@@ -11,7 +11,7 @@ debug: ${DEBUG}.apk
 release: ${RELEASE}.apk
 all: debug
 
-${EXTRA_JARS}:
+${EXTRA_JARS}: ${JAR_PATH}
 	mkdir -p libs
 	cp -f ${JAR_PATH} libs/
 

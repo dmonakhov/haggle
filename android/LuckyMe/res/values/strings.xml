@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">LuckyView</string>
+    <string name="app_name">LuckyMe</string>
+
+<string name="lucky_service_stopped">LuckyMe stopped</string>
+<string name="lucky_service_started">LuckyMe started</string>
+<string name="lucky_service_label">LuckyMe</string>
 </resources>

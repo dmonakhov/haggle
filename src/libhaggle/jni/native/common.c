@@ -7,8 +7,13 @@ jobjectArray libhaggle_jni_nodelist_to_node_jobjectArray(JNIEnv *env, haggle_nod
 {
         jobjectArray nodeArray;
         int i = 0;
+	jlong n = haggle_nodelist_size(nl);
 
-        nodeArray = (*env)->NewObjectArray(env, haggle_nodelist_size(nl), java_object_class(JCLASS_NODE), NULL);
+	if (n <= 0) {
+		return NULL;
+	}
+
+        nodeArray = (*env)->NewObjectArray(env, n, java_object_class(JCLASS_NODE), NULL);
 
         while (haggle_nodelist_size(nl)) {
 		jobject jnode = java_object_new(env, JCLASS_NODE, haggle_nodelist_pop(nl));

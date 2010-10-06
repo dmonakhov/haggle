@@ -17,4 +17,6 @@ public interface EventHandler {
 	void onNewDataObject(DataObject dObj);
 	void onInterestListUpdate(Attribute[] interests);
 	void onShutdown(int reason);
+	void onEventLoopStart();
+	void onEventLoopStop();
 }

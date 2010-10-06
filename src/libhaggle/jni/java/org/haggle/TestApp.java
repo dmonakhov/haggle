@@ -37,6 +37,12 @@ public class TestApp implements EventHandler {
                 System.out.println("Got shutdown event, reason=" + reason);
 		should_quit = true;
         }
+	public void onEventLoopStart() {
+		System.out.println("Event loop started");
+	}
+	public void onEventLoopStop() {
+		System.out.println("Event loop stopped");
+	}
         public TestApp(String name, int num_dataobjects)
         {
                 super();
@@ -77,7 +83,7 @@ public class TestApp implements EventHandler {
                         
                         h.registerInterest(attr);
                 
-                        h.eventLoopRunAsync();
+                        h.eventLoopRunAsync(this);
                         
 			System.out.println("Getting Application interests");
 

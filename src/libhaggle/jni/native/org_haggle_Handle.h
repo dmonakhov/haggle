@@ -168,17 +168,33 @@ JNIEXPORT jint JNICALL Java_org_haggle_Handle_sendNodeDescription
 /*
  * Class:     org_haggle_Handle
  * Method:    eventLoopRunAsync
+ * Signature: (Lorg/haggle/EventHandler;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_eventLoopRunAsync__Lorg_haggle_EventHandler_2
+  (JNIEnv *, jobject, jobject);
+
+/*
+ * Class:     org_haggle_Handle
+ * Method:    eventLoopRunAsync
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_eventLoopRunAsync
+JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_eventLoopRunAsync__
   (JNIEnv *, jobject);
+
+/*
+ * Class:     org_haggle_Handle
+ * Method:    eventLoopRun
+ * Signature: (Lorg/haggle/EventHandler;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_eventLoopRun__Lorg_haggle_EventHandler_2
+  (JNIEnv *, jobject, jobject);
 
 /*
  * Class:     org_haggle_Handle
  * Method:    eventLoopRun
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_eventLoopRun
+JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_eventLoopRun__
   (JNIEnv *, jobject);
 
 /*

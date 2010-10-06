@@ -59,16 +59,16 @@ static callback_data_t *callback_list_insert(haggle_handle_t hh, int type, JNIEn
         cd->hh = hh;
 	cd->type = type;
 	cd->env = env;
-        // We must retain this object
-	cd->obj = (*env)->NewGlobalRef(env, obj);
-        // Cache the object class
-        cls = (*env)->GetObjectClass(env, cd->obj);
+        /* Cache the object class */
+        cls = (*env)->GetObjectClass(env, obj);
 	
 	if (!cls) {
 		free(cd);
 		return NULL;
 	}
 
+        /* We must retain these objects */
+	cd->obj = (*env)->NewGlobalRef(env, obj);
 	cd->cls = (*env)->NewGlobalRef(env, cls);
 
         list_add(&cd->l, &cdlist);
@@ -96,27 +96,106 @@ static int callback_list_erase_all_with_handle(haggle_handle_t hh)
         return n;
 }
 
+struct event_loop_data {
+	int is_async;
+	jobject obj;
+	jclass cls;
+	JNIEnv *env;
+};
+
+static struct event_loop_data *event_loop_data_create(JNIEnv *env, int is_async, jobject obj)
+{
+	struct event_loop_data *data;
+	jclass cls;
+
+        /* Get the object class */
+        cls = (*env)->GetObjectClass(env, obj);
+	
+	if (!cls)
+		return NULL;
+
+	data = (struct event_loop_data *)malloc(sizeof(struct event_loop_data));
+
+	if (!data)
+		return NULL;
+
+	memset(data, 0, sizeof(struct event_loop_data));
+
+	data->is_async = is_async;
+	data->obj = (*env)->NewGlobalRef(env, obj);
+	data->cls = (*env)->NewGlobalRef(env, cls);
+	data->env = env;
+
+	return data;
+}
+
+static void event_loop_data_free(struct event_loop_data *data)
+{
+	(*data->env)->DeleteGlobalRef(data->env, data->obj);
+	(*data->env)->DeleteGlobalRef(data->env, data->cls);
+	free(data);
+}
+
 static void on_event_loop_start(void *arg)
 {
+	struct event_loop_data *data = (struct event_loop_data *)arg;
+	jmethodID mid;
+	
 /* 
    The definition of AttachCurrentThread seems to be different depending
    on platform. We use this define just to avoid compiler warnings.
  */
+	if (!data || data->is_async) {
 #if defined(OS_ANDROID)
-        JNIEnv *env; 
+		JNIEnv *env; 
 #else
-        void *env;
+		void *env;
 #endif
-        if ((*jvm)->AttachCurrentThread(jvm, &env, NULL) != JNI_OK) {
-                fprintf(stderr, "libhaggle_jni: Could not attach thread\n");
-        }
+		if ((*jvm)->AttachCurrentThread(jvm, &env, NULL) != JNI_OK) {
+			fprintf(stderr, "libhaggle_jni: Could not attach thread\n");
+			return;
+		}
+	}
+	
+	if (data) {
+		mid = (*data->env)->GetMethodID(data->env, data->cls, "onEventLoopStart", "()V");
+		
+		if (mid) {
+			(*data->env)->CallVoidMethod(data->env, data->obj, mid);
+			
+			if ((*data->env)->ExceptionCheck(data->env)) {
+				fprintf(stdout, "An exception occurred when calling onEventLoopStart()\n");
+			}
+		}
+	}
 }
 
 static void on_event_loop_stop(void *arg)
-{        
-        if ((*jvm)->DetachCurrentThread(jvm) != JNI_OK) {
-                fprintf(stderr, "libhaggle_jni: Could not detach thread\n");
-        }
+{                
+	struct event_loop_data *data = (struct event_loop_data *)arg;
+	jmethodID mid;
+
+	if (data) {
+		mid = (*data->env)->GetMethodID(data->env, data->cls, "onEventLoopStop", "()V");
+		
+		if (mid) {
+			(*data->env)->CallVoidMethod(data->env, data->obj, mid);
+			
+			if ((*data->env)->ExceptionCheck(data->env)) {
+				fprintf(stdout, "An exception occurred when calling onShutdown()\n");
+			}
+		}
+	}
+
+	if (!data || data->is_async) {
+		if ((*jvm)->DetachCurrentThread(jvm) != JNI_OK) {
+			fprintf(stderr, "libhaggle_jni: Could not detach thread\n");
+		}
+	}
+	
+	if (data) {
+		event_loop_data_free(data);
+	}
 }
 
 static int event_handler(haggle_event_t *e, void *arg)
@@ -522,19 +601,89 @@ JNIEXPORT jint JNICALL Java_org_haggle_Handle_publishDataObject(JNIEnv *env, job
 /*
  * Class:     org_haggle_Handle
  * Method:    eventLoopRunAsync
+ * Signature: (Lorg/haggle/EventHandler;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_eventLoopRunAsync__Lorg_haggle_EventHandler_2(JNIEnv *env, jobject obj, jobject handler)
+{
+	haggle_handle_t hh = (haggle_handle_t)get_native_handle(env, JCLASS_HANDLE, obj);
+	struct event_loop_data *data;
+	int ret;
+	
+        if (!hh)
+                return JNI_FALSE;
+	
+	data = event_loop_data_create(env, 1, handler);
+
+	if (!data)
+		return JNI_FALSE;
+
+	ret = haggle_event_loop_register_callbacks(hh, on_event_loop_start, on_event_loop_stop, data);
+	
+        if (ret != HAGGLE_NO_ERROR) {
+		event_loop_data_free(data);
+		return JNI_FALSE;
+	}
+
+	ret = haggle_event_loop_run_async(hh);
+	
+	if (ret != HAGGLE_NO_ERROR) {
+		event_loop_data_free(data);
+	}
+        return ret == HAGGLE_NO_ERROR ? JNI_TRUE : JNI_FALSE;
+}
+
+/*
+ * Class:     org_haggle_Handle
+ * Method:    eventLoopRunAsync
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_eventLoopRunAsync(JNIEnv *env, jobject obj)
+JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_eventLoopRunAsync__(JNIEnv *env, jobject obj)
 {       
         haggle_handle_t hh = (haggle_handle_t)get_native_handle(env, JCLASS_HANDLE, obj);
+	int ret;
 
         if (!hh)
                 return JNI_FALSE;
-        
-        if (haggle_event_loop_register_callbacks(hh, on_event_loop_start, on_event_loop_stop, NULL) != HAGGLE_NO_ERROR)
-                return JNI_FALSE;
-        
-        return haggle_event_loop_run_async(hh) == HAGGLE_NO_ERROR ? JNI_TRUE : JNI_FALSE;
+
+	ret = haggle_event_loop_register_callbacks(hh, on_event_loop_start, on_event_loop_stop, NULL);
+	
+        if (ret != HAGGLE_NO_ERROR)
+		return JNI_FALSE;
+
+	ret = haggle_event_loop_run_async(hh);
+	
+        return ret == HAGGLE_NO_ERROR ? JNI_TRUE : JNI_FALSE;
+}
+
+/*
+ * Class:     org_haggle_Handle
+ * Method:    eventLoopRun
+ * Signature: (Lorg/haggle/EventHandler;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_eventLoopRun__Lorg_haggle_EventHandler_2(JNIEnv *env, jobject obj, jobject handler)
+{
+	haggle_handle_t hh = (haggle_handle_t)get_native_handle(env, JCLASS_HANDLE, obj);
+	struct event_loop_data *data;
+	int ret;
+	
+	data = event_loop_data_create(env, 1, handler);
+
+	if (!data)
+		return JNI_FALSE;
+	
+	ret = haggle_event_loop_register_callbacks(hh, on_event_loop_start, on_event_loop_stop, data);
+	
+        if (ret != HAGGLE_NO_ERROR) {
+		event_loop_data_free(data);
+		return JNI_FALSE;
+	}
+
+	ret = haggle_event_loop_run(hh);
+
+	if (ret != HAGGLE_NO_ERROR) {
+		event_loop_data_free(data);
+	}
+	return ret == HAGGLE_NO_ERROR ? JNI_TRUE : JNI_FALSE;
 }
 
 /*
@@ -542,7 +691,7 @@ JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_eventLoopRunAsync(JNIEnv *env,
  * Method:    eventLoopRun
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_eventLoopRun(JNIEnv *env, jobject obj)
+JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_eventLoopRun__(JNIEnv *env, jobject obj)
 {
         return haggle_event_loop_run((haggle_handle_t)get_native_handle(env, JCLASS_HANDLE, obj)) == HAGGLE_NO_ERROR ? JNI_TRUE : JNI_FALSE;
 }
