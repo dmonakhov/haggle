@@ -209,11 +209,10 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 	public void onShutdown(int reason) {
 		Log.d(PhotoShare.LOG_TAG, "Shutdown event, reason=" + reason);
 		if (hh != null) {
-			if (hh.eventLoopIsRunning())
-				hh.eventLoopStop();
-			
 			hh.dispose();
 			hh = null;
+		} else {
+			Log.d(PhotoShare.LOG_TAG, "Shutdown: handle is null!");
 		}
 		pv.runOnUiThread(new Runnable() {
 			public void run() {

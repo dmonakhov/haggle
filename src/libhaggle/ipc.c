@@ -237,7 +237,7 @@ int wait_for_event(haggle_handle_t hh, struct timeval *tv)
 	
 	} else if (waitres == WSA_WAIT_TIMEOUT) {
 		return EVENT_LOOP_TIMEOUT;	
-	} else if(waitres == WSA_WAIT_FAILED) {
+	} else if (waitres == WSA_WAIT_FAILED) {
 		LIBHAGGLE_DBG("WSA_WAIT_FAILED Error=%d\n", WSAGetLastError());
 		return EVENT_LOOP_ERROR;
 	} 
@@ -970,20 +970,16 @@ void haggle_handle_free(haggle_handle_t hh)
 
 	dobj = create_control_dataobject(hh, CTRL_TYPE_DEREGISTRATION_NOTICE, NULL);
 	
-	if (!dobj) {
-		CLOSE_SOCKET(hh->sock);
-		free(hh);
-		return;
+	if (dobj) {
+		ret = haggle_ipc_send_dataobject(hh, dobj, NULL, IO_NO_REPLY);
+
+		haggle_dataobject_free(dobj);		
+
+		if (ret != HAGGLE_NO_ERROR) {
+			LIBHAGGLE_ERR("failed to send deregistration\n");
+		}
 	}
 	
-	ret = haggle_ipc_send_dataobject(hh, dobj, NULL, IO_NO_REPLY);
-
-	if (ret != HAGGLE_NO_ERROR) {
-		LIBHAGGLE_ERR("failed to send deregistration\n");
-	}
-		
-	haggle_dataobject_free(dobj);
-
 	num_handles--;
 	list_detach(&hh->l);
 	CLOSE_SOCKET(hh->sock);
@@ -1391,8 +1387,16 @@ int haggle_event_loop_stop(haggle_handle_t hh)
 	}
                 
         event_loop_signal_raise(hh);
-
-	if (!is_event_loop_thread(hh)) {
+	
+	if (is_event_loop_thread(hh)) {
+		/* We are the event loop thread. Exit the loop by
+		 * setting event_loop_running to 0 */ 
+		hh->event_loop_running = 0;
+	} else {
+		/* We are not the event loop thread. Exit by 
+		   signalling the other thread to exit in case
+		   it is waiting.
+		*/
 #if defined(OS_WINDOWS)
 		if (hh->th) {
 			WaitForSingleObject(hh->th, INFINITE);
@@ -1407,7 +1411,8 @@ int haggle_event_loop_stop(haggle_handle_t hh)
 			hh->th = 0;
 		}
 #endif
-	}
+	} 
+
 	LIBHAGGLE_DBG("Event loop successfully stopped\n");
 
 	return HAGGLE_NO_ERROR;
