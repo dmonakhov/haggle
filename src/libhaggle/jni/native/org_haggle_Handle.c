@@ -101,6 +101,7 @@ struct event_loop_data {
 	jobject obj;
 	jclass cls;
 	JNIEnv *env;
+	JNIEnv *thr_env;
 };
 
 static struct event_loop_data *event_loop_data_create(JNIEnv *env, int is_async, jobject obj)
@@ -140,30 +141,33 @@ static void on_event_loop_start(void *arg)
 {
 	struct event_loop_data *data = (struct event_loop_data *)arg;
 	jmethodID mid;
-	
+	JNIEnv *env = NULL; 	
 /* 
    The definition of AttachCurrentThread seems to be different depending
    on platform. We use this define just to avoid compiler warnings.
  */
 	if (!data || data->is_async) {
 #if defined(OS_ANDROID)
-		JNIEnv *env; 
+#define ENV_CAST(e) (e)
 #else
-		void *env;
+#define ENV_CAST(e) (void **)(e)
 #endif
-		if ((*jvm)->AttachCurrentThread(jvm, &env, NULL) != JNI_OK) {
+		if ((*jvm)->AttachCurrentThread(jvm, ENV_CAST(&env), NULL) != JNI_OK) {
 			fprintf(stderr, "libhaggle_jni: Could not attach thread\n");
 			return;
+		}
+		if (data) {
+			data->thr_env = env;
 		}
 	}
 	
 	if (data) {
-		mid = (*data->env)->GetMethodID(data->env, data->cls, "onEventLoopStart", "()V");
+		mid = (*env)->GetMethodID(env, data->cls, "onEventLoopStart", "()V");
 		
 		if (mid) {
-			(*data->env)->CallVoidMethod(data->env, data->obj, mid);
+			(*env)->CallVoidMethod(env, data->obj, mid);
 			
-			if ((*data->env)->ExceptionCheck(data->env)) {
+			if ((*env)->ExceptionCheck(env)) {
 				fprintf(stdout, "An exception occurred when calling onEventLoopStart()\n");
 			}
 		}
@@ -174,14 +178,15 @@ static void on_event_loop_stop(void *arg)
 {                
 	struct event_loop_data *data = (struct event_loop_data *)arg;
 	jmethodID mid;
+	JNIEnv *env = data ? data->thr_env : NULL;
 
 	if (data) {
-		mid = (*data->env)->GetMethodID(data->env, data->cls, "onEventLoopStop", "()V");
+		mid = (*env)->GetMethodID(env, data->cls, "onEventLoopStop", "()V");
 		
 		if (mid) {
-			(*data->env)->CallVoidMethod(data->env, data->obj, mid);
+			(*env)->CallVoidMethod(env, data->obj, mid);
 			
-			if ((*data->env)->ExceptionCheck(data->env)) {
+			if ((*env)->ExceptionCheck(env)) {
 				fprintf(stdout, "An exception occurred when calling onShutdown()\n");
 			}
 		}
