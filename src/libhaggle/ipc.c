@@ -92,6 +92,7 @@ struct haggle_handle {
 	int session_id;
 	int num_handlers;
 	int event_loop_running;
+	int handle_free_final;
 	thread_handle_t th;
 	char *name;
 	char id[ID_LEN];
@@ -139,6 +140,8 @@ static int haggle_ipc_send_dataobject(struct haggle_handle *h, haggle_dobj_t *do
 */
 static int haggle_ipc_generate_and_send_control_dataobject(haggle_handle_t hh, control_type_t type);
 
+static int is_event_loop_thread(haggle_handle_t hh);
+static void haggle_handle_free_final(haggle_handle_t hh);
 
 enum {
         EVENT_LOOP_ERROR = -1,
@@ -759,6 +762,8 @@ int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ig
 	memset(hh, 0, sizeof(struct haggle_handle));
 
 	hh->num_handlers = 0;
+	hh->handle_free_final = 0;
+
 	INIT_LIST(&hh->l);
 
 	hh->sock = socket(AF_ADDRESS_FAMILY, SOCK_DGRAM, 0);
@@ -766,7 +771,11 @@ int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ig
 	if (hh->sock == INVALID_SOCKET) {
 		free(hh);
 		haggle_set_socket_error();
+#if defined(OS_UNIX)
+		LIBHAGGLE_ERR("Could not open haggle socket: %s\n", strerror(errno));
+#else
 		LIBHAGGLE_ERR("Could not open haggle socket\n");
+#endif
 		return HAGGLE_SOCKET_ERROR;
 	}
 	
@@ -956,6 +965,28 @@ int haggle_handle_get(const char *name, haggle_handle_t *handle)
 	return haggle_handle_get_internal(name, handle, 0);
 }
 
+void haggle_handle_free_final(haggle_handle_t hh)
+{
+	num_handles--;
+	list_detach(&hh->l);
+	CLOSE_SOCKET(hh->sock);
+#if defined(OS_WINDOWS)
+        CloseHandle(hh->signal);
+#elif defined(OS_UNIX)
+        close(hh->signal[0]);
+        close(hh->signal[1]);
+#endif
+
+	if (hh->name)
+		free(hh->name);
+
+	free(hh);
+	hh = NULL;
+#ifdef DEBUG
+	haggle_dataobject_leak_report_print();
+#endif
+}
+
 void haggle_handle_free(haggle_handle_t hh)
 {
 	struct dataobject *dobj;
@@ -980,24 +1011,22 @@ void haggle_handle_free(haggle_handle_t hh)
 		}
 	}
 	
-	num_handles--;
-	list_detach(&hh->l);
-	CLOSE_SOCKET(hh->sock);
-#if defined(OS_WINDOWS)
-        CloseHandle(hh->signal);
-#elif defined(OS_UNIX)
-        close(hh->signal[0]);
-        close(hh->signal[1]);
+	if (is_event_loop_thread(hh)) {
+		/* Since we the event loop thread and are destroying
+		 * the handle, we cannot expect the "main" thread to
+		 * join later. Therefore, detach the thread to avoid
+		 * leaks. */
+#if defined(OS_UNIX)
+		pthread_detach(hh->th);
+#elif defined(OS_WINDOWS)
+		/* TODO */
 #endif
-
-	if (hh->name)
-		free(hh->name);
-
-	free(hh);
-	hh = NULL;
-#ifdef DEBUG
-	haggle_dataobject_leak_report_print();
-#endif
+		/* Indicate that the handle should be freed when event
+		 * loop exits. */
+		hh->handle_free_final = 1;
+	} else {
+		haggle_handle_free_final(hh);
+	}
 }
 
 int haggle_unregister(const char *name)
@@ -1363,7 +1392,7 @@ int haggle_event_loop_is_running(haggle_handle_t hh)
         return (hh ? hh->event_loop_running : HAGGLE_HANDLE_ERROR);
 }
 
-static int is_event_loop_thread(haggle_handle_t hh)
+int is_event_loop_thread(haggle_handle_t hh)
 {
 #if defined(OS_WINDOWS)
 	return GetCurrentThreadId() == hh->th_id;
@@ -1630,6 +1659,9 @@ start_ret_t haggle_event_loop(void *arg)
 
 	free(eventbuffer);
 done:
+	if (hh->handle_free_final) 
+		haggle_handle_free_final(hh);
+
 #if defined(WIN32) || defined(WINCE)
 	return 0;
 #else

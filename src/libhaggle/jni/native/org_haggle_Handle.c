@@ -757,9 +757,10 @@ static int spawn_daemon_callback(unsigned int milliseconds)
         
         cls = (*env)->GetObjectClass(env, spawn_object);
 
-	if (!cls)
+	if (!cls) {
+		LIBHAGGLE_ERR("Could not get spawn object class\n");
 		return -1;
-
+	}
         mid = (*env)->GetMethodID(env, cls, "callback", "(J)I");
 	
 	(*env)->DeleteLocalRef(env, cls);
@@ -831,9 +832,10 @@ JNIEXPORT jboolean JNICALL Java_org_haggle_Handle_spawnDaemon__Lorg_haggle_Launc
 
         spawn_object = (*env)->NewGlobalRef(env, obj);
 
-	if (!spawn_object)
+	if (!spawn_object) {
+		LIBHAGGLE_ERR("Could not get spawn object class\n");
 		return JNI_FALSE;
-
+	}
         return haggle_daemon_spawn_with_callback(NULL, spawn_daemon_callback) >= 0 ? JNI_TRUE : JNI_FALSE;
 }
 

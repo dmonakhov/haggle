@@ -1,13 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    >
-<TextView  
-    android:layout_width="fill_parent" 
-    android:layout_height="wrap_content" 
-    android:text="Hello World, LuckyView"
-    />
+<LinearLayout android:id="@+id/LinearLayout01" android:layout_width="fill_parent" android:layout_height="fill_parent" xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical">
+	<LinearLayout android:id="@+id/LinearLayout02" android:layout_width="wrap_content" android:layout_height="wrap_content">
+		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/num_dataobjects_rx_text" android:text="Data objects received:" android:paddingRight="10dp"></TextView>
+		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/dataobjects_rx" android:text="0"></TextView>
+	</LinearLayout>
+	<LinearLayout android:id="@+id/LinearLayout03" android:layout_width="wrap_content" android:layout_height="wrap_content">
+		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/num_dataobjects_tx_text" android:text="Data objects sent:" android:paddingRight="10dp"></TextView>
+		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/dataobjects_tx" android:text="0"></TextView>
+	</LinearLayout>
+	<TextView  
+     xmlns:android="http://schemas.android.com/apk/res/android"  
+     android:id="@+id/list_header"  
+     android:layout_width="fill_parent"  
+     android:layout_height="wrap_content"  
+     android:paddingTop="2dip"  
+     android:paddingBottom="2dip"  
+     android:paddingLeft="5dip"
+     android:text="Neighbors"
+     style="?android:attr/listSeparatorTextViewStyle" /> 
+	<ListView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/neighbor_list" android:divider="#eeeeee" android:dividerHeight="1dp"></ListView>
 </LinearLayout>
-
