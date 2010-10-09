@@ -2,11 +2,11 @@
 <LinearLayout android:id="@+id/LinearLayout01" android:layout_width="fill_parent" android:layout_height="fill_parent" xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical" android:saveEnabled="false">
 	<LinearLayout android:id="@+id/LinearLayout02" android:layout_width="wrap_content" android:layout_height="wrap_content">
 		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/num_dataobjects_rx_text" android:text="Data objects received:" android:paddingRight="10dp"></TextView>
-		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/num_dataobjects_rx"></TextView>
+		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/num_dataobjects_rx" android:text="0"></TextView>
 	</LinearLayout>
 	<LinearLayout android:id="@+id/LinearLayout03" android:layout_width="wrap_content" android:layout_height="wrap_content">
-		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/num_dataobjects_tx_text" android:text="Data objects sent:" android:paddingRight="10dp"></TextView>
-		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/num_dataobjects_tx"></TextView>
+		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/num_dataobjects_tx_text" android:paddingRight="10dp" android:text="Data objects generated:"></TextView>
+		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/num_dataobjects_tx" android:text="0"></TextView>
 	</LinearLayout>
 	<LinearLayout android:id="@+id/LinearLayout05" android:layout_width="wrap_content" android:layout_height="wrap_content"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/haggle_status_text" android:text="Haggle status:" android:paddingRight="10dp"></TextView><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/haggle_status" android:text="Not running"></TextView>
 

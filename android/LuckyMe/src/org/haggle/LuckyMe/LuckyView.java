@@ -35,9 +35,9 @@ public class LuckyView extends Activity {
 	private LuckyService mLuckyService = null;
 	private ListView mNeighborList = null;
 	private ToggleButton mLuckyServiceToggle = null;
-	private TextView mNumDataObjectsTX = null;
-	private TextView mNumDataObjectsRX = null;
-	private TextView mHaggleStatus = null;
+	private TextView mHaggleStatus = null;	
+	public TextView mNumDataObjectsTX = null;
+	public TextView mNumDataObjectsRX = null;
 	private boolean mIsBound = false;
 	private Handler mLuckyEventHandler = null;
 	public final String LUCKY_VIEW_TAG = "LuckyMe";
@@ -49,18 +49,25 @@ public class LuckyView extends Activity {
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+	
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 		
 		Log.d(LUCKY_VIEW_TAG, "onCreate() called");
-
+		if (savedInstanceState != null) {
+			Log.d(LUCKY_VIEW_TAG, "onCreate() savedInstanceState is not null");
+		}
+		if (mNumDataObjectsTX != null) {
+			Log.d(LUCKY_VIEW_TAG, "onCreate() mNumDataObjectsTX is not null");
+		}
+		
 		mNumDataObjectsTX = (TextView) findViewById(R.id.num_dataobjects_tx);
-		mNumDataObjectsTX.setText("0");
 		mNumDataObjectsRX = (TextView) findViewById(R.id.num_dataobjects_rx);
-		mNumDataObjectsRX.setText("0");
+		//mNumDataObjectsTX.debug(2);
+		Log.d(LUCKY_VIEW_TAG, "onCreate() mNumDataObjectsTX=" + mNumDataObjectsTX.hashCode());
 		mHaggleStatus = (TextView) findViewById(R.id.haggle_status);
 		mLuckyServiceToggle = (ToggleButton) findViewById(R.id.lucky_service_toggle);
-
+		
 		mLuckyServiceToggle
 				.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
 					@Override
@@ -87,8 +94,9 @@ public class LuckyView extends Activity {
 		// neighbor list
 		registerForContextMenu(mNeighborList);
 
-		mLuckyEventHandler = new LuckyEventHandler(this);
+		mLuckyEventHandler = new LuckyEventHandler();
 		mMessenger = new Messenger(mLuckyEventHandler);
+		Log.d(LUCKY_VIEW_TAG, "onCreate() mMessenger=" + mMessenger.hashCode());
 		mHaggleStatusChecker = new HaggleStatusChecker(this);
 		mHaggleStatusThread = new Thread(mHaggleStatusChecker);
 		
@@ -101,14 +109,15 @@ public class LuckyView extends Activity {
 				// cast its IBinder to a concrete class and directly access it.
 				mLuckyService = ((LuckyService.LuckyBinder) service).getService();
 
+				mLuckyService.setMessenger(mMessenger);
 				Log.i(LUCKY_VIEW_TAG, "Connected to LuckyService.");
 				// Tell the user about this for our demo.
 				// Toast.makeText(Binding.this, R.string.local_service_connected,
 				// Toast.LENGTH_SHORT).show();
 				if (isLuckyServiceRunning()) {
 					mLuckyServiceToggle.setChecked(true);
-					mLuckyService.requestAllUpdateMessages();
 				}
+				mLuckyService.requestAllUpdateMessages();
 			}
 
 			public void onServiceDisconnected(ComponentName className) {
@@ -127,10 +136,6 @@ public class LuckyView extends Activity {
 	}
 
 	class LuckyEventHandler extends Handler {
-		private LuckyView lv;
-		LuckyEventHandler(LuckyView lv) {
-			this.lv = lv;
-		}
 		public void handleMessage(Message msg) {
 			Log.d(LUCKY_VIEW_TAG, "Got a message type " + msg.what);
 			
@@ -147,14 +152,11 @@ public class LuckyView extends Activity {
 				nodeAdpt.updateNeighbors(mLuckyService.getNeighbors());
 				break;
 			case LuckyService.MSG_NUM_DATAOBJECTS_TX:
-				//mLuckyView.runOnUiThread(new TextViewUpdater(mNumDataObjectsTX,
-				//		Integer.toString(msg.arg1)));
+				Log.d(LUCKY_VIEW_TAG, "handleMessage() mNumDataObjectsTX=" + mNumDataObjectsTX.hashCode());
 				mNumDataObjectsTX.setText(Integer.toString(msg.arg1));
 				Log.d(LUCKY_VIEW_TAG, "num_dataobjects_tx=" + msg.arg1);
 				break;
 			case LuckyService.MSG_NUM_DATAOBJECTS_RX:
-				//mLuckyView.runOnUiThread(new TextViewUpdater(mNumDataObjectsRX,
-				//		Integer.toString(msg.arg1)));
 				mNumDataObjectsRX.setText(Integer.toString(msg.arg1));
 				break;
 			case LuckyService.MSG_LUCKY_SERVICE_START:
@@ -165,6 +167,7 @@ public class LuckyView extends Activity {
 				break;
 			}
 		}
+		
 	};
 	// Class to update a TextView on the Activity's UI thread.
 	class TextViewUpdater implements Runnable {
@@ -299,7 +302,7 @@ public class LuckyView extends Activity {
 		// we know will be running in our own process (and thus won't be
 		// supporting component replacement by other applications).
 		Intent i = new Intent(this, LuckyService.class);
-		i.putExtra("messenger", mMessenger);
+		Log.d(LUCKY_VIEW_TAG, "doBindService() mMessenger=" + mMessenger.hashCode());
 		mIsBound = bindService(i, mConnection, flag);
 		if (!mIsBound) {
 			Log.d(LUCKY_VIEW_TAG, "Could not bind to Lucky service");
@@ -371,5 +374,6 @@ public class LuckyView extends Activity {
 		Log.d(LUCKY_VIEW_TAG, "onStop: unbinding from service");
 		doUnbindService();
 		stopHaggleStatusChecker();
+		mLuckyEventHandler = null;
 	}
 }

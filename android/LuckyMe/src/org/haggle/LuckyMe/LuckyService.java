@@ -16,6 +16,7 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
+import android.provider.Settings.Secure;
 import android.util.Log;
 
 import org.haggle.Attribute;
@@ -41,8 +42,7 @@ public class LuckyService extends Service implements EventHandler {
 	private int attributePoolSize = 100;
 	private int numDataObjectAttributes = 3;
 	private int numInterestAttributes = 5;
-	private Random prngData = new Random(); // TODO seed PRNG
-	private Random prngInterests = new Random(); // TODO seed PRNG
+	private Random prng = new Random();
 	private boolean ignoreShutdown = false;
 	private Messenger mClientMessenger = null;
 	public static final int MSG_NEIGHBOR_UPDATE = 0;
@@ -51,15 +51,27 @@ public class LuckyService extends Service implements EventHandler {
 	public static final int MSG_LUCKY_SERVICE_START = 3;
 	public static final int MSG_LUCKY_SERVICE_STOP = 4;
 	private Node[] neighbors = null;
-	private boolean mClientIsBound = false;
+	private String androidId;
+	private long nodeId = 0;
 	
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		
+
 		Log.i(LUCKY_SERVICE_TAG, "LuckyService created"); 
 		mDataGenerator = new DataObjectGenerator();
 		mDataThread = new Thread(mDataGenerator);
+		androidId = Secure.getString(getContentResolver(), Secure.ANDROID_ID); 
+		
+		Log.i(LUCKY_SERVICE_TAG, "Android id is " + androidId);
+		
+		try {
+			nodeId = Long.decode("0x" + androidId);
+			prng.setSeed(nodeId);
+			Log.i(LUCKY_SERVICE_TAG, "Node id is " + nodeId);
+		} catch (NumberFormatException e) {
+			Log.d(LUCKY_SERVICE_TAG, "Could not decode androidId to long");
+		}
 	}
 
 	@Override
@@ -67,7 +79,7 @@ public class LuckyService extends Service implements EventHandler {
 		super.onDestroy();
 
 		stopDataGenerator();
-		
+
 		if (hh != null) {
 			// Tell Haggle to stop, but first make sure we ignore the shutdown
 			// event since we dispose of the handle here
@@ -76,57 +88,48 @@ public class LuckyService extends Service implements EventHandler {
 			hh.dispose();
 			hh = null;
 		}
-		
+
 		Log.i(LUCKY_SERVICE_TAG, "Service destroyed.");
 	}
-	
-	public void bindClient(Intent intent) {
-		if (intent.hasExtra("messenger")) {
-			mClientMessenger = intent.getParcelableExtra("messenger");
-		}
-		mClientIsBound = true;
-	}
+
 	@Override
-    public IBinder onBind(Intent intent) {
+	public IBinder onBind(Intent intent) {
 		Log.i(LUCKY_SERVICE_TAG, "onBind: Client bound to service : " + intent);
-		bindClient(intent);
-        return mBinder;
-    }
+		return mBinder;
+	}
 
 	@Override
 	public void onRebind(Intent intent) {
 		Log.i(LUCKY_SERVICE_TAG, "onRebind: Client bound to service : " + intent);
 		super.onRebind(intent);
-		bindClient(intent);
 	}
-	
+
 	@Override
 	public boolean onUnbind(Intent intent) {
 		super.onUnbind(intent);
 		Log.i(LUCKY_SERVICE_TAG, "onUnbind: LuckyMe disconnected from service.");
-		mClientIsBound = false;
 		mClientMessenger = null;
 		return true;
 	}
-	
+
 	/**
-     * Class for clients to access.  Because we know this service always
-     * runs in the same process as its clients, we don't need to deal with
-     * IPC.
-     */
-    public class LuckyBinder extends Binder {
-        LuckyService getService() {
-            return LuckyService.this;
-        }
-    }
-    
+	 * Class for clients to access.  Because we know this service always
+	 * runs in the same process as its clients, we don't need to deal with
+	 * IPC.
+	 */
+	public class LuckyBinder extends Binder {
+		LuckyService getService() {
+			return LuckyService.this;
+		}
+	}
+
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		 Log.d(LUCKY_SERVICE_TAG, "Received start id " + startId + ": " + intent);
-	     // We want this service to continue running until it is explicitly
-	     // stopped, so return sticky.
+		Log.d(LUCKY_SERVICE_TAG, "Received start id " + startId + ": " + intent);
+		// We want this service to continue running until it is explicitly
+		// stopped, so return sticky.
 
-		 if (hh == null) {
+		if (hh == null) {
 			switch (Handle.getDaemonStatus()) {
 			case Handle.HAGGLE_DAEMON_CRASHED:
 				Log.d(LUCKY_SERVICE_TAG, "Haggle crashed, starting again");
@@ -160,16 +163,16 @@ public class LuckyService extends Service implements EventHandler {
 				haggleIsRunning = true;
 				break;
 			}
-			
+
 			if (haggleIsRunning) {
 				int i = 0;
-				
+
 				while (true) {
 					try {
-						hh = new Handle("LuckyMe");
+						hh = new Handle(LUCKYME_APPNAME);
 					} catch (AlreadyRegisteredException e) {
 						Log.i(LUCKY_SERVICE_TAG, "Already registered.");
-						Handle.unregister("LuckyMe");
+						Handle.unregister(LUCKYME_APPNAME);
 						if (i++ > 0)
 							return START_STICKY;
 						continue;
@@ -184,28 +187,26 @@ public class LuckyService extends Service implements EventHandler {
 				hh.registerEventInterest(EVENT_INTEREST_LIST_UPDATE, this);
 				hh.registerEventInterest(EVENT_NEW_DATAOBJECT, this);
 				hh.registerEventInterest(EVENT_NEIGHBOR_UPDATE, this);
-				
+
 				hh.eventLoopRunAsync(this);
-				mDataThread.start();
 				isRunning = true;
 			}
-		 }
-	     return START_STICKY;
+		}
+		return START_STICKY;
 	}
-	
+
 	class DataObjectGenerator implements Runnable {
 		private boolean shouldExit = false;
-		
+
 		@Override
 		public void run() {
 			try {
 				Thread.sleep(10000);
 			} catch (InterruptedException e) {
 			}
-			
+
 			while (!shouldExit) {
-				Log.d(LUCKY_SERVICE_TAG, "Generate data object");
-				
+
 				try {
 					Thread.sleep(10000);
 				} catch (InterruptedException e) {
@@ -214,10 +215,12 @@ public class LuckyService extends Service implements EventHandler {
 				}
 
 				DataObject dObj = createRandomDataObject("/sdcard/luckyme.jpg");
-				
+
 				if (dObj != null) {
 					hh.publishDataObject(dObj);
 					num_dataobjects_tx++;
+					Log.d(LUCKY_SERVICE_TAG, "Generated data object " + 
+							num_dataobjects_tx);
 					sendClientMessage(MSG_NUM_DATAOBJECTS_TX);
 				}
 			}
@@ -226,7 +229,7 @@ public class LuckyService extends Service implements EventHandler {
 			shouldExit = true;
 		}
 	}
-	
+
 	private void stopDataGenerator()
 	{
 		if (mDataThread != null) {
@@ -240,15 +243,15 @@ public class LuckyService extends Service implements EventHandler {
 			}
 		}
 	}
-	
+
 	public boolean isRunning() 
 	{
 		return isRunning;
 	}
-	
+
 	private class FileBackupFilter implements FilenameFilter {
 		private String suffix;
-		
+
 		FileBackupFilter(String suffix) 
 		{
 			this.suffix = suffix;
@@ -260,64 +263,64 @@ public class LuckyService extends Service implements EventHandler {
 			return false;
 		}
 	}
-	
+
 	private boolean backupFile(String filename)
 	{
-		final String backupDir = "/sdcard/LuckyMe";
-		
+		final String backupDir = "/sdcard/" + LUCKYME_APPNAME;
+
 		File dir = new File(backupDir);
-		
+
 		if (!dir.exists() && !dir.mkdirs()) {
 			Log.d(LUCKY_SERVICE_TAG, "saveFile: Could not create " + backupDir);
 			return false;
 		}
-		
+
 		File f = new File(filename);
-		
+
 		if (!f.exists()) {
 			Log.d(LUCKY_SERVICE_TAG, "saveFile: No file=" + filename);
 			return false;
 		}
-		
+
 		if (!f.isFile()) {
 			Log.d(LUCKY_SERVICE_TAG, "saveFile: file=" + filename + " is not a file");
 			return false;
 		}
-		
+
 		File[] fileList = dir.listFiles(new FileBackupFilter(f.getName()));
-		
+
 		int backupNum = 0;
-		
+
 		for (int i = 0; i < fileList.length; i++) {
 			int index = fileList[i].getName().indexOf('-');
 			String num = fileList[i].getName().substring(0, index);
-			Log.d(LUCKY_SERVICE_TAG, "Found backup num " + num + " of file " + f.getName());
+			//Log.d(LUCKY_SERVICE_TAG, "Found backup num " + num + " of file " + f.getName());
 			Integer n;
-			
+
 			try {
 				n = Integer.decode(num);
 			} catch (NumberFormatException e) {
 				Log.d(LUCKY_SERVICE_TAG, "Could not parse integer: " + num);
 				continue;
 			}
-				
+
 			if (n.intValue() >= backupNum) {
-				Log.d(LUCKY_SERVICE_TAG, "backupNum=" + n);
+				//Log.d(LUCKY_SERVICE_TAG, "backupNum=" + n);
 				backupNum = n + 1;
 			}
 		}
 
 		String backupFileName = dir.getAbsolutePath() + "/" + Integer.toString(backupNum) + "-" + f.getName();
-		
+
 		File backupFile = new File(backupFileName);
-		
+
 		Log.d(LUCKY_SERVICE_TAG, "saveFile: file=" + backupFile.getAbsolutePath());
-		
+
 		// We must read the file and write it to the new location.
 		// A simple move operation doesn't work across file systems,
 		// so this solution is needed to move the file to the sdcard.
 		FileInputStream fIn;
-		
+
 		try {
 			fIn = new FileInputStream(f);
 		} catch (FileNotFoundException e) {
@@ -325,9 +328,9 @@ public class LuckyService extends Service implements EventHandler {
 					f.getAbsolutePath() + " : " + e.getMessage());
 			return false;
 		}
-		
+
 		FileOutputStream fOut;
-		
+
 		try {
 			fOut = new FileOutputStream(backupFile);
 		} catch (FileNotFoundException e) {
@@ -339,11 +342,11 @@ public class LuckyService extends Service implements EventHandler {
 		byte buf[] = new byte[1024];
 		long totBytes = 0;
 		boolean ret = false;
-		
+
 		while (true) {
 			try {
 				int len = fIn.read(buf);
-				
+
 				if (len == -1) {
 					// EOF
 					fIn.close();
@@ -355,7 +358,7 @@ public class LuckyService extends Service implements EventHandler {
 					break;
 				}
 				fOut.write(buf, 0, len);
-				
+
 				totBytes += len;
 			} catch (IOException e) {
 				Log.d(LUCKY_SERVICE_TAG, "Error writing file=" + 
@@ -363,31 +366,31 @@ public class LuckyService extends Service implements EventHandler {
 				break;
 			}
 		}
-		
+
 		return ret;
 	}
-	
+
 	private final String backupFiles[] = { 
-				"/data/haggle/haggle.db", 
-				"/data/haggle/trace.log"
-				};
-	
+			"/data/haggle/haggle.db", 
+			"/data/haggle/trace.log"
+	};
+
 	private boolean backupLogs()
 	{
 		boolean ret = true;
-		
+
 		for (int i = 0; i < backupFiles.length; i++) {
 			boolean tmp_ret = backupFile(backupFiles[i]);
-			
+
 			if (!tmp_ret) {
 				Log.d(LUCKY_SERVICE_TAG, "Could not backup file: " + backupFiles[i]);
 			}
-			
+
 			ret &= tmp_ret;
 		}	
 		return ret;
 	}
-	
+
 	private synchronized void setNeighbors(Node[] neighbors)
 	{
 		this.neighbors = neighbors;
@@ -399,57 +402,65 @@ public class LuckyService extends Service implements EventHandler {
 		}
 		return null;
 	}
+	public void setMessenger(Messenger m)
+	{
+		mClientMessenger = m;
+	}
 	private void sendClientMessage(int msgType)
 	{
-		if (!mClientIsBound || mClientMessenger == null)
+		if (mClientMessenger == null) {
 			return;
+		}
+		
+		Log.d(LUCKY_SERVICE_TAG, "sendClientMessage: mClientMessenger: " + 
+				mClientMessenger.hashCode());
 		
 		Message msg = Message.obtain(null, msgType);
-      
-        switch (msgType) {
-         case LuckyService.MSG_NEIGHBOR_UPDATE:
-         	break;
-         case LuckyService.MSG_NUM_DATAOBJECTS_TX:
-        	 msg.arg1 = num_dataobjects_tx;
-         	break;
-         case LuckyService.MSG_NUM_DATAOBJECTS_RX:
-        	 msg.arg1 = num_dataobjects_rx;
-         	break;
-         case LuckyService.MSG_LUCKY_SERVICE_START:
-         	break;
-         case LuckyService.MSG_LUCKY_SERVICE_STOP:
-         	break;
-         default:
-        	 return;
-        }
 
-        try {
+		switch (msgType) {
+		case LuckyService.MSG_NEIGHBOR_UPDATE:
+			break;
+		case LuckyService.MSG_NUM_DATAOBJECTS_TX:
+			msg.arg1 = num_dataobjects_tx;
+			break;
+		case LuckyService.MSG_NUM_DATAOBJECTS_RX:
+			msg.arg1 = num_dataobjects_rx;
+			break;
+		case LuckyService.MSG_LUCKY_SERVICE_START:
+			break;
+		case LuckyService.MSG_LUCKY_SERVICE_STOP:
+			break;
+		default:
+			return;
+		}
+
+		try {
 			mClientMessenger.send(msg);
 		} catch (RemoteException e) {
 			Log.d(LUCKY_SERVICE_TAG, "Messange send failed");
 		}
 	}
-	
+
 	public void requestAllUpdateMessages()
 	{
 		sendClientMessage(MSG_NEIGHBOR_UPDATE);
 		sendClientMessage(MSG_NUM_DATAOBJECTS_TX);
 		sendClientMessage(MSG_NUM_DATAOBJECTS_RX);
 	}
-    // This is the object that receives interactions from clients.
-    private final IBinder mBinder = new LuckyBinder();
-    /*
+	// This is the object that receives interactions from clients.
+	private final IBinder mBinder = new LuckyBinder();
+	/*
     private DataObject createRandomDataObject()
     {
     	return createRandomDataObject(null);
     }
-    */
-    private DataObject createRandomDataObject(String filename)
-    {
-    	DataObject dObj = null;
-    	
-    	if (filename != null && filename.length() > 0) {
-    		try {
+	 */
+	private DataObject createRandomDataObject(String filename)
+	{
+		DataObject dObj = null;
+
+		if (filename != null && filename.length() > 0) {
+			try {
 				dObj = new DataObject(filename);
 				dObj.addFileHash();
 			} catch (DataObjectException e) {
@@ -460,58 +471,58 @@ public class LuckyService extends Service implements EventHandler {
 					Log.d(LUCKY_SERVICE_TAG, "Could not create data object");
 				}
 			}
-    	} else {
-    		try {
+		} else {
+			try {
 				dObj = new DataObject();
 			} catch (DataObjectException e1) {
 				Log.d(LUCKY_SERVICE_TAG, "Could not create data object");
 			}
-    	}
-    	
-    	if (dObj == null)
-    		return null;
-    	
-    	HashSet<Integer> values = new HashSet<Integer>();
-    	
-    	for (int i = 0; i < numDataObjectAttributes;) {
-    		int value = prngData.nextInt(attributePoolSize);
-    		
-    		if (values.contains(value)) {
-    			continue;
-    		}
-    		
-    		values.add(value);
-    		dObj.addAttribute(LUCKYME_APPNAME, "" + value);
-    		
-    		i++;
-    	}
-    	
-    	dObj.setCreateTime();
-    	
-    	return dObj;
-    }
-    
-    private double fac(long n)
-    {
-    	long i, t = 1;
-        
-        for (i = n; i > 1; i--)
-                t *= i;
-        
-        return (double)t;
-    }
-    
+		}
+
+		if (dObj == null)
+			return null;
+
+		HashSet<Integer> values = new HashSet<Integer>();
+
+		for (int i = 0; i < numDataObjectAttributes;) {
+			int value = prng.nextInt(attributePoolSize);
+
+			if (values.contains(value)) {
+				continue;
+			}
+
+			values.add(value);
+			dObj.addAttribute(LUCKYME_APPNAME, "" + value);
+
+			i++;
+		}
+
+		dObj.setCreateTime();
+
+		return dObj;
+	}
+
+	private double fac(long n)
+	{
+		long i, t = 1;
+
+		for (i = n; i > 1; i--)
+			t *= i;
+
+		return (double)t;
+	}
+
 	private Attribute[] createInterestsBinomial() {
-		int luck = 0;
+		long luck = 0;
 		long n, u;
 		Attribute[] interests = new Attribute[numInterestAttributes];
 		boolean useNodeNrLuck = false;
 		double p;
 
 		if (useNodeNrLuck) {
-			luck = 0; // TODO: set node number
+			luck = nodeId;
 		} else {
-			luck = prngInterests.nextInt(attributePoolSize);
+			luck = prng.nextInt(attributePoolSize);
 		}
 		p = 0.5;
 		n = numInterestAttributes - 1;
@@ -523,7 +534,7 @@ public class LuckyService extends Service implements EventHandler {
 			interest = (luck + i - u + attributePoolSize) % attributePoolSize;
 			weight = (long) (100 * fac(n) / (fac(n - i) * fac(i))
 					* Math.pow(p, i) * Math.pow(1 - p, n - i));
-			interests[i] = new Attribute("LuckyMe", Long.toString(interest),
+			interests[i] = new Attribute(LUCKYME_APPNAME, Long.toString(interest),
 					weight);
 		}
 		return interests;
@@ -531,7 +542,7 @@ public class LuckyService extends Service implements EventHandler {
 	@Override
 	public void onInterestListUpdate(Attribute[] interests) {
 		Log.i(LUCKY_SERVICE_TAG, "Got interest list of " + interests.length + " items");
-		
+
 		if (interests.length > 0) {
 			for (int i = 0; i < interests.length; i++) {
 				Log.i(LUCKY_SERVICE_TAG, "Interest " + i + ":" + interests[i]);
@@ -539,6 +550,8 @@ public class LuckyService extends Service implements EventHandler {
 		} else {
 			hh.registerInterests(createInterestsBinomial());
 		}
+
+		mDataThread.start();
 	}
 
 	@Override
