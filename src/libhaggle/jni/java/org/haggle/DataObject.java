@@ -1,6 +1,7 @@
 package org.haggle;
 
 import org.haggle.Attribute;
+import java.util.Date;
 
 public class DataObject {
         public long nativeDataObject = 0; // Pointer to native data object struct
@@ -23,7 +24,13 @@ public class DataObject {
         public native Attribute[] getAttributes();
         public native String getFilePath();                      
         public native String getFileName();
-        public native int addHash();
+        public native int addFileHash();
+	public int setCreateTime(Date time) {
+		long secs = time.getTime() / 1000;
+		return setCreateTime(secs, time.getTime() - (secs * 1000)); 
+	}
+	public native int setCreateTime(long sec, long usec);
+	public native int setCreateTime();
         public native int setThumbnail(byte[] data);
         public native long getThumbnailSize();
         public native long getThumbnail(byte[] data);

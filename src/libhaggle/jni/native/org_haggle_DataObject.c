@@ -236,14 +236,39 @@ JNIEXPORT jstring JNICALL Java_org_haggle_DataObject_getFileName(JNIEnv *env, jo
         return (*env)->NewStringUTF(env, haggle_dataobject_get_filename((haggle_dobj_t *)get_native_handle(env, JCLASS_DATAOBJECT, obj)));
 }
 
+
 /*
  * Class:     org_haggle_DataObject
- * Method:    addHash
+ * Method:    addFileHash
  * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_org_haggle_DataObject_addHash(JNIEnv *env, jobject obj)
+JNIEXPORT jint JNICALL Java_org_haggle_DataObject_addFileHash(JNIEnv *env, jobject obj)
 {
         return (jint)haggle_dataobject_add_hash((haggle_dobj_t *)get_native_handle(env, JCLASS_DATAOBJECT, obj));
+}
+
+
+/*
+ * Class:     org_haggle_DataObject
+ * Method:    setCreateTime
+ * Signature: (JJ)I
+ */
+JNIEXPORT jint JNICALL Java_org_haggle_DataObject_setCreateTime__JJ(JNIEnv *env, jobject obj, jlong secs, jlong usecs)
+{
+	struct timeval t = { secs, usecs };
+
+	return (jint)haggle_dataobject_set_createtime((haggle_dobj_t *)get_native_handle(env, JCLASS_DATAOBJECT, obj), &t);
+}
+
+
+/*
+ * Class:     org_haggle_DataObject
+ * Method:    setCreateTime
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_org_haggle_DataObject_setCreateTime__(JNIEnv *env, jobject obj)
+{
+	return (jint)haggle_dataobject_set_createtime((haggle_dobj_t *)get_native_handle(env, JCLASS_DATAOBJECT, obj), NULL);
 }
 
 /*

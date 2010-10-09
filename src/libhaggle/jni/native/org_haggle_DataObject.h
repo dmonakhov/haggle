@@ -97,10 +97,26 @@ JNIEXPORT jstring JNICALL Java_org_haggle_DataObject_getFileName
 
 /*
  * Class:     org_haggle_DataObject
- * Method:    addHash
+ * Method:    addFileHash
  * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_org_haggle_DataObject_addHash
+JNIEXPORT jint JNICALL Java_org_haggle_DataObject_addFileHash
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     org_haggle_DataObject
+ * Method:    setCreateTime
+ * Signature: (JJ)I
+ */
+JNIEXPORT jint JNICALL Java_org_haggle_DataObject_setCreateTime__JJ
+  (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     org_haggle_DataObject
+ * Method:    setCreateTime
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_org_haggle_DataObject_setCreateTime__
   (JNIEnv *, jobject);
 
 /*

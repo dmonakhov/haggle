@@ -1,16 +1,22 @@
 package org.haggle.LuckyMe;
 
+import org.haggle.Handle;
 import org.haggle.Interface;
 import org.haggle.Node;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.bluetooth.BluetoothAdapter;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
@@ -18,40 +24,227 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.widget.CompoundButton;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.ToggleButton;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 
-public class LuckyView extends Activity
-{
+public class LuckyView extends Activity {
 	private NodeAdapter nodeAdpt = null;
 	private LuckyService mLuckyService = null;
+	private ListView mNeighborList = null;
+	private ToggleButton mLuckyServiceToggle = null;
+	private TextView mNumDataObjectsTX = null;
+	private TextView mNumDataObjectsRX = null;
+	private TextView mHaggleStatus = null;
 	private boolean mIsBound = false;
+	private Handler mLuckyEventHandler = null;
+	public final String LUCKY_VIEW_TAG = "LuckyMe";
+	private Messenger mMessenger = null;
+	private Thread mHaggleStatusThread = null;
+	private HaggleStatusChecker mHaggleStatusChecker = null;
+	private ServiceConnection mConnection = null;
 	
-    /** Called when the activity is first created. */
-    @Override
-    public void onCreate(Bundle savedInstanceState)
-    {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);   
-        
-        ListView neighlist = (ListView) findViewById(R.id.neighbor_list);
-        
-        nodeAdpt = new NodeAdapter(this);
-        neighlist.setAdapter(nodeAdpt);
+	/** Called when the activity is first created. */
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.main);
+		
+		Log.d(LUCKY_VIEW_TAG, "onCreate() called");
 
-        // We also want to show context menu for longpressed items in the neighbor list
-        registerForContextMenu(neighlist);
-        startService(new Intent(this, LuckyService.class));
-    }
-    @Override
+		mNumDataObjectsTX = (TextView) findViewById(R.id.num_dataobjects_tx);
+		mNumDataObjectsTX.setText("0");
+		mNumDataObjectsRX = (TextView) findViewById(R.id.num_dataobjects_rx);
+		mNumDataObjectsRX.setText("0");
+		mHaggleStatus = (TextView) findViewById(R.id.haggle_status);
+		mLuckyServiceToggle = (ToggleButton) findViewById(R.id.lucky_service_toggle);
+
+		mLuckyServiceToggle
+				.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+					@Override
+					public void onCheckedChanged(CompoundButton buttonView,
+							boolean isChecked) {
+						Log.d(LUCKY_VIEW_TAG, "Toggle LuckyService on="
+								+ isChecked);
+						if (isChecked) {
+							if (isLuckyServiceRunning()) {
+								// Nothing to do, service was running
+							} else {
+								startLuckyService();
+							}
+						} else {
+							stopLuckyService();
+						}
+					}
+				});
+		nodeAdpt = new NodeAdapter(this);
+		mNeighborList = (ListView) findViewById(R.id.neighbor_list);
+		mNeighborList.setAdapter(nodeAdpt);
+
+		// We also want to show context menu for longpressed items in the
+		// neighbor list
+		registerForContextMenu(mNeighborList);
+
+		mLuckyEventHandler = new LuckyEventHandler(this);
+		mMessenger = new Messenger(mLuckyEventHandler);
+		mHaggleStatusChecker = new HaggleStatusChecker(this);
+		mHaggleStatusThread = new Thread(mHaggleStatusChecker);
+		
+		mConnection = new ServiceConnection() {
+			public void onServiceConnected(ComponentName className, IBinder service) {
+				// This is called when the connection with the service has been
+				// established, giving us the service object we can use to
+				// interact with the service. Because we have bound to a explicit
+				// service that we know is running in our own process, we can
+				// cast its IBinder to a concrete class and directly access it.
+				mLuckyService = ((LuckyService.LuckyBinder) service).getService();
+
+				Log.i(LUCKY_VIEW_TAG, "Connected to LuckyService.");
+				// Tell the user about this for our demo.
+				// Toast.makeText(Binding.this, R.string.local_service_connected,
+				// Toast.LENGTH_SHORT).show();
+				if (isLuckyServiceRunning()) {
+					mLuckyServiceToggle.setChecked(true);
+					mLuckyService.requestAllUpdateMessages();
+				}
+			}
+
+			public void onServiceDisconnected(ComponentName className) {
+				// This is called when the connection with the service has been
+				// unexpectedly disconnected -- that is, its process crashed.
+				// Because it is running in our same process, we should never
+				// see this happen.
+				mLuckyService = null;
+				// Toast.makeText(Binding.this, R.string.local_service_disconnected,
+				// Toast.LENGTH_SHORT).show();
+				Log.i(LUCKY_VIEW_TAG, "Disconnected from LuckyService.");
+				mLuckyServiceToggle.setChecked(false);
+				mIsBound = false;
+			}
+		};
+	}
+
+	class LuckyEventHandler extends Handler {
+		private LuckyView lv;
+		LuckyEventHandler(LuckyView lv) {
+			this.lv = lv;
+		}
+		public void handleMessage(Message msg) {
+			Log.d(LUCKY_VIEW_TAG, "Got a message type " + msg.what);
+			
+			if (mLuckyService == null) {
+				Log.d(LUCKY_VIEW_TAG, "handleMessage: mLuckyService is null");
+				return;
+			}
+			/*
+			 * Handle the message coming from LuckyService.
+			 */
+			
+			switch (msg.what) {
+			case LuckyService.MSG_NEIGHBOR_UPDATE:
+				nodeAdpt.updateNeighbors(mLuckyService.getNeighbors());
+				break;
+			case LuckyService.MSG_NUM_DATAOBJECTS_TX:
+				//mLuckyView.runOnUiThread(new TextViewUpdater(mNumDataObjectsTX,
+				//		Integer.toString(msg.arg1)));
+				mNumDataObjectsTX.setText(Integer.toString(msg.arg1));
+				Log.d(LUCKY_VIEW_TAG, "num_dataobjects_tx=" + msg.arg1);
+				break;
+			case LuckyService.MSG_NUM_DATAOBJECTS_RX:
+				//mLuckyView.runOnUiThread(new TextViewUpdater(mNumDataObjectsRX,
+				//		Integer.toString(msg.arg1)));
+				mNumDataObjectsRX.setText(Integer.toString(msg.arg1));
+				break;
+			case LuckyService.MSG_LUCKY_SERVICE_START:
+				break;
+			case LuckyService.MSG_LUCKY_SERVICE_STOP:
+				break;
+			default:
+				break;
+			}
+		}
+	};
+	// Class to update a TextView on the Activity's UI thread.
+	class TextViewUpdater implements Runnable {
+		private TextView tv;
+		private String text;
+
+		TextViewUpdater(TextView tv, String text) {
+			this.tv = tv;
+			this.text = text;
+		}
+
+		@Override
+		public void run() {
+			tv.setText(text);
+		}
+	}
+
+	class HaggleStatusChecker implements Runnable {
+		private boolean shouldExit = false;
+		private int prevStatus = Handle.HAGGLE_DAEMON_NOT_RUNNING;
+		private LuckyView lv = null;
+		
+		HaggleStatusChecker(LuckyView lv) {
+			this.lv = lv;
+		}
+
+		@Override
+		public void run() {
+			while (!shouldExit) {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					continue;
+				}
+
+				int status = Handle.getDaemonStatus();
+
+				if (status != prevStatus) {
+					switch (status) {
+					case Handle.HAGGLE_DAEMON_CRASHED:
+						lv.runOnUiThread(new TextViewUpdater(mHaggleStatus, "Crashed"));
+						stopLuckyService();
+						break;
+					case Handle.HAGGLE_DAEMON_NOT_RUNNING:
+						lv.runOnUiThread(new TextViewUpdater(mHaggleStatus, "Not running"));
+						break;
+					case Handle.HAGGLE_DAEMON_ERROR:
+						lv.runOnUiThread(new TextViewUpdater(mHaggleStatus, "Error!"));
+						break;
+					case Handle.HAGGLE_DAEMON_RUNNING:
+						lv.runOnUiThread(new TextViewUpdater(mHaggleStatus, "Running"));
+						break;
+					}
+				}
+				prevStatus = status;
+			}
+		}
+
+		public void stop() {
+			shouldExit = true;
+		}
+	};
+
+	public void stopHaggleStatusChecker() {
+		mHaggleStatusChecker.stop();
+		mHaggleStatusThread.interrupt();
+		try {
+			mHaggleStatusThread.join();
+		} catch (InterruptedException e) {
+		}
+
+	}
+
+	public Handler getHandler() {
+		return mLuckyEventHandler;
+	}
+
+	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v,
 			ContextMenuInfo menuInfo) {
-		// TODO We should check for the correct view like for the gallery
-		/*
-		 * ListView lv = (ListView) v; NodeAdapter na = (NodeAdapter)
-		 * lv.getAdapter();
-		 */
 		menu.setHeaderTitle("Node Information");
 		menu.add("Interfaces");
 		menu.add("Cancel");
@@ -68,7 +261,8 @@ public class LuckyView extends Activity
 			Context mContext = getApplicationContext();
 			LayoutInflater inflater = (LayoutInflater) mContext
 					.getSystemService(LAYOUT_INFLATER_SERVICE);
-			View layout = inflater.inflate(R.layout.neighbor_list_context_dialog,
+			View layout = inflater.inflate(
+					R.layout.neighbor_list_context_dialog,
 					(ViewGroup) findViewById(R.id.layout_root));
 
 			TextView text = (TextView) layout.findViewById(R.id.text);
@@ -94,68 +288,88 @@ public class LuckyView extends Activity
 		}
 		return true;
 	}
-	private ServiceConnection mConnection = new ServiceConnection() {
-	    public void onServiceConnected(ComponentName className, IBinder service) {
-	        // This is called when the connection with the service has been
-	        // established, giving us the service object we can use to
-	        // interact with the service.  Because we have bound to a explicit
-	        // service that we know is running in our own process, we can
-	        // cast its IBinder to a concrete class and directly access it.
-	        mLuckyService = ((LuckyService.LuckyBinder)service).getService();
 
-			Log.i("LuckyView", "Connected to LuckyService.");
-	        // Tell the user about this for our demo.
-	        //Toast.makeText(Binding.this, R.string.local_service_connected,
-	              //  Toast.LENGTH_SHORT).show();
-	    }
+	void doBindService(boolean autocreate) {
+		int flag = 0;
 
-	    public void onServiceDisconnected(ComponentName className) {
-	        // This is called when the connection with the service has been
-	        // unexpectedly disconnected -- that is, its process crashed.
-	        // Because it is running in our same process, we should never
-	        // see this happen.
-	        mLuckyService = null;
-	       // Toast.makeText(Binding.this, R.string.local_service_disconnected,
-	              //  Toast.LENGTH_SHORT).show();
-	    	Log.i("LuckyView", "Disconnecte from LuckyService.");
-	    }
-	};
-
-	void doBindService() {
-	    // Establish a connection with the service.  We use an explicit
-	    // class name because we want a specific service implementation that
-	    // we know will be running in our own process (and thus won't be
-	    // supporting component replacement by other applications).
-	    bindService(new Intent(this, LuckyService.class), mConnection, Context.BIND_AUTO_CREATE);
-	    mIsBound = true;
+		if (autocreate)
+			flag = Context.BIND_AUTO_CREATE;
+		// Establish a connection with the service. We use an explicit
+		// class name because we want a specific service implementation that
+		// we know will be running in our own process (and thus won't be
+		// supporting component replacement by other applications).
+		Intent i = new Intent(this, LuckyService.class);
+		i.putExtra("messenger", mMessenger);
+		mIsBound = bindService(i, mConnection, flag);
+		if (!mIsBound) {
+			Log.d(LUCKY_VIEW_TAG, "Could not bind to Lucky service");
+		}
 	}
 
 	void doUnbindService() {
-	    if (mIsBound) {
-	        // Detach our existing connection.
-	        unbindService(mConnection);
-	        mIsBound = false;
-	    }
+		if (mIsBound) {
+			// Detach our existing connection.
+			Log.d(LUCKY_VIEW_TAG, "Unbinding from Lucky service");
+			unbindService(mConnection);
+			mIsBound = false;
+		}
+	}
+
+	private boolean isLuckyServiceRunning() {
+		if (mLuckyService != null) {
+			return mLuckyService.isRunning();
+		}
+		return false;
+	}
+
+	private void startLuckyService() {
+		Log.d(LUCKY_VIEW_TAG, "Starting Lucky service");
+		startService(new Intent(this, LuckyService.class));
+		doBindService(true);
+	}
+
+	private void stopLuckyService() {
+		doUnbindService();
+
+		if (mLuckyService != null) {
+			Log.d(LUCKY_VIEW_TAG, "Stopping Lucky service");
+			stopService(new Intent(this, LuckyService.class));
+			mLuckyService = null;
+			// mLuckyServiceToggle.setChecked(false);
+		}
 	}
 
 	@Override
 	protected void onDestroy() {
-		// TODO Auto-generated method stub
 		super.onDestroy();
-		doUnbindService();
+		Log.d(LUCKY_VIEW_TAG, "onDestroy");
 	}
 
 	@Override
 	protected void onStart() {
-		// TODO Auto-generated method stub
 		super.onStart();
-		doBindService();
+		Log.d(LUCKY_VIEW_TAG, "onStart: binding to service");
+		doBindService(false);
+		mHaggleStatusThread.start();
+		
+		// Force Bluetooth adaptor on
+		BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
+		
+		if (bt != null)
+			bt.enable();
+		
+		// Disable WiFi
+		WifiManager wifi = (WifiManager)getSystemService(Context.WIFI_SERVICE);
+		
+		if (wifi != null)
+			wifi.setWifiEnabled(false);
 	}
 
 	@Override
 	protected void onStop() {
-		// TODO Auto-generated method stub
 		super.onStop();
+		Log.d(LUCKY_VIEW_TAG, "onStop: unbinding from service");
+		doUnbindService();
+		stopHaggleStatusChecker();
 	}
-    
 }
