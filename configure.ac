@@ -311,13 +311,22 @@ AM_CONDITIONAL(HAVE_EXTRACTOR, [test x$have_extractor = xyes])
 
 # Check for Android SDK and NDK
 AC_CHECK_PROG(have_android_sdk, apkbuilder, yes, no)
-AM_CONDITIONAL(HAVE_ANDROID_SDK, [test x$have_android_sdk = xyes])
-AC_DEFINE(HAVE_ANDROID_SDK, [test x$have_android_sdk = xyes], [Android SDK found])
 
 if test x$have_android_sdk = xno
 then
 	AC_MSG_RESULT(Install Android SDK to build Android applications)
 fi
+
+AC_CHECK_PROG(have_ant, ant, yes, no)
+
+if test x$have_ant = xno
+then
+	AC_MSG_RESULT(Install Ant to build Android applications)
+	have_android_sdk=no
+fi
+
+AM_CONDITIONAL(HAVE_ANDROID_SDK, [test x$have_android_sdk = xyes])
+AC_DEFINE(HAVE_ANDROID_SDK, [test x$have_android_sdk = xyes], [Android SDK found])
 
 # MacOSX specific stuff
 if test x$haggle_os_macosx = xtrue
