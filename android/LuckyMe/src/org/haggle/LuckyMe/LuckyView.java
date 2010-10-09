@@ -49,22 +49,13 @@ public class LuckyView extends Activity {
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-	
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 		
 		Log.d(LUCKY_VIEW_TAG, "onCreate() called");
-		if (savedInstanceState != null) {
-			Log.d(LUCKY_VIEW_TAG, "onCreate() savedInstanceState is not null");
-		}
-		if (mNumDataObjectsTX != null) {
-			Log.d(LUCKY_VIEW_TAG, "onCreate() mNumDataObjectsTX is not null");
-		}
 		
 		mNumDataObjectsTX = (TextView) findViewById(R.id.num_dataobjects_tx);
 		mNumDataObjectsRX = (TextView) findViewById(R.id.num_dataobjects_rx);
-		//mNumDataObjectsTX.debug(2);
-		Log.d(LUCKY_VIEW_TAG, "onCreate() mNumDataObjectsTX=" + mNumDataObjectsTX.hashCode());
 		mHaggleStatus = (TextView) findViewById(R.id.haggle_status);
 		mLuckyServiceToggle = (ToggleButton) findViewById(R.id.lucky_service_toggle);
 		
@@ -238,7 +229,6 @@ public class LuckyView extends Activity {
 			mHaggleStatusThread.join();
 		} catch (InterruptedException e) {
 		}
-
 	}
 
 	public Handler getHandler() {
@@ -302,7 +292,6 @@ public class LuckyView extends Activity {
 		// we know will be running in our own process (and thus won't be
 		// supporting component replacement by other applications).
 		Intent i = new Intent(this, LuckyService.class);
-		Log.d(LUCKY_VIEW_TAG, "doBindService() mMessenger=" + mMessenger.hashCode());
 		mIsBound = bindService(i, mConnection, flag);
 		if (!mIsBound) {
 			Log.d(LUCKY_VIEW_TAG, "Could not bind to Lucky service");
@@ -338,7 +327,6 @@ public class LuckyView extends Activity {
 			Log.d(LUCKY_VIEW_TAG, "Stopping Lucky service");
 			stopService(new Intent(this, LuckyService.class));
 			mLuckyService = null;
-			// mLuckyServiceToggle.setChecked(false);
 		}
 	}
 
@@ -352,20 +340,22 @@ public class LuckyView extends Activity {
 	protected void onStart() {
 		super.onStart();
 		Log.d(LUCKY_VIEW_TAG, "onStart: binding to service");
-		doBindService(false);
-		mHaggleStatusThread.start();
-		
-		// Force Bluetooth adaptor on
-		BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
-		
-		if (bt != null)
-			bt.enable();
-		
-		// Disable WiFi
-		WifiManager wifi = (WifiManager)getSystemService(Context.WIFI_SERVICE);
-		
-		if (wifi != null)
-			wifi.setWifiEnabled(false);
+		if (!mIsBound) {
+			doBindService(false);
+			mHaggleStatusThread.start();
+
+			// Force Bluetooth adaptor on
+			BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
+
+			if (bt != null)
+				bt.enable();
+
+			// Disable WiFi
+			WifiManager wifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+
+			if (wifi != null)
+				wifi.setWifiEnabled(false);
+		}
 	}
 
 	@Override

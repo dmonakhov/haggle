@@ -23,34 +23,37 @@
 				<Interface name="Lego robot" type="bluetooth" mac="00:16:53:0d:f5:7E"/>
 			</Blacklist>
 			<Whitelist>
-				<Interface name="LG-01" type="bluetooth" mac="00:1e:75:15:78:82"/>
-				<Interface name="LG-02" type="bluetooth" mac="00:1c:62:fa:ec:ee"/>
-				<Interface name="LG-03" type="bluetooth" mac="00:1c:62:fb:c0:b9"/>
-				<Interface name="LG-04" type="bluetooth" mac="61:0F:D0:0D:20:7D"/>
-				<Interface name="LG-05" type="bluetooth" mac="00:1e:75:00:42:90"/>
-				<Interface name="LG-06" type="bluetooth" mac="00:1e:75:00:c8:e5"/>
-				<Interface name="LG-07" type="bluetooth" mac="00:1c:62:fe:62:1f"/>
-				<Interface name="LG-08" type="bluetooth" mac="00:1e:75:00:1e:86"/>
-				<Interface name="LG-09" type="bluetooth" mac="00:1e:75:00:79:f0"/>
-				<Interface name="LG-10" type="bluetooth" mac="00:1e:75:29:92:08"/>
-				<Interface name="LG-11" type="bluetooth" mac="00:1c:62:ff:0e:2b"/>
-				<Interface name="LG-12" type="bluetooth" mac="00:1e:75:00:4e:0c"/>
-				<Interface name="LG-13" type="bluetooth" mac="00:1e:75:3f:39:43"/>
-				<Interface name="LG-14" type="bluetooth" mac="00:1e:75:0d:4f:f6"/>
-				<Interface name="LG-15" type="bluetooth" mac="00:1e:75:0c:ef:d5"/>
-				<Interface name="LG-16" type="bluetooth" mac="00:1c:62:fd:ed:7c"/>
-				<Interface name="LG-17" type="bluetooth" mac="00:1c:62:fb:15:92"/>
-				<Interface name="LG-18" type="bluetooth" mac="00:1c:62:ff:f9:af"/>
-				<Interface name="LG-19" type="bluetooth" mac="00:1c:62:ff:95:d4"/>
-				<Interface name="LG-20" type="bluetooth" mac="00:1e:75:0d:16:e7"/>
-				<Interface name="LG-21" type="bluetooth" mac="00:1c:62:ff:e7:3f"/>
-				<Interface name="LG-22" type="bluetooth" mac="00:1e:75:0c:69:f9"/>
-				<Interface name="LG-23" type="bluetooth" mac="00:1c:62:fc:4c:e9"/>
-				<Interface name="LG-24" type="bluetooth" mac="00:1c:62:fb:36:14"/>
-				<Interface name="LG-25" type="bluetooth" mac="00:1e:75:0f:bd:c5"/>
-				<Interface name="LG-26" type="bluetooth" mac="00:1c:62:fd:d0:ad"/>
-				<Interface name="Magic 2" type="bluetooth" mac="00:22:15:c0:5c:5a"/>
-				<Interface name="Daniels Mac" type="bluetooth" mac="00:1e:52:e7:19:ac"/>
+			  <Interface name="NexusOne-04" type="bluetooth" mac="00:23:76:a5:aa:fb"/>
+			  <Interface name="NexusOne-05" type="bluetooth" mac="00:23:76:9f:93:3a"/>
+			  <Interface name="NexusOne-06" type="bluetooth" mac="00:23:76:9f:7e:32"/>
+			  <Interface name="LG-01" type="bluetooth" mac="00:1e:75:15:78:82"/>
+			  <Interface name="LG-02" type="bluetooth" mac="00:1c:62:fa:ec:ee"/>
+			  <Interface name="LG-03" type="bluetooth" mac="00:1c:62:fb:c0:b9"/>
+			  <Interface name="LG-04" type="bluetooth" mac="61:0F:D0:0D:20:7D"/>
+			  <Interface name="LG-05" type="bluetooth" mac="00:1e:75:00:42:90"/>
+			  <Interface name="LG-06" type="bluetooth" mac="00:1e:75:00:c8:e5"/>
+			  <Interface name="LG-07" type="bluetooth" mac="00:1c:62:fe:62:1f"/>
+			  <Interface name="LG-08" type="bluetooth" mac="00:1e:75:00:1e:86"/>
+			  <Interface name="LG-09" type="bluetooth" mac="00:1e:75:00:79:f0"/>
+			  <Interface name="LG-10" type="bluetooth" mac="00:1e:75:29:92:08"/>
+			  <Interface name="LG-11" type="bluetooth" mac="00:1c:62:ff:0e:2b"/>
+			  <Interface name="LG-12" type="bluetooth" mac="00:1e:75:00:4e:0c"/>
+			  <Interface name="LG-13" type="bluetooth" mac="00:1e:75:3f:39:43"/>
+			  <Interface name="LG-14" type="bluetooth" mac="00:1e:75:0d:4f:f6"/>
+			  <Interface name="LG-15" type="bluetooth" mac="00:1e:75:0c:ef:d5"/>
+			  <Interface name="LG-16" type="bluetooth" mac="00:1c:62:fd:ed:7c"/>
+			  <Interface name="LG-17" type="bluetooth" mac="00:1c:62:fb:15:92"/>
+			  <Interface name="LG-18" type="bluetooth" mac="00:1c:62:ff:f9:af"/>
+			  <Interface name="LG-19" type="bluetooth" mac="00:1c:62:ff:95:d4"/>
+			  <Interface name="LG-20" type="bluetooth" mac="00:1e:75:0d:16:e7"/>
+			  <Interface name="LG-21" type="bluetooth" mac="00:1c:62:ff:e7:3f"/>
+			  <Interface name="LG-22" type="bluetooth" mac="00:1e:75:0c:69:f9"/>
+			  <Interface name="LG-23" type="bluetooth" mac="00:1c:62:fc:4c:e9"/>
+			  <Interface name="LG-24" type="bluetooth" mac="00:1c:62:fb:36:14"/>
+			  <Interface name="LG-25" type="bluetooth" mac="00:1e:75:0f:bd:c5"/>
+			  <Interface name="LG-26" type="bluetooth" mac="00:1c:62:fd:d0:ad"/>
+			  <Interface name="Magic 2" type="bluetooth" mac="00:22:15:c0:5c:5a"/>
+			  <Interface name="Daniels Mac" type="bluetooth" mac="00:1e:52:e7:19:ac"/>
 			</Whitelist>
 			<IgnoreNonListedInterfaces>yes</IgnoreNonListedInterfaces>
 		</Bluetooth>

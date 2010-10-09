@@ -10,11 +10,13 @@ import java.util.HashSet;
 import java.util.Random;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.PowerManager;
 import android.os.RemoteException;
 import android.provider.Settings.Secure;
 import android.util.Log;
@@ -53,6 +55,8 @@ public class LuckyService extends Service implements EventHandler {
 	private Node[] neighbors = null;
 	private String androidId;
 	private long nodeId = 0;
+	private PowerManager pm;
+	private PowerManager.WakeLock wl;
 	
 	@Override
 	public void onCreate() {
@@ -72,6 +76,10 @@ public class LuckyService extends Service implements EventHandler {
 		} catch (NumberFormatException e) {
 			Log.d(LUCKY_SERVICE_TAG, "Could not decode androidId to long");
 		}
+		// Get a reference to a wake look so that we can keep the device
+		// awake even if the power button is pressed.
+		pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+		wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, LUCKY_SERVICE_TAG);
 	}
 
 	@Override
@@ -229,7 +237,15 @@ public class LuckyService extends Service implements EventHandler {
 			shouldExit = true;
 		}
 	}
-
+	
+	private void startDataGenerator()
+	{
+		mDataThread.start();
+		// Acquire wake look to keep the device from going to 
+		// complete sleep
+		wl.acquire();
+	}
+	
 	private void stopDataGenerator()
 	{
 		if (mDataThread != null) {
@@ -242,6 +258,8 @@ public class LuckyService extends Service implements EventHandler {
 				Log.i(LUCKY_SERVICE_TAG, "Could not join with data thread.");
 			}
 		}
+		// Release wake lock
+		wl.release();
 	}
 
 	public boolean isRunning() 
@@ -412,9 +430,6 @@ public class LuckyService extends Service implements EventHandler {
 			return;
 		}
 		
-		Log.d(LUCKY_SERVICE_TAG, "sendClientMessage: mClientMessenger: " + 
-				mClientMessenger.hashCode());
-		
 		Message msg = Message.obtain(null, msgType);
 
 		switch (msgType) {
@@ -551,7 +566,7 @@ public class LuckyService extends Service implements EventHandler {
 			hh.registerInterests(createInterestsBinomial());
 		}
 
-		mDataThread.start();
+		startDataGenerator();
 	}
 
 	@Override
