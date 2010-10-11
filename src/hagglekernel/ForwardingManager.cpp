@@ -668,6 +668,11 @@ void ForwardingManager::onDelayedDataObjectQuery(Event *e)
 
 void ForwardingManager::onNewNeighbor(Event *e)
 {
+	if (getState() > MANAGER_STATE_RUNNING) {
+		HAGGLE_DBG("In shutdown, ignoring new neighbor\n");
+		return;
+	}
+	
 	NodeRef node = e->getNode();
 	
 	if (node->getType() == Node::TYPE_UNDEFINED)
@@ -921,6 +926,11 @@ void ForwardingManager::onRoutingInformation(Event *e)
 	if (!e || !e->hasData())
 		return;
 
+	if (getState() > MANAGER_STATE_RUNNING) {
+		HAGGLE_DBG("In shutdown, ignoring routing information\n");
+		return;
+	}
+	
 	DataObjectRefList& dObjs = e->getDataObjectList();
 
 	while (dObjs.size()) {
@@ -954,6 +964,11 @@ void ForwardingManager::onNewDataObject(Event *e)
 {
 	if (!e || !e->hasData())
 		return;
+	
+	if (getState() > MANAGER_STATE_RUNNING) {
+		HAGGLE_DBG("In shutdown, ignoring data object\n");
+		return;
+	}
 	
 	DataObjectRef& dObj = e->getDataObject();
 	

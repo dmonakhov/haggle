@@ -100,6 +100,7 @@ private:
         */
         Protocol *getServerProtocol(const ProtType_t type, const InterfaceRef& iface);
 	
+	void onPrepareShutdown();
         void onShutdown();
 	bool init_derived();
 	void onConfig(Metadata *m);

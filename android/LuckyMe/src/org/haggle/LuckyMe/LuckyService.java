@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 
@@ -42,9 +43,10 @@ public class LuckyService extends Service implements EventHandler {
 	public final String LUCKYME_APPNAME = "LuckyMe";
 	public boolean isRunning = false;
 	private int attributePoolSize = 100;
-	private int numDataObjectAttributes = 3;
-	private int numInterestAttributes = 5;
+	private int numDataObjectAttributes = 4;
+	private int numInterestAttributes = 10;
 	private Random prng = new Random();
+	private Zipf zipf = new Zipf(attributePoolSize, 0.8);
 	private boolean ignoreShutdown = false;
 	private Messenger mClientMessenger = null;
 	public static final int MSG_NEIGHBOR_UPDATE = 0;
@@ -57,21 +59,25 @@ public class LuckyService extends Service implements EventHandler {
 	private long nodeId = 0;
 	private PowerManager pm;
 	private PowerManager.WakeLock wl;
-	
+	private Attribute[] interests = null;
+	private HashMap<Long, Long> myLuck = new HashMap<Long, Long>();
+	private long cumulativeLuck = 0;
+
 	@Override
 	public void onCreate() {
 		super.onCreate();
 
-		Log.i(LUCKY_SERVICE_TAG, "LuckyService created"); 
+		Log.i(LUCKY_SERVICE_TAG, "LuckyService created");
 		mDataGenerator = new DataObjectGenerator();
 		mDataThread = new Thread(mDataGenerator);
-		androidId = Secure.getString(getContentResolver(), Secure.ANDROID_ID); 
-		
+		androidId = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
+
 		Log.i(LUCKY_SERVICE_TAG, "Android id is " + androidId);
-		
+
 		try {
 			nodeId = Long.decode("0x" + androidId);
 			prng.setSeed(nodeId);
+			//zipf.setSeed(nodeId);
 			Log.i(LUCKY_SERVICE_TAG, "Node id is " + nodeId);
 		} catch (NumberFormatException e) {
 			Log.d(LUCKY_SERVICE_TAG, "Could not decode androidId to long");
@@ -108,7 +114,8 @@ public class LuckyService extends Service implements EventHandler {
 
 	@Override
 	public void onRebind(Intent intent) {
-		Log.i(LUCKY_SERVICE_TAG, "onRebind: Client bound to service : " + intent);
+		Log.i(LUCKY_SERVICE_TAG, "onRebind: Client bound to service : "
+				+ intent);
 		super.onRebind(intent);
 	}
 
@@ -121,9 +128,8 @@ public class LuckyService extends Service implements EventHandler {
 	}
 
 	/**
-	 * Class for clients to access.  Because we know this service always
-	 * runs in the same process as its clients, we don't need to deal with
-	 * IPC.
+	 * Class for clients to access. Because we know this service always runs in
+	 * the same process as its clients, we don't need to deal with IPC.
 	 */
 	public class LuckyBinder extends Binder {
 		LuckyService getService() {
@@ -149,7 +155,8 @@ public class LuckyService extends Service implements EventHandler {
 
 					public int callback(long milliseconds) {
 
-						Log.d(LUCKY_SERVICE_TAG, "Spawning milliseconds..." + milliseconds);
+						Log.d(LUCKY_SERVICE_TAG, "Spawning milliseconds..."
+								+ milliseconds);
 
 						if (milliseconds == 0) {
 							// Daemon launched
@@ -227,27 +234,27 @@ public class LuckyService extends Service implements EventHandler {
 				if (dObj != null) {
 					hh.publishDataObject(dObj);
 					num_dataobjects_tx++;
-					Log.d(LUCKY_SERVICE_TAG, "Generated data object " + 
-							num_dataobjects_tx);
+					Log.d(LUCKY_SERVICE_TAG, "Generated data object "
+							+ num_dataobjects_tx + " luck=" + calculateLuck(dObj));
 					sendClientMessage(MSG_NUM_DATAOBJECTS_TX);
 				}
 			}
 		}
+
 		public void stop() {
 			shouldExit = true;
 		}
 	}
-	
-	private void startDataGenerator()
-	{
+
+	private void startDataGenerator() {
+		Log.i(LUCKY_SERVICE_TAG, "Starting data generator");
 		mDataThread.start();
-		// Acquire wake look to keep the device from going to 
+		// Acquire wake look to keep the device from going to
 		// complete sleep
 		wl.acquire();
 	}
-	
-	private void stopDataGenerator()
-	{
+
+	private void stopDataGenerator() {
 		if (mDataThread != null) {
 			mDataGenerator.stop();
 			mDataThread.interrupt();
@@ -259,21 +266,21 @@ public class LuckyService extends Service implements EventHandler {
 			}
 		}
 		// Release wake lock
-		wl.release();
+		if (wl.isHeld())
+			wl.release();
 	}
 
-	public boolean isRunning() 
-	{
+	public boolean isRunning() {
 		return isRunning;
 	}
 
 	private class FileBackupFilter implements FilenameFilter {
 		private String suffix;
 
-		FileBackupFilter(String suffix) 
-		{
+		FileBackupFilter(String suffix) {
 			this.suffix = suffix;
 		}
+
 		@Override
 		public boolean accept(File dir, String filename) {
 			if (filename.endsWith(suffix))
@@ -282,8 +289,7 @@ public class LuckyService extends Service implements EventHandler {
 		}
 	}
 
-	private boolean backupFile(String filename)
-	{
+	private boolean backupFile(String filename) {
 		final String backupDir = "/sdcard/" + LUCKYME_APPNAME;
 
 		File dir = new File(backupDir);
@@ -301,7 +307,8 @@ public class LuckyService extends Service implements EventHandler {
 		}
 
 		if (!f.isFile()) {
-			Log.d(LUCKY_SERVICE_TAG, "saveFile: file=" + filename + " is not a file");
+			Log.d(LUCKY_SERVICE_TAG, "saveFile: file=" + filename
+					+ " is not a file");
 			return false;
 		}
 
@@ -312,7 +319,8 @@ public class LuckyService extends Service implements EventHandler {
 		for (int i = 0; i < fileList.length; i++) {
 			int index = fileList[i].getName().indexOf('-');
 			String num = fileList[i].getName().substring(0, index);
-			//Log.d(LUCKY_SERVICE_TAG, "Found backup num " + num + " of file " + f.getName());
+			// Log.d(LUCKY_SERVICE_TAG, "Found backup num " + num + " of file "
+			// + f.getName());
 			Integer n;
 
 			try {
@@ -323,16 +331,18 @@ public class LuckyService extends Service implements EventHandler {
 			}
 
 			if (n.intValue() >= backupNum) {
-				//Log.d(LUCKY_SERVICE_TAG, "backupNum=" + n);
+				// Log.d(LUCKY_SERVICE_TAG, "backupNum=" + n);
 				backupNum = n + 1;
 			}
 		}
 
-		String backupFileName = dir.getAbsolutePath() + "/" + Integer.toString(backupNum) + "-" + f.getName();
+		String backupFileName = dir.getAbsolutePath() + "/"
+				+ Integer.toString(backupNum) + "-" + f.getName();
 
 		File backupFile = new File(backupFileName);
 
-		Log.d(LUCKY_SERVICE_TAG, "saveFile: file=" + backupFile.getAbsolutePath());
+		Log.d(LUCKY_SERVICE_TAG,
+				"saveFile: file=" + backupFile.getAbsolutePath());
 
 		// We must read the file and write it to the new location.
 		// A simple move operation doesn't work across file systems,
@@ -342,8 +352,9 @@ public class LuckyService extends Service implements EventHandler {
 		try {
 			fIn = new FileInputStream(f);
 		} catch (FileNotFoundException e) {
-			Log.d(LUCKY_SERVICE_TAG, "saveFile: Error opening input file=" + 
-					f.getAbsolutePath() + " : " + e.getMessage());
+			Log.d(LUCKY_SERVICE_TAG,
+					"saveFile: Error opening input file=" + f.getAbsolutePath()
+							+ " : " + e.getMessage());
 			return false;
 		}
 
@@ -352,8 +363,8 @@ public class LuckyService extends Service implements EventHandler {
 		try {
 			fOut = new FileOutputStream(backupFile);
 		} catch (FileNotFoundException e) {
-			Log.d(LUCKY_SERVICE_TAG, "saveFile:Error opening output file=" + 
-					backupFile.getAbsolutePath() + " : " + e.getMessage());
+			Log.d(LUCKY_SERVICE_TAG, "saveFile:Error opening output file="
+					+ backupFile.getAbsolutePath() + " : " + e.getMessage());
 			return false;
 		}
 
@@ -369,8 +380,10 @@ public class LuckyService extends Service implements EventHandler {
 					// EOF
 					fIn.close();
 					fOut.close();
-					Log.d(LUCKY_SERVICE_TAG, "saveFile: successfully wrote file=" + 
-							backupFile.getAbsolutePath() + " totBytes=" + totBytes);
+					Log.d(LUCKY_SERVICE_TAG,
+							"saveFile: successfully wrote file="
+									+ backupFile.getAbsolutePath()
+									+ " totBytes=" + totBytes);
 					ret = true;
 					f.delete();
 					break;
@@ -379,8 +392,9 @@ public class LuckyService extends Service implements EventHandler {
 
 				totBytes += len;
 			} catch (IOException e) {
-				Log.d(LUCKY_SERVICE_TAG, "Error writing file=" + 
-						backupFile.getAbsolutePath() + " : " + e.getMessage());
+				Log.d(LUCKY_SERVICE_TAG,
+						"Error writing file=" + backupFile.getAbsolutePath()
+								+ " : " + e.getMessage());
 				break;
 			}
 		}
@@ -388,48 +402,45 @@ public class LuckyService extends Service implements EventHandler {
 		return ret;
 	}
 
-	private final String backupFiles[] = { 
-			"/data/haggle/haggle.db", 
-			"/data/haggle/trace.log"
-	};
+	private final String backupFiles[] = { "/data/haggle/haggle.db",
+			"/data/haggle/trace.log" };
 
-	private boolean backupLogs()
-	{
+	private boolean backupLogs() {
 		boolean ret = true;
 
 		for (int i = 0; i < backupFiles.length; i++) {
 			boolean tmp_ret = backupFile(backupFiles[i]);
 
 			if (!tmp_ret) {
-				Log.d(LUCKY_SERVICE_TAG, "Could not backup file: " + backupFiles[i]);
+				Log.d(LUCKY_SERVICE_TAG, "Could not backup file: "
+						+ backupFiles[i]);
 			}
 
 			ret &= tmp_ret;
-		}	
+		}
 		return ret;
 	}
 
-	private synchronized void setNeighbors(Node[] neighbors)
-	{
+	private synchronized void setNeighbors(Node[] neighbors) {
 		this.neighbors = neighbors;
 	}
-	public synchronized Node[] getNeighbors()
-	{
+
+	public synchronized Node[] getNeighbors() {
 		if (neighbors != null) {
 			return neighbors.clone();
 		}
 		return null;
 	}
-	public void setMessenger(Messenger m)
-	{
+
+	public void setMessenger(Messenger m) {
 		mClientMessenger = m;
 	}
-	private void sendClientMessage(int msgType)
-	{
+
+	private void sendClientMessage(int msgType) {
 		if (mClientMessenger == null) {
 			return;
 		}
-		
+
 		Message msg = Message.obtain(null, msgType);
 
 		switch (msgType) {
@@ -440,6 +451,12 @@ public class LuckyService extends Service implements EventHandler {
 			break;
 		case LuckyService.MSG_NUM_DATAOBJECTS_RX:
 			msg.arg1 = num_dataobjects_rx;
+			// Pass the average luck in arg2. Yes, casting here is slightly ugly.
+			// However, overflowing the int is not a big issue here.
+			if (num_dataobjects_rx > 0)
+				msg.arg2 = (int)(cumulativeLuck / num_dataobjects_rx);
+			else
+				msg.arg2 = 0;
 			break;
 		case LuckyService.MSG_LUCKY_SERVICE_START:
 			break;
@@ -456,22 +473,20 @@ public class LuckyService extends Service implements EventHandler {
 		}
 	}
 
-	public void requestAllUpdateMessages()
-	{
+	public void requestAllUpdateMessages() {
 		sendClientMessage(MSG_NEIGHBOR_UPDATE);
 		sendClientMessage(MSG_NUM_DATAOBJECTS_TX);
 		sendClientMessage(MSG_NUM_DATAOBJECTS_RX);
 	}
+
 	// This is the object that receives interactions from clients.
 	private final IBinder mBinder = new LuckyBinder();
+
 	/*
-    private DataObject createRandomDataObject()
-    {
-    	return createRandomDataObject(null);
-    }
+	 * private DataObject createRandomDataObject() { return
+	 * createRandomDataObject(null); }
 	 */
-	private DataObject createRandomDataObject(String filename)
-	{
+	private DataObject createRandomDataObject(String filename) {
 		DataObject dObj = null;
 
 		if (filename != null && filename.length() > 0) {
@@ -479,7 +494,8 @@ public class LuckyService extends Service implements EventHandler {
 				dObj = new DataObject(filename);
 				dObj.addFileHash();
 			} catch (DataObjectException e) {
-				Log.d(LUCKY_SERVICE_TAG, "File '" + filename + "' does not exist");
+				Log.d(LUCKY_SERVICE_TAG, "File '" + filename
+						+ "' does not exist");
 				try {
 					dObj = new DataObject();
 				} catch (DataObjectException e1) {
@@ -513,21 +529,24 @@ public class LuckyService extends Service implements EventHandler {
 		}
 
 		dObj.setCreateTime();
-
+		
 		return dObj;
 	}
 
-	private double fac(long n)
-	{
+	private double fac(long n) {
 		long i, t = 1;
 
 		for (i = n; i > 1; i--)
 			t *= i;
 
-		return (double)t;
+		return (double) t;
 	}
 
-	private Attribute[] createInterestsBinomial() {
+	// Creates interests based on a center interest which is picked with
+	// a zipf-distributed probability. Around this center value, select
+	// interests with weights according to a binomial distribution centered
+	// on the center interest.
+	private Attribute[] createInterests() {
 		long luck = 0;
 		long n, u;
 		Attribute[] interests = new Attribute[numInterestAttributes];
@@ -537,7 +556,7 @@ public class LuckyService extends Service implements EventHandler {
 		if (useNodeNrLuck) {
 			luck = nodeId;
 		} else {
-			luck = prng.nextInt(attributePoolSize);
+			luck = zipf.nextInt();
 		}
 		p = 0.5;
 		n = numInterestAttributes - 1;
@@ -549,23 +568,47 @@ public class LuckyService extends Service implements EventHandler {
 			interest = (luck + i - u + attributePoolSize) % attributePoolSize;
 			weight = (long) (100 * fac(n) / (fac(n - i) * fac(i))
 					* Math.pow(p, i) * Math.pow(1 - p, n - i));
-			interests[i] = new Attribute(LUCKYME_APPNAME, Long.toString(interest),
-					weight);
+			interests[i] = new Attribute(LUCKYME_APPNAME,
+					Long.toString(interest), weight);
 		}
 		return interests;
 	}
-	@Override
-	public void onInterestListUpdate(Attribute[] interests) {
-		Log.i(LUCKY_SERVICE_TAG, "Got interest list of " + interests.length + " items");
 
-		if (interests.length > 0) {
-			for (int i = 0; i < interests.length; i++) {
-				Log.i(LUCKY_SERVICE_TAG, "Interest " + i + ":" + interests[i]);
-			}
-		} else {
-			hh.registerInterests(createInterestsBinomial());
+	private long calculateLuck(DataObject dObj) {
+		long luck = 0;
+
+		if (this.interests == null) {
+			Log.i(LUCKY_SERVICE_TAG, "calculateLuck: interests array is null");
+			return luck;
 		}
 
+		Attribute[] attrs = dObj.getAttributes();
+
+		for (int i = 0; i < attrs.length; i++) {
+			for (int j = 0; j < interests.length; j++) {
+				if (attrs[i].getValue().compareTo(interests[j].getValue()) == 0) {
+					luck += interests[j].getWeight();
+				}
+			}
+		}
+		return luck;
+	}
+
+	@Override
+	public void onInterestListUpdate(Attribute[] interests) {
+		Log.i(LUCKY_SERVICE_TAG, "Got interest list of " + interests.length
+				+ " items");
+
+		if (interests.length > 0) {
+			this.interests = interests;
+		} else {
+			this.interests = createInterests();
+			hh.registerInterests(this.interests);
+		}
+
+		for (int i = 0; i < this.interests.length; i++) {
+			Log.i(LUCKY_SERVICE_TAG, "Interest " + i + ":" + this.interests[i]);
+		}
 		startDataGenerator();
 	}
 
@@ -579,8 +622,25 @@ public class LuckyService extends Service implements EventHandler {
 	@Override
 	public void onNewDataObject(DataObject dObj) {
 		num_dataobjects_rx++;
-		Log.i(LUCKY_SERVICE_TAG, "Data object received.");
 		sendClientMessage(MSG_NUM_DATAOBJECTS_RX);
+		Long luck = new Long(calculateLuck(dObj));
+
+		cumulativeLuck += luck.longValue();
+		
+		Log.i(LUCKY_SERVICE_TAG, "Data object received. Luck=" + luck.longValue());
+		
+		// Count the number of data objects with this luck that we have received
+		// by adding the count to a HashMap
+		Long count = myLuck.get(luck);
+		
+		if (count != null) {
+			count++;
+			// Not sure if a put is necessary here, or if we directly 
+			// changed the count in the map via the reference
+		} else {
+			count = new Long(1);
+		}
+		myLuck.put(luck, count);
 	}
 
 	@Override

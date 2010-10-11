@@ -415,7 +415,12 @@ void NodeManager::onNeighborInterfaceDown(Event *e)
 void NodeManager::onNewNodeContact(Event *e)
 {
 	NodeRefList neighList;
-
+	
+	if (getState() > MANAGER_STATE_RUNNING) {
+		HAGGLE_DBG("In shutdown, ignoring new node contact\n");
+		return;
+	}
+	
 	if (!e)
 		return;
 
@@ -444,6 +449,11 @@ void NodeManager::onNewNodeContact(Event *e)
 void NodeManager::onSendNodeDescription(Event *e)
 {
 	NodeRefList neighList;
+	
+	if (getState() > MANAGER_STATE_RUNNING) {
+		HAGGLE_DBG("In shutdown, not sending node description\n");
+		return;
+	}
 
 	unsigned long num = kernel->getNodeStore()->retrieveNeighbors(neighList);
 
@@ -460,7 +470,12 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 {
 	if (!e || !e->hasData())
 		return;
-
+	
+	if (getState() > MANAGER_STATE_RUNNING) {
+		HAGGLE_DBG("In shutdown, ignoring new node description\n");
+		return;
+	}
+	
 	DataObjectRefList& dObjs = e->getDataObjectList();
 
 	while (dObjs.size()) {

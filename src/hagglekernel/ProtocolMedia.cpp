@@ -45,7 +45,7 @@ using namespace std;
 int metadataFile = 0;
 
 ProtocolMedia::ProtocolMedia(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, ProtocolManager * m) : 
-	Protocol(PROT_TYPE_MEDIA, "ProtocolMedia", _localIface, _peerIface, 
+	Protocol(Protocol::TYPE_MEDIA, "ProtocolMedia", _localIface, _peerIface, 
 		 PROT_FLAG_CLIENT, m)
 {
 	HAGGLE_DBG("ProtocolMediaClient\n");

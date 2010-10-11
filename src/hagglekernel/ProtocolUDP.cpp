@@ -87,13 +87,13 @@ bool ProtocolUDP::init_derived()
 }
 
 ProtocolUDP::ProtocolUDP(const InterfaceRef& _localIface, unsigned short _port, ProtocolManager * m) :
-	ProtocolSocket(PROT_TYPE_UDP, "ProtocolUDP", _localIface, NULL, 
+	ProtocolSocket(Protocol::TYPE_UDP, "ProtocolUDP", _localIface, NULL, 
 		       PROT_FLAG_SERVER | PROT_FLAG_CLIENT, m, -1, PROTOCOL_UDP_BUFSIZE), port(_port)
 {
 }
 
 ProtocolUDP::ProtocolUDP(const char *ipaddr, unsigned short _port, ProtocolManager * m) : 
-	ProtocolSocket(PROT_TYPE_UDP, "ProtocolUDP", NULL, NULL, 
+	ProtocolSocket(Protocol::TYPE_UDP, "ProtocolUDP", NULL, NULL, 
 		       PROT_FLAG_SERVER | PROT_FLAG_CLIENT, m, -1, PROTOCOL_UDP_BUFSIZE), port(_port)
 {
 	struct in_addr addr;
@@ -142,31 +142,29 @@ bool ProtocolUDP::isForInterface(const InterfaceRef& iface)
 
 bool ProtocolUDP::sendDataObject(const DataObjectRef& dObj, const NodeRef& peer, const InterfaceRef& _peerIface)
 {
-	int ret;
-        bool verdict = false;
-
+	int ret = PROT_EVENT_ERROR;
+	
 	if (peerIface) {
 		HAGGLE_ERR("Peer interface %s is set when it shouldn't be\n", peerIface->getIdentifierStr());
-		return false;
-	}
+	} else {
+		// Reassign the peer interface to our target destination
+		peerIface = _peerIface;
 	
-	// Reassign the peer interface to our target destination
-	peerIface = _peerIface;
-	
-	/* Call send function */
-	ret = sendDataObjectNow(dObj);
-	
-	// Send success/fail event with this DO:
-	if (ret == PROT_EVENT_SUCCESS) {
-		getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, dObj, peer));
-                verdict = true;
+		/* Call send function */
+		ret = sendDataObjectNow(dObj);
+		
+		// Send success event with this DO.
+		// Note: failures are handled by the caller (ProtocolManager)
+		if (ret == PROT_EVENT_SUCCESS) {
+			getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, dObj, peer));
+		} 
 	}
 	
 	// Release the peer interface again, such that we can assign it another 
 	// destination next time
 	peerIface = NULL;
 
-	return verdict;
+	return ret == PROT_EVENT_SUCCESS;
 }
 
 

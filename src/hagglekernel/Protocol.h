@@ -35,32 +35,6 @@ typedef unsigned short ProtType_t;
 
 using namespace haggle;
 
-#define PROT_TYPE_MIN 0
-
-/*
-	When adding more protocol types,
-	make sure the list is synchronized
-	with the typestr[] array.
-*/
-enum ProtType {
-        PROT_TYPE_LOCAL = PROT_TYPE_MIN,
-        PROT_TYPE_UDP,
-        PROT_TYPE_TCP,
-        PROT_TYPE_RAW,
-#if OMNETPP
-        PROT_TYPE_OMNETPP,
-#endif
-#if defined(ENABLE_BLUETOOTH)
-        PROT_TYPE_RFCOMM,
-#endif
-#if defined(ENABLE_MEDIA)
-        PROT_TYPE_MEDIA,
-#endif
-        NUM_PROTOCOL_TYPES,
-};
-
-#define PROT_TYPE_MAX (NUM_PROTOCOL_TYPES-1)
-
 /* Return errors */
 typedef enum {
         _PROT_ERROR_MIN = -1,
@@ -152,6 +126,31 @@ typedef enum {
 class Protocol : public ManagerModule<ProtocolManager>
 {
 	friend class ProtocolManager;
+public:
+	/*
+	 When adding more protocol types,
+	 make sure the list is synchronized
+	 with the typestr[] array.
+	 */
+	enum Type {
+		TYPE_LOCAL = 0,
+		TYPE_UDP,
+		TYPE_TCP,
+		TYPE_RAW,
+#if OMNETPP
+		TYPE_OMNETPP,
+#endif
+#if defined(ENABLE_BLUETOOTH)
+		TYPE_RFCOMM,
+#endif
+#if defined(ENABLE_MEDIA)
+		TYPE_MEDIA,
+#endif
+		NUM_PROTOCOL_TYPES,
+	};
+#define PROT_TYPE_MAX (NUM_PROTOCOL_TYPES-1)
+	
+private:
 	static const char *protocol_error_str[];	
         /**
            This is used to track IDs.
@@ -539,7 +538,10 @@ public:
 	{
                 return (flags & PROT_FLAG_CLIENT) ? true : false;
         }
-
+	/**
+	 Returns true if this is an application protocol.
+	 */
+	bool isApplication() const;
         /**
            Returns true if there is pending data to be received.
         */

@@ -359,7 +359,7 @@ exit:
 
 ProtocolRFCOMM::ProtocolRFCOMM(const InterfaceRef&  _iface, const InterfaceRef& _peer_iface, 
 			       const unsigned short _channel, const short _flags, ProtocolManager * m) : 
-	ProtocolSocket(PROT_TYPE_RFCOMM, "RFCOMM", _iface, _peer_iface, _flags, m), channel(_channel)
+	ProtocolSocket(Protocol::TYPE_RFCOMM, "RFCOMM", _iface, _peer_iface, _flags, m), channel(_channel)
 {
 }
 

@@ -27,13 +27,13 @@
 
 ProtocolLOCAL::ProtocolLOCAL(SOCKET _sock, const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
 			 const char *_path, const short flags, ProtocolManager * m) :
-	ProtocolSocket(PROT_TYPE_LOCAL, "ProtocolLOCAL", _localIface, _peerIface, flags, m, _sock), uaddr(_path)
+	ProtocolSocket(Protocol::TYPE_LOCAL, "ProtocolLOCAL", _localIface, _peerIface, flags, m, _sock), uaddr(_path)
 {
 }
 
 ProtocolLOCAL::ProtocolLOCAL(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
 			 const char *_path, const short flags, ProtocolManager * m) : 
-	ProtocolSocket(PROT_TYPE_LOCAL, "ProtocolLOCAL", _localIface, _peerIface, flags, m), uaddr(_path)
+	ProtocolSocket(Protocol::TYPE_LOCAL, "ProtocolLOCAL", _localIface, _peerIface, flags, m), uaddr(_path)
 {
 }
 

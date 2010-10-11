@@ -16,6 +16,7 @@ class NodeAdapter extends BaseAdapter {
 	public NodeAdapter(Context mContext) {
 		this.mContext = mContext;
 	}
+
 	public int getCount() {
 		if (neighbors == null || neighbors.length == 0)
 			return 1;
@@ -32,10 +33,13 @@ class NodeAdapter extends BaseAdapter {
 	}
 	public synchronized void updateNeighbors(Node[] neighs) {
 		neighbors = neighs;
-
 		notifyDataSetChanged();
 	}
-
+	public synchronized void clear()
+	{
+		neighbors = null;
+		notifyDataSetChanged();
+	}
     public void refresh() {
     	notifyDataSetChanged();
     }

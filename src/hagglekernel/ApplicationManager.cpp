@@ -280,6 +280,8 @@ void ApplicationManager::onDataStoreFinishedProcessing(Event *e)
 	if (pendingDOs.empty()) {
 		HAGGLE_DBG("No more pending data objects -> ready for shutdown\n");
 		signalIsReadyForShutdown();
+	} else {
+		HAGGLE_DBG("There are %lu pending data objects -> not yet ready for shutdown\n", pendingDOs.size());
 	}
 }
 
@@ -333,7 +335,7 @@ void ApplicationManager::onSendResult(Event *e)
 			HAGGLE_DBG("Ready for shutdown!\n");
 			signalIsReadyForShutdown();
 		} else {
-			HAGGLE_DBG("Rreparing shutdown, but %d data objects are still pending\n", pendingDOs.size());
+			HAGGLE_DBG("Preparing shutdown, but %lu data objects are still pending\n", pendingDOs.size());
 		}
 	}
 }
@@ -342,7 +344,6 @@ void ApplicationManager::onDeletedDataObject(Event *e)
 {
 	if (!e || !e->hasData())
 		return;
-
 	
 	DataObjectRefList dObjs = e->getDataObjectList();
 	
@@ -854,11 +855,7 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 	/*
 		If we are in shutdown, silently ignore the application.
 	*/
-	if (getState() >= MANAGER_STATE_PREPARE_SHUTDOWN) {
-		HAGGLE_DBG("Ignoring data object from application since we are in shutdown\n");
-		return;
-	}
-
+	
 	if (!e || !e->hasData())
 		return;
 
@@ -941,6 +938,11 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 			switch (ctrl_name_to_type(type_str)) {
 				case CTRL_TYPE_REGISTRATION_REQUEST:
 					HAGGLE_DBG("Received registration request from Application \'%s\'\n", name_str);
+				
+					if (getState() >= MANAGER_STATE_PREPARE_SHUTDOWN) {
+						HAGGLE_DBG("Ignoring registration from application since we are in shutdown\n");
+						break;
+					}
 					
 					if (appNode) {
 						HAGGLE_DBG("Application \'%s\' is already registered\n", name_str);
@@ -997,6 +999,11 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 					kernel->shutdown();
 					break;
 				case CTRL_TYPE_REGISTER_INTEREST:
+					if (getState() >= MANAGER_STATE_PREPARE_SHUTDOWN) {
+						HAGGLE_DBG("Ignoring register interest from application since we are in shutdown\n");
+						break;
+					}
+					
 					if (appNode) {
 						unsigned long numattrs = 0;
 						unsigned long numattrsThisNode = 0;						
@@ -1037,6 +1044,11 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 					}
 					break;
 				case CTRL_TYPE_REMOVE_INTEREST:
+					if (getState() >= MANAGER_STATE_PREPARE_SHUTDOWN) {
+						HAGGLE_DBG("Ignoring remove interest from application since we are in shutdown\n");
+						break;
+					}
+					
 					if (appNode) {
 						unsigned long numattrs = 0;
 
@@ -1079,6 +1091,11 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 					}
 					break;
 				case CTRL_TYPE_GET_INTERESTS:
+					if (getState() >= MANAGER_STATE_PREPARE_SHUTDOWN) {
+						HAGGLE_DBG("Ignoring get interests from application since we are in shutdown\n");
+						break;
+					}
+					
 					HAGGLE_DBG("Request for application interests\n");
 					
 					if (appNode) {
@@ -1128,6 +1145,11 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 					}
 					break;
 				case CTRL_TYPE_REGISTER_EVENT_INTEREST:
+					if (getState() >= MANAGER_STATE_PREPARE_SHUTDOWN) {
+						HAGGLE_DBG("Ignoring register event from application since we are in shutdown\n");
+						break;
+					}
+					
 					if (appNode) {						
 						Metadata *event = mc->getMetadata(DATAOBJECT_METADATA_APPLICATION_CONTROL_EVENT);
 						
@@ -1144,6 +1166,11 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 					}
 					break;
 				case CTRL_TYPE_GET_DATAOBJECTS:
+					if (getState() >= MANAGER_STATE_PREPARE_SHUTDOWN) {
+						HAGGLE_DBG("Ignoring get data objects from application since we are in shutdown\n");
+						break;
+					}
+					
 					if (!appNode)
 						break;
 					
@@ -1153,6 +1180,11 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 					updateApplicationInterests(appNode);
 					break;
 				case CTRL_TYPE_DELETE_DATAOBJECT:
+					if (getState() >= MANAGER_STATE_PREPARE_SHUTDOWN) {
+						HAGGLE_DBG("Ignoring delete data object from application since we are in shutdown\n");
+						break;
+					}
+					
 					if (appNode) {
 						DataObjectId_t id;
 						base64_decode_context ctx;
@@ -1188,6 +1220,11 @@ void ApplicationManager::onReceiveFromApplication(Event *e)
 					}
 					break;
 			        case CTRL_TYPE_SEND_NODE_DESCRIPTION:
+					if (getState() >= MANAGER_STATE_PREPARE_SHUTDOWN) {
+						HAGGLE_DBG("Ignoring send node description from application since we are in shutdown\n");
+						break;
+					}	
+					
 					if (kernel->getNodeStore()->numNeighbors())
 						kernel->addEvent(new Event(EVENT_TYPE_NODE_DESCRIPTION_SEND));
 					break;

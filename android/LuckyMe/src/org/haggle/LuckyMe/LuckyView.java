@@ -38,6 +38,7 @@ public class LuckyView extends Activity {
 	private TextView mHaggleStatus = null;	
 	public TextView mNumDataObjectsTX = null;
 	public TextView mNumDataObjectsRX = null;
+	public TextView mAverageLuck = null;
 	private boolean mIsBound = false;
 	private Handler mLuckyEventHandler = null;
 	public final String LUCKY_VIEW_TAG = "LuckyMe";
@@ -53,9 +54,10 @@ public class LuckyView extends Activity {
 		setContentView(R.layout.main);
 		
 		Log.d(LUCKY_VIEW_TAG, "onCreate() called");
-		
-		mNumDataObjectsTX = (TextView) findViewById(R.id.num_dataobjects_tx);
+
 		mNumDataObjectsRX = (TextView) findViewById(R.id.num_dataobjects_rx);
+		mNumDataObjectsTX = (TextView) findViewById(R.id.num_dataobjects_tx);
+		mAverageLuck = (TextView) findViewById(R.id.average_luck);
 		mHaggleStatus = (TextView) findViewById(R.id.haggle_status);
 		mLuckyServiceToggle = (ToggleButton) findViewById(R.id.lucky_service_toggle);
 		
@@ -87,9 +89,7 @@ public class LuckyView extends Activity {
 
 		mLuckyEventHandler = new LuckyEventHandler();
 		mMessenger = new Messenger(mLuckyEventHandler);
-		Log.d(LUCKY_VIEW_TAG, "onCreate() mMessenger=" + mMessenger.hashCode());
 		mHaggleStatusChecker = new HaggleStatusChecker(this);
-		mHaggleStatusThread = new Thread(mHaggleStatusChecker);
 		
 		mConnection = new ServiceConnection() {
 			public void onServiceConnected(ComponentName className, IBinder service) {
@@ -128,7 +128,7 @@ public class LuckyView extends Activity {
 
 	class LuckyEventHandler extends Handler {
 		public void handleMessage(Message msg) {
-			Log.d(LUCKY_VIEW_TAG, "Got a message type " + msg.what);
+			//Log.d(LUCKY_VIEW_TAG, "Got a message type " + msg.what);
 			
 			if (mLuckyService == null) {
 				Log.d(LUCKY_VIEW_TAG, "handleMessage: mLuckyService is null");
@@ -137,18 +137,16 @@ public class LuckyView extends Activity {
 			/*
 			 * Handle the message coming from LuckyService.
 			 */
-			
 			switch (msg.what) {
 			case LuckyService.MSG_NEIGHBOR_UPDATE:
 				nodeAdpt.updateNeighbors(mLuckyService.getNeighbors());
 				break;
 			case LuckyService.MSG_NUM_DATAOBJECTS_TX:
-				Log.d(LUCKY_VIEW_TAG, "handleMessage() mNumDataObjectsTX=" + mNumDataObjectsTX.hashCode());
 				mNumDataObjectsTX.setText(Integer.toString(msg.arg1));
-				Log.d(LUCKY_VIEW_TAG, "num_dataobjects_tx=" + msg.arg1);
 				break;
 			case LuckyService.MSG_NUM_DATAOBJECTS_RX:
 				mNumDataObjectsRX.setText(Integer.toString(msg.arg1));
+				mAverageLuck.setText(Integer.toString(msg.arg2));
 				break;
 			case LuckyService.MSG_LUCKY_SERVICE_START:
 				break;
@@ -158,8 +156,7 @@ public class LuckyView extends Activity {
 				break;
 			}
 		}
-		
-	};
+	}
 	// Class to update a TextView on the Activity's UI thread.
 	class TextViewUpdater implements Runnable {
 		private TextView tv;
@@ -184,7 +181,12 @@ public class LuckyView extends Activity {
 		HaggleStatusChecker(LuckyView lv) {
 			this.lv = lv;
 		}
-
+		class ServiceStopper implements Runnable {
+			@Override
+			public void run() {
+				stopLuckyService();
+			}
+		}
 		@Override
 		public void run() {
 			while (!shouldExit) {
@@ -193,14 +195,14 @@ public class LuckyView extends Activity {
 				} catch (InterruptedException e) {
 					continue;
 				}
-
+				
 				int status = Handle.getDaemonStatus();
 
 				if (status != prevStatus) {
 					switch (status) {
 					case Handle.HAGGLE_DAEMON_CRASHED:
 						lv.runOnUiThread(new TextViewUpdater(mHaggleStatus, "Crashed"));
-						stopLuckyService();
+						lv.runOnUiThread(new ServiceStopper());
 						break;
 					case Handle.HAGGLE_DAEMON_NOT_RUNNING:
 						lv.runOnUiThread(new TextViewUpdater(mHaggleStatus, "Not running"));
@@ -215,18 +217,35 @@ public class LuckyView extends Activity {
 				}
 				prevStatus = status;
 			}
+			// Reset in case we are restarted
+			shouldExit = false;
 		}
 
 		public void stop() {
 			shouldExit = true;
 		}
-	};
-
-	public void stopHaggleStatusChecker() {
+	}
+	private void startHaggleStatusChecker() 
+	{
+		if (mHaggleStatusThread == null) {
+			mHaggleStatusThread = new Thread(mHaggleStatusChecker);
+			try {
+				mHaggleStatusThread.start();
+				Log.d(LUCKY_VIEW_TAG, "Started Haggle status checker " 
+						+ mHaggleStatusThread.hashCode());
+			} catch (IllegalThreadStateException e) {
+				Log.d(LUCKY_VIEW_TAG, "Illegal thread state " +
+						mHaggleStatusThread.getState().toString());
+			}
+		}
+	}
+	private void stopHaggleStatusChecker() {
 		mHaggleStatusChecker.stop();
 		mHaggleStatusThread.interrupt();
 		try {
 			mHaggleStatusThread.join();
+			Log.d(LUCKY_VIEW_TAG, "Joined with HaggleStatusThread");
+			mHaggleStatusThread = null;
 		} catch (InterruptedException e) {
 		}
 	}
@@ -328,6 +347,7 @@ public class LuckyView extends Activity {
 			stopService(new Intent(this, LuckyService.class));
 			mLuckyService = null;
 		}
+		nodeAdpt.clear();
 	}
 
 	@Override
@@ -340,9 +360,11 @@ public class LuckyView extends Activity {
 	protected void onStart() {
 		super.onStart();
 		Log.d(LUCKY_VIEW_TAG, "onStart: binding to service");
+
+		startHaggleStatusChecker();
+		
 		if (!mIsBound) {
 			doBindService(false);
-			mHaggleStatusThread.start();
 
 			// Force Bluetooth adaptor on
 			BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();

@@ -137,16 +137,25 @@ bool ProtocolManager::registerProtocol(Protocol *p)
 {
 	protocol_registry_t::iterator it;
 
-	if (!p || protocol_registry.insert(make_pair(p->getId(), p)).second == false) {
+	if (!p)
+		return false;
+	
+	// We are in shutdown, so do not accept this protocol to keep running.
+	if ( getState() > MANAGER_STATE_RUNNING) {
+		p->shutdown();
+		p->join();
+		return false;
+	}
+		
+	if (protocol_registry.insert(make_pair(p->getId(), p)).second == false) {
 		HAGGLE_ERR("Protocol %s already registered!\n", p->getName());
 		return false;
 	}
 
 	p->setRegistered();
 	
-	/* Either we detach the protocol here, or join when it deregisters. */
-	//p->detach();
-
+	HAGGLE_DBG("Protocol %s registered\n", p->getName());
+	
 	return true;
 }
 
@@ -196,7 +205,7 @@ void ProtocolManager::onDeleteProtocolEvent(Event *e)
 		return;
 		
 	if (protocol_registry.find(p->getId()) == protocol_registry.end()) {
-		HAGGLE_ERR("Trying to deregister unregistered protocol %s\n", p->getName());
+		HAGGLE_ERR("Trying to unregister already unregistered protocol %s\n", p->getName());
 		return;
 	}
 
@@ -228,12 +237,31 @@ void ProtocolManager::onDeleteProtocolEvent(Event *e)
 	}
 }
 
+/* Close all server protocols so that we cannot create new clients. */
+void ProtocolManager::onPrepareShutdown()
+{
+	HAGGLE_DBG("%lu protocols are registered, shutting down servers.\n", protocol_registry.size());
+	
+	// Go through the registered protocols
+	protocol_registry_t::iterator it = protocol_registry.begin();
+	
+	for (; it != protocol_registry.end(); it++) {
+		// Tell the server protocol to shutdown, with the exception of the
+		// application IPC protocol
+		if ((*it).second->isServer() && !((*it).second->isApplication())) {
+			(*it).second->shutdown();
+		}
+	}
+	signalIsReadyForShutdown();
+}
 /*
 	Do not stop protocols until we are in shutdown, because other managers
 	may rely on protocol services while they are preparing for shutdown.
  */
 void ProtocolManager::onShutdown()
-{
+{	
+	HAGGLE_DBG("%lu protocols are registered.\n", protocol_registry.size());
+	
 	if (protocol_registry.empty()) {
 		unregisterWithKernel();
 	} else {
@@ -314,25 +342,25 @@ Protocol *ProtocolManager::getSenderProtocol(const ProtType_t type, const Interf
 			// Create a new one:
 			switch (type) {
 #if defined(ENABLE_BLUETOOTH)
-				case PROT_TYPE_RFCOMM:
+				case Protocol::TYPE_RFCOMM:
 					// We always grab the first local Bluetooth interface
 					p = new ProtocolRFCOMMSender(ifl.pop(), peerIface, RFCOMM_DEFAULT_CHANNEL, this);
 					break;
 #endif				
-				case PROT_TYPE_TCP:
+				case Protocol::TYPE_TCP:
 					// TODO: should retrieve local interface by querying for the parent interface of the peer.
 					p = new ProtocolTCPSender(ifl.pop(), peerIface, TCP_DEFAULT_PORT, this);
 					break;                           
-				case PROT_TYPE_LOCAL:
+				case Protocol::TYPE_LOCAL:
 					// FIXME: shouldn't be able to get here!
 					HAGGLE_DBG("No local sender protocol running!\n");
 					break;
-				case PROT_TYPE_UDP:
+				case Protocol::TYPE_UDP:
 					// FIXME: shouldn't be able to get here!
 					HAGGLE_DBG("No UDP sender protocol running!\n");
 					break;
 #if defined(ENABLE_MEDIA)
-				case PROT_TYPE_MEDIA:
+				case Protocol::TYPE_MEDIA:
 					p = new ProtocolMedia(NULL, peerIface, this);
 					break;
 #endif
@@ -342,11 +370,8 @@ Protocol *ProtocolManager::getSenderProtocol(const ProtType_t type, const Interf
 			}
 		}
 		// Were we successful?
-		if (p != NULL) {
-			if (p->init()) {
-				// Put it in the list
-				registerProtocol(p);
-			} else {
+		if (p) {
+			if (!p->init() || !registerProtocol(p)) {
 				HAGGLE_ERR("Could not initialize protocol %s\n", p->getName());
 				delete p;
 				p = NULL;
@@ -368,7 +393,7 @@ Protocol *ProtocolManager::getReceiverProtocol(const ProtType_t type, const Inte
 		p = (*it).second;
 
 		if (p->isReceiver() && type == p->getType() && p->isForInterface(iface) && !p->isGarbage() && !p->isDone()) {
-			if (type == PROT_TYPE_UDP || type == PROT_TYPE_LOCAL)
+			if (type == Protocol::TYPE_UDP || type == Protocol::TYPE_LOCAL)
 				break;
 			else if (p->isConnected())
 				break;
@@ -380,18 +405,18 @@ Protocol *ProtocolManager::getReceiverProtocol(const ProtType_t type, const Inte
 	if (p == NULL) {
 		switch (type) {
 #if defined(ENABLE_BLUETOOTH)
-                        case PROT_TYPE_RFCOMM:
+                        case Protocol::TYPE_RFCOMM:
 				// FIXME: write a correct version of this line:
 				p = NULL;//new ProtocolRFCOMMReceiver(0, iface, RFCOMM_DEFAULT_CHANNEL, this);
 			break;
 #endif
-                        case PROT_TYPE_TCP:
+                        case Protocol::TYPE_TCP:
 				// FIXME: write a correct version of this line:
 				p = NULL;//new ProtocolTCPReceiver(0, (struct sockaddr *) NULL, iface, this);
 			break;
 
 #if defined(ENABLE_MEDIA)
-		case PROT_TYPE_MEDIA:
+		case Protocol::TYPE_MEDIA:
 			// does not apply to protocol media
 			break;
 #endif
@@ -399,11 +424,10 @@ Protocol *ProtocolManager::getReceiverProtocol(const ProtType_t type, const Inte
 			HAGGLE_DBG("Unable to create client receiver protocol for type %ld\n", type);
 			break;
 		}
-		if (p != NULL) {
-			if (p->init()) {
-				registerProtocol(p);
-			} else {
-				HAGGLE_ERR("Could not initialize protocol %s\n", p->getName());
+		
+		if (p) {
+			if (!p->init() || !registerProtocol(p)) {
+				HAGGLE_ERR("Could not initialize or register protocol %s\n", p->getName());
 				delete p;
 				p = NULL;
 			}
@@ -435,16 +459,16 @@ Protocol *ProtocolManager::getServerProtocol(const ProtType_t type, const Interf
 	if (p == NULL) {
 		switch (type) {
 #if defined(ENABLE_BLUETOOTH)
-                        case PROT_TYPE_RFCOMM:
+                        case Protocol::TYPE_RFCOMM:
 				p = new ProtocolRFCOMMServer(iface, this);
                                 break;
 #endif
-                        case PROT_TYPE_TCP:
+                        case Protocol::TYPE_TCP:
                                 p = new ProtocolTCPServer(iface, this, tcpServerPort, tcpBacklog);
                                 break;
                                 
 #if defined(ENABLE_MEDIA)
-			case PROT_TYPE_MEDIA:
+			case Protocol::TYPE_MEDIA:
 				/*
                                 if (!strstr(iface->getMacAddrStr(), "00:00:00:00")) {				
 						p = new ProtocolMediaServer(iface, this);
@@ -456,11 +480,10 @@ Protocol *ProtocolManager::getServerProtocol(const ProtType_t type, const Interf
 			HAGGLE_DBG("Unable to create server protocol for type %ld\n", type);
 			break;
 		}
-		if (p != NULL) {
-			if (p->init()) {
-				registerProtocol(p);
-			} else {
-				HAGGLE_ERR("Could not initialize protocol %s\n", p->getName());
+		
+		if (p) {
+			if (!p->init() || !registerProtocol(p)) {
+				HAGGLE_ERR("Could not initialize or register protocol %s\n", p->getName());
 				delete p;
 				p = NULL;
 			}
@@ -519,17 +542,17 @@ void ProtocolManager::onLocalInterfaceUp(Event *e)
 #if defined(ENABLE_IPv6)
 		case Address::TYPE_IPV6:
 #endif
-			getServerProtocol(PROT_TYPE_TCP, iface);
+			getServerProtocol(Protocol::TYPE_TCP, iface);
 			return;			
 #if defined(ENABLE_BLUETOOTH)
 		case Address::TYPE_BLUETOOTH:
-			getServerProtocol(PROT_TYPE_RFCOMM, iface);
+			getServerProtocol(Protocol::TYPE_RFCOMM, iface);
 			return;
 #endif			
 #if defined(ENABLE_MEDIA)
 			// FIXME: should probably separate loop interfaces from media interfaces somehow...
 		case Address::TYPE_FILEPATH:
-			getServerProtocol(PROT_TYPE_MEDIA, iface);
+			getServerProtocol(Protocol::TYPE_MEDIA, iface);
 			return;
 #endif
 			
@@ -636,7 +659,6 @@ void ProtocolManager::onNeighborInterfaceDown(Event *e)
 		}
 		// Is the associated with this protocol?
 		if (p->isClient() && p->isForInterface(iface)) {
-			
 			HAGGLE_DBG("Shutting down protocol %s because neighbor interface [%s] went away\n",
 				   p->getName(), iface->getIdentifierStr());
 			p->handleInterfaceDown(iface);
@@ -652,7 +674,6 @@ void ProtocolManager::onSendDataObject(Event *e)
 		event to ourselves, effectively rescheduling our own processing of this
 		event to occur just after this event.
 	*/
-	
 	kernel->addEvent(new Event(send_data_object_actual_event, e->getDataObject(), e->getNodeList()));
 }
 
@@ -859,7 +880,7 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 			switch ((*it)->getType()) {
 #if defined(ENABLE_BLUETOOTH)
 			case Address::TYPE_BLUETOOTH:
-				p = getSenderProtocol(PROT_TYPE_RFCOMM, peerIface);
+				p = getSenderProtocol(Protocol::TYPE_RFCOMM, peerIface);
 				break;
 #endif
 			case Address::TYPE_IPV4:
@@ -868,17 +889,17 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 #endif
 				if (peerIface->isApplication()) {
 #ifdef USE_UNIX_APPLICATION_SOCKET
-					p = getSenderProtocol(PROT_TYPE_LOCAL, peerIface);
+					p = getSenderProtocol(Protocol::TYPE_LOCAL, peerIface);
 #else
-					p = getSenderProtocol(PROT_TYPE_UDP, peerIface);
+					p = getSenderProtocol(Protocol::TYPE_UDP, peerIface);
 #endif
 				}
 				else
-					p = getSenderProtocol(PROT_TYPE_TCP, peerIface);
+					p = getSenderProtocol(Protocol::TYPE_TCP, peerIface);
 				break;
 #if defined(ENABLE_MEDIA)
 			case Address::TYPE_FILEPATH:
-				p = getSenderProtocol(PROT_TYPE_MEDIA, peerIface);
+				p = getSenderProtocol(Protocol::TYPE_MEDIA, peerIface);
 				break;
 #endif
 			default:

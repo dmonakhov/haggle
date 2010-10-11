@@ -267,6 +267,13 @@ bool Protocol::isReceiver()
 	return false;
 }
 
+bool Protocol::isApplication() const
+{
+	if (localIface && localIface->isApplication())
+		return true;
+	return false;
+}
+
 bool Protocol::hasWatchable(const Watchable &wbl)
 {
 	return false;
@@ -941,7 +948,7 @@ ProtocolEvent Protocol::sendDataObjectNow(const DataObjectRef& dObj)
 		if (len == 0 && !hasSentHeader && pEvent == PROT_EVENT_SUCCESS) {
 			// We are sending to a local application: done after sending the 
 			// header:
-			if (peerIface->getType() == Interface::TYPE_APPLICATION_PORT)
+			if (isApplication())
                                 return pEvent;
 			
 			hasSentHeader = true;

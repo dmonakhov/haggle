@@ -32,7 +32,7 @@ ProtocolRFCOMMClient::ProtocolRFCOMMClient(const InterfaceRef& _localIface, cons
 }
 
 ProtocolRFCOMM::ProtocolRFCOMM(SOCKET _sock, const char *_mac, const unsigned short _channel, const InterfaceRef& _localIface, const short flags, ProtocolManager *m) :
-	ProtocolSocket(PROT_TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, NULL, flags, m, _sock), channel(_channel)
+	ProtocolSocket(Protocol::TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, NULL, flags, m, _sock), channel(_channel)
 {
 	memcpy(mac, _mac, BT_ALEN);
 	
@@ -42,7 +42,7 @@ ProtocolRFCOMM::ProtocolRFCOMM(SOCKET _sock, const char *_mac, const unsigned sh
 }
 
 ProtocolRFCOMM::ProtocolRFCOMM(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, const unsigned short _channel, const short flags, ProtocolManager * m) : 
-	ProtocolSocket(PROT_TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, _peerIface, flags, m), channel(_channel)
+	ProtocolSocket(Protocol::TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, _peerIface, flags, m), channel(_channel)
 {	
 }
 

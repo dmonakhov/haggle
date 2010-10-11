@@ -93,6 +93,8 @@ haggle_interface_t *haggle_interface_new(haggle_interface_type_t type, const cha
 	if (!iface)
 		return NULL;
 
+	LIBHAGGLE_DBG("New interface type=%s name=%s identifier=%s\n", interface_typestr[type], name, identifier);
+
 	iface->type = type;
 	iface->status = IF_STATUS_UNDEFINED;
 	iface->identifier_len = identifier_len;
@@ -145,7 +147,7 @@ haggle_interface_t *haggle_interface_new_from_metadata(const metadata_t *m)
 	name = metadata_get_parameter(m, "name");
 	
 	// Add interface to node
-	iface = haggle_interface_new(type, name ? name : "Unnamed interface", identifier, len);
+	iface = haggle_interface_new(type, name ? name : "Unknown interface", identifier, len);
 	free(identifier);
 	
 	if (!iface) 
@@ -154,7 +156,7 @@ haggle_interface_t *haggle_interface_new_from_metadata(const metadata_t *m)
 	status = metadata_get_parameter(m, "status");
 	
 	if (status) {
-		if (!strcmp(status, "up")) {
+		if (strcmp(status, "up") == 0) {
 			iface->status = IF_STATUS_UP;
 		} else {
 			iface->status = IF_STATUS_DOWN;

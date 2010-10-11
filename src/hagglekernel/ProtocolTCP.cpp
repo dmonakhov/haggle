@@ -29,13 +29,13 @@
 
 ProtocolTCP::ProtocolTCP(SOCKET _sock, const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
 			 const unsigned short _port, const short flags, ProtocolManager * m) :
-	ProtocolSocket(PROT_TYPE_TCP, "ProtocolTCP", _localIface, _peerIface, flags, m, _sock), localport(_port)
+	ProtocolSocket(Protocol::TYPE_TCP, "ProtocolTCP", _localIface, _peerIface, flags, m, _sock), localport(_port)
 {
 }
 
 ProtocolTCP::ProtocolTCP(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
 			 const unsigned short _port, const short flags, ProtocolManager * m) : 
-	ProtocolSocket(PROT_TYPE_TCP, "ProtocolTCP", _localIface, _peerIface, flags, m), localport(_port)
+	ProtocolSocket(Protocol::TYPE_TCP, "ProtocolTCP", _localIface, _peerIface, flags, m), localport(_port)
 {
 }
 
@@ -278,7 +278,7 @@ ProtocolEvent ProtocolTCPServer::acceptClient()
 	}
 
 	p->registerWithManager();
-
+	
 	HAGGLE_DBG("Accepted client with socket %d, starting client thread\n", clientsock);
 
 	return p->startTxRx();
