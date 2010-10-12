@@ -3,7 +3,7 @@ JAR_PATH=@top_srcdir@/src/libhaggle/jni/haggle.jar
 EXTRA_JARS=$(patsubst %,libs/%,$(notdir ${JAR_PATH}))
 SRC=src/org/haggle/${APP}/*.java
 DEBUG=bin/${APP}-debug
-RELEASE=bin/${APP}
+RELEASE=bin/${APP}-unsigned
 ANT=ant -q
 TOP_BIN_DIR=@top_builddir@/bin
 

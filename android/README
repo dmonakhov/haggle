@@ -160,3 +160,38 @@ not critical. For example, statically allocated strings will probably
 leak memory because the string constructor is run twice, thus
 allocating the string memory twice as well. But this is something one
 can live with until a fix is applied in Bionic upstream.
+
+Building Android Applications
+-----------------------------
+
+Android applications, e.g, PhotoShare and LuckyMe, can be built either
+using Eclipse or with the standard build system (configure/make).
+
+In either case, you need to first install the Android SDK.
+
+With Eclipse, just import the project directory as an Android project,
+then add <my haggle path>/lib/haggle.jar as an external library
+dependency for your project.
+
+Building with the standard build system requires that Ant is
+installed. If you run into problems compiling the Android
+applications, e.g., with the error "taskdef class
+com.android.ant.SetupTask cannot be found", then you need to make sure
+you have selected an SDK target for the android app that matches your
+installed ones in the SDK. Do:
+
+> android list targets
+
+to list the available targets.
+
+Then issue (in <my haggle path>/android) the following command:
+
+> android update project --name PhotoShare --target 3 --path ./PhotoShare
+
+Replace the target number with something that matches what is
+available in your SDK setup. Note, however, that the apps might not
+build against too old targets (pre android 2.1).
+
+After having configured the target, recompile.
+
+
