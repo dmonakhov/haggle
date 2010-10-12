@@ -389,6 +389,8 @@ public:
         */
         ~Protocol();
 	
+	unsigned long closeAndClearQueue();
+	
 	/**
 	   Initialization
 	 */

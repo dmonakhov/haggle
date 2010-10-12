@@ -2954,7 +2954,7 @@ int SQLDataStore::_doDataObjectForNodesQuery(DataStoreDataObjectForNodesQuery *q
 	
 	num_left = node->getMaxDataObjectsInMatch();
 
-	if(num_left > 0)
+	if (num_left > 0)
 		has_maximum = true;
 
 	threshold = node->getMatchingThreshold();

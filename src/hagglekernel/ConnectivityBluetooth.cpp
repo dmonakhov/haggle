@@ -58,6 +58,7 @@ int ConnectivityBluetoothBase::classifyAddress(const BluetoothInterface &iface)
 		if (*it == iface)
 			return BLUETOOTH_ADDRESS_IS_HAGGLE_NODE;
 	}
+
 	if (ignoreNonListedInterfaces)
 		return BLUETOOTH_ADDRESS_IS_NOT_HAGGLE_NODE;
 	
@@ -165,7 +166,8 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 						
 				if (iface) {
 					sdpBlackList.push_back(iface);
-					LOG_ADD("# ConnectivityManager: black-listing interface [type=%s identifier=%s name=%s]\n", type, iface->getIdentifierStr(), name);
+					LOG_ADD("# ConnectivityManager: black-listing interface: type=%s identifier=%s name=%s\n", 
+						type, iface->getIdentifierStr(), name);
 				}
 			}
 			
@@ -191,7 +193,8 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 				if (iface) {
 					sdpWhiteList.push_back(iface);
 					
-					LOG_ADD("# ConnectivityManager: white-listing interface [type=%s identifier=%s name=%s]\n", type, iface->getIdentifierStr(), name);
+					LOG_ADD("# ConnectivityManager: white-listing interface: type=%s identifier=%s name=%s\n", 
+						type, iface->getIdentifierStr(), name);
 				}
 			}
 			m = wl->getNextMetadata();

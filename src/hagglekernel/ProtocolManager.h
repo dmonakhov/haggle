@@ -47,8 +47,6 @@ class ProtocolManager;
 
 using namespace haggle;
 
-#define DATABUF_LEN 2048
-
 /** */
 class ProtocolManager : public Manager
 {
@@ -59,6 +57,7 @@ private:
         EventType delete_protocol_event;
         EventType add_protocol_event;
         EventType send_data_object_actual_event;
+	EventType protocol_shutdown_timeout_event;
 	unsigned short tcpServerPort;
 	int tcpBacklog;
 	bool registerProtocol(Protocol *p);
@@ -68,9 +67,9 @@ private:
         void onLocalInterfaceUp(Event *e);
         void onLocalInterfaceDown(Event *e);
         void onNeighborInterfaceDown(Event *e);
-
         void onAddProtocolEvent(Event *e);
         void onDeleteProtocolEvent(Event *e);
+	void onProtocolShutdownTimeout(Event *e);
 #ifdef DEBUG
 	void onDebugCmdEvent(Event *e);
 #endif
@@ -104,6 +103,34 @@ private:
         void onShutdown();
 	bool init_derived();
 	void onConfig(Metadata *m);
+	
+	// This Runnable is used to schedule a timeout event after a certain
+	// period of time.
+	// When the timeout occurs, any hung protocol threads are forcefully
+	// killed.
+	class ProtocolKiller : public Runnable {
+		unsigned long eventid, sleep_msec;
+		HaggleKernel *kernel;
+		
+		bool run()
+		{
+			cancelableSleep(sleep_msec);
+			kernel->addEvent(new Event(eventid, NULL, 0));
+			return false;
+		}
+		void cleanup()
+		{
+		}
+	public:
+		ProtocolKiller(unsigned long _eventid,
+			       unsigned long _sleep_msec,
+			       HaggleKernel *_kernel) :
+		eventid(_eventid),
+		sleep_msec(_sleep_msec),
+		kernel(_kernel) {}
+		~ProtocolKiller() {}
+	};
+	ProtocolKiller *killer;
 public:
         ProtocolManager(HaggleKernel *_kernel = haggleKernel);
         ~ProtocolManager();

@@ -216,7 +216,8 @@ private:
         Runnable *runObj;
 
         u_int8_t state;
-
+	bool detached;
+	
         Mutex mutex; 
 	Signal exitSignal;
 
@@ -280,6 +281,7 @@ public:
 	   @returns a bool indicating running state.
 	 */
         bool isRunning() const;
+	bool isDetached() const;
 
 	/**
 	   This function checks whether the thread is cancelled, which
@@ -401,6 +403,7 @@ public:
 	bool join(void);
 	bool detach(void);
 	bool isRunning() const;
+	bool isDetached() const;
 	/**
 		Get the name of the Runnable. May be overridden by derived classes.
 	 */

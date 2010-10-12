@@ -251,9 +251,9 @@ void ForwardingManager::onForwardingTaskComplete(Event *e)
 	//HAGGLE_DBG("Got event type %u\n", task->getType());
 	
 	switch (task->getType()) {
-			/*
-			 QUIT: save the modules state which is returned in the task.
-			 */
+		/*
+		 QUIT: save the modules state which is returned in the task.
+		 */
 		case FWD_TASK_QUIT:
 		{
 			RepositoryEntryList *rel = task->getRepositoryEntryList();
@@ -579,17 +579,21 @@ void ForwardingManager::onDataObjectQueryResult(Event *e)
 	DataObjectRef dObj;
 
 	while (dObj = qr->detachFirstDataObject()) {
-		// Is this node a currently available neighbor node?
+		// Does this target already have this data object, or
+		// is the data object its node description? shouldForward() tells us.
 		if (shouldForward(dObj, target)) {
+			// Is this node a currently available neighbor node?
 			if (isNeighbor(target)) {
 				// Yes: it is it's own best delegate, so start "forwarding" the object:
 				
 				if (addToSendList(dObj, target)) {
 					kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, target));
-					HAGGLE_DBG("Sending data object %s directly to target neighbor %s\n", dObj->getIdStr(), target->getName().c_str());
+					HAGGLE_DBG("Sending data object %s directly to target neighbor %s\n", 
+						   dObj->getIdStr(), target->getName().c_str());
 				}
 			} else { 
-				HAGGLE_DBG("Trying to find delegates for data object %s bound for target %s\n", dObj->getIdStr(), target->getName().c_str());
+				HAGGLE_DBG("Trying to find delegates for data object %s bound for target %s\n", 
+					   dObj->getIdStr(), target->getName().c_str());
 				forwardByDelegate(dObj, target);
 			}
 		}
@@ -633,7 +637,8 @@ void ForwardingManager::onNodeQueryResult(Event *e)
 						dObj->getIdStr(), target->getName().c_str());
                                         target_neighbors.push_front(target);
                                 }
-                        } else if (target->getType() == Node::TYPE_PEER || target->getType() == Node::TYPE_GATEWAY) { 
+                        } else if (target->getType() == Node::TYPE_PEER || 
+				   target->getType() == Node::TYPE_GATEWAY) { 
                                 HAGGLE_DBG("Trying to find delegates for data object %s bound for target %s\n", 
 					dObj->getIdStr(), target->getName().c_str());
                                 forwardByDelegate(dObj, target, targets);
@@ -687,7 +692,6 @@ void ForwardingManager::onNewNeighbor(Event *e)
 	// delegate. But delay these operations in case we get a node update event for the
 	// same node due to receiving a new node description for it. If we get the
 	// the update, we should only do the query once using the updated information.
-	
 	pendingQueryList.push_back(node);
 	kernel->addEvent(new Event(delayedDataObjectQueryCallback, node, 5));
 	
@@ -787,9 +791,7 @@ void ForwardingManager::findMatchingDataObjectsAndTargets(NodeRef& node)
 				 getName(), node->getName().c_str(), node->getIdStr());
 			forwardingModule->generateTargetsFor(node);
 		}
-	} else {
-                HAGGLE_ERR("Neighbor is not available, cannot send forwarding information\n");
-        }
+	}
 	
 	HAGGLE_DBG("%s doing data object query for node %s [id=%s]\n", 
 		   getName(), node->getName().c_str(), node->getIdStr());
@@ -916,7 +918,6 @@ void ForwardingManager::recursiveRoutingUpdate(NodeRef peer, Metadata *m)
 		NodeRef neighbor = notify_list.pop();
 		forwardingModule->generateRoutingInformationDataObject(neighbor, &recurse_list);
 	}	
-	
 }
 
 #endif
@@ -977,7 +978,6 @@ void ForwardingManager::onNewDataObject(Event *e)
 	if (dObj->isPersistent()) {
 		if (kernel->getNodeStore()->numNeighbors() > 0) {
 			HAGGLE_DBG("%s - new data object %s, doing node query\n", getName(), dObj->getIdStr());
-			//dObj->print();
 			kernel->getDataStore()->doNodeQuery(dObj, MAX_NODES_TO_FIND_FOR_NEW_DATAOBJECTS, 1, nodeQueryCallback);
 		} else {
 			HAGGLE_DBG("%s - new data object %s, but deferring node query due to 0 neighbors\n", 

@@ -280,7 +280,8 @@ Signal *Thread::selfGetExitSignal()
 
 // Constructor for static Thread object (main thread) in thread class
 Thread::Thread() : 
-	num(totNum++), starttime(Timeval::now()), name(NULL), runObj(NULL), state(THREAD_STATE_STOPPED)
+	num(totNum++), starttime(Timeval::now()), name(NULL), runObj(NULL), 
+	state(THREAD_STATE_STOPPED), detached(false)
 {
 	id.setToCurrentThread();
 	size_t len = strlen(MAIN_THREAD_NAME) + 1;
@@ -298,7 +299,8 @@ Thread::Thread() :
 }
 
 Thread::Thread(Runnable *r) : 
-	num(totNum++), starttime(Timeval::now()), name(NULL), runObj(r), state(THREAD_STATE_STOPPED)
+	num(totNum++), starttime(Timeval::now()), name(NULL), runObj(r), 
+	state(THREAD_STATE_STOPPED), detached(false)
 {
 	int ret = 0;
 
@@ -417,6 +419,10 @@ bool Thread::isRunning() const
 	Mutex::AutoLocker l(const_cast<Thread *>(this)->mutex);
 
 	return (state != THREAD_STATE_STOPPED);
+}
+	
+bool Thread::isDetached() const {
+	return detached;
 }
 
 bool Thread::isCancelled() const
@@ -564,6 +570,8 @@ int Thread::detach()
 	if (!isRunning())
 		return -1;
 
+	detached = true;
+	
 #if defined(HAS_PTHREADS)
 	res = pthread_detach(thrHandle);
 
@@ -674,8 +682,15 @@ bool Runnable::isRunning() const
 { 
 	if (thr) 
 		return thr->isRunning(); 
-	else 
-		return false; 
+	return false; 
+}
+	
+	
+bool Runnable::isDetached() const
+{
+	if (thr)
+		return thr->isDetached();
+	return false;
 }
 	
 Runnable::Runnable(const string _name) : 
@@ -686,36 +701,38 @@ Runnable::Runnable(const string _name) :
 
 Runnable::~Runnable()
 {
-	if (thr) {
-		if (thr->isRunning()) {
-			TRACE_DBG("Runnable %s : cancelling its running thread with id=%d\n", 
-				getName(), thr->getNum());
-
-			thr->cancel();	
-			
-			int ret = thr->join();
-			
-			if (ret != THREAD_JOIN_OK) {
-				if (ret == THREAD_JOIN_NO_THREAD) {
-					// This should be fine...
-					TRACE_DBG("Thread %d is no longer executing...\n", thr->getNum());
-				} else {
-					// Some error that indicates something bad... throw an exception to point this out.
-					// This should never happen... if it does, we need to fix the problem or handle it properly.
-					TRACE_ERR("Thread join failed for runnable %s!, error=%d\n", name.c_str(), ret);
-				}
-			}
-		} 
-
-		TRACE_DBG("Deleting runnable \'%s\' whose thread has id=%d\n", getName(), thr->getNum());
-		delete thr;
-		thr = NULL;
-	} 
+	if (!thr) {
 #ifdef DEBUG
-	else {
 		TRACE_DBG("Runnable %s has no valid thread object\n", getName());
-	}
 #endif
+		return;
+	}
+	
+	if (thr->isRunning()) {
+		TRACE_DBG("Runnable %s : cancelling its running thread with id=%d\n", 
+			  getName(), thr->getNum());
+		thr->cancel();	
+	}
+	
+	if (!thr->isDetached() && !thr->isSelf()) {
+		int ret = thr->join();
+			
+		if (ret != THREAD_JOIN_OK) {
+			if (ret == THREAD_JOIN_NO_THREAD) {
+				// This should be fine...
+				TRACE_DBG("Thread %d is no longer executing...\n", thr->getNum());
+			} else {
+				// Some error that indicates something bad... throw an exception to point this out.
+				// This should never happen... if it does, we need to fix the problem or handle it properly.
+				TRACE_ERR("Thread join failed for runnable %s!, error=%d\n", name.c_str(), ret);
+			}
+		}
+	}
+	
+	TRACE_DBG("Deleting runnable \'%s\' whose thread has id=%d\n", getName(), thr->getNum());
+	
+	delete thr;
+	thr = NULL;
 }
 
 }; // namespace haggle

@@ -147,12 +147,24 @@ Protocol::~Protocol()
 	// If there is anything in the queue, these should be data objects, and if 
 	// they are here, they have not been sent. So send an
 	// EVENT_TYPE_DATAOBJECT_SEND_FAILURE for each of them:
+	closeAndClearQueue();
+}
+
+unsigned long Protocol::closeAndClearQueue()
+{
+	unsigned long count = 0;
 	
 	// No need to do getQueue() more than once:
 	Queue *q = getQueue();
 	
+	if (!q)
+		return count;
+	
+	// Make sure that the queue is closed and no more inserts are allowed"
+	q->close();
+	
 	// With all the data objects in the queue:
-	while (q && !q->empty()) {
+	while (!q->empty()) {
 		QueueElement *qe = NULL;
 		DataObjectRef dObj;
 		
@@ -163,11 +175,12 @@ Protocol::~Protocol()
 			case QUEUE_ELEMENT:
 				// Get data object:
 				dObj = qe->getDataObject();
-
+				
 				if (dObj) {
 					// Tell the rest of haggle that this data object was not 
 					// sent:
 					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_FAILURE, dObj, peerNode));
+					count++;
 				}
 				break;
 		}
@@ -175,6 +188,8 @@ Protocol::~Protocol()
 		if (qe)
 			delete qe;
 	}
+	
+	return count;
 }
 
 bool Protocol::hasIncomingData()
@@ -1260,5 +1275,10 @@ void Protocol::cleanup()
 		closeConnection();
 	HAGGLE_DBG("%s protocol is now garbage!\n", getName());
 	setMode(PROT_MODE_GARBAGE);
-	unregisterWithManager();
+	
+	if (isDetached()) {
+		delete this;
+	} else {
+		unregisterWithManager();
+	}
 }

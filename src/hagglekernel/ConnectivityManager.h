@@ -257,8 +257,7 @@ public:
         */
         void delete_interface(Interface::Type_t type, const unsigned char *identifier);
 	/**
-        	Utility function to delete an interface by its name
-.
+        	Utility function to delete an interface by its name.
         */
         void delete_interface(const string name);
 #ifdef DEBUG

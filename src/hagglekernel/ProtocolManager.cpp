@@ -28,12 +28,9 @@
 #endif
 #include <haggleutils.h>
 
-#define DISCOVERY_PORT 6666
-#define PROTOCOL_GARBAGE_COLLECT_INTERVAL 30.0
-
 ProtocolManager::ProtocolManager(HaggleKernel * _kernel) :
 	Manager("ProtocolManager", _kernel), tcpServerPort(TCP_DEFAULT_PORT), 
-	tcpBacklog(TCP_BACKLOG_SIZE)
+	tcpBacklog(TCP_BACKLOG_SIZE), killer(NULL)
 {	
 }
 
@@ -43,6 +40,12 @@ ProtocolManager::~ProtocolManager()
 		Protocol *p = (*protocol_registry.begin()).second;
 		protocol_registry.erase(p->getId());
 		delete p;
+	}
+	
+	if (killer) {
+		killer->stop();
+		HAGGLE_DBG("Joined with protocol killer thread\n");
+		delete killer;
 	}
 }
 
@@ -91,6 +94,14 @@ bool ProtocolManager::init_derived()
 	add_protocol_event = registerEventType("ProtocolManager protocol addition event", onAddProtocolEvent);
 	
 	send_data_object_actual_event = registerEventType("ProtocolManager send data object actual event", onSendDataObjectActual);
+	
+	protocol_shutdown_timeout_event = registerEventType("ProtocolManager Protocol Shutdown Timeout Event", onProtocolShutdownTimeout);
+	
+	if (protocol_shutdown_timeout_event < 0) {
+		HAGGLE_ERR("Could not register protocol shutdown timeout event\n");
+		return false;
+	}
+	
 #ifdef DEBUG
 	ret = setEventHandler(EVENT_TYPE_DEBUG_CMD, onDebugCmdEvent);
 
@@ -141,9 +152,12 @@ bool ProtocolManager::registerProtocol(Protocol *p)
 		return false;
 	
 	// We are in shutdown, so do not accept this protocol to keep running.
-	if ( getState() > MANAGER_STATE_RUNNING) {
+	if (getState() > MANAGER_STATE_RUNNING) {
 		p->shutdown();
-		p->join();
+		if (!p->isDetached()) {
+			p->join();
+			HAGGLE_DBG("Joined with protocol %s\n", p->getName());
+		}
 		return false;
 	}
 		
@@ -205,20 +219,22 @@ void ProtocolManager::onDeleteProtocolEvent(Event *e)
 		return;
 		
 	if (protocol_registry.find(p->getId()) == protocol_registry.end()) {
-		HAGGLE_ERR("Trying to unregister already unregistered protocol %s\n", p->getName());
+		HAGGLE_ERR("Trying to unregister protocol %s, which is not registered\n", p->getName());
 		return;
 	}
 
 	protocol_registry.erase(p->getId());
 	
-	HAGGLE_DBG("Deleting protocol %s\n", p->getName());
+	HAGGLE_DBG("Removing protocol %s\n", p->getName());
 
 	/*
 	  Either we join the thread here, or we detach it when we start it.
 	*/
-	p->join();
-
-	delete p;
+	if (!p->isDetached()) {
+		p->join();
+		HAGGLE_DBG("Joined with protocol %s\n", p->getName());
+		delete p;
+	}
 
 	if (getState() == MANAGER_STATE_SHUTDOWN) {
 		if (protocol_registry.empty()) {
@@ -228,12 +244,42 @@ void ProtocolManager::onDeleteProtocolEvent(Event *e)
 		else {
 			for (protocol_registry_t::iterator it = protocol_registry.begin(); it != protocol_registry.end(); it++) {
 				Protocol *p = (*it).second;
-
 				HAGGLE_DBG("Protocol \'%s\' still registered\n", p->getName());
 			}
 
 		}
 #endif
+	}
+}
+
+void ProtocolManager::onProtocolShutdownTimeout(Event *e)
+{
+	HAGGLE_DBG("Checking for still registered protocols: num registered=%lu\n", 
+		   protocol_registry.size());
+	
+	if (!protocol_registry.empty()) {
+		while (!protocol_registry.empty()) {
+			Protocol *p = (*protocol_registry.begin()).second;
+			protocol_registry.erase(p->getId());
+			HAGGLE_DBG("Protocol \'%s\' still registered after shutdown. Detaching it!\n", p->getName());
+			
+			// We are not going to join with these threads, so we detach.
+			if (p->isRunning()) {
+				// In detached state, the protocol will delete itself
+				// once it stops running.
+				p->detach();
+				p->cancel();
+				
+				// We have to clear the protocol's send queue as it may contain
+				// data objects whose send verdict managersa are
+				// waiting for. Clearing the queue will evict all data objects
+				// from its queue with a FAILURE verdict.
+				p->closeAndClearQueue();
+			} else {
+				delete p;
+			}
+		}
+		unregisterWithKernel();
 	}
 }
 
@@ -271,6 +317,16 @@ void ProtocolManager::onShutdown()
 		for (; it != protocol_registry.end(); it++) {
 			// Tell this protocol we're shutting down!
 			(*it).second->shutdown();
+		}
+		
+		// In case some protocols refuse to shutdown, launch a thread that sleeps for a while
+		// before it schedules an event that forcefully kills the protocols.
+		// Note that we need to use this thread to implement a timeout because in shutdown
+		// the event queue executes as fast as it can, hence delayed events do not work.
+		killer = new ProtocolKiller(protocol_shutdown_timeout_event, 15000, kernel);
+		
+		if (killer) {
+			killer->start();
 		}
 	}
 }
@@ -325,7 +381,9 @@ Protocol *ProtocolManager::getSenderProtocol(const ProtType_t type, const Interf
 		p = (*it).second;
 
 		// Is this protocol the one we're interested in?
-		if (p->isSender() && type == p->getType() && p->isForInterface(peerIface) && !p->isGarbage() && !p->isDone()) {
+		if (p->isSender() && type == p->getType() && 
+		    p->isForInterface(peerIface) && 
+		    !p->isGarbage() && !p->isDone()) {
 			break;
 		}
 		

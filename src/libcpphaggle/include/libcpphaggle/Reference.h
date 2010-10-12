@@ -386,6 +386,34 @@ private:
            absolutely required.
 	*/
 	//T *operator*() const { return refCount->obj; }
+
+	template<typename TT>
+	friend bool operator<(const Reference<T>& eo1, const Reference<TT>& eo2)
+	{
+		if (eo1.refCount == NULL || eo2.refCount == NULL)
+			return false;
+		return *eo1.getObj() < *eo2.getObj();
+	}
+
+	template<typename TT>
+	friend bool operator<(const Reference<T>& eo1, const TT *eo2)
+	{
+		if (eo1.refCount == NULL && eo2 == NULL)
+			return false;
+		if (eo1.refCount == NULL || eo2 == NULL)
+			return false;
+		return eo1.getObj() < *eo2;
+	}
+
+	template<typename TT>
+	friend bool operator<(const Reference<T>& eo1, const TT &eo2)
+	{
+		if (eo1.refCount == NULL)
+			return false;
+		if (eo1.refCount == NULL || &eo2 == NULL)
+			return false;
+		return *eo1.getObj() < eo2;
+	}
 	
 	/**
            Equality operator. Returns true iff the two references point to the 

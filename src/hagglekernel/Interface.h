@@ -273,7 +273,7 @@ public:
 	*/
 	static Interface *fromMetadata(const Metadata& m);
 	virtual Metadata *toMetadata() const;
-	bool equal(Type_t type, const unsigned char *identifier) const;
+	virtual bool equal(Type_t type, const unsigned char *identifier) const;
 	/**
 		Equality operator.
 	*/

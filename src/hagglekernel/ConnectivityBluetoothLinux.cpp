@@ -465,14 +465,14 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
                 
 		baswap((bdaddr_t *) &macaddr, &ii[i].bdaddr);
 
-		BluetoothAddress addy(macaddr);
+		BluetoothAddress addr(macaddr);
 		
                 status = conn->is_known_interface(Interface::TYPE_BLUETOOTH, macaddr);
         
                 if (status == INTERFACE_STATUS_HAGGLE) {
                         report_interface = true;
                 } else if (status == INTERFACE_STATUS_UNKNOWN) {
-                        switch(ConnectivityBluetoothBase::classifyAddress(Interface::TYPE_BLUETOOTH, macaddr)) {
+                        switch (ConnectivityBluetoothBase::classifyAddress(Interface::TYPE_BLUETOOTH, macaddr)) {
                         case BLUETOOTH_ADDRESS_IS_UNKNOWN:
                                 channel = find_haggle_service(ii[i].bdaddr);
                                 if (channel > 0) {
@@ -490,19 +490,16 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
                                 conn->report_known_interface(Interface::TYPE_BLUETOOTH, macaddr, false);
                                 break;
                         }
-                }
+                } 
         
 		if (report_interface) {
-                        BluetoothInterface *iface = Interface::create<BluetoothInterface>(macaddr, remote_name, addy, IFFLAG_UP);
-
-			if (iface) {
-				CM_DBG("Found Haggle device [%s - %s]\n", addy.getStr(), remote_name);
-				conn->report_interface(iface, conn->rootInterface, new ConnectivityInterfacePolicyTTL(2));
-				num_found++;
-				delete iface;
-			}
+			BluetoothInterface iface(macaddr, remote_name, &addr, IFFLAG_UP);
+			
+			CM_DBG("Found Haggle device [%s - %s]\n", addr.getStr(), remote_name);
+			conn->report_interface(&iface, conn->rootInterface, new ConnectivityInterfacePolicyTTL(2));
+			num_found++;
 		} else {
-			CM_DBG("Device [%s] is not a Haggle device\n", addy.getStr());
+			CM_DBG("Device [%s] is not a Haggle device\n", addr.getStr());
 		}
 	}
 
