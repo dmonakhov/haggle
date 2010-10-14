@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout android:id="@+id/LinearLayout01" android:layout_width="fill_parent" android:layout_height="fill_parent" xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical" android:saveEnabled="false">
 	<LinearLayout android:id="@+id/LinearLayout02" android:layout_gravity="left|fill_horizontal" android:layout_height="wrap_content" android:layout_width="fill_parent">
-		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/num_dataobjects_rx_text" android:text="Data objects received:" android:paddingRight="10dp"></TextView>
-		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/num_dataobjects_rx" android:text="0"></TextView>
+		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/num_dataobjects_rx_text" android:paddingRight="10dp" android:text="@+id/data_objects_received"></TextView>
+		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/num_dataobjects_rx" android:text="@+id/zero"></TextView>
 	
 
 
-<LinearLayout android:id="@+id/LinearLayout06" android:layout_width="fill_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="right"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/average_luck_text" android:text="Average luck:" android:paddingRight="10dp"></TextView><TextView android:layout_height="wrap_content" android:id="@+id/average_luck" android:text="0" android:layout_width="wrap_content" android:layout_gravity="right" android:paddingRight="30dp"></TextView>
+<LinearLayout android:id="@+id/LinearLayout06" android:layout_width="fill_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="right"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/average_luck_text" android:paddingRight="10dp" android:text="@+id/average_luck"></TextView><TextView android:layout_height="wrap_content" android:id="@+id/average_luck" android:layout_width="wrap_content" android:layout_gravity="right" android:paddingRight="30dp" android:text="@+id/zero"></TextView>
 </LinearLayout>
 
 </LinearLayout>
 	<LinearLayout android:id="@+id/LinearLayout03" android:layout_width="wrap_content" android:layout_height="wrap_content">
-		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/num_dataobjects_tx_text" android:paddingRight="10dp" android:text="Data objects generated:"></TextView>
-		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/num_dataobjects_tx" android:text="0"></TextView>
+		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/num_dataobjects_tx_text" android:paddingRight="10dp" android:text="@+id/data_objects_generated"></TextView>
+		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/num_dataobjects_tx" android:text="@+id/zero"></TextView>
 	</LinearLayout>
-	<LinearLayout android:id="@+id/LinearLayout05" android:layout_width="wrap_content" android:layout_height="wrap_content"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/haggle_status_text" android:text="Haggle status:" android:paddingRight="10dp"></TextView><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/haggle_status" android:text="Not running"></TextView>
+	<LinearLayout android:id="@+id/LinearLayout05" android:layout_width="wrap_content" android:layout_height="wrap_content"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/haggle_status_text" android:paddingRight="10dp" android:text="@+id/haggle_status"></TextView><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/haggle_status" android:text="@+id/not_running"></TextView>
 
-</LinearLayout><LinearLayout android:id="@+id/LinearLayout04" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:paddingRight="10dp" android:text="Test status:" android:id="@+id/lucky_service_toggle_text"></TextView><ToggleButton android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Lucky service" android:id="@+id/lucky_service_toggle"></ToggleButton>
+</LinearLayout><LinearLayout android:id="@+id/LinearLayout04" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="right"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:paddingRight="10dp" android:id="@+id/lucky_service_toggle_text" android:text="@+id/test_status"></TextView><ToggleButton android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/lucky_service_toggle"></ToggleButton>
 
 </LinearLayout><TextView  
      xmlns:android="http://schemas.android.com/apk/res/android"  
@@ -26,8 +26,7 @@
      android:paddingTop="2dip"  
      android:paddingBottom="2dip"  
      android:paddingLeft="5dip"
-     android:text="Neighbors"
-     style="?android:attr/listSeparatorTextViewStyle" /> 
+     style="?android:attr/listSeparatorTextViewStyle" android:text="@+id/neighbors"/> 
 	<ListView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/neighbor_list" android:divider="#eeeeee" android:dividerHeight="1dp"></ListView>
 
 

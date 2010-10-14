@@ -84,7 +84,8 @@ static Interface *android_get_net_interface_info(const char *name, const unsigne
 {
         //unsigned char mac[6];
         unsigned int flags;
-        in_addr_t addr, baddr;
+        struct in_addr addr;
+	struct in_addr baddr;
         struct ifreq ifr;   
         int ret, s;
         Addresses addrs;
@@ -113,17 +114,17 @@ static Interface *android_get_net_interface_info(const char *name, const unsigne
         addrs.add(new EthernetAddress(mac));
 
         if (ioctl(s, SIOCGIFADDR, &ifr) < 0) {
-                addr = 0;
+                addr.s_addr = 0;
         } else {
-                addr = ((struct sockaddr_in*) &ifr.ifr_addr)->sin_addr.s_addr;
+                addr.s_addr = ((struct sockaddr_in*) &ifr.ifr_addr)->sin_addr.s_addr;
         }
 
         if (ioctl(s, SIOCGIFBRDADDR, &ifr) < 0) {
-                baddr = 0;
+                baddr.s_addr = 0;
         } else {
-                baddr = ((struct sockaddr_in *)&ifr.ifr_broadaddr)->sin_addr.s_addr;
+                baddr.s_addr = ((struct sockaddr_in *)&ifr.ifr_broadaddr)->sin_addr.s_addr;
                 addrs.add(new IPv4Address(addr));
-                //addrs.add(new IPv4BroadcastAddress(baddr));
+                addrs.add(new IPv4BroadcastAddress(baddr));
         }
 
         if (ioctl(s, SIOCGIFFLAGS, &ifr) < 0) {
@@ -134,10 +135,9 @@ static Interface *android_get_net_interface_info(const char *name, const unsigne
         
         close(s);
 
-	
         if (flags & IFF_UP)
-                return Interface::create<EthernetInterface>( mac, name, addrs, IFFLAG_LOCAL | IFFLAG_UP);
-
+                return Interface::create<EthernetInterface>(mac, name, addrs, IFFLAG_LOCAL | IFFLAG_UP);
+       
         return Interface::create<EthernetInterface>(mac, name, addrs, IFFLAG_LOCAL);
 }
 

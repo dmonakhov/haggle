@@ -1,5 +1,3 @@
-# Copyright 2008 Uppsala University
-
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
@@ -13,6 +11,8 @@ subdirs := $(addprefix $(LOCAL_PATH)/,$(addsuffix /Android.mk, \
                 src/libhaggle \
 		src/luckyMe \
 		src/clitool \
+		android/PhotoShare \
+		android/LuckyMe \
         ))
 
 include $(subdirs)

@@ -15,8 +15,7 @@
      android:paddingTop="2dip"  
      android:paddingBottom="2dip"  
      android:paddingLeft="5dip"
-     android:text="Neighbors"
-     style="?android:attr/listSeparatorTextViewStyle" /> 
+     style="?android:attr/listSeparatorTextViewStyle" android:text="@+id/list_header_text"/> 
     <ListView android:id="@+id/neighbor_list"
     	android:layout_width="fill_parent"
     	android:layout_height="wrap_content"

@@ -189,7 +189,7 @@ class EthernetAddress : public SocketAddress {
 public:
 	static const Type_t class_type = TYPE_ETHERNET;
 	EthernetAddress() : SocketAddress(class_type, mac) {}
-	EthernetAddress(unsigned char _mac[ETH_ALEN]);
+	EthernetAddress(const unsigned char _mac[ETH_ALEN]);
 	EthernetAddress(const EthernetAddress& a);
 	~EthernetAddress();
 	size_t getLength() const { return sizeof(mac); }
@@ -205,7 +205,7 @@ class EthernetBroadcastAddress : public EthernetAddress {
 public:
 	static const Type_t class_type = TYPE_ETHERNET_BROADCAST;
 	EthernetBroadcastAddress() : EthernetAddress() {}
-	EthernetBroadcastAddress(unsigned char _mac[ETH_ALEN]) : EthernetAddress(_mac) { type = class_type; }
+	EthernetBroadcastAddress(const unsigned char _mac[ETH_ALEN]) : EthernetAddress(_mac) { type = class_type; }
 	EthernetBroadcastAddress(const EthernetBroadcastAddress& a) : EthernetAddress(a) {}
 	~EthernetBroadcastAddress() {}
 };
@@ -249,7 +249,7 @@ class BluetoothAddress : public SocketAddress {
 public:
 	static const Type_t class_type = TYPE_BLUETOOTH;
 	BluetoothAddress() : SocketAddress(class_type, mac) {}
-	BluetoothAddress(unsigned char _mac[BT_ALEN], const Transport& t = TransportNone());
+	BluetoothAddress(const unsigned char _mac[BT_ALEN], const Transport& t = TransportNone());
 	BluetoothAddress(const BluetoothAddress& a);
 	~BluetoothAddress();
 	size_t getLength() const { return sizeof(mac); }

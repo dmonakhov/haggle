@@ -11,4 +11,11 @@
 <string name="registration_failed">Could not register with Haggle.</string>
 <string name="spawn_daemon_failed">Could not spawn Haggle daemon.</string>
 <string name="interestlist_context_menu_text">Delete</string>
+<string name="list_header_text">Neighbors</string>
+<string name="new_picture_attributes_text">New picture attributes:</string>
+<string name="picture_attributes_text">Picture attributes</string>
+<string name="new_interests_text">New interests</string>
+<string name="my_interests_text">My interests</string>
+<string name="cancel_button_text">cancel</string>
+<string name="add_button_text">Add</string>
 </resources>

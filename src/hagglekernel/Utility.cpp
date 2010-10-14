@@ -476,7 +476,8 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
         unsigned char mac[6];
         tiINT32 res;
         unsigned int flags;
-        in_addr_t addr, baddr;
+        struct in_addr addr;
+	struct in_addr baddr;
         struct ifreq ifr;   
         int ret, s;
         Addresses addrs;
@@ -548,23 +549,27 @@ int getLocalInterfaceList(InterfaceRefList& iflist, const bool onlyUp)
         }
 
         if (ioctl(s, SIOCGIFADDR, &ifr) < 0) {
-                addr = 0;
-        } else {
-                addr = ((struct sockaddr_in*) &ifr.ifr_addr)->sin_addr.s_addr;
-        }
-
+		close(s);
+		return 0;
+        } 
+	addr.s_addr = ((struct sockaddr_in*) &ifr.ifr_addr)->sin_addr.s_addr;
+        
         if (ioctl(s, SIOCGIFBRDADDR, &ifr) < 0) {
-                baddr = 0;
-        } else {
-                baddr = ((struct sockaddr_in *)&ifr.ifr_broadaddr)->sin_addr.s_addr;
-                addrs.add(new IPv4Address(addr));
-		addrs.add(new IPv4BroadcastAddress(bdaddr));
+		close(s);
+		return 0;
         }
-
+	
+	baddr.s_addr = ((struct sockaddr_in *)&ifr.ifr_broadaddr)->sin_addr.s_addr;
+	addrs.add(new IPv4Address(addr));
+	addrs.add(new IPv4BroadcastAddress(baddr));
+        
         close(s);
 
-        iflist.push_back(InterfaceRef(new EthernetInterface(mac, wifi_iface_name, &addrs, 
-							    IFFLAG_LOCAL | ((flags & IFF_UP) ? IFFLAG_UP : 0))));
+	InterfaceRef iface = Interface::create<EthernetInterface>(mac, wifi_iface_name, addrs, 
+								  IFFLAG_LOCAL | ((flags & IFF_UP) ? IFFLAG_UP : 0));
+
+	if (iface)
+		iflist.push_back(iface);
 
         return 1;
 }

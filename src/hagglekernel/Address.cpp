@@ -517,7 +517,7 @@ int SocketAddress::family() const
 	return f;
 }
 
-EthernetAddress::EthernetAddress(unsigned char _mac[ETH_ALEN]) : SocketAddress(class_type, mac)
+EthernetAddress::EthernetAddress(const unsigned char _mac[ETH_ALEN]) : SocketAddress(class_type, mac)
 {
 	memcpy(mac, _mac, ETH_ALEN);
 }
@@ -616,7 +616,7 @@ bool EthernetAddress::equal(const Address& a) const
 }
 
 #if defined(ENABLE_BLUETOOTH)
-BluetoothAddress::BluetoothAddress(unsigned char _mac[BT_ALEN], const Transport& t) : 
+BluetoothAddress::BluetoothAddress(const unsigned char _mac[BT_ALEN], const Transport& t) : 
 	SocketAddress(class_type, mac, t)
 {
 	memcpy(mac, _mac, BT_ALEN);
