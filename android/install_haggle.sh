@@ -121,14 +121,14 @@ for dev in $DEVICES; do
     
     # Back to product dir
     popd
-    echo "Installing applications"
-    echo "    LuckyMe"
-    $ADB -s $dev uninstall org.haggle.LuckyMe
-    $ADB -s $dev install $APP_PATH_PREFIX/LuckyMe.apk
+#    echo "Installing applications"
+#    echo "    LuckyMe"
+#    $ADB -s $dev uninstall org.haggle.LuckyMe
+#    $ADB -s $dev install $APP_PATH_PREFIX/LuckyMe.apk
 
-    echo "    PhotoShare"
-    $ADB -s $dev uninstall org.haggle.PhotoShare
-    $ADB -s $dev install $APP_PATH_PREFIX/PhotoShare.apk
+#    echo "    PhotoShare"
+#    $ADB -s $dev uninstall org.haggle.PhotoShare
+#    $ADB -s $dev install $APP_PATH_PREFIX/PhotoShare.apk
 
     # Install framework files
     echo
