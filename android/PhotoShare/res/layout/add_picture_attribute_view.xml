@@ -18,7 +18,7 @@
     <TextView
         android:id="@+id/interest_label"
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content" android:text="@+id/new_picture_attributes_text"/>
+        android:layout_height="wrap_content" android:text="@string/new_picture_attributes_text"/>
 
     <!--
         Put the EditText field under the TextView
@@ -47,7 +47,7 @@
      android:paddingTop="2dip"  
      android:paddingBottom="2dip"  
      android:paddingLeft="5dip"
-     style="?android:attr/listSeparatorTextViewStyle" android:text="@+id/picture_attributes_text"/>  
+     style="?android:attr/listSeparatorTextViewStyle" android:text="@string/picture_attributes_text"/>  
     <ListView android:id="@+id/attribute_list"
     	android:layout_width="fill_parent"
     	android:layout_height="wrap_content"

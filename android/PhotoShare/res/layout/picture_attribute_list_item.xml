@@ -17,6 +17,5 @@
      	android:id="@+id/radio_button"
      	android:layout_toRightOf="@id/list_item"
      />
-     	
   </RelativeLayout>
     

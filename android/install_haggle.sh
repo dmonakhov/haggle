@@ -70,9 +70,11 @@ FRAMEWORK_FILES="haggle.jar"
 LIB_PATH_PREFIX="system/lib"
 LIBS="libhaggle.so libhaggle_jni.so libhaggle-xml2.so"
 
-BIN_HOST_PREXIF=
+BIN_HOST_PREFIX=
 BIN_PATH_PREFIX="system/bin"
 HAGGLE_BIN="haggle"
+
+APP_PATH_PREFIX="system/app"
 
 pushd $ANDROID_DIR
 pushd $ANDROID_PRODUCT_OUT
@@ -100,14 +102,14 @@ for dev in $DEVICES; do
     $ADB -s $dev push $BIN_PATH_PREFIX/$HAGGLE_BIN /$BIN_PATH_PREFIX/$HAGGLE_BIN
     $ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/$HAGGLE_BIN
 
-    echo "    luckyMe"
+    echo "    LuckyMe (CLI c-version)"
     $ADB -s $dev push $BIN_PATH_PREFIX/luckyme /$BIN_PATH_PREFIX/luckyme
     $ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/luckyme
 
     echo "    clitool"
     $ADB -s $dev push $BIN_PATH_PREFIX/clitool /$BIN_PATH_PREFIX/clitool
     $ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/clitool
-
+  
     # Install libraries
     echo
     echo "Installing library files"
@@ -119,6 +121,14 @@ for dev in $DEVICES; do
     
     # Back to product dir
     popd
+    echo "Installing applications"
+    echo "    LuckyMe"
+    $ADB -s $dev uninstall org.haggle.LuckyMe
+    $ADB -s $dev install $APP_PATH_PREFIX/LuckyMe.apk
+
+    echo "    PhotoShare"
+    $ADB -s $dev uninstall org.haggle.PhotoShare
+    $ADB -s $dev install $APP_PATH_PREFIX/PhotoShare.apk
 
     # Install framework files
     echo

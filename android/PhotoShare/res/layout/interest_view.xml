@@ -12,7 +12,7 @@
     <TextView
         android:id="@+id/interest_label"
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content" android:text="@+id/new_interests_text"/>
+        android:layout_height="wrap_content" android:text="@string/new_interests_text"/>
 
     <!--
         Put the EditText field under the TextView
@@ -44,7 +44,7 @@
         android:layout_below="@id/entry"
         android:layout_alignParentRight="true"
         android:layout_marginLeft="10dip"
-        android:minWidth="80sp" android:text="@+id/add_button_text"/>
+        android:minWidth="80sp" android:text="@string/add_button_text"/>
 
     <!--
         The Cancel button is aligned with the top of
@@ -58,7 +58,7 @@
         android:layout_height="wrap_content"
         android:layout_toLeftOf="@id/add_button"
         android:layout_alignTop="@id/add_button"
-        android:minWidth="80sp" android:text="@+id/cancel_button_text"/>
+        android:minWidth="80sp" android:text="@string/cancel_button_text"/>
 	</RelativeLayout>
    	<TextView  
      xmlns:android="http://schemas.android.com/apk/res/android"  
@@ -68,7 +68,7 @@
      android:paddingTop="2dip"  
      android:paddingBottom="2dip"  
      android:paddingLeft="5dip"
-     style="?android:attr/listSeparatorTextViewStyle" android:text="@+id/my_interests_text"/>  
+     style="?android:attr/listSeparatorTextViewStyle" android:text="@string/my_interests_text"/>  
     <ListView android:id="@+id/interest_list"
     	android:layout_width="fill_parent"
     	android:layout_height="wrap_content"
