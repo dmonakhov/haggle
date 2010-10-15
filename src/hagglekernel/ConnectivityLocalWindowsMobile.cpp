@@ -20,7 +20,7 @@
 #include <libcpphaggle/Watch.h>
 
 #include "ConnectivityManager.h"
-#include "ConnectivityLocal.h"
+#include "ConnectivityLocalWindowsMobile.h"
 //#include "ConnectivityBluetooth.h"
 #include "ConnectivityEthernet.h"
 #include "Utility.h"
@@ -33,7 +33,16 @@
 #include <ws2bth.h>
 #endif
 
-void ConnectivityLocal::handleBTEvent(BTEVENT * e)
+ConnectivityLocalWindowsMobile::ConnectivityLocalWindowsMobile(ConnectivityManager *m) :
+	ConnectivityLocal(m, "ConnectivityLocalWindowsMobile")
+{
+}
+
+ConnectivityLocalWindowsMobile::~ConnectivityLocalWindowsMobile()
+{
+}
+
+void ConnectivityLocalWindowsMobile::handleBTEvent(BTEVENT * e)
 {
 	switch (e->dwEventId) {
 	case BTE_CONNECTION:
@@ -96,7 +105,7 @@ void ConnectivityLocal::handleBTEvent(BTEVENT * e)
 }
 #if defined(WIDCOMM_BLUETOOTH)
 
-void ConnectivityLocal::findLocalBluetoothInterfaces()
+void ConnectivityLocalWindowsMobile::findLocalBluetoothInterfaces()
 {
 	unsigned char macaddr[6];
 	char btName[256];
@@ -142,7 +151,7 @@ static void btAddr2Mac(unsigned __int64 btAddr, char *mac)
 }
 
 // Find local bluetooth interfaces
-void ConnectivityLocal::findLocalBluetoothInterfaces()
+void ConnectivityLocalWindowsMobile::findLocalBluetoothInterfaces()
 {
 	unsigned char macaddr[BT_ALEN];
 	char btName[BT_ALEN*3];
@@ -215,7 +224,7 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 
 #include <iphlpapi.h>
 
-void ConnectivityLocal::findLocalEthernetInterfaces()
+void ConnectivityLocalWindowsMobile::findLocalEthernetInterfaces()
 {  
 	InterfaceRefList iflist;
 
@@ -231,7 +240,7 @@ void ConnectivityLocal::findLocalEthernetInterfaces()
 }
 #endif
 
-void ConnectivityLocal::hookCleanup()
+void ConnectivityLocalWindowsMobile::hookCleanup()
 {
 #if defined(ENABLE_BLUETOOTH)
 	StopBluetoothNotifications(hBTNotif);
@@ -247,7 +256,7 @@ void ConnectivityLocal::hookCleanup()
 #endif
 }
 
-bool ConnectivityLocal::run()
+bool ConnectivityLocalWindowsMobile::run()
 {
 	Watch w;
 

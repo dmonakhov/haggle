@@ -57,6 +57,7 @@ LOCAL_SRC_FILES := \
 	Queue.cpp \
 	RepositoryEntry.cpp \
 	ResourceManager.cpp \
+	ResourceMonitor.cpp \
 	ResourceMonitorAndroid.cpp \
 	SecurityManager.cpp \
 	SQLDataStore.cpp \

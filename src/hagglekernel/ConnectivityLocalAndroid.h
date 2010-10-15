@@ -15,12 +15,7 @@
 #ifndef _CONNECTIVITYLOCALANDROID_H_
 #define _CONNECTIVITYLOCALANDROID_H_
 
-#ifndef  _IN_CONNECTIVITYLOCAL_H
-#error "Do not include this file directly, include ConnectivityLocal.h"
-#endif
-
 #include <libcpphaggle/Platform.h>
-#include "Connectivity.h"
 #include "Interface.h"
 
 #if defined(ENABLE_ETHERNET)
@@ -32,8 +27,12 @@
 /*----- TI API includes -----*/
 //#include "osDot11.h"
 //#include "802_11Defs.h"
-#include "TI_IPC_Api.h"
+// SCAN_ENABLED and SCAN_DISABLED are defined in Bluez.
+// Must undef them here to avoid conflicts with TI driver API.
+#undef SCAN_ENABLED
+#undef SCAN_DISABLED
 #include "TI_AdapterApiC.h"
+#include "TI_IPC_Api.h"
 #include "tiioctl.h"
 //#include "shlist.h"
 
@@ -62,6 +61,8 @@ struct hci_handle {
 };
 #endif
 
+#include "ConnectivityLocal.h"
+
 /**
 	Local connectivity module
 
@@ -69,8 +70,9 @@ struct hci_handle {
 	bluetooth/ethernet/etc. interfaces that are accessible, and tells the
 	connectivity manager about them when they are detected.
 */
-class ConnectivityLocal : public ConnectivityLocalBase
+class ConnectivityLocalAndroid : public ConnectivityLocal
 {
+	friend class ConnectivityLocal;
 private:
         int uevent_fd;
         int uevent_init();
@@ -91,8 +93,6 @@ private:
         void wpa_handle_close();
 #endif
 #if defined(ENABLE_ETHERNET)
-        long ethernet_interfaces_found;
-        
 #if defined(ENABLE_TI_WIFI)
         struct ti_wifi_handle tih;
         friend void ti_wifi_event_receive(IPC_EV_DATA *pData);
@@ -103,16 +103,12 @@ private:
 #endif
         void findLocalEthernetInterfaces();
 #endif
-
-        // Called when add_interface _actually_ adds an interface
-        //void interface_added(const Interface *node);
-
         bool run();
         void hookCleanup();
-public:
 
-        ConnectivityLocal(ConnectivityManager *m);
-        ~ConnectivityLocal();
+        ConnectivityLocalAndroid(ConnectivityManager *m);
+public:
+        ~ConnectivityLocalAndroid();
 };
 
 #endif

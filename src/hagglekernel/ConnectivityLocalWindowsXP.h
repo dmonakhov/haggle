@@ -12,15 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _CONNECTIVITYLOCALWINDOWS_H_
-#define _CONNECTIVITYLOCALWINDOWS_H_
-
-#ifndef  _IN_CONNECTIVITYLOCAL_H
-#error "Do not include this file directly, include ConnectivityLocal.h"
-#endif
+#ifndef _CONNECTIVITYLOCALWINDOWSXP_H_
+#define _CONNECTIVITYLOCALWINDOWSXP_H_
 
 #include <libcpphaggle/Platform.h>
-#include "Connectivity.h"
+#include "ConnectivityLocal.h"
 #include "Interface.h"
 
 #if defined(ENABLE_BLUETOOTH)
@@ -32,22 +28,21 @@
 	bluetooth/ethernet/etc. interfaces that are accessible, and tells the
 	connectivity manager about them when they are detected.
 */
-class ConnectivityLocal : public ConnectivityLocalBase
+class ConnectivityLocalWindowsXP : public ConnectivityLocal
 {
+	friend class ConnectivityLocal;
 private:
 #if defined(ENABLE_BLUETOOTH)
         void findLocalBluetoothInterfaces();
 #endif
 #if defined(ENABLE_ETHERNET)
-        long ethernet_interfaces_found;
         void findLocalEthernetInterfaces();
 #endif
         bool run();
         void hookCleanup();
+        ConnectivityLocalWindowsXP(ConnectivityManager *m);
 public:
-
-        ConnectivityLocal(ConnectivityManager *m);
-        ~ConnectivityLocal();
+        ~ConnectivityLocalWindowsXP();
 };
 
 #endif

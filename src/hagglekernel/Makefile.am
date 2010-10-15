@@ -47,6 +47,7 @@ libhagglekernel_a_SOURCES = \
 	ProtocolTCP.cpp \
 	ProtocolLOCAL.cpp \
 	ResourceManager.cpp \
+	ResourceMonitor.cpp \
 	Trace.cpp \
 	Utility.cpp
 

@@ -13,45 +13,45 @@
  * limitations under the License.
  */
 
-#include "ResourceMonitor.h"
+#include "ResourceMonitorLinux.h"
 
 #include <libcpphaggle/Watch.h>
 #include <haggleutils.h>
 
-ResourceMonitor::ResourceMonitor(ResourceManager *resMan) : 
-	ManagerModule<ResourceManager>(resMan, "ResourceMonitor")
+ResourceMonitorLinux::ResourceMonitorLinux(ResourceManager *m) : 
+	ResourceMonitor(m, "ResourceMonitorLinux")
 {
 }
 
-ResourceMonitor::~ResourceMonitor()
+ResourceMonitorLinux::~ResourceMonitorLinux()
 {
 }
 
-unsigned char ResourceMonitor::getBatteryLifePercent() const 
+long ResourceMonitorLinux::getBatteryPercent() const 
 {
 	// Unknown: return 100%
     return 100;
 }
 
-unsigned int ResourceMonitor::getBatteryLifeTime() const
+unsigned int ResourceMonitorLinux::getBatteryLifeTime() const
 {
 	// Unknown: return 1 hour
     return 1*60*60;
 }
 
-unsigned long ResourceMonitor::getAvaliablePhysicalMemory() const 
+unsigned long ResourceMonitorLinux::getAvaliablePhysicalMemory() const 
 {
 	// Unknown: return 1 GB
     return 1*1024*1024*1024;
 }
 
-unsigned long ResourceMonitor::getAvaliableVirtualMemory() const 
+unsigned long ResourceMonitorLinux::getAvaliableVirtualMemory() const 
 {
 	// Unknown: return 1 GB
     return 1*1024*1024*1024;
 }
 
-bool ResourceMonitor::run()
+bool ResourceMonitorLinux::run()
 {
 	Watch w;
 
@@ -72,6 +72,6 @@ bool ResourceMonitor::run()
 	return false;
 }
 
-void ResourceMonitor::cleanup()
+void ResourceMonitorLinux::cleanup()
 {
 }

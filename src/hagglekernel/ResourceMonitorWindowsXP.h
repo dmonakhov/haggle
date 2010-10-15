@@ -12,48 +12,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _RESOURCEMONITORWINDOWSMOBILE_H
-#define _RESOURCEMONITORWINDOWSMOBILE_H
-
-#ifndef  _IN_RESOURCEMONITOR_H
-#error "Do not include this file directly, include ResourceMonitor.h"
-#endif
-
+#ifndef _RESOURCEMONITORWINDOWSXP_H
+#define _RESOURCEMONITORWINDOWSXP_H
 
 #include <libcpphaggle/Platform.h>
-#include "ManagerModule.h"
+#include "ResourceMonitor.h"
 
 /** */
-class ResourceMonitor : public ManagerModule<ResourceManager>
+class ResourceMonitorWindowsXP : public ResourceMonitor
 {
-	volatile bool keep_going;
-	// Private data
-
-	// Thread entry and exit
+	friend class ResourceMonitor;
 	void cleanup();
 	bool run();
+	ResourceMonitorWindowsXP(ResourceManager *m);
 public:
-	ResourceMonitor(ResourceManager *resMan);
-	~ResourceMonitor();
+	~ResourceMonitorWindowsXP();
 
+	PowerMode_t getPowerMode() const { return POWER_MODE_AC; }
 	/**
 		Returns: battery charge left in percent.
 	*/
-    unsigned char getBatteryLifePercent() const;
+	long getBatteryPercent() const;
 	/**
-		Returns: battery time left in seconds.
+	   Returns: battery time left in seconds.
 	*/
-    unsigned int getBatteryLifeTime() const;
-
+	unsigned int getBatteryLifeTime() const;
+	
 	/**
-		Returns: number of bytes of physical memory left
+	   Returns: number of bytes of physical memory left
 	*/
-    unsigned long getAvaliablePhysicalMemory() const;
+	unsigned long getAvaliablePhysicalMemory() const;
 	/**
-		Returns: number of bytes of virtual memory left
+	   Returns: number of bytes of virtual memory left
 	*/
-    unsigned long getAvaliableVirtualMemory() const;
+	unsigned long getAvaliableVirtualMemory() const;
 };
 
-
-#endif /* _RESOURCEMONITORWINDOWSMOBILE_H */
+#endif /* _RESOURCEMONITORWINDOWSXP_H */

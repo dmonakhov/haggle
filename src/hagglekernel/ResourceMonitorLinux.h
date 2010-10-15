@@ -15,27 +15,24 @@
 #ifndef _RESOURCEMONITORLINUX_H
 #define _RESOURCEMONITORLINUX_H
 
-#ifndef  _IN_RESOURCEMONITOR_H
-#error "Do not include this file directly, include ResourceMonitor.h"
-#endif
-
 #include <libcpphaggle/Platform.h>
-#include "ManagerModule.h"
+#include "ResourceMonitor.h"
 
 /** */
-class ResourceMonitor : public ManagerModule<ResourceManager>
+class ResourceMonitorLinux : public ResourceMonitor
 {
-	// Thread entry and exit
+	friend class ResourceMonitor;
 	void cleanup();
 	bool run();
+	ResourceMonitorLinux(ResourceManager *m);
 public:
-	ResourceMonitor(ResourceManager *resMan);
-	~ResourceMonitor();
+	~ResourceMonitorLinux();
 	
+	PowerMode_t getPowerMode() const { return POWER_MODE_AC; }
 	/**
 	   Returns: battery charge left in percent.
 	*/
-	unsigned char getBatteryLifePercent() const;
+	long getBatteryPercent() const;
 	/**
 	   Returns: battery time left in seconds.
 	*/
@@ -50,6 +47,5 @@ public:
 	*/
 	unsigned long getAvaliableVirtualMemory() const;
 };
-
 
 #endif /* _RESOURCEMONITORLINUX_H */

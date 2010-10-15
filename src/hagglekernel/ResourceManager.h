@@ -22,19 +22,32 @@ class ResourceManager;
 #include "Policy.h"
 #include "ResourceMonitor.h"
 
-/** */
+
+#define BATTERY_CRITICAL_LEVEL 8
+#define BATTERY_LOW_LEVEL 33
+#define BATTERY_MEDIUM_LEVEL 66
+#define BATTERY_HIGH_LEVEL // everything above medium
+
+/** 
+    ResourceManager: 
+
+Monitors resources (e.g., Battery power, disk and memory space) and
+generates policy events depending on current resource status.
+*/
+
 class ResourceManager : public Manager
 {
 	friend class ResourceMonitor;
+public:
+	ResourceManager(HaggleKernel *kernel);
+	~ResourceManager();
+private:	
 	ResourceMonitor *resMon;
 	EventCallback<EventHandler> *onCheckStatusCallback;
 	void onShutdown();
 	void onStartup();
 	void onCheckStatusEvent(Event *e);
 	bool init_derived();
-public:
-	ResourceManager(HaggleKernel *kernel);
-	~ResourceManager();
 };
 
 

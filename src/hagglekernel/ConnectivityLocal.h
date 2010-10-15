@@ -25,32 +25,12 @@
 #include "Interface.h"
 #include "Connectivity.h"
 
-#define _IN_CONNECTIVITYLOCAL_H
-
-class ConnectivityLocal;
-
-class ConnectivityLocalBase : public Connectivity {
-    private:
-        friend class ConnectivityLocal;
-        ConnectivityLocalBase(ConnectivityManager *m, const string& name);
-        ~ConnectivityLocalBase();
+class ConnectivityLocal : public Connectivity {
+protected:
+        ConnectivityLocal(ConnectivityManager *m, const string& name);        
+public:
+	virtual ~ConnectivityLocal() = 0;
+	static ConnectivityLocal *create(ConnectivityManager *m);
 };
-
-#if defined(OS_ANDROID) && defined(ENABLE_TI_WIFI)
-#include "ConnectivityLocalAndroid.h"
-#elif defined(OS_LINUX)
-#include "ConnectivityLocalLinux.h"
-#elif defined(OS_MACOSX)
-#include "ConnectivityLocalMacOSX.h"
-#elif defined(OS_WINDOWS)
-#if defined(OS_WINDOWS_MOBILE)
-#include "ConnectivityLocalWindowsMobile.h"
-#else
-#include "ConnectivityLocalWindowsXP.h"
-#endif
-#else
-#error "Bad OS - Not supported by ConnectivityLocal.h"
-#endif
-#undef _IN_CONNECTIVITYLOCAL_H
 
 #endif

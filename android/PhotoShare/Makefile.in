@@ -7,9 +7,10 @@ RELEASE=bin/${APP}-unsigned
 ANT=ant -q
 TOP_BIN_DIR=@top_builddir@/bin
 
+all: debug
+
 debug: ${DEBUG}.apk
 release: ${RELEASE}.apk
-all: debug
 
 ${EXTRA_JARS}: ${JAR_PATH}
 	mkdir -p libs

@@ -20,15 +20,16 @@
 #endif
 
 #include <libcpphaggle/Platform.h>
-#include "ManagerModule.h"
+#include "ResourceMonitor.h"
 
 #include <msgqueue.h>
 #include <pm.h>
 #include <pmpolicy.h>
 
 /** */
-class ResourceMonitor : public ManagerModule<ResourceManager>
+class ResourceMonitorWindowsMobile : public ResourceMonitor
 {
+	friend class ResourceMonitor;
 	// Private data
 	HANDLE hMsgQ;
 	HANDLE hPowerNotif;
@@ -38,15 +39,16 @@ class ResourceMonitor : public ManagerModule<ResourceManager>
 	// Thread entry and exit
 	void cleanup();
 	bool run();
+	ResourceMonitorWindowsMobile(ResourceManager *m);
 public:
-	ResourceMonitor(ResourceManager *resMan);
-	~ResourceMonitor();
+	~ResourceMonitorWindowsMobile();
 	bool init();
 
+	PowerMode_t getPowerMode() const { return POWER_MODE_BATTERY; }
 	/**
 		Returns: battery charge left in percent.
 	*/
-	unsigned char getBatteryLifePercent() const;
+	long getBatteryPercent() const;
 	/**
 	   Returns: battery time left in seconds.
 	*/

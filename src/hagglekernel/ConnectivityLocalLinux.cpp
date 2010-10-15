@@ -48,7 +48,7 @@
 #endif
 
 #include "ConnectivityManager.h"
-#include "ConnectivityLocal.h"
+#include "ConnectivityLocalLinux.h"
 #include "ConnectivityBluetooth.h"
 #include "ConnectivityEthernet.h"
 #include "Interface.h"
@@ -300,7 +300,16 @@ static int fill_in_macaddr(struct if_info *ifinfo)
 	return 0;
 }
 
-int ConnectivityLocal::read_netlink()
+ConnectivityLocalLinux::ConnectivityLocalLinux(ConnectivityManager *m) :
+	ConnectivityLocal(m, "ConnectivityLocalLinux")
+{
+}
+
+ConnectivityLocalLinux::~ConnectivityLocalLinux()
+{
+}
+
+int ConnectivityLocalLinux::read_netlink()
 {
 	int len, num_msgs = 0;
 	socklen_t addrlen;
@@ -384,8 +393,6 @@ int ConnectivityLocal::read_netlink()
 				}
 				
 				if (iface) {
-					ethernet_interfaces_found++;
-					
 					report_interface(iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
 				}
 			}
@@ -448,8 +455,6 @@ int ConnectivityLocal::read_netlink()
 					iface = Interface::create<EthernetInterface>(ifinfo.mac, ifinfo.ifname, addrs, IFFLAG_LOCAL | IFFLAG_UP);
 				}
 				if (iface) {
-					ethernet_interfaces_found++;
-					
 					report_interface(iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
 				}
 			}
@@ -486,7 +491,7 @@ static int netlink_request(struct netlink_handle *nlh, int type)
 }
 
 #define	max(a,b) ((a) > (b) ? (a) : (b))
-void ConnectivityLocal::findLocalEthernetInterfaces()
+void ConnectivityLocalLinux::findLocalEthernetInterfaces()
 {
 	int sock, ret = 0;
 #define REQ_BUF_SIZE (sizeof(struct ifreq) * 20)
@@ -839,7 +844,7 @@ failure:
 
 DBusHandlerResult dbus_handler(DBusConnection *conn, DBusMessage *msg, void *data)
 {
-	ConnectivityLocal *cl = static_cast < ConnectivityLocal * >(data);
+	ConnectivityLocalLinux *cl = static_cast < ConnectivityLocalLinux * >(data);
 	DBusError *err = &cl->dbh.err;
 	/*
 	  Parsing of these messages rely on the Bluez 4 API.
@@ -1278,7 +1283,7 @@ void hci_close_handle(struct hci_handle *hcih)
 }
 #endif
 
-int ConnectivityLocal::read_hci()
+int ConnectivityLocalLinux::read_hci()
 {
 	char buf[HCI_MAX_FRAME_SIZE];
 	hci_event_hdr *hdr = (hci_event_hdr *) & buf[1];
@@ -1364,7 +1369,7 @@ int ConnectivityLocal::read_hci()
 // Finds local bluetooth interfaces:
 #if defined(HAVE_DBUS)
 
-void ConnectivityLocal::findLocalBluetoothInterfaces()
+void ConnectivityLocalLinux::findLocalBluetoothInterfaces()
 {
 	DBusMessage *reply, *msg;
 	char **adapters = NULL;
@@ -1418,7 +1423,7 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 	return;
 }
 #else
-void ConnectivityLocal::findLocalBluetoothInterfaces()
+void ConnectivityLocalLinux::findLocalBluetoothInterfaces()
 {
 	int i, ret = 0;
 	struct {
@@ -1509,7 +1514,7 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 
 #endif // ENABLE_BLUETOOTH
 
-void ConnectivityLocal::hookCleanup()
+void ConnectivityLocalLinux::hookCleanup()
 {
 #if defined(ENABLE_BLUETOOTH)
 #if defined(HAVE_DBUS)
@@ -1526,7 +1531,7 @@ void ConnectivityLocal::hookCleanup()
 #endif
 }
 
-bool ConnectivityLocal::run()
+bool ConnectivityLocalLinux::run()
 {
 	int ret;
 #if defined(ENABLE_ETHERNET)

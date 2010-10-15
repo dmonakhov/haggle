@@ -20,7 +20,7 @@
 	avoid circular dependencies. If/when a data type is added to this file,
 	remember to add it here.
 */
-template <class theManager> class ManagerModule;
+template <class ManagerClass> class ManagerModule;
 
 #include <libcpphaggle/Thread.h>
 #include "Manager.h"
@@ -36,7 +36,7 @@ using namespace haggle;
 	additional resources to that of a Runnable, such as a Queue and a reference
 	to the manager that owns it.
 */
-template <class theManager>
+template <class ManagerClass>
 class ManagerModule : 
 #ifdef DEBUG_LEAKS
 	LeakMonitor,
@@ -47,7 +47,7 @@ private:
         /**	Queue for IPC between the manager and the module. */
         Queue *h;
         /** A reference to the actual manager that owns this module. */
-        theManager *manager;
+        ManagerClass *manager;
         /**
         	This is inherited from the Runnable class. Implemented here as an empty
         	function, to avoid forcing child classes to declare these themselves.
@@ -58,6 +58,14 @@ private:
         	function, to avoid forcing child classes to declare these themselves.
         */
         void cleanup() {} // Thread exit
+protected:
+	
+        ManagerModule(ManagerClass *m, const string name) : 
+#ifdef DEBUG_LEAKS
+		LeakMonitor(LEAK_TYPE_MANAGERMODULE),
+#endif
+		Runnable(name), h(NULL), manager(m) {}
+	
 public:
         /**
         	Returns the Queue associated with this module. The queue is created
@@ -70,12 +78,6 @@ public:
 			h = new Queue(name);
 		return h;
 	}
-
-        ManagerModule(theManager *m = NULL, const string name = "Unnamed manager module") : 
-#ifdef DEBUG_LEAKS
-		LeakMonitor(LEAK_TYPE_MANAGERMODULE),
-#endif
-		Runnable(name), h(NULL), manager(m) {}
         ~ManagerModule() { if (h) delete h; }
         /**
         	Returns the haggle kernel reference the manager has. Or NULL if there
@@ -91,7 +93,7 @@ public:
         /**
         	Returns the manager this module belongs to.
         */
-        theManager *getManager() 
+        ManagerClass *getManager() 
 	{
                 return manager;
         }
@@ -99,7 +101,7 @@ public:
         /**
 	 Returns the manager this module belongs to.
 	 */
-        const theManager *getManager() const
+        const ManagerClass *getManager() const
 	{
                 return manager;
         }

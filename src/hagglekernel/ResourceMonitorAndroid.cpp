@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "ResourceMonitor.h"
+#include "ResourceMonitorAndroid.h"
 
 #include <libcpphaggle/Watch.h>
 #include <haggleutils.h>
@@ -26,42 +26,149 @@
 #include <sys/un.h>
 #include <linux/netlink.h>
 
-ResourceMonitor::ResourceMonitor(ResourceManager *resMan) : 
-	ManagerModule<ResourceManager>(resMan, "ResourceMonitor")
+ResourceMonitorAndroid::ResourceMonitorAndroid(ResourceManager *m) : 
+	ResourceMonitor(m, "ResourceMonitorAndroid")
 {
 }
 
-
-ResourceMonitor::~ResourceMonitor()
+ResourceMonitorAndroid::~ResourceMonitorAndroid()
 {
 }
 
-unsigned char ResourceMonitor::getBatteryLifePercent() const 
+static ssize_t readfile(const char *path, char *buf, size_t len)
 {
-	// Unknown: return 100%
-    return 100;
+        FILE *fp;
+        size_t nitems;
+
+        fp = fopen(path, "r");
+
+        if (!fp)
+                return -1;
+
+        nitems = fread(buf, 1, len, fp);
+
+        fclose(fp);
+
+        if (nitems == 0)
+                return -1;
+
+        return nitems;
 }
 
-unsigned int ResourceMonitor::getBatteryLifeTime() const
+typedef enum uevent_type {
+	UEVENT_AC = 0,
+	UEVENT_USB,
+	UEVENT_BATTERY,
+	UEVENT_BATTERY_STATUS,
+	UEVENT_BATTERY_HEALTH,
+	UEVENT_BATTERY_CAPACITY,
+	UEVENT_UNKNOWN,
+} uevent_type_t;
+
+static const char *uevent_str[] = {
+	"power_supply/ac",
+	"power_supply/usb",
+	"power_supply/battery",
+	"power_supply/battery/status",
+	"power_supply/battery/health",
+	"power_supply/battery/capacity",
+	NULL
+};
+
+static uevent_type_t getEvent(const char *event)
+{
+	size_t event_len = strlen(event);
+
+	int i = 0;
+
+	if (strncmp("change@", event, 7) != 0)
+		return UEVENT_UNKNOWN;
+
+	while (uevent_str[i] != NULL) {
+		size_t const_len = strlen(uevent_str[i]);
+		
+		if (const_len < event_len && 
+		    strcmp(event + (event_len - const_len), uevent_str[i]) == 0) {
+			return (uevent_type_t)i;
+		}
+		i++;
+	}
+        return UEVENT_UNKNOWN;
+}
+
+static const char *getSystemPath(const char *event)
+{
+	if (strncmp("change@", event, 7) != 0)
+		return "";
+	
+	return (event + 7);
+}
+
+#define AC_ONLINE "/sys/class/power_supply/ac/online"
+#define USB_ONLINE "/sys/class/power_supply/usb/online"
+
+static const char *power_state_paths[] = {
+	AC_ONLINE,
+	USB_ONLINE,
+	NULL
+};
+
+ResourceMonitor::PowerMode_t ResourceMonitorAndroid::getPowerMode() const
+{
+	char buffer[10];
+	int i = 0;
+
+	while (power_state_paths[i]) {
+		ssize_t len = readfile(power_state_paths[i], buffer, sizeof(buffer));
+		
+		if (len > 0) {
+			long on = strtol(buffer, NULL, 10);
+			
+			if (on == 1)
+				return (PowerMode_t)i;
+		}
+		i++;
+	}
+	// Default to battery
+	return POWER_MODE_BATTERY;
+}
+
+#define BATTERY_CAPACITY_PATH "/sys/class/power_supply/battery/capacity"
+
+long ResourceMonitorAndroid::getBatteryPercent() const 
+{
+	char buffer[10];
+	long capacity = -1;
+	
+	ssize_t len = readfile(BATTERY_CAPACITY_PATH, buffer, sizeof(buffer));
+	
+	if (len > 0) {
+		capacity = strtol(buffer, NULL, 10);
+	}
+
+	return (unsigned char)capacity;	
+}
+
+unsigned int ResourceMonitorAndroid::getBatteryLifeTime() const
 {
 	// Unknown: return 1 hour
-    return 1*60*60;
+	return 1*60*60;
 }
 
-unsigned long ResourceMonitor::getAvaliablePhysicalMemory() const 
+unsigned long ResourceMonitorAndroid::getAvaliablePhysicalMemory() const 
 {
 	// Unknown: return 1 GB
-    return 1*1024*1024*1024;
+	return 1*1024*1024*1024;
 }
 
-unsigned long ResourceMonitor::getAvaliableVirtualMemory() const 
+unsigned long ResourceMonitorAndroid::getAvaliableVirtualMemory() const 
 {
 	// Unknown: return 1 GB
-    return 1*1024*1024*1024;
+	return 1*1024*1024*1024;
 }
 
 /* Returns -1 on failure, 0 on success */
-int ResourceMonitor::uevent_init()
+int ResourceMonitorAndroid::uevent_init()
 {
         struct sockaddr_nl addr;
         int sz = 64*1024;
@@ -87,56 +194,19 @@ int ResourceMonitor::uevent_init()
         return (uevent_fd > 0) ? 0 : -1;
 }
 
-void ResourceMonitor::uevent_close()
+void ResourceMonitorAndroid::uevent_close()
 {
         if (uevent_fd > 0)
                 close(uevent_fd);
 }
 
-
-#define UEVENT_AC_ONLINE_PATH "/sys/class/power_supply/ac/online"
-#define UEVENT_USB_ONLINE_PATH "/sys/class/power_supply/usb/online"
-#define UEVENT_BATTERY_STATUS_PATH "/sys/class/power_supply/battery/status"
-#define UEVENT_BATTERY_HEALTH_PATH "/sys/class/power_supply/battery/health"
-#define UEVENT_BATTERY_PRESENT_PATH "/sys/class/power_supply/battery/present"
-#define UEVENT_BATTERY_CAPACITY_PATH "/sys/class/power_supply/battery/capacity"
-#define UEVENT_BATTERY_VOLTAGE_PATH "/sys/class/power_supply/battery/batt_vol"
-#define UEVENT_BATTERY_TEMPERATURE_PATH "/sys/class/power_supply/battery/batt_temp"
-#define UEVENT_BATTERY_TECHNOLOGY_PATH "/sys/class/power_supply/battery/technology"
-
-static bool isPath(const char *constant, const char *path)
-{
-        if (strncmp(constant, path, strlen(constant)) == 0) {
-                return true;
-        }
-        return false;
-}
-
-static ssize_t readfile(const char *path, char *buf, size_t len)
-{
-        FILE *fp;
-        size_t nitems;
-
-        fp = fopen(path, "r");
-
-        if (!fp)
-                return -1;
-
-        nitems = fread(buf, 1, len, fp);
-
-        fclose(fp);
-
-        if (nitems == 0)
-                return -1;
-
-        return nitems;
-}
-
-void ResourceMonitor::uevent_read()
+void ResourceMonitorAndroid::uevent_read()
 {
         char buffer[1024];
         int buffer_length = sizeof(buffer);
-        
+        uevent_type_t event_type;
+	long battery_capacity = 100;
+
         ssize_t len = recv(uevent_fd, buffer, buffer_length, 0);
         
         if (len <= 0) {
@@ -146,45 +216,55 @@ void ResourceMonitor::uevent_read()
         
         HAGGLE_DBG("UEvent: %s\n", buffer);
 
-        if (isPath(UEVENT_AC_ONLINE_PATH, buffer)) {
-                HAGGLE_DBG("AC on/off\n");
-        } else if (isPath(UEVENT_USB_ONLINE_PATH, buffer)) {
-                HAGGLE_DBG("USB online\n");
-        } else if (isPath(UEVENT_BATTERY_STATUS_PATH, buffer)) {
-                len = readfile(buffer, buffer, buffer_length);
-                if (len)
-                        HAGGLE_DBG("Battery status is '%s'\n", buffer);
-        } else if (isPath(UEVENT_BATTERY_HEALTH_PATH, buffer)) {
-                len = readfile(buffer, buffer, buffer_length);
-                if (len)
-                        HAGGLE_DBG("Battery health is '%s'\n", buffer);
-        } else if (isPath(UEVENT_BATTERY_PRESENT_PATH, buffer)) {
-                HAGGLE_DBG("Battery present\n");
-        } else if (isPath(UEVENT_BATTERY_VOLTAGE_PATH, buffer)) {
-                HAGGLE_DBG("Battery voltage\n");
-        } else if (isPath(UEVENT_BATTERY_TEMPERATURE_PATH, buffer)) {
-                HAGGLE_DBG("Battery temperature\n");
-        } 
+	event_type = getEvent(buffer);
+
+	switch (event_type) {
+	case UEVENT_AC:
+	case UEVENT_USB:
+		HAGGLE_DBG("Power state: %s\n", power_mode_str[getPowerMode()]);
+		break;
+	case UEVENT_BATTERY:
+	case UEVENT_BATTERY_CAPACITY:
+		battery_capacity = getBatteryPercent();
+
+		HAGGLE_DBG("Battery capacity is %ld\n", battery_capacity);
+		/*
+		  Shutdown handled by manager?
+		
+		if (battery_capacity > 0 && battery_capacity < 10) {
+			HAGGLE_DBG("Shutting down due to power off\n");
+			getManager()->getKernel()->shutdown();
+		}
+		*/
+		break;
+	case UEVENT_BATTERY_STATUS:
+		HAGGLE_DBG("Battery status\n");
+		break;
+	case UEVENT_BATTERY_HEALTH:
+		HAGGLE_DBG("Battery health\n");
+		break;
+	case UEVENT_UNKNOWN:
+		break;
+	}
 }
 
-bool ResourceMonitor::run()
+bool ResourceMonitorAndroid::run()
 {
 	Watch w;
 
 	HAGGLE_DBG("Running resource monitor\n");
 
-        /*
         if (uevent_init() == -1) {
                 HAGGLE_ERR("Could not open uevent socket\n");
                 return false;
         }
-        */
+
 	while (!shouldExit()) {
 		int ret;
 
 		w.reset();
                 
-                int ueventIndex = -1; // = w.add(uevent_fd);
+                int ueventIndex = w.add(uevent_fd);
 
 		ret = w.wait();
                 
@@ -202,7 +282,7 @@ bool ResourceMonitor::run()
 	return false;
 }
 
-void ResourceMonitor::cleanup()
+void ResourceMonitorAndroid::cleanup()
 {
         uevent_close();
 }

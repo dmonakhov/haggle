@@ -15,40 +15,37 @@
 #ifndef _RESOURCEMONITORMACOSX_H
 #define _RESOURCEMONITORMACOSX_H
 
-#ifndef  _IN_RESOURCEMONITOR_H
-#error "Do not include this file directly, include ResourceMonitor.h"
-#endif
-
 #include <libcpphaggle/Platform.h>
-#include "ManagerModule.h"
+#include "ResourceMonitor.h"
 
 /** */
-class ResourceMonitor : public ManagerModule<ResourceManager>
+class ResourceMonitorMacOSX : public ResourceMonitor
 {
-	// Thread entry and exit
+	friend class ResourceMonitor;
 	void cleanup();
 	bool run();
+	ResourceMonitorMacOSX(ResourceManager *m);
 public:
-	ResourceMonitor(ResourceManager *resMan);
-	~ResourceMonitor();
+	~ResourceMonitorMacOSX();
 
+	PowerMode_t getPowerMode() const { return POWER_MODE_AC; }
 	/**
-		Returns: battery charge left in percent.
+	   Returns: battery charge left in percent.
 	*/
-    unsigned char getBatteryLifePercent() const;
+	long getBatteryPercent() const;
 	/**
-		Returns: battery time left in seconds.
+	   Returns: battery time left in seconds.
 	*/
-    unsigned int getBatteryLifeTime() const;
-
+	unsigned int getBatteryLifeTime() const;
+	
 	/**
-		Returns: number of bytes of physical memory left
+	   Returns: number of bytes of physical memory left
 	*/
-    unsigned long getAvaliablePhysicalMemory() const;
+	unsigned long getAvaliablePhysicalMemory() const;
 	/**
-		Returns: number of bytes of virtual memory left
+	   Returns: number of bytes of virtual memory left
 	*/
-    unsigned long getAvaliableVirtualMemory() const;
+	unsigned long getAvaliableVirtualMemory() const;
 };
 
 

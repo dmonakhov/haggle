@@ -19,7 +19,7 @@
 #if defined(OS_ANDROID)
 
 #include "ConnectivityManager.h"
-#include "ConnectivityLocal.h"
+#include "ConnectivityLocalAndroid.h"
 #include "ConnectivityBluetooth.h"
 #include "ConnectivityEthernet.h"
 #include "Interface.h"
@@ -141,8 +141,18 @@ static Interface *android_get_net_interface_info(const char *name, const unsigne
         return Interface::create<EthernetInterface>(mac, name, addrs, IFFLAG_LOCAL);
 }
 
+
+ConnectivityLocalAndroid::ConnectivityLocalAndroid(ConnectivityManager *m) :
+	ConnectivityLocal(m, "ConnectivityLocalAndroid")
+{
+}
+
+ConnectivityLocalAndroid::~ConnectivityLocalAndroid()
+{
+}
+
 #define	max(a,b) ((a) > (b) ? (a) : (b))
-void ConnectivityLocal::findLocalEthernetInterfaces()
+void ConnectivityLocalAndroid::findLocalEthernetInterfaces()
 {
         if (!tih.iface) {
                 tih.iface = android_get_net_interface_info(TI_WIFI_DEV_NAME, tih.own_addr);
@@ -272,7 +282,7 @@ static int bluetooth_set_scan(int ctl, int hdev, const char *opt)
         return 0;
 }
 
-int ConnectivityLocal::read_hci()
+int ConnectivityLocalAndroid::read_hci()
 {
 	char buf[HCI_MAX_FRAME_SIZE];
 	hci_event_hdr *hdr = (hci_event_hdr *) & buf[1];
@@ -348,7 +358,7 @@ int ConnectivityLocal::read_hci()
 }
 
 // Finds local bluetooth interfaces:
-void ConnectivityLocal::findLocalBluetoothInterfaces()
+void ConnectivityLocalAndroid::findLocalBluetoothInterfaces()
 {
 	int i, ret = 0;
 	struct {
@@ -449,7 +459,7 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 
 
 /* Returns -1 on failure, 0 on success */
-int ConnectivityLocal::uevent_init()
+int ConnectivityLocalAndroid::uevent_init()
 {
         struct sockaddr_nl addr;
         int sz = 64*1024;
@@ -475,7 +485,7 @@ int ConnectivityLocal::uevent_init()
         return (uevent_fd > 0) ? 0 : -1;
 }
 
-void ConnectivityLocal::uevent_close()
+void ConnectivityLocalAndroid::uevent_close()
 {
         if (uevent_fd > 0)
                 close(uevent_fd);
@@ -484,7 +494,7 @@ void ConnectivityLocal::uevent_close()
 #define UEVENT_NET_DEVICE_REMOVE "remove@/devices/virtual/net"
 #define UEVENT_NET_DEVICE_ADD "add@/devices/virtual/net"
 
-void ConnectivityLocal::read_uevent()
+void ConnectivityLocalAndroid::read_uevent()
 {
         char buffer[1024];
         int buffer_length = sizeof(buffer);
@@ -516,7 +526,7 @@ void ConnectivityLocal::read_uevent()
 }
 #if defined(ENABLE_TI_WIFI)
 
-void ConnectivityLocal::ti_wifi_event_handle(IPC_EV_DATA *pData)
+void ConnectivityLocalAndroid::ti_wifi_event_handle(IPC_EV_DATA *pData)
 {
         int res, msg_size;
 
@@ -580,12 +590,12 @@ void ConnectivityLocal::ti_wifi_event_handle(IPC_EV_DATA *pData)
 
 void ti_wifi_event_receive(IPC_EV_DATA *pData)
 {
-    ConnectivityLocal *cl;
-    cl = (ConnectivityLocal *)pData->EvParams.hUserParam;
+    ConnectivityLocalAndroid *cl;
+    cl = (ConnectivityLocalAndroid *)pData->EvParams.hUserParam;
     cl->ti_wifi_event_handle(pData);
 }
 
-int ConnectivityLocal::ti_wifi_try_get_local_mac(unsigned char *mac)
+int ConnectivityLocalAndroid::ti_wifi_try_get_local_mac(unsigned char *mac)
 {
         OS_802_11_MAC_ADDRESS hwaddr;
         tiINT32 res;
@@ -613,7 +623,7 @@ int ConnectivityLocal::ti_wifi_try_get_local_mac(unsigned char *mac)
         return 0;
 }
 
-int ConnectivityLocal::ti_wifi_handle_init()
+int ConnectivityLocalAndroid::ti_wifi_handle_init()
 {
         IPC_EVENT_PARAMS pEvent;
         int i;
@@ -643,7 +653,7 @@ int ConnectivityLocal::ti_wifi_handle_init()
         return 0;
 }
 
-void ConnectivityLocal::ti_wifi_handle_close()
+void ConnectivityLocalAndroid::ti_wifi_handle_close()
 {
         if (tih.h_adapter) {
                 IPC_EVENT_PARAMS pEvent;
@@ -669,7 +679,7 @@ void ConnectivityLocal::ti_wifi_handle_close()
 
 
 #if defined(ENABLE_WPA_EVENTS)
-void ConnectivityLocal::read_wpa_event()
+void ConnectivityLocalAndroid::read_wpa_event()
 {
         int res;
         char buffer[256];
@@ -691,7 +701,7 @@ void ConnectivityLocal::read_wpa_event()
         CM_DBG("wpa_event: %s\n", buffer);
 }
 
-int ConnectivityLocal::wpa_handle_init()
+int ConnectivityLocalAndroid::wpa_handle_init()
 { 
 
         char ifname[256];
@@ -725,7 +735,7 @@ int ConnectivityLocal::wpa_handle_init()
         return 0;
 }
 
-void ConnectivityLocal::wpa_handle_close()
+void ConnectivityLocalAndroid::wpa_handle_close()
 {
         if (!wpah)
                 return;
@@ -735,7 +745,7 @@ void ConnectivityLocal::wpa_handle_close()
 }
 #endif /* ENABLE_WPA_EVENTS */
 
-void ConnectivityLocal::hookCleanup()
+void ConnectivityLocalAndroid::hookCleanup()
 {
 #if defined(ENABLE_BLUETOOTH)
 	hci_close_handle(&hcih);
@@ -753,7 +763,7 @@ void ConnectivityLocal::hookCleanup()
 #endif
 }
 
-bool ConnectivityLocal::run()
+bool ConnectivityLocalAndroid::run()
 {
 	int ret;
 

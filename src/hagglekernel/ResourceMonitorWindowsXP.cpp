@@ -13,46 +13,45 @@
  * limitations under the License.
  */
 
-#include "ResourceMonitor.h"
+#include "ResourceMonitorWindowsXP.h"
 #include <libcpphaggle/Watch.h>
 
 #if defined(OS_WINDOWS_DESKTOP)
 
-ResourceMonitor::ResourceMonitor(ResourceManager *resMan) : 
-	ManagerModule<ResourceManager>(resMan, "ResourceMonitor")
+ResourceMonitorWindowsXP::ResourceMonitorWindowsXP(ResourceManager *m) : 
+	ResourceMonitor(m, "ResourceMonitorWindowsXP")
 {
 }
 
-
-ResourceMonitor::~ResourceMonitor()
+ResourceMonitorWindowsXP::~ResourceMonitorWindowsXP()
 {
 }
 
-unsigned char ResourceMonitor::getBatteryLifePercent() const 
+long ResourceMonitorWindowsXP::getBatteryPercent() const 
 {
 	// Unknown: return 100%
     return 100;
 }
 
-unsigned int ResourceMonitor::getBatteryLifeTime() const
+unsigned int ResourceMonitorWindowsXP::getBatteryLifeTime() const
 {
 	// Unknown: return 1 hour
     return 1*60*60;
 }
 
-unsigned long ResourceMonitor::getAvaliablePhysicalMemory() const 
+unsigned long ResourceMonitorWindowsXP::getAvaliablePhysicalMemory() const 
 {
 	// Unknown: return 1 GB
     return 1*1024*1024*1024;
 }
 
-unsigned long ResourceMonitor::getAvaliableVirtualMemory() const 
+unsigned long ResourceMonitorWindowsXP::getAvaliableVirtualMemory() const 
 {
 	// Unknown: return 1 GB
     return 1*1024*1024*1024;
 }
 
-bool ResourceMonitor::run()
+bool ResourceMonitorWindowsXP::run()
 {
 	Watch w;
 
@@ -73,9 +72,8 @@ bool ResourceMonitor::run()
 	return false;
 }
 
-void ResourceMonitor::cleanup()
+void ResourceMonitorWindowsXP::cleanup()
 {
-	
 }
 
 #endif /* OS_WINDOWS_XP */

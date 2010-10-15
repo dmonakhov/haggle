@@ -31,7 +31,7 @@ bool ResourceManager::init_derived()
 {
 #define __CLASS__ ResourceManager
 
-	resMon = new ResourceMonitor(this);
+	resMon = ResourceMonitor::create(this);
 
 	if (!resMon || !resMon->init()) {
 		HAGGLE_ERR("Could not initialize resource monitor\n");
@@ -69,36 +69,40 @@ void ResourceManager::onShutdown()
 
 void ResourceManager::onCheckStatusEvent(Event *e)
 {
-	unsigned long bstat, btime, physmem, virtmem;
-	PolicyType_t battPol, memPol;
+	unsigned long btime, physmem, virtmem;
+	long bstat;
+	PolicyType_t battPol = POLICY_RESOURCE_HIGH;
+	PolicyType_t memPol;
 	string now = Timeval::now().getAsString();
 	
-	bstat = resMon->getBatteryLifePercent();
+	bstat = resMon->getBatteryPercent();
 	btime = resMon->getBatteryLifeTime();
 	physmem = resMon->getAvaliablePhysicalMemory();
 	virtmem = resMon->getAvaliableVirtualMemory();
 	
-	LOG_ADD("%s: Battery status: %lu\n", now.c_str(), bstat);
+	LOG_ADD("%s: Battery status: %ld\n", now.c_str(), bstat);
 	LOG_ADD("%s: Battery time: %lu\n", now.c_str(), btime);
 	LOG_ADD("%s: Physical memory: %lu\n", now.c_str(), physmem);
 	LOG_ADD("%s: Virtual memory: %lu\n", now.c_str(), virtmem);
 	
-	HAGGLE_DBG("%s: Battery status: %lu\n", now.c_str(), bstat);
+	HAGGLE_DBG("%s: Battery status: %ld\n", now.c_str(), bstat);
 	HAGGLE_DBG("%s: Battery time: %lu\n", now.c_str(), btime);
 	HAGGLE_DBG("%s: Physical memory: %lu\n", now.c_str(), physmem);
 	HAGGLE_DBG("%s: Virtual memory: %lu\n", now.c_str(), virtmem);
 	
 	// FIXME: how to determine that external power is plugged in?
-	if (bstat < 8) {
-		HAGGLE_DBG("Shutting down due to low power\n");
-		kernel->shutdown();
-		return;
-	} else if (bstat < 33) {
-		battPol = POLICY_RESOURCE_LOW;
-	} else if (bstat < 66)
-		battPol = POLICY_RESOURCE_MEDIUM;
-	else
-		battPol = POLICY_RESOURCE_HIGH;
+	if (resMon->getPowerMode() == ResourceMonitor::POWER_MODE_BATTERY) {
+		if (bstat < BATTERY_CRITICAL_LEVEL) {
+			HAGGLE_DBG("Shutting down due to low power\n");
+			kernel->shutdown();
+			return;
+		} else if (bstat < BATTERY_LOW_LEVEL) {
+			battPol = POLICY_RESOURCE_LOW;
+		} else if (bstat < BATTERY_MEDIUM_LEVEL)
+			battPol = POLICY_RESOURCE_MEDIUM;
+		else
+			battPol = POLICY_RESOURCE_HIGH;
+	}
 	
 	// FIXME: figure out good values for these:
 	// TODO: Perhaps an unsigned long isn't quite enough to express memory 

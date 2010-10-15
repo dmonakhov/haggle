@@ -44,15 +44,23 @@ enum {
 
 #if defined(ENABLE_ETHERNET)
 #include <iphlpapi.h>
-#endif
-
+#endif 
 #include <libcpphaggle/Timeval.h>
 
 #include "ConnectivityManager.h"
-#include "ConnectivityLocal.h"
+#include "ConnectivityLocalWindowsXP.h"
 #include "Utility.h"
 
-void ConnectivityLocal::hookCleanup()
+ConnectivityLocalWindowsXP::ConnectivityLocalWindowsXP(ConnectivityManager *m) :
+	ConnectivityLocal(m, "ConnectivityLocalWindowsXP")
+{
+}
+
+ConnectivityLocalWindowsXP::~ConnectivityLocalWindowsXP()
+{
+}
+
+void ConnectivityLocalWindowsXP::hookCleanup()
 {
 #if defined(ENABLE_BLUETOOTH)
 #endif
@@ -60,12 +68,10 @@ void ConnectivityLocal::hookCleanup()
 
 #if defined(ENABLE_ETHERNET)
 
-void ConnectivityLocal::findLocalEthernetInterfaces()
+void ConnectivityLocalWindowsXP::findLocalEthernetInterfaces()
 {
         InterfaceRefList iflist;
-        
-        ethernet_interfaces_found = 0;
-        
+                
         int num = getLocalInterfaceList(iflist);
         
         while (!iflist.empty()) {
@@ -73,13 +79,12 @@ void ConnectivityLocal::findLocalEthernetInterfaces()
                 
                 if (iface->isUp()) {
                         report_interface(iface, rootInterface, new ConnectivityInterfacePolicyTTL(1));
-                        ethernet_interfaces_found++;
-                }
+		}
         }
 }
 #endif
 
-bool ConnectivityLocal::run()
+bool ConnectivityLocalWindowsXP::run()
 {
 	Timeval timeout;
 	Watch w;
@@ -104,7 +109,6 @@ bool ConnectivityLocal::run()
 		findLocalBluetoothInterfaces();
 #endif
 #if defined(ENABLE_ETHERNET)
-		interfaces_found_last_time = ethernet_interfaces_found;
                 findLocalEthernetInterfaces();
 #endif
 
@@ -135,7 +139,7 @@ static void btAddr2Mac(unsigned __int64 btAddr, char *mac)
 }
 
 // Find local bluetooth interfaces
-void ConnectivityLocal::findLocalBluetoothInterfaces()
+void ConnectivityLocalWindowsXP::findLocalBluetoothInterfaces()
 {
 	char macaddr[BT_ALEN];
 	char btName[BT_ALEN*3];

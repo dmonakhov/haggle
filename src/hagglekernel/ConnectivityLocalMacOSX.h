@@ -15,10 +15,6 @@
 #ifndef _CONNECTIVITYLOCALMACOSX_H_
 #define _CONNECTIVITYLOCALMACOSX_H_
 
-#ifndef  _IN_CONNECTIVITYLOCAL_H
-#error "Do not include this file directly, include ConnectivityLocal.h"
-#endif
-
 #if defined(ENABLE_MEDIA)
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFString.h>
@@ -26,7 +22,7 @@
 #endif
 
 #include <libcpphaggle/Platform.h>
-#include "Connectivity.h"
+#include "ConnectivityLocal.h"
 #include "Interface.h"
 
 /**
@@ -36,8 +32,9 @@
 	bluetooth/ethernet/etc. interfaces that are accessible, and tells the
 	connectivity manager about them when they are detected.
 */
-class ConnectivityLocal : public ConnectivityLocalBase
+class ConnectivityLocalMacOSX : public ConnectivityLocal
 {
+	friend class ConnectivityLocal;
 private:
 #if defined(ENABLE_BLUETOOTH)
         void findLocalBluetoothInterfaces();
@@ -61,10 +58,9 @@ private:
         bool run();
 	void hookStopOrCancel();
         void hookCleanup();
+        ConnectivityLocalMacOSX(ConnectivityManager *m);
 public:
-
-        ConnectivityLocal(ConnectivityManager *m);
-        ~ConnectivityLocal();
+        ~ConnectivityLocalMacOSX();
 };
 
 #endif

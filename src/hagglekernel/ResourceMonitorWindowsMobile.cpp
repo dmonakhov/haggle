@@ -12,20 +12,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ResourceMonitor.h"
+#include "ResourceMonitorWindowsMobile.h"
 #include <libcpphaggle/Watch.h>
 
-ResourceMonitor::ResourceMonitor(ResourceManager *resMan) : 
-	ManagerModule<ResourceManager>(resMan, "ResourceMonitor")
+ResourceMonitorWindowsMobile::ResourceMonitorWindowsMobile(ResourceManager *m) : 
+	ResourceMonitor(m, "ResourceMonitorWindowsMobile")
 {
 }
 
-ResourceMonitor::~ResourceMonitor()
+ResourceMonitorWindowsMobile::~ResourceMonitorWindowsMobile()
 {
 	CloseMsgQueue(hMsgQ);
 }
 
-bool ResourceMonitor::init()
+bool ResourceMonitorWindowsMobile::init()
 {
 	MSGQUEUEOPTIONS mqOpts = { sizeof(MSGQUEUEOPTIONS), MSGQUEUE_NOPRECOMMIT, 0,
 		sizeof(POWER_BROADCAST_POWER_INFO), TRUE };
@@ -40,18 +40,18 @@ bool ResourceMonitor::init()
 	return true;
 }
 
-unsigned char ResourceMonitor::getBatteryLifePercent() const 
+long ResourceMonitorWindowsMobile::getBatteryPercent() const 
 {
 	SYSTEM_POWER_STATUS_EX batteryStatus;
 	
 	if (GetSystemPowerStatusEx(&batteryStatus, TRUE) == TRUE) {
-		return static_cast<unsigned char> ( batteryStatus.BatteryLifePercent );
+		return static_cast<long> ( batteryStatus.BatteryLifePercent );
 	}
 	
-	return BATTERY_PERCENTAGE_UNKNOWN;
+	return -1;
 }
 
-unsigned int ResourceMonitor::getBatteryLifeTime() const
+unsigned int ResourceMonitorWindowsMobile::getBatteryLifeTime() const
 {
 	SYSTEM_POWER_STATUS_EX batteryStatus;
 	
@@ -62,7 +62,7 @@ unsigned int ResourceMonitor::getBatteryLifeTime() const
 	return UINT_MAX;
 }
 
-unsigned long ResourceMonitor::getAvaliablePhysicalMemory() const 
+unsigned long ResourceMonitorWindowsMobile::getAvaliablePhysicalMemory() const 
 {
 	MEMORYSTATUS memoryStatus;
 	
@@ -73,7 +73,7 @@ unsigned long ResourceMonitor::getAvaliablePhysicalMemory() const
 	return static_cast<unsigned long> ( memoryStatus.dwAvailPhys );
 }
 
-unsigned long ResourceMonitor::getAvaliableVirtualMemory() const 
+unsigned long ResourceMonitorWindowsMobile::getAvaliableVirtualMemory() const 
 {
 	MEMORYSTATUS memoryStatus;
 	
@@ -86,7 +86,7 @@ unsigned long ResourceMonitor::getAvaliableVirtualMemory() const
 
 // TODO: Here we should tell the resource manager to issue new policies 
 // (through policy events) based on the current power state.
-int ResourceMonitor::handlePowerNotification(POWER_BROADCAST *pow)
+int ResourceMonitorWindowsMobile::handlePowerNotification(POWER_BROADCAST *pow)
 {
 	POWER_BROADCAST_POWER_INFO *powInfo = NULL;
 	
@@ -127,7 +127,7 @@ int ResourceMonitor::handlePowerNotification(POWER_BROADCAST *pow)
 
 #define BUFLEN (sizeof(POWER_BROADCAST) + sizeof(POWER_BROADCAST_POWER_INFO))
 
-bool ResourceMonitor::run()
+bool ResourceMonitorWindowsMobile::run()
 {
 	Watch w;
 
@@ -198,7 +198,7 @@ bool ResourceMonitor::run()
 	return false;
 }
 
-void ResourceMonitor::cleanup()
+void ResourceMonitorWindowsMobile::cleanup()
 {
 	if (hPowerNotif)
 		StopPowerNotifications(hPowerNotif);

@@ -26,21 +26,40 @@ class ResourceMonitor;
 #include <libcpphaggle/Platform.h>
 #include "ResourceManager.h"
 
-#define _IN_RESOURCEMONITOR_H
+class ResourceMonitor : public ManagerModule<ResourceManager>
+{
+protected:
+	ResourceMonitor(ResourceManager *m, const string name);
+public:
+	typedef enum PowerMode {
+		POWER_MODE_AC = 0,
+		POWER_MODE_USB,
+		POWER_MODE_BATTERY,
+		POWER_MODE_UNKNOWN,
+	} PowerMode_t;	
+	static const char *power_mode_str[];
 
-#if defined(OS_ANDROID)
-#include "ResourceMonitorAndroid.h"
-#elif defined(OS_LINUX)
-#include "ResourceMonitorLinux.h"
-#elif defined(OS_MACOSX)
-#include "ResourceMonitorMacOSX.h"
-#elif defined(OS_WINDOWS_DESKTOP)
-#include "ResourceMonitorWindowsXP.h"
-#elif defined(OS_WINDOWS_MOBILE)
-#include "ResourceMonitorWindowsMobile.h"
-#else
-#error "Bad OS - Not supported by ResourceMonitor.h"
-#endif
-#undef _IN_RESOURCEMONITOR_H
+	virtual ~ResourceMonitor() = 0;
+	static ResourceMonitor *create(ResourceManager *m);
+
+	virtual PowerMode_t getPowerMode() const = 0;
+	/**
+	   Returns: battery charge left in percent.
+	*/
+	virtual long getBatteryPercent() const = 0;
+	/**
+	   Returns: battery time left in seconds.
+	*/
+	virtual unsigned int getBatteryLifeTime() const = 0;
+	
+	/**
+	   Returns: number of bytes of physical memory left
+	*/
+	virtual unsigned long getAvaliablePhysicalMemory() const = 0;
+	/**
+	   Returns: number of bytes of virtual memory left
+	*/
+	virtual unsigned long getAvaliableVirtualMemory() const = 0;
+};
 
 #endif

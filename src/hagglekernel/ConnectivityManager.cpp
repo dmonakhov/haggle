@@ -96,7 +96,7 @@ bool ConnectivityManager::init_derived()
 void ConnectivityManager::onStartup()
 {
 	// Create and start local connectivity module
-	Connectivity *conn = new ConnectivityLocal(this);
+	Connectivity *conn = ConnectivityLocal::create(this);
 	
 	if (conn->startDiscovery()) {
 		// Success! Store the connectivity:

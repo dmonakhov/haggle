@@ -15,12 +15,8 @@
 #ifndef _CONNECTIVITYLOCALWINDOWSMOBILE_H_
 #define _CONNECTIVITYLOCALWINDOWSMOBILE_H_
 
-#ifndef  _IN_CONNECTIVITYLOCAL_H
-#error "Do not include this file directly, include ConnectivityLocal.h"
-#endif
-
 #include <libcpphaggle/Platform.h>
-#include "Connectivity.h"
+#include "ConnectivityLocal.h"
 #include "Interface.h"
 
 #if defined(ENABLE_BLUETOOTH)
@@ -47,8 +43,9 @@
 	bluetooth/ethernet/etc. interfaces that are accessible, and tells the
 	connectivity manager about them when they are detected.
 	*/
-class ConnectivityLocal : public ConnectivityLocalBase
+class ConnectivityLocalWindowsMobile : public ConnectivityLocal
 {
+	friend class ConnectivityLocal;
 private:
 #if defined(ENABLE_BLUETOOTH)
 	// This is kind of ugly as we more or less assume there is only one local Bluetooth interface
@@ -64,16 +61,14 @@ private:
 #if defined(ENABLE_ETHERNET)
 	// This is kind of ugly as we more or less assume there is only one local Ethernet/WiFI interface
 	InterfaceRef ethIface;
-	int ethernet_interfaces_found;
 	HANDLE notifyAddrChangeHandle;
         void findLocalEthernetInterfaces();
 #endif
         bool run();
         void hookCleanup();
+        ConnectivityLocalWindowsMobile(ConnectivityManager *m);
 public:
-
-        ConnectivityLocal(ConnectivityManager *m);
-        ~ConnectivityLocal();
+        ~ConnectivityLocalWindowsMobile();
 };
 
 #endif

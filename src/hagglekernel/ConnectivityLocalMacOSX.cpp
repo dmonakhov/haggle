@@ -43,7 +43,7 @@
 #define HAGGLE_VOLUME_PATH "/Volumes"
 #endif
 
-#include "ConnectivityLocal.h"
+#include "ConnectivityLocalMacOSX.h"
 #include "ConnectivityBluetooth.h"
 #include "ConnectivityEthernet.h"
 #include "ConnectivityManager.h"
@@ -69,9 +69,18 @@ static bool isBlacklistDeviceName(const char *devname)
 	return false;
 }
 
+ConnectivityLocalMacOSX::ConnectivityLocalMacOSX(ConnectivityManager *m) :
+	ConnectivityLocal(m, "ConnectivityLocalMacOSX")
+{
+}
+
+ConnectivityLocalMacOSX::~ConnectivityLocalMacOSX()
+{
+}
+
 #if defined(ENABLE_BLUETOOTH)
 
-void ConnectivityLocal::findLocalBluetoothInterfaces()
+void ConnectivityLocalMacOSX::findLocalBluetoothInterfaces()
 {
 	IOReturn ret;
 	unsigned char macaddr[BT_MAC_LEN];
@@ -156,7 +165,7 @@ void ConnectivityLocal::findLocalBluetoothInterfaces()
 
 #if defined(ENABLE_MEDIA)
 
-void ConnectivityLocal::onMountVolume(char *path)
+void ConnectivityLocalMacOSX::onMountVolume(char *path)
 {
 	
 	// TODO: Implement add media interface
@@ -175,7 +184,7 @@ void ConnectivityLocal::onMountVolume(char *path)
 //		delete iface;
 }
 
-void ConnectivityLocal::onUnmountVolume(char *path)
+void ConnectivityLocalMacOSX::onUnmountVolume(char *path)
 {
 	CM_DBG("%s\n", path);
 	
@@ -192,7 +201,7 @@ void onFSEvents(ConstFSEventStreamRef streamRef, void *clientCallBackInfo, size_
 		       void *eventPaths, const FSEventStreamEventFlags eventFlags[], const FSEventStreamEventId eventIds[])
 {
 	char **paths = (char **) eventPaths;
-	ConnectivityLocal *conn = (ConnectivityLocal *) clientCallBackInfo;
+	ConnectivityLocalMacOSX *conn = (ConnectivityLocalMacOSX *) clientCallBackInfo;
 	unsigned int i;
 	for (i = 0; i < numEvents; i++) {
 		if (eventFlags[i] & kFSEventStreamEventFlagMount) {
@@ -206,7 +215,7 @@ void onFSEvents(ConstFSEventStreamRef streamRef, void *clientCallBackInfo, size_
 
 #endif /* ENABLE_MEDIA */
 
-bool ConnectivityLocal::run()
+bool ConnectivityLocalMacOSX::run()
 {
 #if defined(ENABLE_ETHERNET)
 	long interfaces_found_last_time;
@@ -345,7 +354,7 @@ bool ConnectivityLocal::run()
 	return false;
 }
 
-void ConnectivityLocal::hookStopOrCancel()
+void ConnectivityLocalMacOSX::hookStopOrCancel()
 {
 #if defined(ENABLE_MEDIA)
 	//FSEventStreamStop(fsEventStream);
@@ -357,7 +366,7 @@ void ConnectivityLocal::hookStopOrCancel()
 }
 
 
-void ConnectivityLocal::hookCleanup()
+void ConnectivityLocalMacOSX::hookCleanup()
 {
 #if defined(ENABLE_MEDIA)
 	//CFRelease(fsEventStream);

@@ -15,12 +15,8 @@
 #ifndef _CONNECTIVITYLOCALLINUX_H_
 #define _CONNECTIVITYLOCALLINUX_H_
 
-#ifndef  _IN_CONNECTIVITYLOCAL_H
-#error "Do not include this file directly, include ConnectivityLocal.h"
-#endif
-
 #include <libcpphaggle/Platform.h>
-#include "Connectivity.h"
+#include "ConnectivityLocal.h"
 #include "Interface.h"
 
 #if defined(HAVE_DBUS)
@@ -61,8 +57,9 @@ struct hci_handle {
 	bluetooth/ethernet/etc. interfaces that are accessible, and tells the
 	connectivity manager about them when they are detected.
 */
-class ConnectivityLocal : public ConnectivityLocalBase
+class ConnectivityLocalLinux : public ConnectivityLocal
 {
+	friend class ConnectivityLocal;
 private:
 #if defined(HAVE_DBUS)
         struct dbus_handle dbh;
@@ -78,18 +75,14 @@ private:
         void findLocalBluetoothInterfaces();
 #endif
 #if defined(ENABLE_ETHERNET)
-        long ethernet_interfaces_found;
-
         struct netlink_handle nlh;
         int read_netlink();
         void findLocalEthernetInterfaces();
 #endif
         bool run();
         void hookCleanup();
-public:
-
-        ConnectivityLocal(ConnectivityManager *m);
-        ~ConnectivityLocal();
+        ConnectivityLocalLinux(ConnectivityManager *m);
+        ~ConnectivityLocalLinux();
 };
 
 #endif

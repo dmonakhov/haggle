@@ -52,14 +52,12 @@ protected:
 		Utility function to call the same-named function in the Connectivity
 		Manager.
 	*/
-	InterfaceStatus_t report_interface(InterfaceRef& found, const InterfaceRef& found_by, 
-			      ConnectivityInterfacePolicy *policy);
+	InterfaceStatus_t report_interface(InterfaceRef& found, const InterfaceRef& found_by, ConnectivityInterfacePolicy *policy);
 	/**
 		Utility function to call the same-named function in the Connectivity
 		Manager.
 	*/
-	InterfaceStatus_t report_interface(Interface *found, const InterfaceRef& found_by, 
-			  ConnectivityInterfacePolicy *policy);
+	InterfaceStatus_t report_interface(Interface *found, const InterfaceRef& found_by, ConnectivityInterfacePolicy *policy);
 	
 	/**
 		Utility function to check if an interface already exists.

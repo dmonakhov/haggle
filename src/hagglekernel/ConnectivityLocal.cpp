@@ -17,7 +17,6 @@
 #include <libcpphaggle/List.h>
 
 #include "ConnectivityLocal.h"
-
 #include "ConnectivityManager.h"
 
 #if defined(ENABLE_BLUETOOTH)
@@ -30,27 +29,45 @@
 #include "ConnectivityMedia.h"
 #endif
 
-#include "Interface.h"
-
-
-ConnectivityLocal::ConnectivityLocal(ConnectivityManager *m) : 
-                ConnectivityLocalBase(m, "Local connectivity")
-{
-#if defined(ENABLE_ETHERNET)
-	ethernet_interfaces_found = 0;
+#if defined(OS_ANDROID) && defined(ENABLE_TI_WIFI)
+#include "ConnectivityLocalAndroid.h"
+#elif defined(OS_LINUX)
+#include "ConnectivityLocalLinux.h"
+#elif defined(OS_MACOSX)
+#include "ConnectivityLocalMacOSX.h"
+#elif defined(OS_WINDOWS)
+#if defined(OS_WINDOWS_MOBILE)
+#include "ConnectivityLocalWindowsMobile.h"
+#else
+#include "ConnectivityLocalWindowsXP.h"
 #endif
+#else
+#error "Bad OS - Not supported by ConnectivityLocal.h"
+#endif
+
+ConnectivityLocal::ConnectivityLocal(ConnectivityManager *m, const string& name) : 
+	Connectivity(m, NULL, name)
+{
 }
 
 ConnectivityLocal::~ConnectivityLocal()
 {
 }
 
-ConnectivityLocalBase::ConnectivityLocalBase(ConnectivityManager * m, const string& name) :  
-                Connectivity(m, NULL, name)
+ConnectivityLocal *ConnectivityLocal::create(ConnectivityManager *m)
 {
-}
-
-ConnectivityLocalBase::~ConnectivityLocalBase()
-{
+#if defined(OS_ANDROID) && defined(ENABLE_TI_WIFI)
+       return new ConnectivityLocalAndroid(m);
+#elif defined(OS_LINUX)
+       return new ConnectivityLocalLinux(m);
+#elif defined(OS_MACOSX)
+       return new ConnectivityLocalMacOSX(m);
+#elif defined(OS_WINDOWS_DESKTOP)
+       return new ConnectivityLocalWindowsDesktop(m);
+#elif defined(OS_WINDOWS_MOBILE)
+       return new ConnectivityLocalWindowsMobile(m);
+#else
+       return NULL;
+#endif
 }
 
