@@ -144,6 +144,23 @@ int haggle_test_refcount(void)
 			success &= tmp_succ;
  			print_pass(tmp_succ);
 
+			print_over_test_str(1, "Refcount on reassignment with derived reference: ");
+			EthernetInterfaceRef ifaceRef4 = new EthernetInterface(mac);
+			InterfaceRef ifaceRef5 = ifaceRef4;
+			WiFiInterfaceRef ifaceRef6 = ifaceRef5;
+
+			tmp_succ &= (ifaceRef4.refcount() == 3 &&
+				     ifaceRef5.refcount() == 3 &&
+				     ifaceRef6.refcount() == 3);
+
+			ifaceRef6 = NULL;
+
+			tmp_succ &= (ifaceRef4.refcount() == 2 &&
+				     ifaceRef5.refcount() == 2);
+
+			success &= tmp_succ;
+ 			print_pass(tmp_succ);
+			
 			print_over_test_str(1, "Total: ");
 					
 		} catch(Exception &) {
