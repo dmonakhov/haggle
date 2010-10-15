@@ -44,14 +44,14 @@ int haggle_test_refcount(void)
 		bool success = true;
 		bool tmp_succ;
 		
-		char mac[6] = { (char) RANDOM_INT(255), 
-				(char) RANDOM_INT(255), 
-				(char) RANDOM_INT(255), 
-				(char) RANDOM_INT(255), 
-				(char) RANDOM_INT(255), 
-				(char) RANDOM_INT(255) };
-		//Address addr(AddressType_BTMAC, mac);
-		Interface *iface = new Interface(IFTYPE_BLUETOOTH, mac);
+		unsigned char mac[6] = { (unsigned char) RANDOM_INT(255), 
+				(unsigned char) RANDOM_INT(255), 
+				(unsigned char) RANDOM_INT(255), 
+				(unsigned char) RANDOM_INT(255), 
+				(unsigned char) RANDOM_INT(255), 
+				(unsigned char) RANDOM_INT(255) };
+
+		Interface *iface = new EthernetInterface(mac);
 		
 		try {
 			{
@@ -99,7 +99,7 @@ int haggle_test_refcount(void)
 				print_pass(tmp_succ);
 			}
 
-			InterfaceRef ifaceRef = new Interface(IFTYPE_BLUETOOTH, mac);
+			InterfaceRef ifaceRef = new EthernetInterface(mac);
 		
 			print_over_test_str(1, "Refcount==0 when NULL: ");
 		
@@ -114,7 +114,7 @@ int haggle_test_refcount(void)
 			print_pass(tmp_succ);
 
 			print_over_test_str(1, "No exception when refcounting object twice: ");
-			iface = new Interface(IFTYPE_BLUETOOTH, mac);
+			iface = new EthernetInterface(mac);
 			Interface *iface2 = iface;
 			ifaceRef = InterfaceRef(iface);
 			
@@ -128,7 +128,7 @@ int haggle_test_refcount(void)
 			print_pass(tmp_succ);
 
 			print_over_test_str(1, "Decrease/increase refcount on reassignment: ");
-			InterfaceRef ifaceRef3 = new Interface(IFTYPE_BLUETOOTH, mac);
+			InterfaceRef ifaceRef3 = new EthernetInterface(mac);
 			InterfaceRef ifaceRef2 = ifaceRef;
 			
 			tmp_succ = (ifaceRef.refcount() == 2 && 

@@ -159,7 +159,7 @@ bool ProtocolRFCOMM::initbase()
 
 ProtocolRFCOMM::ProtocolRFCOMM(RFCOMMConnection *_rfCommConn, const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
 			       const unsigned short _channel, const short flags, ProtocolManager *m) :
-	Protocol(PROT_TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, _peerIface, flags, m), 
+	Protocol(Protocol::TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, _peerIface, flags, m), 
 		protocol_error(PROT_ERROR_UNKNOWN), rfCommConn(_rfCommConn), channel(_channel), autoAssignScn(true)
 {
 	rfCommConn->setProtocol(this);
@@ -167,7 +167,7 @@ ProtocolRFCOMM::ProtocolRFCOMM(RFCOMMConnection *_rfCommConn, const InterfaceRef
 
 ProtocolRFCOMM::ProtocolRFCOMM(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, 
 			       const unsigned short _channel, const short flags, ProtocolManager * m) : 
-	Protocol(PROT_TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, _peerIface, flags, m), 
+	Protocol(Protocol::TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, _peerIface, flags, m), 
 		protocol_error(PROT_ERROR_UNKNOWN), rfCommConn(NULL), channel(_channel), autoAssignScn(false)
 {
 	rfCommConn = new RFCOMMConnection(this);

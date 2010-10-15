@@ -15,10 +15,6 @@
 #ifndef _RESOURCEMONITORWINDOWSMOBILE_H
 #define _RESOURCEMONITORWINDOWSMOBILE_H
 
-#ifndef  _IN_RESOURCEMONITOR_H
-#error "Do not include this file directly, include ResourceMonitor.h"
-#endif
-
 #include <libcpphaggle/Platform.h>
 #include "ResourceMonitor.h"
 

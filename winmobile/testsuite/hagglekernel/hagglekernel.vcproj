@@ -939,6 +939,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\hagglekernel\ResourceMonitor.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\hagglekernel\ResourceMonitorWindowsMobile.cpp"
 				>
 			</File>

@@ -89,10 +89,6 @@ bool ConnectivityLocalWindowsXP::run()
 	Timeval timeout;
 	Watch w;
 
-#if defined(ENABLE_ETHERNET)
-	long interfaces_found_last_time;
-#endif
-
 #if defined(ENABLE_BLUETOOTH)
 	findLocalBluetoothInterfaces();
 #endif
@@ -103,7 +99,6 @@ bool ConnectivityLocalWindowsXP::run()
 			goto wait;
 
 		timeout.zero() += 3;
-
 
 #if defined(ENABLE_BLUETOOTH)
 		findLocalBluetoothInterfaces();

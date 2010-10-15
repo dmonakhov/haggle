@@ -63,7 +63,7 @@ ConnectivityLocal *ConnectivityLocal::create(ConnectivityManager *m)
 #elif defined(OS_MACOSX)
        return new ConnectivityLocalMacOSX(m);
 #elif defined(OS_WINDOWS_DESKTOP)
-       return new ConnectivityLocalWindowsDesktop(m);
+       return new ConnectivityLocalWindowsXP(m);
 #elif defined(OS_WINDOWS_MOBILE)
        return new ConnectivityLocalWindowsMobile(m);
 #else

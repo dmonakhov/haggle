@@ -150,7 +150,7 @@
 	</References>
 	<Files>
 		<Filter
-			Name="Source FIles"
+			Name="Source Files"
 			>
 			<File
 				RelativePath="..\..\..\src\hagglekernel\Address.cpp"
@@ -326,6 +326,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\src\hagglekernel\ResourceManager.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\src\hagglekernel\ResourceMonitor.cpp"
 				>
 			</File>
 			<File
