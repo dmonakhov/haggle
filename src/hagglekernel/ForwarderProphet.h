@@ -45,15 +45,30 @@ typedef Map<prophet_node_id_t, prophet_metric_t> prophet_rib_t;
 */
 class ForwarderProphet : public ForwarderAsynchronous {
 	// Prophet constants (as per draft v4):
-#define PROPHET_P_ENCOUNTER (0.75)
-#define PROPHET_ALPHA (0.5)
-#define PROPHET_BETA (0.25)
-#define PROPHET_GAMMA (0.999)
-#define PROPHET_AGING_TIME_UNIT (10*60) // 10 minutes
-#define PROPHET_AGING_CONSTANT (0.1)
+#define PROPHET_P_ENCOUNTER_DEFAULT (0.75)
+#define PROPHET_ALPHA_DEFAULT (0.5)
+#define PROPHET_BETA_DEFAULT (0.25)
+#define PROPHET_GAMMA_DEFAULT (0.999)
+#define PROPHET_AGING_TIME_UNIT_DEFAULT (10*60) // 10 minutes
+#define PROPHET_AGING_CONSTANT_DEFAULT (0.1)
 #define NF_max (5) // Not sure what a good number is here...
 	
+#define PROPHET_NAME "Prophet"
+
 private:  
+	double P_encounter;
+	double alpha;
+	double beta;
+	double gamma;
+	double aging_time_unit;
+	double aging_constant;
+#define PROPHET_P_ENCOUNTER ForwarderProphet::P_encounter
+#define PROPHET_ALPHA ForwarderProphet::alpha
+#define PROPHET_BETA ForwarderProphet::beta
+#define PROPHET_GAMMA ForwarderProphet::gamma
+#define PROPHET_AGING_TIME_UNIT ForwarderProphet::aging_time_unit
+#define PROPHET_AGING_CONSTANT ForwarderProphet::aging_constant
+	
 	// A forwarding strategy class that can implement
 	// the strategies proposed in the Prophet draft.
 	// With this class it is possible to dynamically set the forwarding
@@ -165,12 +180,12 @@ private:
 	*/
 	void _printRoutingTable(void);
 #endif
+	void _onForwarderConfig(const Metadata& m);
 	ForwardingStrategy *forwarding_strategy;
 public:
 	ForwarderProphet(ForwardingManager *m = NULL, const EventType type = -1, 
 			 ForwardingStrategy *_forwarding_strategy = new GRTR());
 	~ForwarderProphet();
-        	
 };
 
 #endif

@@ -90,6 +90,10 @@ void ForwarderAsynchronous::printRoutingTable(void)
 }
 #endif
 
+void ForwarderAsynchronous::onForwarderConfig(const Metadata& m)
+{
+	taskQ.insert(new ForwardingTask(m));
+}
 /*
  General overview of thread loop:
  
@@ -148,6 +152,9 @@ bool ForwarderAsynchronous::run(void)
 						_printRoutingTable();
 						break;
 #endif
+					case FWD_TASK_CONFIG:
+						_onForwarderConfig(*task->getConfig());
+						break;
 					case FWD_TASK_QUIT:
 						/*
 							When the forwarding module is asked to quit,

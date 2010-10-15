@@ -25,6 +25,9 @@ class Forwarder;
 #include "ManagerModule.h"
 #include "ForwardingManager.h"
 #include "RepositoryEntry.h"
+#include "Metadata.h"
+
+#define MAX_GENERATED_DELEGATES_DEFAULT 1
 
 /**
 	Forwarding module base class.
@@ -34,10 +37,14 @@ class Forwarder;
 	it wants to run as a thread.
 */
 class Forwarder : public ManagerModule<ForwardingManager> {
+	// The max number of delegates to generate when
+	// generateDelegatesFor() is called.
+	unsigned long max_generated_delegates;
 public:
 	Forwarder(ForwardingManager *m = NULL, 
 		const string name = "Unknown forwarding module") :
-		ManagerModule<ForwardingManager>(m, name) {}
+		ManagerModule<ForwardingManager>(m, name),
+		max_generated_delegates(MAX_GENERATED_DELEGATES_DEFAULT) {}
 	~Forwarder() {}
 	
 	// Only useful for asynchronous modules
@@ -157,6 +164,9 @@ public:
 	*/
 	virtual void printRoutingTable(void) {}
 #endif
+	// Derived module overrides onForwarderConfig to handle protocol specific config.
+	virtual void onForwarderConfig(const Metadata& m) { }
+	void onConfig(const Metadata& m);
 };
 
 #endif

@@ -109,3 +109,27 @@ bool Forwarder::isTarget(const NodeRef &delegate, const NodeRefList *targets) co
 	}
 	return false;
 }
+
+void Forwarder::onConfig(const Metadata& m) 
+{
+	if (m.getName().compare("Forwarder") != 0)
+		return;
+	
+	const char *param = m.getParameter("max_generated_delegates");
+	
+	if (param) {
+		char *ptr = NULL;
+		unsigned long d = strtoul(param, &ptr, 10);
+		
+		if (ptr && ptr != param && *ptr == '\0') {
+			HAGGLE_DBG("%s Setting max_generated_delegates to %lu\n", getName(), d);
+			max_generated_delegates = d;
+		}
+	}
+	
+	const Metadata *md = m.getMetadata(getName());
+	
+	if (md) {
+		onForwarderConfig(*md);
+	}
+}

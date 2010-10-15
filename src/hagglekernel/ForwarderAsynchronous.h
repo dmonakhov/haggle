@@ -52,6 +52,7 @@ typedef enum {
 	// Print the routing table:
 	FWD_TASK_PRINT_RIB,
 #endif
+	FWD_TASK_CONFIG,
 	// Terminate the run loop
 	FWD_TASK_QUIT
 } ForwardingTaskType_t;
@@ -67,11 +68,14 @@ private:
 	NodeRef	node;
 	NodeRefList *nodes;
 	RepositoryEntryList *rel;
+	Metadata *m;
 public:
 	ForwardingTask(const ForwardingTaskType_t _type, const DataObjectRef& _dObj = NULL, const NodeRef& _node = NULL, const NodeRefList *_nodes = NULL) :
-		type(_type), dObj(_dObj), node(_node), nodes(_nodes ? _nodes->copy() : NULL), rel(NULL) {}
+		type(_type), dObj(_dObj), node(_node), nodes(_nodes ? _nodes->copy() : NULL), rel(NULL), m(NULL) {}
 	ForwardingTask(const ForwardingTaskType_t _type, const NodeRef& _node, const NodeRefList *_nodes = NULL) :
-		type(_type), dObj(NULL), node(_node), nodes(_nodes ? _nodes->copy() : NULL), rel(NULL) {}
+		type(_type), dObj(NULL), node(_node), nodes(_nodes ? _nodes->copy() : NULL), rel(NULL), m(NULL) {}
+	ForwardingTask(const Metadata& _m) : 
+		type(FWD_TASK_CONFIG), dObj(NULL), node(NULL), nodes(NULL), rel(NULL), m(_m.copy()) {}
 	DataObjectRef& getDataObject() { return dObj; }
 	void setDataObject(const DataObjectRef& _dObj) { dObj = _dObj; }
 	NodeRef& getNode() { return node; }
@@ -79,7 +83,8 @@ public:
 	NodeRefList *getNodeList() { return nodes; }
 	void setRepositoryEntryList(RepositoryEntryList *_rel) { if (!rel) {rel = _rel;} }
 	ForwardingTaskType_t getType() const { return type; }
-	~ForwardingTask() { if (rel) delete rel; if (nodes) delete nodes; }
+	Metadata *getConfig() { return m; }
+	~ForwardingTask() { if (rel) delete rel; if (nodes) delete nodes; if (m) delete m; }
 };
 
 /**
@@ -161,6 +166,8 @@ public:
 	/** See the parent class function with the same name. */
 	void printRoutingTable(void);
 #endif
+	virtual void _onForwarderConfig(const Metadata& m) {}
+	void onForwarderConfig(const Metadata& m);
 };
 
 #endif

@@ -622,15 +622,11 @@ void DataManager::onConfig(Metadata *m)
 
 		if (param) {
 			char *endptr = NULL;
-#if defined(OS_WINDOWS)
-			double error_rate = atof(param);
-			endptr = (char *)(param + strlen(param));
-#else
-			double error_rate = strtof(param, &endptr);
-#endif			
+			double error_rate = strtod(param, &endptr);
+
 			if (endptr && endptr != param) {
 				Bloomfilter::setDefaultErrorRate(error_rate);
-				HAGGLE_DBG("config default bloomfilter error rate %.3f\n", 
+				HAGGLE_DBG("config default bloomfilter error rate %.3lf\n", 
 					   Bloomfilter::getDefaultErrorRate());
 				reset_bloomfilter = true;
 			}

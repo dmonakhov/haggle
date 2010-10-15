@@ -58,4 +58,9 @@
 			<IgnoreNonListedInterfaces>yes</IgnoreNonListedInterfaces>
 		</Bluetooth>
 	</ConnectivityManager>
+	<ForwardingManager>
+	  <Forwarder max_generated_delegates="1" protocol="Prophet">
+	    <Prophet strategy="GRTR" P_encounter="0.75" alpha="0.5" beta="0.25" gamma="0.999"/>
+	  </Forwarder>
+	</ForwardingManager>
 </Haggle>

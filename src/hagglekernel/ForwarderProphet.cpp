@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <libcpphaggle/Platform.h>
 #include "ForwarderProphet.h"
 #include "XMLMetadata.h"
 
@@ -20,7 +21,7 @@
 
 ForwarderProphet::ForwarderProphet(ForwardingManager *m, const EventType type, 
 				   ForwardingStrategy *_forwarding_strategy) :
-	ForwarderAsynchronous(m, type, "PRoPHET"),
+	ForwarderAsynchronous(m, type, PROPHET_NAME),
 	kernel(getManager()->getKernel()), next_id_number(1),
 	rib_timestamp(Timeval::now()), forwarding_strategy(_forwarding_strategy)
 {
@@ -346,6 +347,100 @@ void ForwarderProphet::_generateDelegatesFor(const DataObjectRef &dObj, const No
 	} else {
                 HAGGLE_DBG("No delegates found for target %s\n", target->getName().c_str());
         }
+}
+
+void ForwarderProphet::_onForwarderConfig(const Metadata& m)
+{
+	if (strcmp(getName(), m.getName().c_str()) != 0)
+		return;
+	
+	HAGGLE_DBG("Prophet forwarder configuration\n");
+
+	const char *param = m.getParameter("strategy");
+	
+	if (param) {
+		if (strcmp(param, "GRTR") == 0) {
+			delete forwarding_strategy;
+			forwarding_strategy = new GRTR();
+		} else if (strcmp(param, "GTMX") == 0) {
+			delete forwarding_strategy;
+			forwarding_strategy = new GTMX();
+		}
+		HAGGLE_DBG("%s: Setting %s forwarding strategy\n", 
+			   getName(), forwarding_strategy->getName().c_str());
+	}
+	
+	param = m.getParameter("P_encounter");
+	
+	if (param) {
+		char *ptr = NULL;
+		double p = strtod(param, &ptr);
+		
+		if (ptr && ptr != param && *ptr == '\0') {
+			HAGGLE_DBG("%s: Setting P_encounter to %lf\n", getName(), p);
+			P_encounter = p;
+		}
+	}
+	
+	param = m.getParameter("alpha");
+	
+	if (param) {
+		char *ptr = NULL;
+		double p = strtod(param, &ptr);
+		
+		if (ptr && ptr != param && *ptr == '\0') {
+			HAGGLE_DBG("%s: Setting alpha to %lf\n", getName(), p);
+			alpha = p;
+		}
+	}
+	
+	param = m.getParameter("beta");
+	
+	if (param) {
+		char *ptr = NULL;
+		double p = strtod(param, &ptr);
+		
+		if (ptr && ptr != param && *ptr == '\0') {
+			HAGGLE_DBG("%s: Setting beta to %lf\n", getName(), p);
+			beta = p;
+		}
+	}
+	
+	param = m.getParameter("gamma");
+	
+	if (param) {
+		char *ptr = NULL;
+		double p = strtod(param, &ptr);
+		
+		if (ptr && ptr != param && *ptr == '\0') {
+			HAGGLE_DBG("%s: Setting gamma to %lf\n", getName(), p);
+			gamma = p;
+		}
+	}
+	
+	param = m.getParameter("aging_time_unit");
+	
+	if (param) {
+		char *ptr = NULL;
+		double p = strtod(param, &ptr);
+		
+		if (ptr && ptr != param && *ptr == '\0') {
+			HAGGLE_DBG("%s: Setting aging_time_unit to %lf\n", getName(), p);
+			aging_time_unit = p;
+		}
+	}
+	
+	param = m.getParameter("aging_constant");
+	
+	if (param) {
+		char *ptr = NULL;
+		double p = strtod(param, &ptr);
+		
+		if (ptr && ptr != param && *ptr == '\0') {
+			HAGGLE_DBG("%s: Setting aging_constant to %lf\n", getName(), p);
+			aging_constant = p;
+		}
+	}
 }
 
 #ifdef DEBUG

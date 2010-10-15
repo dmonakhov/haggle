@@ -63,6 +63,12 @@ static inline wchar_t *strtowstr_alloc(const char *str)
 	return wstr;
 }
 
+double strtod(const char *nptr, char **endptr)
+{
+	*endptr = (char *)(param + strlen(param));
+	return atof(nptr);
+}
+
 /* Data types */
 typedef	CHAR int8_t;
 typedef	BYTE u_int8_t;

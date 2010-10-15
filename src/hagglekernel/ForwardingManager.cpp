@@ -187,6 +187,12 @@ void ForwardingManager::setForwardingModule(Forwarder *f, bool deRegisterEvents)
 {
 	// Is there a current forwarding module?
 	if (forwardingModule) {
+		if (f && strcmp(forwardingModule->getName(), f->getName()) == 0) {
+			HAGGLE_DBG("Forwarder %s already set!\n", f->getName());
+			delete f;
+			f = NULL;
+			return;
+		}
 		// Tell the module to quit
 		forwardingModule->quit();
 
@@ -1088,10 +1094,11 @@ void ForwardingManager::onSendRoutingInformation(Event * e)
  */ 
 void ForwardingManager::onConfig(Metadata *m)
 {
-	Metadata *tmp = NULL;
+	Metadata *fm = NULL;
+	const char *param;
 	
 #if defined(ENABLE_RECURSIVE_ROUTING_UPDATES)
-	const char *param = m->getParameter("recursive_routing_updates");
+	param = m->getParameter("recursive_routing_updates");
 	
 	if (param) {
 		if (strcmp(param, "true") == 0) {
@@ -1103,22 +1110,32 @@ void ForwardingManager::onConfig(Metadata *m)
 		}
 	}
 #endif
-	if ((tmp = m->getMetadata("ForwardingModule"))) {
-		string moduleName = tmp->getContent();
-		HAGGLE_DBG("Forwarding module \'%s\'\n", moduleName.c_str());
+	fm = m->getMetadata("Forwarder");
+	
+	if (fm) {
+		param = fm->getParameter("protocol");
+		
+		if (param) {
+			string protocol = param;
+			
+			HAGGLE_DBG("Forwarding module \'%s\'\n", protocol.c_str());
 
-		// handle new configuration
-		if (moduleName.compare("noForward") == 0) {
-			// clean up current forwardingModule
-			setForwardingModule(NULL, true);
-		} else {
-			// make sure the necessary event interests for triggering resolution are set			
-			// instantiate new forwarding module
-			if (moduleName.compare("Prophet") == 0) {
-				setForwardingModule(new ForwarderProphet(this));
+			if (forwardingModule && protocol.compare(forwardingModule->getName()) == 0) {
+				HAGGLE_DBG("Forwarder %s already set!\n", protocol.c_str());
 			} else {
-				setForwardingModule(NULL);
-			}
+				// handle new configuration
+				if (protocol.compare("none") == 0) {
+					// clean up current forwardingModule
+					setForwardingModule(NULL, true);
+				} else if (protocol.compare(PROPHET_NAME) == 0) {
+					setForwardingModule(new ForwarderProphet(this));
+				} else {
+					setForwardingModule(NULL);
+				}
+			}			
+			if (forwardingModule) {
+				forwardingModule->onConfig(*fm);
+			}	
 		}
 	}
 }
