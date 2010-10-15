@@ -19,14 +19,16 @@ EXTRA_DIST = \
 
 noinst_LIBRARIES = libtesthlp.a libhagglemain.a
 libtesthlp_a_SOURCES = testhlp.c
-CFLAGS += -std=gnu99 -I../src/hagglekernel
-CPPFLAGS += \
+
+AM_CFLAGS = -std=gnu99 -I../src/hagglekernel
+AM_CPPFLAGS = \
 	-DTRACE_ENABLE_PRINTF \
 	-I$(top_srcdir)/src/hagglekernel \
 	-I$(top_srcdir)/src/utils \
 	-I$(top_srcdir)/src/libcpphaggle/include \
 	-I$(top_srcdir)/src/libhaggle/include \
 	$(XML_CPPFLAGS)
+
 libhagglemain_a_SOURCES = hagglemain.cpp
 
 all-local:

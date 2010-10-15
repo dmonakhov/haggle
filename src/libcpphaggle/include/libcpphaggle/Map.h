@@ -222,15 +222,15 @@ public:
 	*/
 	void clear()
 	{
-                if (the_map == NULL)
-                        return;
-                
                 for (size_type i = 0; i < number_of_entries; i++)
                         delete the_map[i];
                 
-                delete [] the_map;
+		if (the_map)
+			delete [] the_map;
+
 		number_of_entries = 0;
                 map_size = 0;
+		the_map = NULL;
 	}
 	
 	/**
@@ -354,7 +354,9 @@ private:
 			new_map[i] = the_map[i-1];
 		}
 		
-		delete [] the_map;
+		if (the_map)
+			delete [] the_map;
+
 		the_map = new_map;
 		number_of_entries++;
 		map_size++;

@@ -146,15 +146,15 @@ static bool verifyDataObject(DataObjectRef& dObj, CertificateRef& cert)
 	
 	if (RSA_verify(NID_sha1, dObj->getId(), sizeof(DataObjectId_t), 
 		       const_cast<unsigned char *>(dObj->getSignature()), dObj->getSignatureLength(), key) != 1) {
-		char buf[10000];
+		unsigned char buf[10000];
 		dObj->getRawMetadata(buf, sizeof(buf));
 		fprintf(stderr, "Signature is invalid:\n%s\n", buf);
-		dObj->setSignatureStatus(DATAOBJECT_SIGNATURE_INVALID);
+		dObj->setSignatureStatus(DataObject::SIGNATURE_INVALID);
 		return false;
 	}
 
         printf("Signature is valid\n");
-	dObj->setSignatureStatus(DATAOBJECT_SIGNATURE_VALID);
+	dObj->setSignatureStatus(DataObject::SIGNATURE_VALID);
 	
 	return true;
 }
@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
 #if 1
 	try {
 		bool success = true, tmp_succ = true;
-                NodeId_t id = { 8 }; // Just create any node id
+		Node::Id_t id = { 8 }; // Just create any node id
                 RSA *privKey = NULL;
                 RSA *ca_privKey = stringToRSAKey(ca_private_key, KEY_TYPE_PRIVATE);
                 RSA *ca_pubKey = stringToRSAKey(ca_public_key, KEY_TYPE_PUBLIC);
@@ -288,7 +288,7 @@ int main(int argc, char *argv[])
 
                 //printf("\n%s\n", cert3->toString().c_str());
 
-                DataObjectRef dObj = new DataObject();
+                DataObjectRef dObj = DataObject::create();
                 
                 dObj->addAttribute("foo", "bar");
                 signDataObject(dObj, privKey);
