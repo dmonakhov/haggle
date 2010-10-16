@@ -63,10 +63,18 @@ static inline wchar_t *strtowstr_alloc(const char *str)
 	return wstr;
 }
 
-double strtod(const char *nptr, char **endptr)
+static inline double strtod(const char *nptr, char **endptr)
 {
-	*endptr = (char *)(param + strlen(param));
-	return atof(nptr);
+	double ret = atof(nptr);
+
+	if (endptr) {
+		if (ret == 0.0) {
+			*endptr = (char *)nptr;
+		} else {
+			*endptr = (char *)(nptr + strlen(nptr));
+		}
+	}
+	return ret;
 }
 
 /* Data types */
