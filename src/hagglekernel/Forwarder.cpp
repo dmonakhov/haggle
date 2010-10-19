@@ -127,6 +127,18 @@ void Forwarder::onConfig(const Metadata& m)
 		}
 	}
 	
+	param = m.getParameter("max_generated_targets");
+	
+	if (param) {
+		char *ptr = NULL;
+		unsigned long d = strtoul(param, &ptr, 10);
+		
+		if (ptr && ptr != param && *ptr == '\0') {
+			HAGGLE_DBG("%s Setting max_generated_targets to %lu\n", getName(), d);
+			max_generated_targets = d;
+		}
+	}
+	
 	const Metadata *md = m.getMetadata(getName());
 	
 	if (md) {

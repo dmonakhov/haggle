@@ -90,7 +90,6 @@ void ResourceManager::onCheckStatusEvent(Event *e)
 	HAGGLE_DBG("%s: Physical memory: %lu\n", now.c_str(), physmem);
 	HAGGLE_DBG("%s: Virtual memory: %lu\n", now.c_str(), virtmem);
 	
-	// FIXME: how to determine that external power is plugged in?
 	if (resMon->getPowerMode() == ResourceMonitor::POWER_MODE_BATTERY) {
 		if (bstat < BATTERY_CRITICAL_LEVEL) {
 			HAGGLE_DBG("Shutting down due to low power\n");

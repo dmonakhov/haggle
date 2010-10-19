@@ -19,9 +19,23 @@
 
 #include <math.h>
 
+// Prophet constants (as per draft v4):
+#define PROPHET_P_ENCOUNTER_DEFAULT (0.75)
+#define PROPHET_ALPHA_DEFAULT (0.5)
+#define PROPHET_BETA_DEFAULT (0.25)
+#define PROPHET_GAMMA_DEFAULT (0.999)
+#define PROPHET_AGING_TIME_UNIT_DEFAULT (10*60) // 10 minutes
+#define PROPHET_AGING_CONSTANT_DEFAULT (0.1)
+
 ForwarderProphet::ForwarderProphet(ForwardingManager *m, const EventType type, 
 				   ForwardingStrategy *_forwarding_strategy) :
 	ForwarderAsynchronous(m, type, PROPHET_NAME),
+	P_encounter(PROPHET_P_ENCOUNTER_DEFAULT),
+	alpha(PROPHET_ALPHA_DEFAULT),
+	beta(PROPHET_BETA_DEFAULT),
+	gamma(PROPHET_GAMMA_DEFAULT),
+	aging_time_unit(PROPHET_AGING_TIME_UNIT_DEFAULT),
+	aging_constant(PROPHET_AGING_CONSTANT_DEFAULT),
 	kernel(getManager()->getKernel()), next_id_number(1),
 	rib_timestamp(Timeval::now()), forwarding_strategy(_forwarding_strategy)
 {
@@ -260,9 +274,20 @@ void ForwarderProphet::_endNeighbor(const NodeRef &neighbor)
 	rib_timestamp = metric.second;
 }
 
+static void sortedNodeListInsert(List<Pair<NodeRef, double> >& list, NodeRef& node, double metric)
+{
+	List<Pair<NodeRef,double> >::iterator it = list.begin();
+	
+	for (; it != list.end(); it++) {
+		if (metric > (*it).second)
+			break;
+	}
+	list.insert(it, make_pair(node, metric));
+}
+
 void ForwarderProphet::_generateTargetsFor(const NodeRef &neighbor)
 {
-	NodeRefList lst;
+	List<Pair<NodeRef, double> > sorted_target_list;
 	// Figure out which forwarding table to look in:
 	prophet_node_id_t neighbor_id = id_for_string(neighbor->getIdStr());
 	prophet_rib_t &neighbor_rib = neighbor_ribs[neighbor_id];
@@ -288,22 +313,32 @@ void ForwarderProphet::_generateTargetsFor(const NodeRef &neighbor)
 				NodeRef target = Node::create_with_id(Node::TYPE_PEER, id_number_to_nodeid[it->first].c_str(), "PRoPHET target node");
                                 
 				if (target) {
-					lst.push_back(target);
-                                        HAGGLE_DBG("Neighbor '%s' is a good delegate for target '%s' [my_metric=%lf, neighbor_metric=%lf]\n", 
-						   neighbor->getName().c_str(), target->getName().c_str(), P_ad, P_bd);
+					sortedNodeListInsert(sorted_target_list, target, P_bd);
+                                        HAGGLE_DBG("Neighbor '%s' is a good delegate for target '%s' [my_metric=%lf, neighbor_metric=%lf]\n", neighbor->getName().c_str(), target->getName().c_str(), P_ad, P_bd);
                                 }
 			}
 		}
 	}
 	
-	if (!lst.empty()) {
-		kernel->addEvent(new Event(EVENT_TYPE_TARGET_NODES, neighbor, lst));
+	if (!sorted_target_list.empty()) {
+		NodeRefList targets;
+		unsigned long num_targets = max_generated_targets;
+		
+		while (num_targets && sorted_target_list.size()) {
+			NodeRef& target = sorted_target_list.front().first;
+			sorted_target_list.pop_front();
+			targets.push_back(target);
+			num_targets--;
+		}
+		HAGGLE_DBG("Generated %lu targets for neighbor %s\n", 
+			   targets.size(), neighbor->getName().c_str());
+		kernel->addEvent(new Event(EVENT_TYPE_TARGET_NODES, neighbor, targets));
 	}
 }
 
 void ForwarderProphet::_generateDelegatesFor(const DataObjectRef &dObj, const NodeRef &target, const NodeRefList *other_targets)
 {
-	NodeRefList delegates;
+	List<Pair<NodeRef, double> > sorted_delegate_list;
 	// Figure out which node to look for:
 	prophet_node_id_t target_id = id_for_string(target->getIdStr());
 	
@@ -316,8 +351,6 @@ void ForwarderProphet::_generateDelegatesFor(const DataObjectRef &dObj, const No
 		// Exclude ourselves and the target node from the list of good delegate
 		// forwarders:
 		if (it->first != this_node_id && it->first != target_id) {
-                        //NodeRef delegate = Node::create_with_id(Node::TYPE_PEER, id_number_to_nodeid[it->first].c_str(), "PRoPHET delegate node");
-			
 			NodeRef delegate = kernel->getNodeStore()->retrieve(id_number_to_nodeid[it->first], true);
 			
 			if (delegate && !isTarget(delegate, other_targets)) {
@@ -329,21 +362,29 @@ void ForwarderProphet::_generateDelegatesFor(const DataObjectRef &dObj, const No
 				if ((*forwarding_strategy)(P_ad, P_bd)) {
 					// Yes: insert this node into the list of delegate forwarders 
 					// for this target.
-					
-					delegates.push_back(delegate);
-					HAGGLE_DBG("Node '%s' is a good delegate for target '%s' [my_metric=%lf, neighbor_metric=%lf]\n", 
-						   delegate->getName().c_str(), target->getName().c_str(), P_ad, P_bd);
+					sortedNodeListInsert(sorted_delegate_list, delegate, P_bd);
+				
+					HAGGLE_DBG("Node '%s' is a good delegate for target '%s' [my_metric=%lf, neighbor_metric=%lf]\n", delegate->getName().c_str(), target->getName().c_str(), P_ad, P_bd);
 					
 				} else {
-					HAGGLE_DBG("Node '%s' is NOT a good delegate for target '%s' [my_metric=%lf, neighbor_metric=%lf]\n", 
-						   delegate->getName().c_str(), target->getName().c_str(), P_ad, P_bd);
+					HAGGLE_DBG("Node '%s' is NOT a good delegate for target '%s' [my_metric=%lf, neighbor_metric=%lf]\n", delegate->getName().c_str(), target->getName().c_str(), P_ad, P_bd);
 				}
 			}
 		}
 	}
-	
-	if (!delegates.empty()) {
+	// Add up to max_generated_delegates delegates to the result in order of decreasing metric
+	if (!sorted_delegate_list.empty()) {
+		NodeRefList delegates;
+		unsigned long num_delegates = max_generated_delegates;
+		
+		while (num_delegates && sorted_delegate_list.size()) {
+			NodeRef& delegate = sorted_delegate_list.front().first;
+			sorted_delegate_list.pop_front();
+			delegates.push_back(delegate);
+			num_delegates--;
+		}
 		kernel->addEvent(new Event(EVENT_TYPE_DELEGATE_NODES, dObj, target, delegates));
+		HAGGLE_DBG("Generated %lu delegates for target %s\n", delegates.size(), target->getName().c_str());
 	} else {
                 HAGGLE_DBG("No delegates found for target %s\n", target->getName().c_str());
         }

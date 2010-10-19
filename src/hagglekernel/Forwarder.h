@@ -28,6 +28,7 @@ class Forwarder;
 #include "Metadata.h"
 
 #define MAX_GENERATED_DELEGATES_DEFAULT 1
+#define MAX_GENERATED_TARGETS_DEFAULT 1
 
 /**
 	Forwarding module base class.
@@ -37,14 +38,19 @@ class Forwarder;
 	it wants to run as a thread.
 */
 class Forwarder : public ManagerModule<ForwardingManager> {
+protected:
 	// The max number of delegates to generate when
 	// generateDelegatesFor() is called.
 	unsigned long max_generated_delegates;
+	// The max number of targets to generate when
+	// generateTargetsFor() is called
+	unsigned long max_generated_targets;
 public:
 	Forwarder(ForwardingManager *m = NULL, 
 		const string name = "Unknown forwarding module") :
 		ManagerModule<ForwardingManager>(m, name),
-		max_generated_delegates(MAX_GENERATED_DELEGATES_DEFAULT) {}
+		max_generated_delegates(MAX_GENERATED_DELEGATES_DEFAULT),
+		max_generated_targets(MAX_GENERATED_TARGETS_DEFAULT) {}
 	~Forwarder() {}
 	
 	// Only useful for asynchronous modules

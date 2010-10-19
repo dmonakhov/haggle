@@ -214,7 +214,7 @@ void ResourceMonitorAndroid::uevent_read()
                 return;
         }
         
-        HAGGLE_DBG("UEvent: %s\n", buffer);
+        //HAGGLE_DBG("UEvent: %s\n", buffer);
 
 	event_type = getEvent(buffer);
 
@@ -228,14 +228,13 @@ void ResourceMonitorAndroid::uevent_read()
 		battery_capacity = getBatteryPercent();
 
 		HAGGLE_DBG("Battery capacity is %ld\n", battery_capacity);
-		/*
-		  Shutdown handled by manager?
 		
-		if (battery_capacity > 0 && battery_capacity < 10) {
-			HAGGLE_DBG("Shutting down due to power off\n");
+		if (battery_capacity > 0 && 
+		    battery_capacity < 10 && 
+		    getPowerMode() == POWER_MODE_BATTERY) {
+			HAGGLE_DBG("Shutting down due to low power\n");
 			getManager()->getKernel()->shutdown();
 		}
-		*/
 		break;
 	case UEVENT_BATTERY_STATUS:
 		HAGGLE_DBG("Battery status\n");
