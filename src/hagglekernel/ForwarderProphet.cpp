@@ -325,7 +325,7 @@ void ForwarderProphet::_generateTargetsFor(const NodeRef &neighbor)
 		unsigned long num_targets = max_generated_targets;
 		
 		while (num_targets && sorted_target_list.size()) {
-			NodeRef& target = sorted_target_list.front().first;
+			NodeRef target = sorted_target_list.front().first;
 			sorted_target_list.pop_front();
 			targets.push_back(target);
 			num_targets--;
@@ -378,7 +378,7 @@ void ForwarderProphet::_generateDelegatesFor(const DataObjectRef &dObj, const No
 		unsigned long num_delegates = max_generated_delegates;
 		
 		while (num_delegates && sorted_delegate_list.size()) {
-			NodeRef& delegate = sorted_delegate_list.front().first;
+			NodeRef delegate = sorted_delegate_list.front().first;
 			sorted_delegate_list.pop_front();
 			delegates.push_back(delegate);
 			num_delegates--;
