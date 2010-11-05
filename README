@@ -86,8 +86,11 @@ Project files to build Haggle are found in the "windows" directory.
 Mac OS X:
 ---------
 
-Install XCode. You can build Haggle either using XCode project files or
-by using autotools and make ("./configure && make").
+Install XCode. You can build Haggle either using XCode project files
+or by using autotools and make ("./configure && make"). In recent Mac
+OS X versions you might have to install the Java developer package to
+be able to build the Java bindings for libhaggle. This package is
+available from http://connect.apple.com/.
 
 Linux:
 ------

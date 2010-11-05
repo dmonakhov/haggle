@@ -309,25 +309,6 @@ fi
 
 AM_CONDITIONAL(HAVE_EXTRACTOR, [test x$have_extractor = xyes])
 
-# Check for Android SDK and NDK
-AC_CHECK_PROG(have_android_sdk, apkbuilder, yes, no)
-
-if test x$have_android_sdk = xno
-then
-	AC_MSG_RESULT(Install Android SDK to build Android applications)
-fi
-
-AC_CHECK_PROG(have_ant, ant, yes, no)
-
-if test x$have_ant = xno
-then
-	AC_MSG_RESULT(Install Ant to build Android applications)
-	have_android_sdk=no
-fi
-
-AM_CONDITIONAL(HAVE_ANDROID_SDK, [test x$have_android_sdk = xyes])
-AC_DEFINE(HAVE_ANDROID_SDK, [test x$have_android_sdk = xyes], [Android SDK found])
-
 # MacOSX specific stuff
 if test x$haggle_os_macosx = xtrue
 then
@@ -541,55 +522,41 @@ have_jni=no;
 
 AC_ARG_VAR([JAVA_HOME], [Java Runtime Environment (JRE) location])
 
-dnl Default to some qualified path guessing...
-java_dirs="/usr /usr/local /usr/lib/jvm/java-5-sun /usr/lib/jvm/java-6-sun  /usr/lib/jvm/java-6-openjdk /usr/lib/jvm/java /System/Library/Frameworks/JavaVM.framework/Versions/Current /opt /mingw"
-java_inc_dirs="include include/libgcj Headers"
-
 dnl Allow the user to set the JAVA_HOME dir?
 AC_ARG_WITH(java-home,
 	    AS_HELP_STRING([--with-java-home=DIR],[DIR to look for Java headers]),
 	    [JAVA_HOME=$withval],)
 
+dnl Default to some qualified path guessing...
+java_dirs="/usr /usr/local /usr/lib/jvm/java-5-sun /usr/lib/jvm/java-6-sun /usr/lib/jvm/java-6-openjdk /usr/lib/jvm/java /System/Library/Frameworks/JavaVM.framework/Versions/Current /System/Library/Frameworks/JavaVM.framework /opt /mingw"
+java_inc_dirs="include include/libgcj Headers"
+
 AC_CHECK_PROG(JAVA, javac, javac)
 AC_MSG_CHECKING([for jni.h])
 
-dnl Check if a JAVA_HOME is defined
-if test "x$JAVA_HOME" = 'x';
-then
-	dnl We have no JAVA_HOME set, only check include dirs
-	for java_dir in $java_dirs;
-	do
-		for java_inc_dir in $java_inc_dirs
-		do
-			if test -r "${java_dir}/${java_inc_dir}/jni.h"; 
-			then
-				have_jni=yes
-				java_bindings=yes
-          			JAVA_HOME="${java_dir}"
-	  			break
-        		fi
-		done
-		if test x$have_jni = xyes;
-		then
-			break
-		fi
-	done
-else
-	dnl We have JAVA_HOME set already
+dnl Try to locate jni.h
+for java_dir in $JAVA_HOME $java_dirs;
+do
 	for java_inc_dir in $java_inc_dirs
 	do
-		if test -r "${JAVA_HOME}/${java_inc_dir}/jni.h"; 
+		#AC_MSG_RESULT("${java_dir}/${java_inc_dir}/jni.h")	
+		if test -r "${java_dir}/${java_inc_dir}/jni.h"; 
 		then
 			have_jni=yes
 			java_bindings=yes
-	  		break
-        	fi
+			JAVA_PATH=${java_dir}
+  			break
+       		fi
 	done
-fi
+	if test x$have_jni = xyes;
+	then
+		break
+	fi
+done
 
 AC_MSG_RESULT([$have_jni])
 
-JAVA_INCLUDE="-I${JAVA_HOME}/${java_inc_dir} -I${JAVA_HOME}/${java_inc_dir}/${PLATFORM}"
+JAVA_INCLUDE="-I${JAVA_PATH}/${java_inc_dir} -I${JAVA_PATH}/${java_inc_dir}/${PLATFORM}"
 
 AC_SUBST(JAVA_INCLUDE)
 
@@ -602,7 +569,7 @@ AS_HELP_STRING([--disable-java-bindings], [Disable libhaggle Java bindings]),
   *) AC_MSG_ERROR([bad value ${enableval} for --disable-java-bindings]) ;;
 esac],)
 
-dnl Java bindings was detected or was forced
+dnl Java bindings were detected or was forced
 if test x$java_bindings = xyes; 
 then
    	if test x$have_jni = xno; 
@@ -617,6 +584,34 @@ then
 fi
 
 AM_CONDITIONAL([JAVA_BINDINGS], [test x$java_bindings = xyes])
+
+# Check if we should build Android applications
+have_android_sdk=yes
+
+# If we cannot build the the bindings, do not care about apps
+if test x$java_bindings = xyes;
+then
+	# Check for Android SDK and NDK
+	AC_CHECK_PROG(have_android_sdk, apkbuilder, yes, no)
+
+   	if test x$have_android_sdk = xno
+     	then	   
+		AC_MSG_RESULT(Install Android SDK to build Android applications)
+	fi
+
+	AC_CHECK_PROG(have_ant, ant, yes, no)
+
+	if test x$have_ant = xno
+	then
+		AC_MSG_RESULT(Install Ant to build Android applications)
+		have_android_sdk=no
+	fi
+else
+	have_android_sdk=no
+fi
+
+AM_CONDITIONAL(HAVE_ANDROID_SDK, [test x$have_android_sdk = xyes])
+AC_DEFINE(HAVE_ANDROID_SDK, [test x$have_android_sdk = xyes], [Android SDK found])
 
 AC_CONFIG_FILES([Makefile
 		 src/libhaggle/Doxyfile

@@ -5,6 +5,7 @@ SCRIPT_DIR=`dirname $0`
 ANDROID_SRC_DIR=
 HAGGLE_SRC_DIR=`basename $THIS_DIR`
 HAGGLE_VER="x.y"
+HAGGLE_DIR_NAME=haggle-new
 
 function usage() {
     echo "Usage: $0 ANDROID_SRC_DIR [ PHOTOSHARE_SRC_DIR ]"
@@ -24,19 +25,19 @@ if [ ! -z $2 ]; then
 fi
 
 if [ ! -f $HAGGLE_SRC_DIR/configure.ac ]; then
-    if [ -f $ANDROID_SRC_DIR/external/haggle/configure.ac ]; then
-	HAGGLE_SRC_DIR=$ANDROID_SRC_DIR/external/haggle
+    if [ -f $ANDROID_SRC_DIR/external/$HAGGLE_DIR_NAME/configure.ac ]; then
+	HAGGLE_SRC_DIR=$ANDROID_SRC_DIR/external/$HAGGLE_DIR_NAME
     fi
 fi
 
 if [ ! -f $HAGGLE_SRC_DIR/configure.ac ]; then
     echo "Could not find Haggle source directory"
-    return;
+    exit
 fi
 
 HAGGLE_VER=`awk '/AC_INIT/ { l=match($2, /[0-9]/); r=match($2,/\]/); print substr($2,l,r-l) }' $HAGGLE_SRC_DIR/configure.ac`	
 
-PHOTOSHARE_SRC_DIR=$ANDROID_SRC_DIR/external/haggle/android/PhotoShare
+PHOTOSHARE_SRC_DIR=$HAGGLE_SRC_DIR/android/PhotoShare
 ANDROID_BIN_DIR=$ANDROID_SRC_DIR/out/target/product/passion/system
 IWCONFIG_BIN=$ANDROID_BIN_DIR/xbin/iwconfig
 IWLIST_BIN=$ANDROID_BIN_DIR/xbin/iwlist
@@ -44,9 +45,9 @@ HAGGLE_BIN=$ANDROID_BIN_DIR/bin/haggle
 LIBHAGGLE_SO=$ANDROID_BIN_DIR/lib/libhaggle.so
 LIBHAGGLE_XML2_SO=$ANDROID_BIN_DIR/lib/libhaggle-xml2.so
 LIBHAGGLE_JNI_SO=$ANDROID_BIN_DIR/lib/libhaggle_jni.so
-HAGGLE_JAR=$ANDROID_BIN_DIR/framework/haggle.jar
-PHOTOSHARE_APK=$PHOTOSHARE_SRC_DIR/bin/PhotoShare.apk
-
+HAGGLE_JAR=$ANDROID_BIN_DIR/framework/org.haggle.jar
+PHOTOSHARE_APK=$ANDROID_BIN_DIR/app/PhotoShare.apk
+FRAMEWORK_PERMISSIONS_FILE=$HAGGLE_SRC_DIR/android/libhaggle/org.haggle.xml
 PACKAGE_DIR_NAME=haggle-$HAGGLE_VER-android
 PACKAGE_DIR=/tmp/$PACKAGE_DIR_NAME
 
@@ -62,7 +63,7 @@ mkdir $PACKAGE_DIR
 pushd $PACKAGE_DIR
 
 # Copy all the files we need into our package directory
-for f in $HAGGLE_BIN $LIBHAGGLE_SO $LIBHAGGLE_XML2_SO $LIBHAGGLE_JNI_SO $HAGGLE_JAR $PHOTOSHARE_APK $IWCONFIG_BIN $IWLIST_BIN; do
+for f in $HAGGLE_BIN $LIBHAGGLE_SO $LIBHAGGLE_XML2_SO $LIBHAGGLE_JNI_SO $HAGGLE_JAR $PHOTOSHARE_APK $IWCONFIG_BIN $IWLIST_BIN $FRAMEWORK_PERMISSIONS_FILE; do
     echo "Including $f in package"
 
     if [ -f $f ]; then
@@ -125,9 +126,12 @@ for dev in \$DEVICES; do
     adb -s \$dev push libhaggle_jni.so /system/lib/libhaggle_jni.so
     adb -s \$dev shell chmod 644 /system/lib/libhaggle_jni.so
 
-    echo "Installing haggle.jar"
-    adb -s \$dev push haggle.jar /system/framework/haggle.jar
-    adb -s \$dev shell chmod 644 /system/framework/haggle.jar
+    echo "Installing org.haggle.jar"
+    adb -s \$dev push org.haggle.jar /system/framework/org.haggle.jar
+    adb -s \$dev shell chmod 644 /system/framework/org.haggle.jar
+
+    echo "Installing library permissions file"
+    adb -s \$dev push org.haggle.xml /system/etc/permissions/org.haggle.xml
 
     echo "Installing tools..."
     if [ -f iwconfig ]; then
@@ -155,6 +159,9 @@ for dev in \$DEVICES; do
     
 done
 
+    echo "Installation completed."
+    echo "Please reboot the device to make sure the haggle libraries are"
+    echo "registered with the system."
 EOF
 
 chmod +x install.sh

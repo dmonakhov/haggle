@@ -1,5 +1,5 @@
 APP=LuckyMe
-JAR_PATH=@top_srcdir@/src/libhaggle/jni/haggle.jar
+JAR_PATH=@top_srcdir@/src/libhaggle/jni/org.haggle.jar
 EXTRA_JARS=$(patsubst %,libs/%,$(notdir ${JAR_PATH}))
 SRC=src/org/haggle/${APP}/*.java
 DEBUG=bin/${APP}-debug

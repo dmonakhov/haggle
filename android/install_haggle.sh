@@ -65,7 +65,8 @@ for dev in $DEVICES; do
 done
 
 FRAMEWORK_PATH_PREFIX="system/framework"
-FRAMEWORK_FILES="haggle.jar"
+FRAMEWORK_FILES="org.haggle.jar"
+FRAMEWORK_PERMISSIONS_FILE="$SCRIPT_DIR/libhaggle/org.haggle.xml"
 
 LIB_PATH_PREFIX="system/lib"
 LIBS="libhaggle.so libhaggle_jni.so libhaggle-xml2.so"
@@ -121,14 +122,6 @@ for dev in $DEVICES; do
     
     # Back to product dir
     popd
-#    echo "Installing applications"
-#    echo "    LuckyMe"
-#    $ADB -s $dev uninstall org.haggle.LuckyMe
-#    $ADB -s $dev install $APP_PATH_PREFIX/LuckyMe.apk
-
-#    echo "    PhotoShare"
-#    $ADB -s $dev uninstall org.haggle.PhotoShare
-#    $ADB -s $dev install $APP_PATH_PREFIX/PhotoShare.apk
 
     # Install framework files
     echo
@@ -137,7 +130,17 @@ for dev in $DEVICES; do
 	echo "    $file"
 	$ADB -s $dev push $FRAMEWORK_PATH_PREFIX/$file /$FRAMEWORK_PATH_PREFIX/$file
 	$ADB -s $dev shell chmod 644 /$FRAMEWORK_PATH_PREFIX/$file
+	$ADB -s $dev push $FRAMEWORK_PERMISSIONS_FILE /system/etc/permissions/org.haggle.xml
     done
+
+    echo "Installing applications"
+    echo "    LuckyMe"
+    $ADB -s $dev uninstall org.haggle.LuckyMe
+    $ADB -s $dev install $APP_PATH_PREFIX/LuckyMe.apk
+
+    echo "    PhotoShare"
+    $ADB -s $dev uninstall org.haggle.PhotoShare
+    $ADB -s $dev install $APP_PATH_PREFIX/PhotoShare.apk
 
     # Cleanup data folder if any
     $ADB -s $dev shell rm /data/haggle/haggle.db
@@ -153,3 +156,12 @@ done
 popd
 popd
 popd
+
+echo
+echo "NOTE:"
+echo "You might have to reboot the device if this is the first time"
+echo "the Haggle framework files (org.haggle.jar) are installed."
+echo "A reboot is necessary to register the library with the system."
+echo "If you are running applications and experience problems, please"
+echo "try rebooting the device."
+echo

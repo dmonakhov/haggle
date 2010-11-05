@@ -259,10 +259,17 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
 		return -1;
 
         // Get node info
-        jc_node.cls = (*env)->FindClass(env, "org/haggle/Node");
+        cls = (*env)->FindClass(env, "org/haggle/Node");
 
-        if (!jc_node.cls)
+        if (!cls)
                 return -1;
+
+	jc_node.cls = (*env)->NewGlobalRef(env, cls);
+
+	(*env)->DeleteLocalRef(env, cls);
+
+	if (!jc_node.cls)
+		return -1;
 
         jc_node.mid.constructor = (*env)->GetMethodID(env, jc_node.cls, "<init>", "()V");
 
@@ -275,7 +282,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
 		return -1;
         
         // Get attribute info
-        cls = (*env)->FindClass(env, "org/haggle/Attribute");
+	cls = (*env)->FindClass(env, "org/haggle/Attribute");
 
 	if (!cls)
 		return -1;
@@ -287,17 +294,17 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
         if (!jc_attribute.cls)
                 return -1;
 	
-        jc_attribute.mid.constructor = (*env)->GetMethodID(env, jc_attribute.cls, "<init>", "(Ljava/lang/String;Ljava/lang/String;J)V");
-
+	jc_attribute.mid.constructor = (*env)->GetMethodID(env, jc_attribute.cls, "<init>", "(Ljava/lang/String;Ljava/lang/String;J)V");
+	
         if (!jc_attribute.mid.constructor)
-                return -1;
+	       return -1;
 
         jc_attribute.fid.native = (*env)->GetFieldID(env, jc_attribute.cls, "nativeAttribute", "J");
 
 	if (!jc_attribute.fid.native)
 		return -1;
-
-        return JNI_VERSION_1_4;
+	
+	return JNI_VERSION_1_4;
 }
 
 JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved)
@@ -309,7 +316,7 @@ JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved)
                 return;
         }         
 
-	printf("JNI_OnUnload: cleaning up global references\n");
+	/* printf("JNI_OnUnload: cleaning up global references\n"); */
 
 	if (jc_dataobject.cls) {
 		/* printf("Cleaning up data object class reference\n"); */

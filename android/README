@@ -80,10 +80,10 @@ is built for Haggle. This is renamed to 'haggle-libxml2' in order to
 avoid conflicts and ends up in 'lib/'. In order to build applications
 using Android's Java-based application framework, a JNI class library
 is also built and installed. The components of this library are
-'libhaggle_jni' (the native code) and haggle.jar (the class
+'libhaggle_jni' (the native code) and org.haggle.jar (the class
 library). These end up in 'lib/' and 'framework/',
 respectively. Haggle applications can be developed by including the
-haggle.jar class library when developing for Android.
+org.haggle.jar class library when developing for Android.
 
 Haggle can be run from a shell by logging in on the phone with 'adb'.
 Type 'adb shell' to get a shell on the phone. Then execute 'haggle'.
@@ -103,14 +103,14 @@ Writing Haggle Applications
 Haggle applications are developed as any other Android applications
 (see the Android tutorials for that). However, to be able to interact
 with Haggle from your application, you also have to include the
-haggle.jar class library in your Android application project (e.g., in
+org.haggle.jar class library in your Android application project (e.g., in
 Eclipse). The Haggle class library allows your application to interact
 with Haggle using a Java API.
 
 One example application, called "PhotoShare", should be bundled with
 this source package in the 'android' directory. PhotoShare is an
 Android Eclipse project. Once it is opened in Eclipse, it is probably
-necessary to configure local paths to haggle.jar, the Android SDK,
+necessary to configure local paths to org.haggle.jar, the Android SDK,
 etc.
 
 Setting Ad hoc mode
@@ -170,7 +170,7 @@ using Eclipse or with the standard build system (configure/make).
 In either case, you need to first install the Android SDK.
 
 With Eclipse, just import the project directory as an Android project,
-then add <my haggle path>/lib/haggle.jar as an external library
+then add <my haggle path>/lib/org.haggle.jar as an external library
 dependency for your project.
 
 Building with the standard build system requires that Ant is

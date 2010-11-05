@@ -1,5 +1,5 @@
 SUBDIRS = java/org/haggle native
-JARFILE = haggle.jar
+JARFILE = org.haggle.jar
 MANIFEST = Manifest.txt
 haggledir = $(datadir)/java
 haggle_DATA = $(JARFILE)
