@@ -23,9 +23,16 @@
 				<Interface name="Lego robot" type="bluetooth" mac="00:16:53:0d:f5:7E"/>
 			</Blacklist>
 			<Whitelist>
-			  <Interface name="NexusOne-04" type="bluetooth" mac="00:23:76:a5:aa:fb"/>
+			  <Interface name="NexusOne-01" type="bluetooth" mac="00:23:76:9f:94:0a"/>
+			  <Interface name="NexusOne-02" type="bluetooth" mac="00:23:76:9f:7e:9b"/>
+			  <Interface name="NexusOne-03" type="bluetooth" mac="00:23:76:9F:95:cf"/>
+			  <Interface name="NexusOne-04" type="bluetooth" mac="00:23:76:9f:6c:8e"/>
 			  <Interface name="NexusOne-05" type="bluetooth" mac="00:23:76:9f:93:3a"/>
 			  <Interface name="NexusOne-06" type="bluetooth" mac="00:23:76:9f:7e:32"/>
+			  <Interface name="NexusOne-07" type="bluetooth" mac="00:23:76:9f:96:bc"/>
+			  <Interface name="NexusOne-08" type="bluetooth" mac="00:23:76:9f:d1:b2"/>
+			  <Interface name="NexusOne-09" type="bluetooth" mac="00:23:76:9f:84:46"/>
+			  <Interface name="NexusOne-11" type="bluetooth" mac="00:23:76:a5:aa:fb"/>
 			  <Interface name="LG-01" type="bluetooth" mac="00:1e:75:15:78:82"/>
 			  <Interface name="LG-02" type="bluetooth" mac="00:1c:62:fa:ec:ee"/>
 			  <Interface name="LG-03" type="bluetooth" mac="00:1c:62:fb:c0:b9"/>

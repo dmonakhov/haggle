@@ -1195,7 +1195,11 @@
 			isa = PBXProject;
 			buildConfigurationList = 1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "Haggle" */;
 			compatibilityVersion = "Xcode 3.1";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
+			knownRegions = (
+				en,
+			);
 			mainGroup = 08FB7794FE84155DC02AAC07 /* HaggleKernel */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -1504,6 +1508,7 @@
 					/usr/include/libxml2,
 				);
 				LIBRARY_SEARCH_PATHS = "src/libhaggle/**";
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				OTHER_CFLAGS = "";
 				OTHER_CPLUSPLUSFLAGS = "";
 				OTHER_LDFLAGS = "";
@@ -1525,6 +1530,7 @@
 					/usr/include/libxml2/,
 					"$(PROJECT_DIR)/../src/libcpphaggle/include",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				OTHER_CFLAGS = "";
 				OTHER_CPLUSPLUSFLAGS = "";
 				OTHER_LDFLAGS = "";

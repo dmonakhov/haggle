@@ -1156,6 +1156,7 @@ static void parse_commandline(int argc, char **argv)
 
 void milliseconds_to_timeval(struct timeval *tv, unsigned long milliseconds)
 {
+    tv->tv_sec = 0;
 	while (milliseconds >= 1000) {
 		tv->tv_sec++;
 		milliseconds -= 1000;
