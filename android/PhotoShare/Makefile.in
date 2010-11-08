@@ -11,10 +11,6 @@ all: debug
 
 debug: ${DEBUG}.apk
 release: ${RELEASE}.apk
-<<<<<<< local
-all: release 
-=======
->>>>>>> other
 
 ${EXTRA_JARS}: ${JAR_PATH}
 	mkdir -p libs

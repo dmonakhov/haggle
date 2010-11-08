@@ -1,16 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="PhotoShare" default="help">
 
-<<<<<<< local
-<!-- The local.properties file is created and updated by the 'android'
-     tool.
-     It contains the path to the SDK. It should *NOT* be checked into
-     Version Control Systems. -->
-=======
     <!-- The local.properties file is created and updated by the 'android' tool.
          It contains the path to the SDK. It should *NOT* be checked in in Version
          Control Systems. -->
->>>>>>> other
     <property file="local.properties" />
 
     <!-- The build.properties file can be created by you and is never touched
