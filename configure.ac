@@ -593,6 +593,11 @@ if test x$java_bindings = xyes;
 then
 	# Check for Android SDK and NDK
 	AC_CHECK_PROG(have_android_sdk, apkbuilder, yes, no)
+	AC_PATH_PROG(sdk_path, apkbuilder)
+	# Strip app name and tools directory
+	sdk_path=`AS_DIRNAME(["$sdk_path"])`
+	sdk_path=`AS_DIRNAME(["$sdk_path"])`
+	AC_SUBST(ANDROID_SDK_PATH, [$sdk_path])	
 
    	if test x$have_android_sdk = xno
      	then	   
@@ -648,7 +653,9 @@ AC_CONFIG_FILES([Makefile
 		 testsuite/test_security/Makefile
 		 android/Makefile
 		 android/PhotoShare/Makefile
+ 		 android/PhotoShare/local.properties
 		 android/LuckyMe/Makefile
+ 		 android/LuckyMe/local.properties
                  $extra_config_files])
 AC_OUTPUT
 
