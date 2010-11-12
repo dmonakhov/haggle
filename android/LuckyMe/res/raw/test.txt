@@ -1,0 +1,8 @@
+# node
+# dev_id id interest:weight
+n 0033 1 5:3 6:7 6:5
+# data
+# time attributes
+d 0.001 5 2 4 6 7 3
+d 0.001 5 2 4 6 7 3
+d 0.001 5 2 4 6 7 3

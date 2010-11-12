@@ -15,6 +15,14 @@ public class Attribute {
         {
                 nativeNew(name, value, weight);
         }
+        public Attribute(String name, String value)
+        {
+                nativeNew(name, value, 1);
+        }
+        public Attribute(Attribute a)
+        {
+                nativeNew(a.getName(), a.getValue(), a.getWeight());
+        }
         public synchronized void dispose()
         {
                 if (disposed == false) {

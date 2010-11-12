@@ -11,8 +11,7 @@ subdirs := $(addprefix $(LOCAL_PATH)/,$(addsuffix /Android.mk, \
                 src/libhaggle \
 		src/luckyMe \
 		src/clitool \
-		android/PhotoShare \
-		android/LuckyMe \
+		android \
         ))
 
 include $(subdirs)

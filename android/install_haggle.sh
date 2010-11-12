@@ -111,12 +111,12 @@ for dev in $DEVICES; do
     $ADB -s $dev push $BIN_PATH_PREFIX/clitool /$BIN_PATH_PREFIX/clitool
     $ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/clitool
   
-    # Install libraries
+    # Install libraries.
     echo
     echo "Installing library files"
     for file in $LIBS; do
 	echo "    $file"
-	$ADB -s $dev push $LIB_PATH_PREFIX/$file /$LIB_PATH_PREFIX/$file
+        $ADB -s $dev push $LIB_PATH_PREFIX/$file /$LIB_PATH_PREFIX/$file
 	$ADB -s $dev shell chmod 644 /$LIB_PATH_PREFIX/$file
     done
     
@@ -124,6 +124,11 @@ for dev in $DEVICES; do
     popd
 
     # Install framework files
+    #    
+    # There are two approaches here: 1) install libraries and framework files on device
+    # to be shared by all apps, or, 2) bundle them with each app. The first approach 
+    # requires that the framework files are registered with the system,
+    # so we need to reboot the device for that. 
     echo
     echo "Installing framework files"
     for file in $FRAMEWORK_FILES; do
@@ -133,14 +138,14 @@ for dev in $DEVICES; do
 	$ADB -s $dev push $FRAMEWORK_PERMISSIONS_FILE /system/etc/permissions/org.haggle.xml
     done
 
-    echo "Installing applications"
-    echo "    LuckyMe"
-    $ADB -s $dev uninstall org.haggle.LuckyMe
-    $ADB -s $dev install $APP_PATH_PREFIX/LuckyMe.apk
+    #echo "Installing applications"
+    #echo "    LuckyMe"
+    #$ADB -s $dev uninstall org.haggle.LuckyMe
+    #$ADB -s $dev install $APP_PATH_PREFIX/LuckyMe.apk
 
-    echo "    PhotoShare"
-    $ADB -s $dev uninstall org.haggle.PhotoShare
-    $ADB -s $dev install $APP_PATH_PREFIX/PhotoShare.apk
+    #echo "    PhotoShare"
+    #$ADB -s $dev uninstall org.haggle.PhotoShare
+    #$ADB -s $dev install $APP_PATH_PREFIX/PhotoShare.apk
 
     # Cleanup data folder if any
     $ADB -s $dev shell rm /data/haggle/haggle.db

@@ -1,11 +1,15 @@
 package org.haggle.LuckyMe;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
@@ -13,6 +17,7 @@ import java.util.Random;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.Message;
@@ -34,7 +39,8 @@ import org.haggle.Handle.RegistrationFailedException;
 
 public class LuckyService extends Service implements EventHandler {
 	private Thread mDataThread = null;
-	private DataObjectGenerator mDataGenerator = null;
+	//private DataObjectGenerator mDataGenerator = null;
+	private ExperimentSetupReader mExpReader = null;
 	private org.haggle.Handle hh = null;
 	private boolean haggleIsRunning = false;
 	private int num_dataobjects_rx = 0;
@@ -68,8 +74,10 @@ public class LuckyService extends Service implements EventHandler {
 		super.onCreate();
 
 		Log.i(LUCKY_SERVICE_TAG, "LuckyService created");
-		mDataGenerator = new DataObjectGenerator();
-		mDataThread = new Thread(mDataGenerator);
+		//mDataGenerator = new DataObjectGenerator();
+		//mDataThread = new Thread(mDataGenerator);
+		mExpReader = new ExperimentSetupReader();
+		mDataThread = new Thread(mExpReader);
 		androidId = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
 
 		Log.i(LUCKY_SERVICE_TAG, "Android id is " + androidId);
@@ -207,7 +215,11 @@ public class LuckyService extends Service implements EventHandler {
 				isRunning = true;
 			}
 		}
-		return START_STICKY;
+		// START_NOT_STICKY: Do not automatically restart the service if it is 
+		// killed due to low memory. 
+		// TODO: Implement START_STICKY, i.e., handle restart, and pickup state
+		// from where we left off.
+		return START_NOT_STICKY;
 	}
 
 	class DataObjectGenerator implements Runnable {
@@ -239,6 +251,7 @@ public class LuckyService extends Service implements EventHandler {
 					sendClientMessage(MSG_NUM_DATAOBJECTS_TX);
 				}
 			}
+			shouldExit = false;
 		}
 
 		public void stop() {
@@ -256,7 +269,8 @@ public class LuckyService extends Service implements EventHandler {
 
 	private void stopDataGenerator() {
 		if (mDataThread != null) {
-			mDataGenerator.stop();
+			//mDataGenerator.stop();
+			mExpReader.stop();
 			mDataThread.interrupt();
 			try {
 				mDataThread.join();
@@ -421,6 +435,131 @@ public class LuckyService extends Service implements EventHandler {
 		return ret;
 	}
 
+	class ExperimentSetupReader implements Runnable {
+		private boolean shouldExit = false;
+		ArrayList<Attribute> interestList = new ArrayList<Attribute>();
+		
+		public ExperimentSetupReader() {
+			
+		}
+		@Override
+		public void run() {
+			Log.i(LUCKY_SERVICE_TAG, "Reading experiment setup");
+			try {
+				InputStream in = getResources().openRawResource(R.raw.test);
+				BufferedReader br = new BufferedReader(new InputStreamReader(in));
+
+				while (!shouldExit) {
+					String line = br.readLine();
+
+					if (line == null) {
+						Log.i(LUCKY_SERVICE_TAG, "Reached EOF of experiment configuration file");
+						break;
+					}
+
+					if (line.length() == 0 || line.charAt(0) == '#')
+						continue;
+					
+					Log.i(LUCKY_SERVICE_TAG, "Line is: " + line);
+					
+					if (line.charAt(0) == 'n' && line.length() > 2) {
+						String[] larr = line.split(" ");
+
+						try {
+							String device = larr[1];
+							long id = Long.parseLong(larr[2]);
+							 
+							Log.i(LUCKY_SERVICE_TAG, "parsing node device=" + device + " id=" + id);
+							
+							for (int i = 3; i < larr.length; i++) {
+								String[] aarr = larr[i].split(":"); 
+								
+								if (aarr.length == 2) {
+									try {
+										long w = Long.parseLong(aarr[1]);
+										Attribute a = new Attribute("LuckyMe", aarr[0], w);
+										interestList.add(a);
+										Log.d(LUCKY_SERVICE_TAG, "Read interest: " + a);
+									} catch (NumberFormatException e) {
+										Log.d(LUCKY_SERVICE_TAG, "bad weight format");
+									}
+								}
+							}
+						} catch (NumberFormatException e) {
+							Log.d(LUCKY_SERVICE_TAG, "Bad node id " + larr[2]);
+						}
+					
+					} else if (line.charAt(0) == 'd') {
+						String[] larr = line.split(" ");
+						Log.i(LUCKY_SERVICE_TAG, "parsing data");
+						
+						if (larr.length < 2)
+							continue;
+
+						DataObject dObj = createRandomDataObject("/sdcard/luckyme.jpg");
+
+						if (dObj != null) {
+							for (int i = 2; i < larr.length; i++) {
+								try {
+									Attribute a = new Attribute("LuckyMe", larr[i]);
+
+									Log.d(LUCKY_SERVICE_TAG, "Read data: " + a);
+								} catch (NumberFormatException e) {
+									Log.d(LUCKY_SERVICE_TAG, "bad weight format");
+								}
+							}
+							hh.publishDataObject(dObj);
+							num_dataobjects_tx++;
+							Log.d(LUCKY_SERVICE_TAG, "Generated data object "
+									+ num_dataobjects_tx + " luck=" + calculateLuck(dObj));
+							sendClientMessage(MSG_NUM_DATAOBJECTS_TX);
+							if (!shouldExit) {
+								try {
+									Thread.sleep(100);
+								} catch (InterruptedException e) {
+									Log.d(LUCKY_SERVICE_TAG,
+											"ExperimentSetupReader interrupted");
+									continue;
+								}
+							}
+						}
+					}
+				}
+				
+				in.close();
+			} catch (Resources.NotFoundException e) {
+				
+			} catch (IOException e) {
+				
+			}
+			// Sleep some period of time before we publish our interests
+			if (!shouldExit) {
+				try {
+					Thread.sleep(2000);
+				} catch (InterruptedException e) {
+					Log.d(LUCKY_SERVICE_TAG,
+							"ExperimentSetupReader interrupted");
+				}
+
+				Log.i(LUCKY_SERVICE_TAG, "Done reading experiment setup");
+
+				// Note, interests might require protection in the future.
+				// However, at this point, this thread is the only one touching
+				// the interest array before the interests are published.
+				interests = new Attribute[interestList.size()];
+				interests = interestList.toArray(interests);
+				hh.registerInterests(interests);
+			}
+
+			Log.i(LUCKY_SERVICE_TAG, "experiment setup reader exits");
+			// Reset in case thread is run again
+			shouldExit = false;
+		}
+		public void stop() {
+			shouldExit = true;
+		}
+	}
+	
 	private synchronized void setNeighbors(Node[] neighbors) {
 		this.neighbors = neighbors;
 	}
@@ -482,11 +621,8 @@ public class LuckyService extends Service implements EventHandler {
 	// This is the object that receives interactions from clients.
 	private final IBinder mBinder = new LuckyBinder();
 
-	/*
-	 * private DataObject createRandomDataObject() { return
-	 * createRandomDataObject(null); }
-	 */
-	private DataObject createRandomDataObject(String filename) {
+	
+	private DataObject createEmptyDataObject(String filename) {
 		DataObject dObj = null;
 
 		if (filename != null && filename.length() > 0) {
@@ -510,8 +646,18 @@ public class LuckyService extends Service implements EventHandler {
 			}
 		}
 
-		if (dObj == null)
+		return dObj;
+	}
+	/*
+	 * private DataObject createRandomDataObject() { return
+	 * createRandomDataObject(null); }
+	 */
+	private DataObject createRandomDataObject(String filename) {
+		DataObject dObj = createEmptyDataObject(filename);
+		
+		if (dObj == null) {
 			return null;
+		}
 
 		HashSet<Integer> values = new HashSet<Integer>();
 
@@ -596,19 +742,30 @@ public class LuckyService extends Service implements EventHandler {
 
 	@Override
 	public void onInterestListUpdate(Attribute[] interests) {
+		
+		if (interests == null) {
+			Log.d(LUCKY_SERVICE_TAG, "Got null interest list!");
+			return;
+		}
+		
 		Log.i(LUCKY_SERVICE_TAG, "Got interest list of " + interests.length
 				+ " items");
 
 		if (interests.length > 0) {
 			this.interests = interests;
 		} else {
-			this.interests = createInterests();
-			hh.registerInterests(this.interests);
+			/*
+			 this.interests = createInterests();
+			 hh.registerInterests(this.interests);
+			*/
 		}
 
-		for (int i = 0; i < this.interests.length; i++) {
-			Log.i(LUCKY_SERVICE_TAG, "Interest " + i + ":" + this.interests[i]);
+		if (this.interests != null) {
+			for (int i = 0; i < this.interests.length; i++) {
+				Log.i(LUCKY_SERVICE_TAG, "Interest " + i + ":" + this.interests[i]);
+			}
 		}
+		
 		startDataGenerator();
 	}
 

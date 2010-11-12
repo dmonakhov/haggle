@@ -240,6 +240,7 @@ public class LuckyView extends Activity {
 		}
 	}
 	private void stopHaggleStatusChecker() {
+		Log.d(LUCKY_VIEW_TAG, "Stopping HaggleStatusThread");
 		mHaggleStatusChecker.stop();
 		mHaggleStatusThread.interrupt();
 		try {
@@ -248,6 +249,8 @@ public class LuckyView extends Activity {
 			mHaggleStatusThread = null;
 		} catch (InterruptedException e) {
 		}
+
+		Log.d(LUCKY_VIEW_TAG, "Stopped HaggleStatusThread");
 	}
 
 	public Handler getHandler() {
@@ -346,8 +349,10 @@ public class LuckyView extends Activity {
 			Log.d(LUCKY_VIEW_TAG, "Stopping Lucky service");
 			stopService(new Intent(this, LuckyService.class));
 			mLuckyService = null;
+			Log.d(LUCKY_VIEW_TAG, "Lucky service stopped");
 		}
 		nodeAdpt.clear();
+		Log.d(LUCKY_VIEW_TAG, "Node adapter cleared");
 	}
 
 	@Override
