@@ -36,6 +36,9 @@ public class DataObject {
         public native long getThumbnail(byte[] data);
         public native byte[] getRaw();
 
+	public String toString() {
+		return new String(getRaw());
+	}
         public DataObject() throws DataObjectException
         {
                 if (!newEmpty())

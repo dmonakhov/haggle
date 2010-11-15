@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Random;
 
 import android.app.Service;
+import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
@@ -68,7 +69,7 @@ public class LuckyService extends Service implements EventHandler {
 	private Attribute[] interests = null;
 	private HashMap<Long, Long> myLuck = new HashMap<Long, Long>();
 	private long cumulativeLuck = 0;
-
+	private String bluetoothAddr;
 	@Override
 	public void onCreate() {
 		super.onCreate();
@@ -88,8 +89,12 @@ public class LuckyService extends Service implements EventHandler {
 			//zipf.setSeed(nodeId);
 			Log.i(LUCKY_SERVICE_TAG, "Node id is " + nodeId);
 		} catch (NumberFormatException e) {
-			Log.d(LUCKY_SERVICE_TAG, "Could not decode androidId to long");
+			Log.d(LUCKY_SERVICE_TAG, "Could not decode androidId into long integer");
 		}
+		
+		BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
+		bluetoothAddr = bt.getAddress();
+		
 		// Get a reference to a wake look so that we can keep the device
 		// awake even if the power button is pressed.
 		pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
@@ -438,6 +443,7 @@ public class LuckyService extends Service implements EventHandler {
 	class ExperimentSetupReader implements Runnable {
 		private boolean shouldExit = false;
 		ArrayList<Attribute> interestList = new ArrayList<Attribute>();
+		private long nodeId = -1;
 		
 		public ExperimentSetupReader() {
 			
@@ -466,10 +472,14 @@ public class LuckyService extends Service implements EventHandler {
 						String[] larr = line.split(" ");
 
 						try {
-							String device = larr[1];
-							long id = Long.parseLong(larr[2]);
+							String deviceId = larr[1];
+							
+							if (deviceId.compareToIgnoreCase(bluetoothAddr) != 0)
+								continue;
+							
+							nodeId = Long.parseLong(larr[2]);
 							 
-							Log.i(LUCKY_SERVICE_TAG, "parsing node device=" + device + " id=" + id);
+							Log.i(LUCKY_SERVICE_TAG, "parsing node deviceId=" + deviceId + " nodeId=" + nodeId);
 							
 							for (int i = 3; i < larr.length; i++) {
 								String[] aarr = larr[i].split(":"); 
@@ -496,18 +506,30 @@ public class LuckyService extends Service implements EventHandler {
 						if (larr.length < 2)
 							continue;
 
-						DataObject dObj = createRandomDataObject("/sdcard/luckyme.jpg");
+						try {
+							long id = Long.parseLong(larr[1]);
+							
+							if (id != nodeId) {
+								Log.d(LUCKY_SERVICE_TAG, "Ignoring data line [wrong node]: " + line);
+								continue;
+							}
+							
+						} catch (NumberFormatException e) {
+							Log.d(LUCKY_SERVICE_TAG, "Bad data node id " + larr[1]);
+							continue;
+						}
+						
+						DataObject dObj = createEmptyDataObject("/sdcard/luckyme.jpg");
 
 						if (dObj != null) {
-							for (int i = 2; i < larr.length; i++) {
+							for (int i = 3; i < larr.length; i++) {
 								try {
-									Attribute a = new Attribute("LuckyMe", larr[i]);
-
-									Log.d(LUCKY_SERVICE_TAG, "Read data: " + a);
+									dObj.addAttribute("LuckyMe", larr[i]);
 								} catch (NumberFormatException e) {
 									Log.d(LUCKY_SERVICE_TAG, "bad weight format");
 								}
 							}
+							Log.d(LUCKY_SERVICE_TAG, "New data object: " + dObj);
 							hh.publishDataObject(dObj);
 							num_dataobjects_tx++;
 							Log.d(LUCKY_SERVICE_TAG, "Generated data object "
@@ -646,6 +668,8 @@ public class LuckyService extends Service implements EventHandler {
 			}
 		}
 
+		dObj.setCreateTime();
+		
 		return dObj;
 	}
 	/*

@@ -1,8 +1,9 @@
-# node
-# dev_id id interest:weight
-n 0033 1 5:3 6:7 6:5
-# data
-# time attributes
-d 0.001 5 2 4 6 7 3
-d 0.001 5 2 4 6 7 3
-d 0.001 5 2 4 6 7 3
+# node interests
+# <bluetoothAdd> <node_id> <interest:weight>
+n 00:23:76:9F:7E:32 1 5:3 6:7 6:5
+n 00:23:76:9F:7E:31 2 5:3 6:7 6:5
+# data objects
+# <node_id> <time> <attributes>
+d 1 0.001 5 2 4 6 7 3
+d 2 0.001 4 2 6 7 1 9
+d 1 0.001 10 2 37 9 11 93
