@@ -81,7 +81,7 @@ private:
 	Interface *getInterfaceFromRowId(const sqlite_int64 ifaceRowId);
 	
 	int findAndAddDataObjectTargets(DataObjectRef& dObj, const sqlite_int64 dataObjectRowId, const long ratio);
-	int deleteDataObjectNodeDescriptions(DataObjectRef ref_dObj, string *node_id);
+	int deleteDataObjectNodeDescriptions(DataObjectRef ref_dObj, string& node_id);
 #if defined(HAVE_SQLITE_BACKUP_SUPPORT)
 	int backupDatabase(sqlite3 *pInMemory, const char *zFilename, int toFile = 1);
 #endif

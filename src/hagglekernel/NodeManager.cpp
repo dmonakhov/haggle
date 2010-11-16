@@ -483,7 +483,7 @@ void NodeManager::onReceiveNodeDescription(Event *e)
 
 		DataObjectRef dObj = dObjs.pop();
 
-		NodeRef node = Node::create(Node::TYPE_PEER, dObj);
+		NodeRef node = Node::create(dObj);
 
 		if (!node) {
 			HAGGLE_DBG("Could not create node from metadata!\n");

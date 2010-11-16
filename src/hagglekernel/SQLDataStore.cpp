@@ -1825,27 +1825,26 @@ int SQLDataStore::evaluateDataObjects(long eventType)
 
 // remove old node descriptions
 // return 0 if the node description dObj passed to the function is not the newest one, else 1
-int SQLDataStore::deleteDataObjectNodeDescriptions(DataObjectRef dObj, string *node_id)
+int SQLDataStore::deleteDataObjectNodeDescriptions(DataObjectRef dObj, string& node_id)
 {
 	int ret;
 	sqlite3_stmt *stmt;
 	const char *tail;
 	char *sql_cmd = sqlcmd;
 	DataObjectRefList dObjs;
-	const Attributes *attrs;
 	int result = 1;
 	
 	// get node_id
-	attrs = dObj->getAttributes();
-	for (Attributes::const_iterator it = attrs->begin(); it != attrs->end(); it++) {
-		const Attribute& a = (*it).second;
-		if (a.getName() == NODE_DESC_ATTR) {
-			*node_id = a.getValue();
-		}
-	}
+	NodeRef node = Node::create(dObj);
+
+	if (!node)
+		return 0;
+
+	node_id = node->getIdStr();
 
 	// retrieve all dataobjects with same node_id
-	sprintf(sql_cmd, "SELECT * FROM %s WHERE node_id='%s' ORDER BY createtime desc", TABLE_DATAOBJECTS, node_id->c_str());
+	sprintf(sql_cmd, "SELECT * FROM %s WHERE node_id='%s' ORDER BY createtime desc", 
+		TABLE_DATAOBJECTS, node_id.c_str());
 	
 	ret = sqlite3_prepare_v2(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
 	
@@ -1881,11 +1880,13 @@ int SQLDataStore::deleteDataObjectNodeDescriptions(DataObjectRef dObj, string *n
 	
 	sqlite3_finalize(stmt);
 
-	HAGGLE_DBG("%u node descriptions from same node [%s] already in datastore\n", cntStoredNodeDescriptions, node_id->c_str());
+	HAGGLE_DBG("%u node descriptions from same node [%s] already in datastore\n", 
+		   cntStoredNodeDescriptions, node_id.c_str());
 	
 	// loop through dObjs list and delete if older createtime
 	for (DataObjectRefList::iterator it = dObjs.begin(); it != dObjs.end(); it++) {
-		_deleteDataObject(*it, true); // delete and report as event
+		// delete and report as event
+		_deleteDataObject(*it, true); 
 	}
 		
 	return result;
@@ -2415,7 +2416,7 @@ int SQLDataStore::_insertDataObject(DataObjectRef& dObj, const EventCallback<Eve
 	// adding node_id for node descriptions to refer to the corresponding node 
 	// and simplifying to delete old node descriptions
 	if (dObj->isNodeDescription()) {
-		ret = deleteDataObjectNodeDescriptions(dObj, &node_id);
+		ret = deleteDataObjectNodeDescriptions(dObj, node_id);
 		if (ret == 0) {
 			// this is an old node description, ignore it.
 			HAGGLE_DBG("There are already newer node descriptions for the same node [%s] in the data store. Data object will not be inserted\n", node_id.c_str());

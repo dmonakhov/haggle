@@ -58,6 +58,7 @@ using namespace haggle;
 #endif
 
 unsigned long Node::totNum = 0;
+
 const char *Node::typestr[] = {
 	"undefined",
 	"local_device", // Local device node is really a peer
@@ -193,6 +194,32 @@ Node::Node(const Node& n) :
 
 	if (n.dObj)
 		dObj = n.dObj->copy();
+}
+
+
+Node *Node::create(const DataObjectRef& dObj)
+{
+	if (!dObj || !dObj->getMetadata()) {
+		HAGGLE_ERR("Bad data object\n");
+		return NULL;
+	}
+	
+	const Metadata *m = dObj->getMetadata()->getMetadata(NODE_METADATA);
+
+	if (!m)
+		return NULL;
+
+	const char *typestr = m->getParameter(NODE_METADATA_TYPE_PARAM);
+
+	if (!typestr)
+		return NULL;
+
+	Type_t type = strToType(typestr);
+
+	if (type == TYPE_UNDEFINED)
+		return NULL;
+	
+	return create(type, dObj);
 }
 
 Node *Node::create(Type_t type, const DataObjectRef& dObj)
@@ -411,6 +438,18 @@ Node::Type_t Node::getType() const
 const char *Node::typeToStr(Type_t type)
 {
         return typestr[type];
+}
+
+Node::Type_t Node::strToType(const char *type)
+{
+	int i = 0;
+
+	while (typestr[i]) {
+		if (strcmp(typestr[i], type) == 0)
+			return (Type_t)i;
+		i++;
+	}
+	return TYPE_UNDEFINED;
 }
 
 const unsigned char *Node::getId() const

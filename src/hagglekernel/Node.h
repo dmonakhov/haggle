@@ -60,7 +60,7 @@ public:
 	// Different types of nodes. Determines among other things how to deal
 	// with the ID
 	typedef enum {
-		TYPE_UNDEFINED = 0, // An uninitilized state of the node
+		TYPE_UNDEFINED = 0, // An uninitialized state of the node
 		TYPE_LOCAL_DEVICE,
 		TYPE_APPLICATION,
 		TYPE_PEER,
@@ -124,7 +124,7 @@ protected:
 	/**
 		A list of interfaces that are known to be associated with the
 		node. These may be marked 'up' or 'down'. A node with at least
-		one interface marked 'up' is considered ictive. It is otherwise 
+		one interface marked 'up' is considered active. It is otherwise 
 		considered inactive.
 	*/
         InterfaceRefList interfaces;
@@ -166,6 +166,7 @@ protected:
         Node(Type_t _type, const string name = "Unnamed node", Timeval _nodeDescriptionCreateTime = -1);
         Node(const Node &n); // Copy constructor
 public:
+	static Node *create(const DataObjectRef& dObj);
 	static Node *create(Type_t type, const DataObjectRef& dObj);
 	static Node *create(Type_t type = TYPE_UNDEFINED, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
 	static Node *create_with_id(Type_t type, const Node::Id_t id, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
@@ -175,6 +176,7 @@ public:
 	
 	static const unsigned char *strIdToRaw(const char *strId);
 	static const char *typeToStr(Type_t type);
+	static Type_t strToType(const char *type);
         Type_t getType() const;
 	const char *getTypeStr() const { return typestr[type]; }
         const unsigned char *getId() const;
