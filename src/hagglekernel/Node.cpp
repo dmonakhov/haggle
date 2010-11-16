@@ -87,16 +87,17 @@ inline bool Node::init_node(const unsigned char *_id)
 
 		pval = nm->getParameter(NODE_METADATA_ID_PARAM);
 
-		if (pval) {
-			decodelen = NODE_ID_LEN;
-			base64_decode_ctx_init(&b64_ctx);
-
-			if (!base64_decode(&b64_ctx, pval, strlen(pval), (char *)id, &decodelen))
-				return false;
-
-			calcIdStr();
-		}
-
+		if (!pval)
+			return false;
+		
+		decodelen = NODE_ID_LEN;
+		base64_decode_ctx_init(&b64_ctx);
+		
+		if (!base64_decode(&b64_ctx, pval, strlen(pval), (char *)id, &decodelen))
+			return false;
+		
+		calcIdStr();
+		
 		pval = nm->getParameter(NODE_METADATA_NAME_PARAM);
 
 		if (pval)

@@ -1838,7 +1838,7 @@ int SQLDataStore::deleteDataObjectNodeDescriptions(DataObjectRef dObj, string& n
 	NodeRef node = Node::create(dObj);
 
 	if (!node)
-		return 0;
+		return -1;
 
 	node_id = node->getIdStr();
 
