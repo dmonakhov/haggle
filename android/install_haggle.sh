@@ -51,7 +51,7 @@ echo "Assuming android source is found in $ANDROID_DIR"
 echo "Please make sure this is correct before proceeding."
 echo
 echo "Press any key to install Haggle on these devices, or ctrl-c to abort"
-
+echo "Check your device in case you need to allow permissions."
 # Wait for some user input
 read
 
@@ -82,42 +82,67 @@ pushd $ANDROID_PRODUCT_OUT
 
 echo $PWD
 
+function install_file()
+{
+    local src=$1
+    local dir=$2
+    local file=`basename $1`
+
+    if [ -z "$3" ]; then
+	local perm="755"
+	else 
+	local perm=$3
+    fi
+
+    $ADB -s $dev push $src $dir/$file
+    #$ADB -s $dev push $src /sdcard/$file
+    #$ADB -s $dev shell su -c "dd if=/sdcard/$file of=$dir/$file"
+    #$ADB -s $dev shell rm -f /sdcard/$file
+    $ADB -s $dev shell su -c "chmod $perm $dir/$file"
+}
+
 for dev in $DEVICES; do
     echo
     echo "Installing files onto device $dev"
 
     # Remount /system partition in rw mode
-    $ADB -s $dev shell mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system
+    $ADB -s $dev shell su -c "mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system"
 
     # Enter directory holding unstripped binaries
     pushd symbols
 
     # Install ad hoc settings script
-    $ADB -s $dev push $DEVICE_FILES_DIR/adhoc.sh $BIN_PATH_PREFIX/adhoc
-    $ADB -s $dev shell chmod 775 $BIN_PATH_PREFIX/adhoc
+    install_file $DEVICE_FILES_DIR/adhoc.sh /$BIN_PATH_PREFIX 755
+    #$ADB -s $dev push $DEVICE_FILES_DIR/adhoc.sh $BIN_PATH_PREFIX/adhoc
+    #$ADB -s $dev shell chmod 775 $BIN_PATH_PREFIX/adhoc
 
     # Install Haggle binary
     echo
     echo "Installing binaries"
     echo "    $HAGGLE_BIN"
-    $ADB -s $dev push $BIN_PATH_PREFIX/$HAGGLE_BIN /$BIN_PATH_PREFIX/$HAGGLE_BIN
-    $ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/$HAGGLE_BIN
+    install_file $BIN_PATH_PREFIX/$HAGGLE_BIN /$BIN_PATH_PREFIX 4775
+    #$ADB -s $dev push $BIN_PATH_PREFIX/$HAGGLE_BIN /$BIN_PATH_PREFIX/$HAGGLE_BIN
+    #$ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/$HAGGLE_BIN
 
     echo "    LuckyMe (CLI c-version)"
-    $ADB -s $dev push $BIN_PATH_PREFIX/luckyme /$BIN_PATH_PREFIX/luckyme
-    $ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/luckyme
+    install_file $BIN_PATH_PREFIX/luckyme /$BIN_PATH_PREFIX 4775
+    #$ADB -s $dev push $BIN_PATH_PREFIX/luckyme /$BIN_PATH_PREFIX/luckyme
+    #$ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/luckyme
 
     echo "    clitool"
-    $ADB -s $dev push $BIN_PATH_PREFIX/clitool /$BIN_PATH_PREFIX/clitool
-    $ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/clitool
+    install_file $BIN_PATH_PREFIX/clitool /$BIN_PATH_PREFIX 4775
+    #$ADB -s $dev push $BIN_PATH_PREFIX/clitool /$BIN_PATH_PREFIX/clitool
+    #$ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/clitool
   
     # Install libraries.
     echo
     echo "Installing library files"
     for file in $LIBS; do
 	echo "    $file"
-        $ADB -s $dev push $LIB_PATH_PREFIX/$file /$LIB_PATH_PREFIX/$file
-	$ADB -s $dev shell chmod 644 /$LIB_PATH_PREFIX/$file
+	
+	install_file $LIB_PATH_PREFIX/$file /$LIB_PATH_PREFIX 644
+        #$ADB -s $dev push $LIB_PATH_PREFIX/$file /$LIB_PATH_PREFIX/$file
+	#$ADB -s $dev shell chmod 644 /$LIB_PATH_PREFIX/$file
     done
     
     # Back to product dir
@@ -133,11 +158,14 @@ for dev in $DEVICES; do
     echo "Installing framework files"
     for file in $FRAMEWORK_FILES; do
 	echo "    $file"
-	$ADB -s $dev push $FRAMEWORK_PATH_PREFIX/$file /$FRAMEWORK_PATH_PREFIX/$file
-	$ADB -s $dev shell chmod 644 /$FRAMEWORK_PATH_PREFIX/$file
-	$ADB -s $dev push $FRAMEWORK_PERMISSIONS_FILE /system/etc/permissions/org.haggle.xml
+	
+	install_file $FRAMEWORK_PATH_PREFIX/$file /$FRAMEWORK_PATH_PREFIX 644
+	#$ADB -s $dev push $FRAMEWORK_PATH_PREFIX/$file /$FRAMEWORK_PATH_PREFIX/$file
+	#$ADB -s $dev shell chmod 644 /$FRAMEWORK_PATH_PREFIX/$file
+	
     done
-
+    install_file $FRAMEWORK_PERMISSIONS_FILE /system/etc/permissions 644
+    #$ADB -s $dev push $FRAMEWORK_PERMISSIONS_FILE /system/etc/permissions/org.haggle.xml
     #echo "Installing applications"
     #echo "    LuckyMe"
     #$ADB -s $dev uninstall org.haggle.LuckyMe
@@ -155,7 +183,7 @@ for dev in $DEVICES; do
     $ADB -s $dev shell rm /data/haggle/haggle.pid
 
     # Reset filesystem to read-only
-    $ADB -s $dev shell mount -o remount,ro -t yaffs2 /dev/block/mtdblock3 /system
+    $ADB -s $dev shell su -c "mount -o remount,ro -t yaffs2 /dev/block/mtdblock3 /system"
 done
 
 popd

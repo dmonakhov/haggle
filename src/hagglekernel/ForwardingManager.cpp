@@ -24,10 +24,11 @@ ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 	repositoryCallback(NULL),
 	moduleEventType(-1),
 	routingInfoEventType(-1),
-	forwardingModule(NULL)
+	forwardingModule(NULL),
 #if defined(ENABLE_RECURSIVE_ROUTING_UPDATES)
-	, recursiveRoutingUpdates(false)
-#endif
+	recursiveRoutingUpdates(false),
+#endif	
+	doQueryOnNewDataObject(true)
 {
 }
 
@@ -100,7 +101,7 @@ bool ForwardingManager::init_derived()
 		HAGGLE_ERR("Could not register module event type...");
 		return false;
 	}
-	// Register filter for node descriptions
+	// Register filter for forwarding objects
 	registerEventTypeForFilter(routingInfoEventType, "Forwarding", onRoutingInformation, "Forwarding=*");
 	
 	dataObjectQueryCallback = newEventCallback(onDataObjectQueryResult);
@@ -951,8 +952,8 @@ void ForwardingManager::onRoutingInformation(Event *e)
 			return;
 		}
 		
-		// Check if there is a module, and that the information received data object
-		// makes sense to it.
+		// Check if there is a module, and that the
+		// information received data object makes sense to it.
 		if (forwardingModule && forwardingModule->hasRoutingInformation(dObj)) {
 			
 			// Tell our module that it has new routing information
@@ -977,6 +978,9 @@ void ForwardingManager::onNewDataObject(Event *e)
 		return;
 	}
 	
+	if (!doQueryOnNewDataObject)
+		return;
+
 	DataObjectRef& dObj = e->getDataObject();
 	
 	// No point in doing node queries if we have no neighbors to
@@ -1110,6 +1114,18 @@ void ForwardingManager::onConfig(Metadata *m)
 		}
 	}
 #endif
+	param = m->getParameter("query_on_new_dataobject");
+
+	if (param) {
+		if (strcmp(param, "true") == 0) {
+			HAGGLE_DBG("Enabling query on new data object\n");
+			doQueryOnNewDataObject = true;
+		} else if (strcmp(param, "false") == 0) {
+			HAGGLE_DBG("Disabling query on new data object\n");
+			doQueryOnNewDataObject = false;
+		}
+	}
+
 	fm = m->getMetadata("Forwarder");
 	
 	if (fm) {

@@ -55,6 +55,7 @@ class ForwardingManager : public Manager
 #if defined(ENABLE_RECURSIVE_ROUTING_UPDATES)
 	bool recursiveRoutingUpdates;
 #endif
+	bool doQueryOnNewDataObject;
 	
 	void onPrepareStartup();
 	void onPrepareShutdown();

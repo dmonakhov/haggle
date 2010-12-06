@@ -18,6 +18,7 @@ LOCAL_SRC_FILES := \
 	Address.cpp \
 	ApplicationManager.cpp \
 	Attribute.cpp \
+	BenchmarkManager.cpp \
 	ConnectivityBluetooth.cpp \
 	ConnectivityBluetoothLinux.cpp \
 	Connectivity.cpp \
@@ -114,7 +115,7 @@ LOCAL_SHARED_LIBRARIES += libdl libstdc++ libsqlite libcrypto libdbus libhaggle-
 
 LOCAL_STATIC_LIBRARIES += libcpphaggle
 
-EXTRA_DEFINES:=-DHAVE_CONFIG -DOS_ANDROID -DHAVE_EXCEPTION=0 -DENABLE_ETHERNET -DENABLE_BLUETOOTH -DHAVE_DBUS -DDEBUG -DDEBUG_LEAKS
+EXTRA_DEFINES:=-DHAVE_CONFIG -DOS_ANDROID -DHAVE_EXCEPTION=0 -DENABLE_ETHERNET -DENABLE_BLUETOOTH -DHAVE_DBUS -DDEBUG -DDEBUG_LEAKS -DBENCHMARK
 LOCAL_CFLAGS:=-O2 -g $(EXTRA_DEFINES)
 LOCAL_CPPFLAGS +=$(EXTRA_DEFINES)
 

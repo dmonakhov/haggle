@@ -26,8 +26,6 @@
 */
 class BenchmarkManager;
 
-#include <vector>
-
 #include "Manager.h"
 #include "Event.h"
 #include "DataObject.h"

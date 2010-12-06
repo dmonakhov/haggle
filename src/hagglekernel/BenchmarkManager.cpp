@@ -55,7 +55,6 @@ BenchmarkManager::~BenchmarkManager()
 bool BenchmarkManager::init_derived()
 {
 #define __CLASS__ BenchmarkManager
-	int ret;
 
 	// private event: timeout
 	EventType timeoutEType = registerEventType("BenchmarkManager Timeout Event", onTimeout);
@@ -104,7 +103,7 @@ int BenchmarkManager::handleAttributes(Event *e)
 	return 1;
 }
 
-#define USE_PREGENERATED_DATABASE
+//#define USE_PREGENERATED_DATABASE
 
 void BenchmarkManager::onTimeout(Event *e)	// start evaluation
 {
@@ -118,8 +117,13 @@ void BenchmarkManager::onTimeout(Event *e)	// start evaluation
 		NodeRef node = createNode(Nodes_Attr);
 		HAGGLE_LOG("Generating and inserting node %d\n", n);
 
-		kernel->getDataStore()->insertNode(node, newEventCallback(insertDataobject));
-		queryNodes.push_back(node);
+		if (node) {
+			kernel->getDataStore()->insertNode(node, newEventCallback(insertDataobject));
+			queryNodes.push_back(node);
+		} else {
+			HAGGLE_ERR("node creation failed\n");
+			exit(-1);
+		}
 	}
 
 	// Generate and insert data objects
@@ -169,9 +173,11 @@ NodeRef BenchmarkManager::createNode(unsigned int numAttr)
 	
 	EthernetAddress addr(macaddr);
 	InterfaceRef iface = Interface::create<EthernetInterface>(macaddr, "eth", addr, 0);
-	sprintf(nodeid, "%ld", id);
-	sprintf(nodename, "node %ld", id);
+	sprintf(nodeid, "%040lx", id);
+	sprintf(nodename, "node %lu", id);
 	
+	HAGGLE_DBG("new node id=%s\n", nodeid);
+
 	NodeRef node = Node::create_with_id(Node::TYPE_PEER, nodeid, nodename);
 
 	if (!node)
