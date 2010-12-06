@@ -48,8 +48,11 @@ class ForwardingManager : public Manager
 	EventCallback<EventHandler> *repositoryCallback;
 	EventCallback<EventHandler> *periodicDataObjectQueryCallback;
 	
-	EventType moduleEventType, routingInfoEventType;
+	EventType moduleEventType, routingInfoEventType, 
+		periodicDataObjectQueryEventType;
 	
+	Event *periodicDataObjectQueryEvent;
+	unsigned long periodicDataObjectQueryInterval;
 	forwardingList forwardedObjects;
 	Forwarder *forwardingModule;
 	List<NodeRef> pendingQueryList;
@@ -59,8 +62,6 @@ class ForwardingManager : public Manager
 	bool doQueryOnNewDataObject;
 	// Period in seconds to do periodic node queries during node
 	// contacts. Zero to disable.
-	unsigned long periodicDataObjectQueryInterval;
-	Event *periodicDataObjectQueryEvent;
 	
 	void onPrepareStartup();
 	void onPrepareShutdown();

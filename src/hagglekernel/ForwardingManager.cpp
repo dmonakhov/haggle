@@ -22,15 +22,16 @@ ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 	dataObjectQueryCallback(NULL), 
 	nodeQueryCallback(NULL), 
 	repositoryCallback(NULL),
-	periodicDataObjectQueryCallback(NULL),
 	moduleEventType(-1),
 	routingInfoEventType(-1),
+	periodicDataObjectQueryEventType(-1),
+	periodicDataObjectQueryEvent(NULL),
+	periodicDataObjectQueryInterval(300),
 	forwardingModule(NULL),
 #if defined(ENABLE_RECURSIVE_ROUTING_UPDATES)
 	recursiveRoutingUpdates(false),
 #endif	
-	doQueryOnNewDataObject(true),
-	periodicDataObjectQueryInterval(300)
+	doQueryOnNewDataObject(true)
 {
 }
 
@@ -110,9 +111,15 @@ bool ForwardingManager::init_derived()
 	delayedDataObjectQueryCallback = newEventCallback(onDelayedDataObjectQuery);
 	nodeQueryCallback = newEventCallback(onNodeQueryResult);
 	repositoryCallback = newEventCallback(onRepositoryData);
-	periodicDataObjectQueryCallback = newEventCallback(onPeriodicDataObjectQuery);
+	periodicDataObjectQueryEventType = registerEventType("Periodic DataObject Query Event", 
+				       onPeriodicDataObjectQuery);
 
-	periodicDataObjectQueryEvent = new Event(periodicDataObjectQueryCallback, NULL);
+	if (periodicDataObjectQueryEventType < 0) {
+		HAGGLE_ERR("Could not register periodic data object query event type...\n");
+		return false;
+	}
+
+	periodicDataObjectQueryEvent = new Event(periodicDataObjectQueryEventType);
 
 	if (!periodicDataObjectQueryEvent)
 		return false;
@@ -160,8 +167,14 @@ ForwardingManager::~ForwardingManager()
 		
 	Event::unregisterType(moduleEventType);
 
-	if (periodicDataObjectQueryEvent)
-		delete periodicDataObjectQueryEvent;
+	if (periodicDataObjectQueryEvent) {
+		if (periodicDataObjectQueryEvent->isScheduled())
+			periodicDataObjectQueryEvent->setAutoDelete(true);
+		else
+			delete periodicDataObjectQueryEvent;
+	}
+
+	Event::unregisterType(periodicDataObjectQueryEventType);
 }
 
 void ForwardingManager::onPrepareStartup()
