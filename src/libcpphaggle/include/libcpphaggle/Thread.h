@@ -169,6 +169,7 @@ extern "C" start_ret_t start_thread(void *arg);
 #define THREAD_STATE_RUNNING      1
 #define THREAD_STATE_CANCELLED    2
 #define THREAD_STATE_CLEANUP      3
+#define THREAD_STATE_JOINED       4
 
 /* Thread cancel modes */
 #define THREAD_CANCEL_TYPE_DEFERRED 0
@@ -282,6 +283,7 @@ public:
 	 */
         bool isRunning() const;
 	bool isDetached() const;
+	bool isJoined() const;
 
 	/**
 	   This function checks whether the thread is cancelled, which
@@ -404,6 +406,7 @@ public:
 	bool detach(void);
 	bool isRunning() const;
 	bool isDetached() const;
+	bool isJoined() const;
 	/**
 		Get the name of the Runnable. May be overridden by derived classes.
 	 */

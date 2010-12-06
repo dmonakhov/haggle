@@ -417,12 +417,18 @@ bool Thread::equal(const Thread &thr1, const Thread &thr2)
 bool Thread::isRunning() const
 {
 	Mutex::AutoLocker l(const_cast<Thread *>(this)->mutex);
-
 	return (state != THREAD_STATE_STOPPED);
 }
 	
-bool Thread::isDetached() const {
+bool Thread::isDetached() const 
+{
 	return detached;
+}
+
+bool Thread::isJoined() const 
+{
+	Mutex::AutoLocker l(const_cast<Thread *>(this)->mutex);
+	return (state != THREAD_STATE_JOINED);
 }
 
 bool Thread::isCancelled() const
@@ -516,6 +522,7 @@ int Thread::join()
 	if (result == WAIT_OBJECT_0) {
 		TRACE_DBG("Thread %d joined...\n", num);		
 		ret = THREAD_JOIN_OK;
+		state = THREAD_STATE_JOINED;
 	} else {
 		switch (GetLastError()) {
 		case ERROR_INVALID_THREAD_ID:
@@ -540,6 +547,7 @@ int Thread::join()
 	case 0:
 		TRACE_DBG("Thread %d joined...\n", num);
 		ret = THREAD_JOIN_OK;
+		state = THREAD_STATE_JOINED;
 		break;
 	case ESRCH:
 		TRACE_DBG("No thread to join with given ID\n");
@@ -684,12 +692,18 @@ bool Runnable::isRunning() const
 		return thr->isRunning(); 
 	return false; 
 }
-	
-	
+		
 bool Runnable::isDetached() const
 {
 	if (thr)
 		return thr->isDetached();
+	return false;
+}
+
+bool Runnable::isJoined() const
+{
+	if (thr)
+		return thr->isJoined();
 	return false;
 }
 	
@@ -701,12 +715,8 @@ Runnable::Runnable(const string _name) :
 
 Runnable::~Runnable()
 {
-	if (!thr) {
-#ifdef DEBUG
-		TRACE_DBG("Runnable %s has no valid thread object\n", getName());
-#endif
+	if (!thr)
 		return;
-	}
 	
 	if (thr->isRunning()) {
 		TRACE_DBG("Runnable %s : cancelling its running thread with id=%d\n", 
@@ -714,22 +724,31 @@ Runnable::~Runnable()
 		thr->cancel();	
 	}
 	
-	if (!thr->isDetached() && !thr->isSelf()) {
+	if (!thr->isDetached() && 
+	    !thr->isJoined() && 
+	    !thr->isSelf()) {
 		int ret = thr->join();
 			
 		if (ret != THREAD_JOIN_OK) {
 			if (ret == THREAD_JOIN_NO_THREAD) {
 				// This should be fine...
-				TRACE_DBG("Thread %d is no longer executing...\n", thr->getNum());
+				TRACE_DBG("Thread %d is no longer executing...\n", 
+					  thr->getNum());
 			} else {
-				// Some error that indicates something bad... throw an exception to point this out.
-				// This should never happen... if it does, we need to fix the problem or handle it properly.
-				TRACE_ERR("Thread join failed for runnable %s!, error=%d\n", name.c_str(), ret);
+				// Some error that indicates something
+				// bad... throw an exception to point
+				// this out.  This should never
+				// happen... if it does, we need to
+				// fix the problem or handle it
+				// properly.
+				TRACE_ERR("Thread join failed for runnable %s!, error=%d\n", 
+					  name.c_str(), ret);
 			}
 		}
 	}
 	
-	TRACE_DBG("Deleting runnable \'%s\' whose thread has id=%d\n", getName(), thr->getNum());
+	TRACE_DBG("Deleting runnable \'%s\' whose thread has id=%d\n", 
+		  getName(), thr->getNum());
 	
 	delete thr;
 	thr = NULL;
