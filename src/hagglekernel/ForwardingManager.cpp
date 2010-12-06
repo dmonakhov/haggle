@@ -39,13 +39,6 @@ bool ForwardingManager::init_derived()
 	int ret;
 #define __CLASS__ ForwardingManager
 
-	periodicDataObjectQueryEvent = new Event(periodicDataObjectQueryCallback, NULL);
-
-	if (!periodicDataObjectQueryEvent)
-		return false;
-
-	periodicDataObjectQueryEvent->setAutoDelete(false);
-
 	ret = setEventHandler(EVENT_TYPE_NODE_UPDATED, onNodeUpdated);
 
 	if (ret < 0) {
@@ -118,6 +111,13 @@ bool ForwardingManager::init_derived()
 	nodeQueryCallback = newEventCallback(onNodeQueryResult);
 	repositoryCallback = newEventCallback(onRepositoryData);
 	periodicDataObjectQueryCallback = newEventCallback(onPeriodicDataObjectQuery);
+
+	periodicDataObjectQueryEvent = new Event(periodicDataObjectQueryCallback, NULL);
+
+	if (!periodicDataObjectQueryEvent)
+		return false;
+
+	periodicDataObjectQueryEvent->setAutoDelete(false);
 
 	forwardingModule = new ForwarderProphet(this, moduleEventType);
 
@@ -708,6 +708,8 @@ void ForwardingManager::onPeriodicDataObjectQuery(Event *e)
 		
 		if ((now - neigh->getLastDataObjectQueryTime()) > 
 		    periodicDataObjectQueryInterval) {
+			HAGGLE_DBG("Periodic data object query for neighbor %s\n",
+				   neigh->getName().c_str());
 			findMatchingDataObjectsAndTargets(neigh);
 		} else if ((now - neigh->getLastDataObjectQueryTime()) < nextTimeout) {
 			nextTimeout = (now - neigh->getLastDataObjectQueryTime()).getSeconds();
@@ -839,7 +841,7 @@ void ForwardingManager::onNodeUpdated(Event *e)
 
 void ForwardingManager::findMatchingDataObjectsAndTargets(NodeRef& node)
 {
-	if (!node)
+	if (!node || node->getType() == Node::TYPE_UNDEFINED)
 		return;
 	
 	// Check that this is an active neighbor node we can send to:
@@ -860,7 +862,7 @@ void ForwardingManager::findMatchingDataObjectsAndTargets(NodeRef& node)
 	// Ask the data store for data objects bound for the node.
 	// The node can be a valid target, even if it is not a current
 	// neighbor -- we might find a delegate for it.
-
+	
 	node->setLastDataObjectQueryTime(Timeval::now());
 	kernel->getDataStore()->doDataObjectQuery(node, 1, dataObjectQueryCallback);
 }

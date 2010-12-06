@@ -366,6 +366,7 @@ static void signal_handler(int signal)
 		}
 		shutdown_counter++;
 		break;
+	case SIGPIPE:
 	default:
 		break;
 	}
@@ -774,6 +775,7 @@ int main(void)
 	sigact.sa_handler = &signal_handler;
 	//sigaction(SIGHUP, &sigact, NULL);
 	sigaction(SIGINT, &sigact, NULL);
+	sigaction(SIGPIPE, &sigact, NULL);
 #endif
 
 	atexit(cleanup);
