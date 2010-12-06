@@ -417,7 +417,7 @@ bool Thread::equal(const Thread &thr1, const Thread &thr2)
 bool Thread::isRunning() const
 {
 	Mutex::AutoLocker l(const_cast<Thread *>(this)->mutex);
-	return (state != THREAD_STATE_STOPPED);
+	return (state == THREAD_STATE_RUNNING);
 }
 	
 bool Thread::isDetached() const 
@@ -603,14 +603,18 @@ int Thread::detach()
 
 int Thread::stop()
 {
-	if (!isRunning())
-		return -1;
+	int ret = 0;
 
-	cancel();
+	if (isRunning()) {
 
-	// Try to wait for the thread to finish if it is in a joinable
-	// state
-	return join();
+		cancel();
+		
+		// Try to wait for the thread to finish if it is in a joinable
+		// state
+		ret = join();
+	}
+
+	return ret;
 }
 
 void Thread::cancelableSleep(unsigned long msecs)
@@ -722,27 +726,26 @@ Runnable::~Runnable()
 		TRACE_DBG("Runnable %s : cancelling its running thread with id=%d\n", 
 			  getName(), thr->getNum());
 		thr->cancel();	
-	}
-	
-	if (!thr->isDetached() && 
-	    !thr->isJoined() && 
-	    !thr->isSelf()) {
-		int ret = thr->join();
+		
+		if (!thr->isDetached() && 
+		    !thr->isSelf()) {
+			int ret = thr->join();
 			
-		if (ret != THREAD_JOIN_OK) {
-			if (ret == THREAD_JOIN_NO_THREAD) {
-				// This should be fine...
-				TRACE_DBG("Thread %d is no longer executing...\n", 
-					  thr->getNum());
-			} else {
-				// Some error that indicates something
-				// bad... throw an exception to point
-				// this out.  This should never
-				// happen... if it does, we need to
-				// fix the problem or handle it
-				// properly.
-				TRACE_ERR("Thread join failed for runnable %s!, error=%d\n", 
-					  name.c_str(), ret);
+			if (ret != THREAD_JOIN_OK) {
+				if (ret == THREAD_JOIN_NO_THREAD) {
+					// This should be fine...
+					TRACE_DBG("Thread %d is no longer executing...\n", 
+						  thr->getNum());
+				} else {
+					// Some error that indicates something
+					// bad... throw an exception to point
+					// this out.  This should never
+					// happen... if it does, we need to
+					// fix the problem or handle it
+					// properly.
+					TRACE_ERR("Thread join failed for runnable %s!, error=%d\n", 
+						  name.c_str(), ret);
+				}
 			}
 		}
 	}
