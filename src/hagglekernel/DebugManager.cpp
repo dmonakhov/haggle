@@ -377,7 +377,8 @@ void DebugManager::onShutdown()
 #if defined(DEBUG_LEAKS) && defined(DEBUG)
 void DebugManager::onDebugReport(Event *e)
 {
-	LOG_ADD("%s: kernel event queue size=%lu\n", Timeval::now().getAsString().c_str(), kernel->size()); 
+	LOG_ADD("%s: kernel event queue size=%lu\n", 
+		Timeval::now().getAsString().c_str(), kernel->size()); 
 	kernel->getNodeStore()->print();
 	kernel->getInterfaceStore()->print();
 

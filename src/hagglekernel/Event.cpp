@@ -63,7 +63,9 @@ Event::Event(EventType _type, const DataObjectRef& _dObj, unsigned long flags, d
 #endif
 	HeapItem(),
 	type(_type),
-	timeout(absolute_time_double(_delay)), 
+	timeout(absolute_time_double(_delay)),
+	scheduled(false),
+	autoDelete(true),
 	dObj(_dObj),
 	data(NULL),
 	doesHaveData(_dObj),
@@ -102,6 +104,8 @@ Event::Event(EventType _type, const InterfaceRef& _iface, double _delay) :
 	HeapItem(),
 	type(_type),
 	timeout(absolute_time_double(_delay)), 
+	scheduled(false),
+	autoDelete(true),
 	iface(_iface),
 	data(NULL),
 	doesHaveData(_iface),
@@ -130,7 +134,9 @@ Event::Event(EventType _type, const NodeRef& _node, double _delay) :
 #endif
 	HeapItem(),
 	type(_type),
-	timeout(absolute_time_double(_delay)), 
+	timeout(absolute_time_double(_delay)),
+	scheduled(false),
+	autoDelete(true),
 	node(_node),
 	data(NULL),
 	doesHaveData(_node),
@@ -155,7 +161,9 @@ Event::Event(EventType _type, const PolicyRef& _policy, double _delay) :
 #endif
 	HeapItem(),
 	type(_type),
-	timeout(absolute_time_double(_delay)), 
+	timeout(absolute_time_double(_delay)),
+	scheduled(false),
+	autoDelete(true),
 	policy(_policy),
 	data(NULL),
 	doesHaveData(_policy),
@@ -181,7 +189,9 @@ Event::Event(EventType _type, const DataObjectRef&  _dObj, const NodeRef& _node,
 #endif
 	HeapItem(),
 	type(_type),
-	timeout(absolute_time_double(_delay)), 
+	timeout(absolute_time_double(_delay)),
+	scheduled(false),
+	autoDelete(true),
 	dObj(_dObj),
 	node(_node),
 	data(NULL),
@@ -222,7 +232,9 @@ Event::Event(const DebugCmdRef& _dbgCmd, double _delay) :
 #endif 
 	HeapItem(),
 	type(EVENT_TYPE_DEBUG_CMD),
-	timeout(absolute_time_double(_delay)), 
+	timeout(absolute_time_double(_delay)),
+	scheduled(false),
+	autoDelete(true),
 	dbgCmd(_dbgCmd),
 	data(NULL),
 	doesHaveData(_dbgCmd),
@@ -249,7 +261,9 @@ Event::Event(EventType _type, const NodeRef& _node, const NodeRefList& _nodes, d
 #endif
 	HeapItem(),
 	type(_type),
-	timeout(absolute_time_double(_delay)), 
+	timeout(absolute_time_double(_delay)),
+	scheduled(false),
+	autoDelete(true),
 	node(_node),
 	nodes(_nodes),
 	data(NULL),
@@ -276,7 +290,9 @@ Event::Event(EventType _type, const DataObjectRef& _dObj, const NodeRefList& _no
 #endif
 	HeapItem(),
 	type(_type),
-	timeout(absolute_time_double(_delay)), 
+	timeout(absolute_time_double(_delay)),
+	scheduled(false),
+	autoDelete(true),
 	dObj(_dObj),
 	nodes(_nodes),
 	data(NULL),
@@ -302,7 +318,9 @@ Event::Event(EventType _type, const DataObjectRef& _dObj, const NodeRef& _node, 
 #endif
 	HeapItem(),
 	type(_type),
-	timeout(absolute_time_double(_delay)), 
+	timeout(absolute_time_double(_delay)),
+	scheduled(false),
+	autoDelete(true),
 	dObj(_dObj),
 	node(_node),
 	nodes(_nodes),
@@ -329,7 +347,9 @@ Event::Event(EventType _type, const DataObjectRefList& _dObjs, unsigned long fla
 #endif
 	HeapItem(),
 	type(_type),
-	timeout(absolute_time_double(_delay)), 
+	timeout(absolute_time_double(_delay)),
+	scheduled(false),
+	autoDelete(true),
 	dObjs(_dObjs),
 	data(NULL),
 	doesHaveData(_dObjs.size() > 0),
@@ -355,7 +375,9 @@ Event::Event(EventType _type, void *_data, double _delay) :
 #endif
 	HeapItem(),
 	type(_type),
-	timeout(absolute_time_double(_delay)), 
+	timeout(absolute_time_double(_delay)),
+	scheduled(false),
+	autoDelete(true),
 	data(_data),
 	doesHaveData(_data != NULL),
 	flags(0)
@@ -452,7 +474,9 @@ Event::Event(const EventCallback < EventHandler > *_callback, void *_data, doubl
 #endif 
 	HeapItem(),
 	type(EVENT_TYPE_CALLBACK), 
-	timeout(absolute_time_double(_delay)), 
+	timeout(absolute_time_double(_delay)),
+	scheduled(false),
+	autoDelete(true),
 	callback(_callback), 
 	data(_data),
 	doesHaveData(_data ? true : false),
@@ -467,7 +491,9 @@ Event::Event(const EventCallback<EventHandler> *_callback, const DataObjectRef& 
 #endif 
 	HeapItem(),
 	type(EVENT_TYPE_CALLBACK), 
-	timeout(absolute_time_double(_delay)), 
+	timeout(absolute_time_double(_delay)),
+	scheduled(false),
+	autoDelete(true),
 	callback(_callback), 
 	dObj(_dObj),
 	data(NULL),
@@ -482,7 +508,9 @@ Event::Event(const EventCallback<EventHandler> *_callback, const InterfaceRef& _
 #endif 
 	HeapItem(),
 	type(EVENT_TYPE_CALLBACK), 
-	timeout(absolute_time_double(_delay)), 
+	timeout(absolute_time_double(_delay)),
+	scheduled(false),
+	autoDelete(true),
 	callback(_callback), 
 	iface(_iface),
 	data(NULL),
@@ -498,6 +526,8 @@ Event::Event(const EventCallback<EventHandler> *_callback, const NodeRef& _node,
 	HeapItem(),
 	type(EVENT_TYPE_CALLBACK), 
 	timeout(absolute_time_double(_delay)),
+	scheduled(false),
+	autoDelete(true),
 	callback(_callback), 
 	node(_node),
 	data(NULL),
@@ -512,7 +542,9 @@ Event::Event(const EventCallback<EventHandler> *_callback, const PolicyRef& _pol
 #endif 
 	HeapItem(),
 	type(EVENT_TYPE_CALLBACK), 
-	timeout(absolute_time_double(_delay)), 
+	timeout(absolute_time_double(_delay)),
+	scheduled(false),
+	autoDelete(true),
 	callback(_callback), 
 	policy(_policy),
 	data(NULL),
@@ -528,7 +560,9 @@ Event::Event(const EventCallback<EventHandler> *_callback, const DataObjectRefLi
 #endif 
 	HeapItem(),
 	type(EVENT_TYPE_CALLBACK), 
-	timeout(absolute_time_double(_delay)), 
+	timeout(absolute_time_double(_delay)),
+	scheduled(false),
+	autoDelete(true),
 	callback(_callback), 
 	dObjs(_dObjs),
 	data(NULL),
@@ -544,7 +578,9 @@ Event::Event(const EventCallback<EventHandler> *_callback, const DebugCmdRef& _d
 #endif 
 	HeapItem(),
 	type(EVENT_TYPE_CALLBACK), 
-	timeout(absolute_time_double(_delay)), 
+	timeout(absolute_time_double(_delay)),
+	scheduled(false),
+	autoDelete(true),
 	callback(_callback), 
 	dbgCmd(_dbgCmd),
 	data(NULL),
@@ -557,6 +593,31 @@ Event::Event(const EventCallback<EventHandler> *_callback, const DebugCmdRef& _d
 
 Event::~Event()
 {
+}
+
+void Event::setTimeout(double t)
+{
+	timeout = absolute_time_double(t);
+}
+
+void Event::setScheduled(bool _scheduled)
+{
+	scheduled = _scheduled;
+}
+
+bool Event::isScheduled() const
+{
+	return scheduled;
+}
+
+void Event::setAutoDelete(bool _autoDelete)
+{
+	autoDelete = _autoDelete;
+}
+
+bool Event::shouldDelete() const
+{
+	return autoDelete;
 }
 
 string Event::getDescription(void)

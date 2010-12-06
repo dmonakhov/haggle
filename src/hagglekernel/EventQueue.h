@@ -98,6 +98,7 @@ public:
 
                 mutex.lock();
                 e = static_cast<Event *>(extractFirst());
+		e->setScheduled(false);
                 mutex.unlock();
 
                 return e;
@@ -111,8 +112,10 @@ public:
         void addEvent(Event *e) {
                 Mutex::AutoLocker l(mutex);
 		
-                if (e && insert(e))
+                if (e && insert(e)) {
+			e->setScheduled(true);
 			signal.raise();
+		}
         }
 };
 

@@ -332,7 +332,9 @@ private:
         static EventCallback<EventHandler> *privCallbacks[MAX_NUM_PRIVATE_EVENT_TYPES];
         static int num_event_types;
         const EventType type;
-	const Timeval timeout;
+	Timeval timeout;
+	bool scheduled;
+	bool autoDelete;
         const EventCallback<EventHandler> *callback;
         /*
         	Data type contained in events:
@@ -435,6 +437,7 @@ public:
         }
 	
 	const Timeval& getTimeout() const { return timeout; }
+	void setTimeout(double t);
 	
 	bool hasData() {
 		return doesHaveData;
@@ -442,6 +445,11 @@ public:
 	void *getData() {
 		return data;
 	}
+
+	void setScheduled(bool _scheduled = true);
+	bool isScheduled() const;
+	void setAutoDelete(bool _autoDelete = true);
+	bool shouldDelete() const;
 
 	DataObjectRef& getDataObject() {
 		return dObj;

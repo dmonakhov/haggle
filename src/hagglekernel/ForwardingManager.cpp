@@ -22,13 +22,15 @@ ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 	dataObjectQueryCallback(NULL), 
 	nodeQueryCallback(NULL), 
 	repositoryCallback(NULL),
+	periodicDataObjectQueryCallback(NULL),
 	moduleEventType(-1),
 	routingInfoEventType(-1),
 	forwardingModule(NULL),
 #if defined(ENABLE_RECURSIVE_ROUTING_UPDATES)
 	recursiveRoutingUpdates(false),
 #endif	
-	doQueryOnNewDataObject(true)
+	doQueryOnNewDataObject(true),
+	periodicDataObjectQueryInterval(300)
 {
 }
 
@@ -36,6 +38,13 @@ bool ForwardingManager::init_derived()
 {
 	int ret;
 #define __CLASS__ ForwardingManager
+
+	periodicDataObjectQueryEvent = new Event(periodicDataObjectQueryCallback, NULL);
+
+	if (!periodicDataObjectQueryEvent)
+		return false;
+
+	periodicDataObjectQueryEvent->setAutoDelete(false);
 
 	ret = setEventHandler(EVENT_TYPE_NODE_UPDATED, onNodeUpdated);
 
@@ -108,6 +117,7 @@ bool ForwardingManager::init_derived()
 	delayedDataObjectQueryCallback = newEventCallback(onDelayedDataObjectQuery);
 	nodeQueryCallback = newEventCallback(onNodeQueryResult);
 	repositoryCallback = newEventCallback(onRepositoryData);
+	periodicDataObjectQueryCallback = newEventCallback(onPeriodicDataObjectQuery);
 
 	forwardingModule = new ForwarderProphet(this, moduleEventType);
 
@@ -147,8 +157,11 @@ ForwardingManager::~ForwardingManager()
 	
 	if (delayedDataObjectQueryCallback)
 		delete delayedDataObjectQueryCallback;
-	
+		
 	Event::unregisterType(moduleEventType);
+
+	if (periodicDataObjectQueryEvent)
+		delete periodicDataObjectQueryEvent;
 }
 
 void ForwardingManager::onPrepareStartup()
@@ -591,7 +604,8 @@ void ForwardingManager::onDataObjectQueryResult(Event *e)
 		if (shouldForward(dObj, target)) {
 			// Is this node a currently available neighbor node?
 			if (isNeighbor(target)) {
-				// Yes: it is it's own best delegate, so start "forwarding" the object:
+				// Yes: it is it's own best delegate,
+				// so start "forwarding" the object:
 				
 				if (addToSendList(dObj, target)) {
 					kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, target));
@@ -638,7 +652,8 @@ void ForwardingManager::onNodeQueryResult(Event *e)
                  // Is this node a currently available neighbor node?
                 if (shouldForward(dObj, target)) {
                         if (isNeighbor(target)) {
-                                // Yes: it is it's own best delegate, so start "forwarding" the object:
+                                // Yes: it is it's own best delegate,
+                                // so start "forwarding" the object:
                                 if (addToSendList(dObj, target)) {
                                         HAGGLE_DBG("Sending data object %s directly to target neighbor %s\n", 
 						dObj->getIdStr(), target->getName().c_str());
@@ -667,14 +682,43 @@ void ForwardingManager::onDelayedDataObjectQuery(Event *e)
 	
 	NodeRef node = e->getNode();
 
-	// If the node is still in the node query list, we know that there has been no update for it
-	// since we generated this delayed call.
-	for (List<NodeRef>::iterator it = pendingQueryList.begin(); it != pendingQueryList.end(); it++) {
+	// If the node is still in the node query list, we know that
+	// there has been no update for it since we generated this
+	// delayed call.
+	for (List<NodeRef>::iterator it = pendingQueryList.begin(); 
+	     it != pendingQueryList.end(); it++) {
 		if (node == *it) {
 			pendingQueryList.erase(it);
 			findMatchingDataObjectsAndTargets(node);
 			break;
 		}
+	}
+}
+
+void ForwardingManager::onPeriodicDataObjectQuery(Event *e)
+{
+	NodeRefList neighbors;
+	Timeval now = Timeval::now();
+	double nextTimeout = periodicDataObjectQueryInterval;
+	
+	kernel->getNodeStore()->retrieveNeighbors(neighbors);
+
+	for (NodeRefList::iterator it = neighbors.begin(); it != neighbors.end(); it++) {
+		NodeRef& neigh = *it;
+		
+		if ((now - neigh->getLastDataObjectQueryTime()) > 
+		    periodicDataObjectQueryInterval) {
+			findMatchingDataObjectsAndTargets(neigh);
+		} else if ((now - neigh->getLastDataObjectQueryTime()) < nextTimeout) {
+			nextTimeout = (now - neigh->getLastDataObjectQueryTime()).getSeconds();
+		}
+	}
+	
+	if (kernel->getNodeStore()->numNeighbors() > 0 &&
+	    !periodicDataObjectQueryEvent->isScheduled() &&
+	    periodicDataObjectQueryInterval > 0) {
+		periodicDataObjectQueryEvent->setTimeout(nextTimeout);
+		kernel->addEvent(periodicDataObjectQueryEvent);
 	}
 }
 
@@ -704,6 +748,15 @@ void ForwardingManager::onNewNeighbor(Event *e)
 	
 	HAGGLE_DBG("%s - new node contact with %s [id=%s]. Delaying data object query in case there is an incoming node description for the node\n", 
 		   getName(), node->getName().c_str(), node->getIdStr());
+
+
+	/* Start periodic data object query if configuration allows. */
+	if (kernel->getNodeStore()->numNeighbors() == 1 &&
+	    !periodicDataObjectQueryEvent->isScheduled() &&
+	    periodicDataObjectQueryInterval > 0) {
+		periodicDataObjectQueryEvent->setTimeout(periodicDataObjectQueryInterval);
+		kernel->addEvent(periodicDataObjectQueryEvent);
+	}
 }
 
 void ForwardingManager::onEndNeighbor(Event *e)
@@ -721,8 +774,9 @@ void ForwardingManager::onEndNeighbor(Event *e)
 	// needed
 	kernel->getDataStore()->cancelDataObjectQueries(node);
 
-	// Also remove from pending query list so that onDelayedDataObjectQuery won't generate a delayed
-	// query after the node went away
+	// Also remove from pending query list so that
+	// onDelayedDataObjectQuery won't generate a delayed query
+	// after the node went away
 	for (List<NodeRef>::iterator it = pendingQueryList.begin(); it != pendingQueryList.end(); it++) {
 		if (node == *it) {
 			pendingQueryList.erase(it);
@@ -806,6 +860,8 @@ void ForwardingManager::findMatchingDataObjectsAndTargets(NodeRef& node)
 	// Ask the data store for data objects bound for the node.
 	// The node can be a valid target, even if it is not a current
 	// neighbor -- we might find a delegate for it.
+
+	node->setLastDataObjectQueryTime(Timeval::now());
 	kernel->getDataStore()->doDataObjectQuery(node, 1, dataObjectQueryCallback);
 }
 
@@ -1123,6 +1179,32 @@ void ForwardingManager::onConfig(Metadata *m)
 		} else if (strcmp(param, "false") == 0) {
 			HAGGLE_DBG("Disabling query on new data object\n");
 			doQueryOnNewDataObject = false;
+		}
+		
+		LOG_ADD("# %s: query_on_new_dataobject=%s\n", 
+			getName(), doQueryOnNewDataObject ? "true" : "false");
+	}
+
+	param = m->getParameter("periodic_dataobject_query_interval");
+
+	if (param) {		
+		char *endptr = NULL;
+		unsigned long period = strtoul(param, &endptr, 10);
+		
+		if (endptr && endptr != param) {
+			if (periodicDataObjectQueryInterval == 0 && 
+			    period > 0 && 
+			    kernel->getNodeStore()->numNeighbors() > 0 &&
+			    !periodicDataObjectQueryEvent->isScheduled()) {
+				kernel->addEvent(new Event(periodicDataObjectQueryCallback, 
+							   NULL, 
+							   periodicDataObjectQueryInterval));
+			} 
+			periodicDataObjectQueryInterval = period;
+			HAGGLE_DBG("periodic_dataobject_query_interval=%lu\n", 
+				   periodicDataObjectQueryInterval);
+			LOG_ADD("# %s: periodic_dataobject_query_interval=%lu\n", 
+				getName(), periodicDataObjectQueryInterval);
 		}
 	}
 

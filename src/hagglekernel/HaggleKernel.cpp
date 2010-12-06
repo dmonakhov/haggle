@@ -548,7 +548,8 @@ void HaggleKernel::run()
 				but the associated event data will not be deleted in that case.
 				It is up to the private handlers to manage that data.
 			 */
-			delete e;
+			if (e->shouldDelete())
+				delete e;
 		} else if (res == Watch::FAILED) {
 			HAGGLE_ERR("Main run-loop error on Watch : %s\n", STRERROR(ERRNO));
 			continue;

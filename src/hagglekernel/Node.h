@@ -159,19 +159,29 @@ protected:
 	bool stored;
         bool createdFromNodeDescription;
 	Timeval nodeDescriptionCreateTime;
+	/* Time when this node object was created */
+	Timeval createTime; 
+	/* TIme when last node query was made for this node */
+	Timeval lastDataObjectQueryTime;
 	inline bool init_node(const Node::Id_t _id);
 	unsigned long matchThreshold;
 	unsigned long numberOfDataObjectsPerMatch;
 
-        Node(Type_t _type, const string name = "Unnamed node", Timeval _nodeDescriptionCreateTime = -1);
+        Node(Type_t _type, const string name = "Unnamed node", 
+	     Timeval _nodeDescriptionCreateTime = -1);
         Node(const Node &n); // Copy constructor
 public:
 	static Node *create(const DataObjectRef& dObj);
 	static Node *create(Type_t type, const DataObjectRef& dObj);
-	static Node *create(Type_t type = TYPE_UNDEFINED, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
-	static Node *create_with_id(Type_t type, const Node::Id_t id, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
-	static Node *create_with_id(Type_t type, const char *idStr, const string name = "Unnamed node", Timeval nodeDescriptionCreateTime = -1);
-
+	static Node *create(Type_t type = TYPE_UNDEFINED, 
+			    const string name = "Unnamed node", 
+			    Timeval nodeDescriptionCreateTime = -1);
+	static Node *create_with_id(Type_t type, const Node::Id_t id, 
+				    const string name = "Unnamed node", 
+				    Timeval nodeDescriptionCreateTime = -1);
+	static Node *create_with_id(Type_t type, const char *idStr, 
+				    const string name = "Unnamed node", 
+				    Timeval nodeDescriptionCreateTime = -1);
 	virtual ~Node() = 0;
 	
 	static const unsigned char *strIdToRaw(const char *strId);
@@ -286,7 +296,9 @@ public:
 		Returns the create time of the node description.
 	*/
 	Timeval getNodeDescriptionCreateTime() const;
-
+	Timeval getCreateTime() const;
+	Timeval getLastDataObjectQueryTime() const;
+	void setLastDataObjectQueryTime(Timeval t);
         // Operators
         // friend bool operator<(const Node &n1, const Node &n2);
         friend bool operator==(const Node &n1, const Node &n2);

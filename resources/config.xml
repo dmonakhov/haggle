@@ -65,7 +65,7 @@
 			<IgnoreNonListedInterfaces>yes</IgnoreNonListedInterfaces>
 		</Bluetooth>
 	</ConnectivityManager>
-	<ForwardingManager query_on_new_dataobject="true">
+	<ForwardingManager query_on_new_dataobject="true" periodic_dataobject_query_interval="300">
 	  <Forwarder max_generated_delegates="1" max_generated_targets="1" protocol="Prophet">
 	    <Prophet strategy="GRTR" P_encounter="0.75" alpha="0.5" beta="0.25" gamma="0.999"/>
 	  </Forwarder>

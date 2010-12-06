@@ -170,6 +170,8 @@ Node::Node(const Type_t _type, const string _name, Timeval _nodeDescriptionCreat
 	type(_type), num(totNum++), name(_name), nodeDescExch(false), 
 	dObj(NULL), doBF(NULL), stored(false), createdFromNodeDescription(false),
 	nodeDescriptionCreateTime(_nodeDescriptionCreateTime), 
+	createTime(Timeval::now()),
+	lastDataObjectQueryTime(-1, -1),
 	matchThreshold(NODE_DEFAULT_MATCH_THRESHOLD), 
 	numberOfDataObjectsPerMatch(NODE_DEFAULT_DATAOBJECTS_PER_MATCH)
 {
@@ -187,6 +189,8 @@ Node::Node(const Node& n) :
 	stored(n.stored), 
         createdFromNodeDescription(n.createdFromNodeDescription),
 	nodeDescriptionCreateTime(n.nodeDescriptionCreateTime),
+	createTime(n.createTime),
+	lastDataObjectQueryTime(n.lastDataObjectQueryTime),
 	matchThreshold(n.matchThreshold),
 	numberOfDataObjectsPerMatch(n.numberOfDataObjectsPerMatch)
 {
@@ -1062,6 +1066,21 @@ void Node::setNodeDescriptionCreateTime(Timeval t)
 Timeval Node::getNodeDescriptionCreateTime() const
 {
 	return nodeDescriptionCreateTime;
+}
+
+Timeval Node::getCreateTime() const
+{
+	return createTime;
+}
+
+Timeval Node::getLastDataObjectQueryTime() const
+{
+	return lastDataObjectQueryTime;
+}
+
+void Node::setLastDataObjectQueryTime(Timeval t)
+{
+	lastDataObjectQueryTime = t;
 }
 
 bool operator==(const Node &n1, const Node &n2)

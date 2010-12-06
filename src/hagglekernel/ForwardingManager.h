@@ -46,6 +46,7 @@ class ForwardingManager : public Manager
 	EventCallback<EventHandler> *nodeQueryCallback;
 	EventCallback<EventHandler> *forwardDobjCallback;
 	EventCallback<EventHandler> *repositoryCallback;
+	EventCallback<EventHandler> *periodicDataObjectQueryCallback;
 	
 	EventType moduleEventType, routingInfoEventType;
 	
@@ -56,6 +57,10 @@ class ForwardingManager : public Manager
 	bool recursiveRoutingUpdates;
 #endif
 	bool doQueryOnNewDataObject;
+	// Period in seconds to do periodic node queries during node
+	// contacts. Zero to disable.
+	unsigned long periodicDataObjectQueryInterval;
+	Event *periodicDataObjectQueryEvent;
 	
 	void onPrepareStartup();
 	void onPrepareShutdown();
@@ -99,6 +104,7 @@ class ForwardingManager : public Manager
 	void onTargetNodes(Event *e);
 	void onDelegateNodes(Event *e);
 	void onDelayedDataObjectQuery(Event *e);
+	void onPeriodicDataObjectQuery(Event *e);
 	void onConfig(Metadata *m);
 	void findMatchingDataObjectsAndTargets(NodeRef& node);
 #ifdef DEBUG
