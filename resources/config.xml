@@ -16,7 +16,7 @@
 		<Bloomfilter default_error_rate="0.01" default_capacity="2000"/>
 	</DataManager>
 	<ConnectivityManager>
-	  <Bluetooth scan_base_time="120" scan_random_time="60">
+	  <Bluetooth scan_base_time="120" scan_random_time="60" name_discovery="true">
 			<ClearBlacklist/>
 			<ClearWhitelist/>
 			<Blacklist>

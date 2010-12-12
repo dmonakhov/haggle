@@ -44,13 +44,6 @@ public:
 	/**
 	   Tells the connectivity to finish. The connectivity will not 
 	   neccesarily have finished by the time cancelDiscovery() returns.
-	   
-	   This function is intended to be the exact same as 
-	   Connectivity::cancelDiscovery(), but with one specific exception:
-	   that it does NOT call Thread::cancel() either directly or 
-	   indirectly, but instead signals the condition variable above.
-	   
-	   The reason for this is explained in haggle trac system, ticket #98.
 	*/
 	virtual void cancelDiscovery(void);
         ConnectivityBluetooth(ConnectivityManager *m, const InterfaceRef& _iface);

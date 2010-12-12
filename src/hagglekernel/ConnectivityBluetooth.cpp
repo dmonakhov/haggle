@@ -32,7 +32,9 @@ ConnectivityBluetooth::~ConnectivityBluetooth()
 		Timeval::now().getAsString().c_str());
 }
 
-ConnectivityBluetoothBase::ConnectivityBluetoothBase(ConnectivityManager *m, const InterfaceRef& iface, const string name) :
+ConnectivityBluetoothBase::ConnectivityBluetoothBase(ConnectivityManager *m, 
+						     const InterfaceRef& iface, 
+						     const string name) :
 	Connectivity(m, iface, name)
 {
 }
@@ -48,6 +50,7 @@ BluetoothInterfaceRefList ConnectivityBluetoothBase::sdpBlackList;
 bool ConnectivityBluetoothBase::ignoreNonListedInterfaces = false;
 unsigned long ConnectivityBluetoothBase::baseTimeBetweenScans = DEFAULT_BASE_TIME_BETWEEN_SCANS;
 unsigned long ConnectivityBluetoothBase::randomTimeBetweenScans = DEFAULT_RANDOM_TIME_BETWEEN_SCANS;
+bool ConnectivityBluetoothBase::doNameDiscovery = true;
 
 int ConnectivityBluetoothBase::classifyAddress(const BluetoothInterface &iface)
 {
@@ -99,6 +102,7 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 
 		if (endptr && endptr != param) {
 			baseTimeBetweenScans = base_time;
+			HAGGLE_DBG("setting Bluetooth scan base time %lu\n", baseTimeBetweenScans);
 			LOG_ADD("# ConnectivityManager: setting Bluetooth scan base time %lu\n", baseTimeBetweenScans);
 		}
 	}
@@ -111,9 +115,25 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 
 		if (endptr && endptr != param) {
 			randomTimeBetweenScans = random_time;
+			HAGGLE_DBG("setting Bluetooth scan random time %lu\n", randomTimeBetweenScans);
 			LOG_ADD("# ConnectivityManager: setting Bluetooth scan random time %lu\n", randomTimeBetweenScans);
 		}
 	}
+
+	param = md->getParameter("name_discovery");
+
+	if (param) {
+		if (strcmp(param, "true") == 0) {
+			doNameDiscovery = true;
+			HAGGLE_DBG("setting Bluetooth name discovery to true\n");
+			LOG_ADD("# ConnectivityManager: setting Bluetooth name discovery to true\n");
+		} else if (strcmp(param, "false") == 0) {
+			doNameDiscovery = false;
+			HAGGLE_DBG("setting Bluetooth name discovery to true\n");
+			LOG_ADD("# ConnectivityManager: setting Bluetooth name discovery to false\n");
+		}
+	}
+
 	/*
 	 Check bluetooth module blacklisting/whitelisting data. Formatted like so:
 	 

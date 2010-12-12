@@ -441,7 +441,8 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
         if (!ii)
                 return;
         
-        ret = hci_inquiry(dev_id, 8, MAX_BT_RESPONSES, NULL, (inquiry_info **)&ii, IREQ_CACHE_FLUSH);
+        ret = hci_inquiry(dev_id, 8, MAX_BT_RESPONSES, NULL, 
+			  (inquiry_info **)&ii, IREQ_CACHE_FLUSH);
 
         if (ret < 0) {
 		CM_DBG("Inquiry failed on interface %s\n", conn->rootInterface->getName());
@@ -454,13 +455,14 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 	for (i = 0; i < ret; i++) {
                 bool report_interface = false;
 		unsigned char macaddr[BT_ALEN];
-		int channel = 0;
+		int channel = 0, timeout = 200;
                 char remote_name[256];
                 
-                strcpy(remote_name, "PeerBluetooth");
+                strcpy(remote_name, "unknown");
                 
-                if (hci_read_remote_name(dd, &ii[i].bdaddr, 256, remote_name, 0) < 0) {
-                        fprintf(stderr, "Error looking up name : %s\n", strerror(errno));
+                if (conn->doNameDiscovery &&
+		    hci_read_remote_name(dd, &ii[i].bdaddr, 256, remote_name, timeout) < 0) {
+                        HAGGLE_ERR("name lookup: %s\n", strerror(errno));
                 }
                 
 		baswap((bdaddr_t *) &macaddr, &ii[i].bdaddr);
