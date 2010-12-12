@@ -460,7 +460,7 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
                 
                 strcpy(remote_name, "unknown");
                 
-                if (conn->doNameDiscovery &&
+                if (conn->readRemoteName &&
 		    hci_read_remote_name(dd, &ii[i].bdaddr, 256, remote_name, timeout) < 0) {
                         HAGGLE_ERR("name lookup: %s\n", strerror(errno));
                 }

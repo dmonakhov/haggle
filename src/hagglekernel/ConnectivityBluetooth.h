@@ -64,7 +64,7 @@ private:
 	static BluetoothInterfaceRefList sdpBlackList;
 	static bool ignoreNonListedInterfaces;
 protected:
-	static bool doNameDiscovery;
+	static bool readRemoteName;
 public:
 	static unsigned long baseTimeBetweenScans;
 	static unsigned long randomTimeBetweenScans;

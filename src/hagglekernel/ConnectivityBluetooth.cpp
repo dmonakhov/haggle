@@ -50,7 +50,7 @@ BluetoothInterfaceRefList ConnectivityBluetoothBase::sdpBlackList;
 bool ConnectivityBluetoothBase::ignoreNonListedInterfaces = false;
 unsigned long ConnectivityBluetoothBase::baseTimeBetweenScans = DEFAULT_BASE_TIME_BETWEEN_SCANS;
 unsigned long ConnectivityBluetoothBase::randomTimeBetweenScans = DEFAULT_RANDOM_TIME_BETWEEN_SCANS;
-bool ConnectivityBluetoothBase::doNameDiscovery = true;
+bool ConnectivityBluetoothBase::readRemoteName = true;
 
 int ConnectivityBluetoothBase::classifyAddress(const BluetoothInterface &iface)
 {
@@ -120,17 +120,17 @@ void ConnectivityBluetoothBase::updateSDPLists(Metadata *md)
 		}
 	}
 
-	param = md->getParameter("name_discovery");
+	param = md->getParameter("read_remote_name");
 
 	if (param) {
 		if (strcmp(param, "true") == 0) {
-			doNameDiscovery = true;
-			HAGGLE_DBG("setting Bluetooth name discovery to true\n");
-			LOG_ADD("# ConnectivityManager: setting Bluetooth name discovery to true\n");
+			readRemoteName = true;
+			HAGGLE_DBG("setting Bluetooth read_remote_name to true\n");
+			LOG_ADD("# ConnectivityManager: setting Bluetooth read_remote_name to true\n");
 		} else if (strcmp(param, "false") == 0) {
-			doNameDiscovery = false;
-			HAGGLE_DBG("setting Bluetooth name discovery to true\n");
-			LOG_ADD("# ConnectivityManager: setting Bluetooth name discovery to false\n");
+			readRemoteName = false;
+			HAGGLE_DBG("setting Bluetooth read_remote_name to false\n");
+			LOG_ADD("# ConnectivityManager: setting Bluetooth read_remote_name to false\n");
 		}
 	}
 
