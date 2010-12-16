@@ -184,6 +184,9 @@ for dev in $DEVICES; do
 
     # Reset filesystem to read-only
     $ADB -s $dev shell su -c "mount -o remount,ro -t yaffs2 /dev/block/mtdblock3 /system"
+    
+    # synchronize time
+    $ADB -s $dev shell date -s $(date "+%Y%m%d.%H%M%S")
 done
 
 popd
