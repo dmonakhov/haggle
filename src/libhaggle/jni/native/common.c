@@ -9,7 +9,7 @@ jobjectArray libhaggle_jni_nodelist_to_node_jobjectArray(JNIEnv *env, haggle_nod
         int i = 0;
 	jlong n = haggle_nodelist_size(nl);
 
-	if (n <= 0) {
+	if (n < 0) {
 		return NULL;
 	}
 

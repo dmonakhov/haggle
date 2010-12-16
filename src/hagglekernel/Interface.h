@@ -366,8 +366,6 @@ public:
 typedef Reference<WiFiInterface> WiFiInterfaceRef;
 typedef ReferenceList<WiFiInterface> WiFiInterfaceRefList;
 
-
-#if defined(ENABLE_BLUETOOTH)
 class BluetoothInterface : public Interface {
 	friend class Interface;
 	unsigned char mac[BT_MAC_LEN];
@@ -388,12 +386,9 @@ public:
 typedef Reference<BluetoothInterface> BluetoothInterfaceRef;
 typedef ReferenceList<BluetoothInterface> BluetoothInterfaceRefList;
 
-#endif // ENABLE_BLUETOOTH
-
-#if defined(ENABLE_MEDIA)
 class MediaInterface : public Interface {
 	friend class Interface;
-	const string path;
+	string path;
 	void setIdentifierStr();
 	MediaInterface(const void *identifier = NULL, size_t identifier_len = 0, 
 		       const string name = DEFAULT_INTERFACE_NAME, flag_t flags = 0);
@@ -407,8 +402,6 @@ public:
 
 typedef Reference<MediaInterface> MediaInterfaceRef;
 typedef ReferenceList<MediaInterface> MediaInterfaceRefList;
-
-#endif // ENABLE_MEDIA
 
 typedef Reference<Interface> InterfaceRef;
 typedef ReferenceList<Interface> InterfaceRefList;
@@ -428,24 +421,18 @@ inline T *Interface::create(const void *identifier, const char *name, flag_t fla
 	case TYPE_APPLICATION_LOCAL:
 		identifier_len = strlen(static_cast<const char *>(identifier));
 		break;
-#if defined(ENABLE_ETHERNET)
 	case TYPE_ETHERNET:
 		identifier_len = ETH_MAC_LEN;
 		break;
 	case TYPE_WIFI:
 		identifier_len = ETH_MAC_LEN;
 		break;
-#endif
-#if defined(ENABLE_BLUETOOTH)
 	case TYPE_BLUETOOTH:
 		identifier_len = BT_MAC_LEN;
 		break;
-#endif
-#if defined(ENABLE_MEDIA)
 	case TYPE_MEDIA:
 		identifier_len = strlen(static_cast<const char *>(identifier));
 		break;
-#endif	
 	default:
 		return NULL;
 	}

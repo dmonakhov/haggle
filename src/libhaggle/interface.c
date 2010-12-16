@@ -65,7 +65,8 @@ char *haggle_interface_get_identifier_str(const haggle_interface_t *iface)
 	return iface->identifier_str;
 }
 
-#define INTERFACE_MALLOC_LEN(name, id_len, id_strlen) (sizeof(haggle_interface_t) + id_len + strlen(name) + 1 + id_strlen)
+#define INTERFACE_MALLOC_LEN(name, id_len, id_strlen) \
+	(sizeof(haggle_interface_t) + id_len + strlen(name) + 1 + id_strlen)
 
 static inline int interface_identifier_strlen(haggle_interface_type_t type)
 {
@@ -81,19 +82,19 @@ static inline int interface_identifier_strlen(haggle_interface_type_t type)
         return 0;
 }
 
-haggle_interface_t *haggle_interface_new(haggle_interface_type_t type, const char *name, const char *identifier, size_t identifier_len)
+haggle_interface_t *haggle_interface_new(haggle_interface_type_t type, const char *name, 
+					 const char *identifier, size_t identifier_len)
 {
 	haggle_interface_t *iface;
 	
 	if (!name || !identifier)
 		return NULL;
 
-	iface = malloc(INTERFACE_MALLOC_LEN(name, identifier_len, interface_identifier_strlen(type)));
+	iface = malloc(INTERFACE_MALLOC_LEN(name, identifier_len, 
+					    interface_identifier_strlen(type)));
 
 	if (!iface)
 		return NULL;
-
-	LIBHAGGLE_DBG("New interface type=%s name=%s identifier=%s\n", interface_typestr[type], name, identifier);
 
 	iface->type = type;
 	iface->status = IF_STATUS_UNDEFINED;
@@ -116,7 +117,10 @@ haggle_interface_t *haggle_interface_new(haggle_interface_type_t type, const cha
 	default:
 		break;		
 	}
-
+/*
+	LIBHAGGLE_DBG("New interface type=%s name=%s identifier_str=%s\n", 
+		      interface_typestr[type], name, iface->identifier_str);
+*/
 	return iface;
 }
 

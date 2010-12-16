@@ -139,10 +139,10 @@ inline bool Node::init_node(const unsigned char *_id)
 		while (im) {
 			InterfaceRef iface = Interface::fromMetadata(*im);
 
-			if (iface)
+			if (iface) {
 				addInterface(iface);
-			else {
-				HAGGLE_ERR("Could not create interface from metadata\n");	
+			} else {
+				HAGGLE_ERR("Could not create interface from metadata\n");
 			}
 			im = nm->getNextMetadata();
 		}

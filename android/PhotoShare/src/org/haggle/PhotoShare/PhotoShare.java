@@ -189,7 +189,8 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 		if (pv == null)
 			return;
 		
-		Log.d(PhotoShare.LOG_TAG, "Got neighbor update, thread id=" + Thread.currentThread().getId());
+		Log.d(PhotoShare.LOG_TAG, "Got neighbor update, thread id=" + 
+				Thread.currentThread().getId() + " num_neighbors=" + neighbors.length);
 
 		// Make sure we do not vibrate more than once every 5 secs or so
 		long currTime = System.currentTimeMillis();

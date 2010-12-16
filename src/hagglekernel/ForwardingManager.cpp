@@ -17,6 +17,8 @@
 #include "ForwardingManager.h"
 #include "ForwarderProphet.h"
 
+#define ENABLE_FORWARDING_METADATA 1
+
 ForwardingManager::ForwardingManager(HaggleKernel * _kernel) :
 	Manager("ForwardingManager", _kernel), 
 	dataObjectQueryCallback(NULL), 
@@ -501,7 +503,8 @@ bool ForwardingManager::shouldForward(const DataObjectRef& dObj, const NodeRef& 
 	return false;
 }
 
-void ForwardingManager::forwardByDelegate(DataObjectRef &dObj, const NodeRef &target, const NodeRefList *other_targets)
+void ForwardingManager::forwardByDelegate(DataObjectRef &dObj, const NodeRef &target, 
+					  const NodeRefList *other_targets)
 {
 	if (forwardingModule)
 		forwardingModule->generateDelegatesFor(dObj, target, other_targets);
@@ -513,7 +516,7 @@ void ForwardingManager::onDataObjectForward(Event *e)
 	DataObjectRef dObj = e->getDataObject();
 
 	if (!dObj) {
-		HAGGLE_ERR("Someone posted an EVENT_TYPE_DATAOBJECT_FORWARD event without a data object.\n");
+		HAGGLE_ERR("EVENT_TYPE_DATAOBJECT_FORWARD without a data object.\n");
 		return;
 	}
 
@@ -521,10 +524,13 @@ void ForwardingManager::onDataObjectForward(Event *e)
 	NodeRef& target = e->getNode();
 
 	if (!target) {
-		HAGGLE_ERR("Someone posted an EVENT_TYPE_DATAOBJECT_FORWARD event without a node.\n");
+		HAGGLE_ERR("EVENT_TYPE_DATAOBJECT_FORWARD without a node.\n");
 		return;
 	}
 	
+	if (!dObj)
+		return;
+
 	// Start forwarding the object:
 	if (shouldForward(dObj, target)) {
 		// Ok, the target wants the data object. Now check if
@@ -611,7 +617,39 @@ void ForwardingManager::onDataObjectQueryResult(Event *e)
 	
 	DataObjectRef dObj;
 
-	while (dObj = qr->detachFirstDataObject()) {
+	while (dObj = qr->detachFirstDataObject()) {		
+#if defined(ENABLE_FORWARDING_METADATA)
+		Metadata *m = dObj->getMetadata()->getMetadata(getName());
+		unsigned long count = 0;
+		
+		if (!m) {
+			m = dObj->getMetadata()->addMetadata(getName());
+			
+			if (!m)
+				return;
+			
+			m->setParameter("hop_count", "1");
+		} else {
+			char *endptr = NULL;
+			const char *param = m->getParameter("hop_count");
+			
+			count = strtoul(param, &endptr, 10);
+			
+			if (!endptr || endptr == param)
+				count = 0;
+		}
+		
+		char countstr[30];
+		snprintf(countstr, 29, "%lu", ++count);
+		m->setParameter("count", countstr);
+		
+		m = m->addMetadata("Hop", kernel->getThisNode()->getIdStr());
+		
+		if (m) {
+			m->setParameter("time", Timeval::now().getAsString().c_str());
+			m->setParameter("hop_num", countstr);
+		}
+#endif
 		// Does this target already have this data object, or
 		// is the data object its node description? shouldForward() tells us.
 		if (shouldForward(dObj, target)) {
@@ -656,7 +694,8 @@ void ForwardingManager::onNodeQueryResult(Event *e)
 		return;
 	}
 
-	HAGGLE_DBG("Got node query result for dataobject %s with %lu nodes\n", dObj->getIdStr(), targets->size());
+	HAGGLE_DBG("Got node query result for dataobject %s with %lu nodes\n", 
+		   dObj->getIdStr(), targets->size());
 	
 	NodeRefList target_neighbors;
 
@@ -682,7 +721,8 @@ void ForwardingManager::onNodeQueryResult(Event *e)
 	}
 
 	if (!target_neighbors.empty()) {
-		kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, target_neighbors));
+		kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, 
+					   target_neighbors));
 	}
 	
 	delete qr;
@@ -792,7 +832,8 @@ void ForwardingManager::onEndNeighbor(Event *e)
 	// Also remove from pending query list so that
 	// onDelayedDataObjectQuery won't generate a delayed query
 	// after the node went away
-	for (List<NodeRef>::iterator it = pendingQueryList.begin(); it != pendingQueryList.end(); it++) {
+	for (List<NodeRef>::iterator it = pendingQueryList.begin(); 
+	     it != pendingQueryList.end(); it++) {
 		if (node == *it) {
 			pendingQueryList.erase(it);
 			break;
@@ -843,7 +884,8 @@ void ForwardingManager::onNodeUpdated(Event *e)
 	// Check if there are any pending node queries that have been initiated by a previous
 	// new node contact event (in onNewNeighbor). In that case, remove the node from the
 	// pendingQueryList so that we do not generate the query twice.
-	for (List<NodeRef>::iterator it = pendingQueryList.begin(); it != pendingQueryList.end(); it++) {
+	for (List<NodeRef>::iterator it = pendingQueryList.begin(); 
+	     it != pendingQueryList.end(); it++) {
 		if (node == *it) {
 			pendingQueryList.erase(it);
 			break;
@@ -912,7 +954,6 @@ size_t ForwardingManager::metadataToRecurseList(Metadata *m, NodeRefList& recurs
 				recurse_list.push_back(n);
 			}
 		}
-		
 		tm = m->getNextMetadata();
 	}
 	
@@ -929,7 +970,8 @@ Metadata *ForwardingManager::recurseListToMetadata(Metadata *m, const NodeRefLis
 	if (!tm)
 		return NULL;
 	
-	for (NodeRefList::const_iterator it = recurse_list.begin(); it != recurse_list.end(); it++) {
+	for (NodeRefList::const_iterator it = recurse_list.begin(); 
+	     it != recurse_list.end(); it++) {
 		Metadata *nm = tm->addMetadata("Node");
 		
 		if (nm) {
@@ -973,7 +1015,8 @@ void ForwardingManager::recursiveRoutingUpdate(NodeRef peer, Metadata *m)
 		NodeRef neighbor = *it;
 		
 		// Do not notify nodes that are already in the list
-		for (NodeRefList::iterator jt = recurse_list.begin(); jt != recurse_list.end(); jt++) {
+		for (NodeRefList::iterator jt = recurse_list.begin(); 
+		     jt != recurse_list.end(); jt++) {
 			if (neighbor == *jt) {
 				/*
 				 HAGGLE_DBG("Neighbor %s [%s] has already received the update\n", 
@@ -994,7 +1037,8 @@ void ForwardingManager::recursiveRoutingUpdate(NodeRef peer, Metadata *m)
 	// been part of this recursive routing update
 	while (notify_list.size()) {
 		NodeRef neighbor = notify_list.pop();
-		forwardingModule->generateRoutingInformationDataObject(neighbor, &recurse_list);
+		forwardingModule->generateRoutingInformationDataObject(neighbor, 
+								       &recurse_list);
 	}	
 }
 
@@ -1049,10 +1093,10 @@ void ForwardingManager::onNewDataObject(Event *e)
 		return;
 	}
 	
+	DataObjectRef& dObj = e->getDataObject();
+	
 	if (!doQueryOnNewDataObject)
 		return;
-
-	DataObjectRef& dObj = e->getDataObject();
 	
 	// No point in doing node queries if we have no neighbors to
 	// forward the data object to
@@ -1061,7 +1105,7 @@ void ForwardingManager::onNewDataObject(Event *e)
 			HAGGLE_DBG("%s - new data object %s, doing node query\n", getName(), dObj->getIdStr());
 			kernel->getDataStore()->doNodeQuery(dObj, MAX_NODES_TO_FIND_FOR_NEW_DATAOBJECTS, 1, nodeQueryCallback);
 		} else {
-			HAGGLE_DBG("%s - new data object %s, but deferring node query due to 0 neighbors\n", 
+			HAGGLE_DBG("%s data object %s, but deferring node query due to 0 neighbors\n", 
 				   getName(), dObj->getIdStr());
 		}
 	} 
@@ -1116,6 +1160,20 @@ void ForwardingManager::onDelegateNodes(Event * e)
 	} while (delegate);
 
 	if (!ns.empty()) {
+#if defined(ENABLE_FORWARDING_METADATA)
+		Metadata *m = dObj->getMetadata()->getMetadata(getName());
+
+		if (m) {
+			Metadata *hop = m->getMetadata("Hop");
+
+			while (hop) {
+				if (hop->getContent() == kernel->getThisNode()->getIdStr()) {
+					hop->setParameter("delegated", "true");
+				}
+				hop = m->getNextMetadata();
+			}
+		}
+#endif
 		kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND, dObj, ns));
 	}
 	

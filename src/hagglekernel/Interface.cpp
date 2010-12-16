@@ -17,7 +17,7 @@
 #include <libcpphaggle/Platform.h>
 #include <base64.h>
 #include "XMLMetadata.h"
-
+#include "Trace.h"
 #include "Interface.h"
 
 using namespace haggle;
@@ -96,21 +96,16 @@ Interface *Interface::create(Type_t type, const void *identifier, const char *na
 		return new ApplicationPortInterface(*static_cast<const unsigned short *>(identifier), name, NULL, flags);
 	case TYPE_APPLICATION_LOCAL:
 		return new ApplicationLocalInterface(static_cast<const char *>(identifier), name, NULL, flags);
-#if defined(ENABLE_ETHERNET)
 	case TYPE_ETHERNET:
 		return new EthernetInterface(static_cast<const unsigned char *>(identifier), name, NULL, flags);
 	case TYPE_WIFI:
 		return new WiFiInterface(static_cast<const unsigned char *>(identifier), name, NULL, flags);
-#endif
-#if defined(ENABLE_BLUETOOTH)
 	case TYPE_BLUETOOTH:
 		return new BluetoothInterface(static_cast<const unsigned char *>(identifier), name, NULL, flags);
-#endif
-#if defined(ENABLE_MEDIA)
 	case TYPE_MEDIA:
 		return new MediaInterface(static_cast<const char *>(identifier), name, flags);
-#endif
 	default:
+		HAGGLE_ERR("Unknown type=%u\n", type);
 		return NULL;
 		
 	}
@@ -291,17 +286,21 @@ Interface *Interface::fromMetadata(const Metadata& m)
 	void *identifier = NULL;
 	
 	if (!m.isName(INTERFACE_METADATA)) {
+		HAGGLE_ERR("Metadata=%s is not interface metadata\n", 
+			   m.getName().c_str());
 		return NULL;
 	}
 	
 	const char *param = m.getParameter(INTERFACE_METADATA_TYPE_PARAM);
 	
 	if (!param) {
+		HAGGLE_ERR("No interface type parameter\n");
 		return NULL;
 	}
 	Type_t type = strToType(param);
 	
 	if (type == TYPE_UNDEFINED) {
+		HAGGLE_ERR("type is undefined\n");
 		return NULL;
 	}
 		
@@ -311,13 +310,16 @@ Interface *Interface::fromMetadata(const Metadata& m)
 		size_t identifier_len;
 		
 		if (!str_to_identifier(param, &identifier, &identifier_len)) {
+			HAGGLE_ERR("could not parse identifier parameter\n");
 			return NULL;
 		}
 	} else if ((param = m.getParameter(INTERFACE_METADATA_MAC_PARAM))) {
 		identifier = malloc(GENERIC_MAC_LEN);
 		
-		if (!identifier || !str_to_mac((unsigned char *)identifier, param))
+		if (!identifier || !str_to_mac((unsigned char *)identifier, param)) {
+			HAGGLE_ERR("could not parse mac parameter\n");
 			return NULL;
+		}
 	}
 
 	const Metadata *am = m.getMetadata(ADDRESS_METADATA);
@@ -603,8 +605,6 @@ WiFiInterface *WiFiInterface::fromMetadata(const Metadata& m)
 	return static_cast<WiFiInterface *>(iface);
 }
 
-#if defined(ENABLE_BLUETOOTH)
-
 BluetoothInterface::BluetoothInterface(const void *identifier, size_t identifier_len, 
 				       const string name, flag_t flags) :
 	Interface(Interface::TYPE_BLUETOOTH, mac, BT_MAC_LEN, name, NULL, flags)
@@ -674,10 +674,6 @@ BluetoothInterface *BluetoothInterface::fromMetadata(const Metadata& m)
 	return static_cast<BluetoothInterface *>(iface);
 }
 
-#endif // ENABLE_BLUETOOTH
-
-#if defined(ENABLE_MEDIA)
-
 MediaInterface::MediaInterface(const void *identifier, size_t identifier_len, 
 			       const string name, flag_t flags) :
 	Interface(Interface::TYPE_MEDIA, path.c_str(), identifier_len, name, NULL, flags)
@@ -713,4 +709,3 @@ Interface *MediaInterface::copy() const
 {
 	return new MediaInterface(*this);
 }
-#endif // ENABLE_MEDIA

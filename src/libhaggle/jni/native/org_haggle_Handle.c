@@ -235,6 +235,7 @@ static int event_handler(haggle_event_t *e, void *arg)
                         break;
                 case LIBHAGGLE_EVENT_NEIGHBOR_UPDATE:
                         mid = (*env)->GetMethodID(env, cd->cls, "onNeighborUpdate", "([Lorg/haggle/Node;)V");
+			
                         if (mid) {
 				jobjectArray jarr = libhaggle_jni_nodelist_to_node_jobjectArray(env, e->neighbors);
 				

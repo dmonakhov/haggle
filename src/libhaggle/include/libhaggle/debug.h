@@ -35,8 +35,8 @@ extern "C" {
 */
 HAGGLE_API void set_trace_level(int level);
 
-HAGGLE_API int libhaggle_debug_init();
-HAGGLE_API void libhaggle_debug_fini();
+HAGGLE_API void libhaggle_debug_init(void);
+HAGGLE_API void libhaggle_debug_fini(void);
 HAGGLE_API int libhaggle_trace(int err, const char *func, const char *fmt, ...);
 
 #ifdef DEBUG

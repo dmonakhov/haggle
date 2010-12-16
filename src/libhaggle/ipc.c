@@ -166,9 +166,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  ul_reason_for_call, LPVOID lpReserv
 	switch (ul_reason_for_call) {
 	case DLL_PROCESS_ATTACH:
 #if defined(DEBUG)
-		if (libhaggle_debug_init() < 0) {
-			fprintf(stderr, "Could not initialize debugging\n");
-		}
+		libhaggle_debug_init();
 #endif
 		// Make sure Winsock is initialized
 		iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
