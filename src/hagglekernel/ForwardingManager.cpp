@@ -627,8 +627,6 @@ void ForwardingManager::onDataObjectQueryResult(Event *e)
 			
 			if (!m)
 				return;
-			
-			m->setParameter("hop_count", "1");
 		} else {
 			char *endptr = NULL;
 			const char *param = m->getParameter("hop_count");
@@ -641,7 +639,7 @@ void ForwardingManager::onDataObjectQueryResult(Event *e)
 		
 		char countstr[30];
 		snprintf(countstr, 29, "%lu", ++count);
-		m->setParameter("count", countstr);
+		m->setParameter("hop_count", countstr);
 		
 		m = m->addMetadata("Hop", kernel->getThisNode()->getIdStr());
 		
