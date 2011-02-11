@@ -185,7 +185,9 @@ LogTrace::LogTrace(void)
 	traceFile = fopen(filename.c_str(), "a");
 
 	if (traceFile) {
-		addToLog("\n\n%s: Log started, fd=%ld\n", Timeval::now().getAsString().c_str(), fileno(traceFile));
+		addToLog("\n\n%s: Log started, fd=%ld\n", 
+			 Timeval::now().getAsString().c_str(), 
+			 fileno(traceFile));
 	} else {
 		fprintf(stderr,"Unable to open log file!\n");
 	}
@@ -203,7 +205,7 @@ void LogTrace::addToLog(const char *fmt, ...)
 {  
         Mutex::AutoLocker l(m);
 	va_list args;
-	
+
 	if (traceFile) {
 		va_start(args, fmt);
 		vfprintf(traceFile, fmt, args);

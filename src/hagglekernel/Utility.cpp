@@ -25,13 +25,14 @@
 
 using namespace haggle;
 
-#if defined(OS_LINUX) || defined(OS_MACOSX)
+#if defined(OS_UNIX)
 // Needed for getlogin()
 #include <unistd.h>
 // Needed for stat()
 #include <sys/stat.h>
 // Needed for getpwuid()
 #include <pwd.h>
+#include <libgen.h>
 #endif
 
 #if defined(OS_MACOSX)
@@ -57,26 +58,8 @@ using namespace haggle;
 #error "Unsupported Platform"
 #endif
 
-char *HAGGLE_FOLDER_PATH;
-
-void fill_in_haggle_path(char *haggle_path)
-{
-	long i,l;
-	
-	HAGGLE_FOLDER_PATH = strdup(haggle_path);
-	
-	// Take the haggle[.exe] bit out:
-	l = strlen(PLATFORM_PATH_DELIMITER);
-	for (i = strlen(HAGGLE_FOLDER_PATH); i >= 0; i--)
-		if(strncmp(&(HAGGLE_FOLDER_PATH[i]), PLATFORM_PATH_DELIMITER, l) == 0) {
-			HAGGLE_FOLDER_PATH[i] = '\0';
-			break;
-		}
-	HAGGLE_DBG("Haggle folder path set to: %s\n", HAGGLE_FOLDER_PATH);
-}
-
 // This pointer will be filled in the first time HAGGLE_DEFAULT_STORAGE_PATH is used
-char *hdsp;
+const char *hdsp;
 
 #if !defined(OS_ANDROID) && !defined(OS_MACOSX_IPHONE)
 static char *fill_prefix_and_suffix(const char *fillpath)
@@ -97,19 +80,65 @@ static char *fill_prefix_and_suffix(const char *fillpath)
 #endif
 
 #if defined(OS_ANDROID)
-char *fill_in_default_path()
-{
-        char *path;
 
-        path = (char*)malloc(strlen(DEFAULT_STORAGE_PATH) + 1);
+static char *fill_in_path(const char *fillpath)
+{
+	char *path;
+
+	if (mkdir(fillpath, 0755) == -1) {
+		switch (errno) {
+		case EEXIST:
+			/* Everything OK */
+			break;
+		default:
+			return NULL;
+		}
+	}
+
+        path = (char*)malloc(strlen(fillpath) + 1);
         
         if (!path)
                 return NULL;
 
-	strcpy(path, DEFAULT_STORAGE_PATH);
+	strcpy(path, fillpath);
 
         return path;
 }
+
+const char *ddsp;
+
+char *fill_in_default_datastore_path(void)
+{
+	char *path = fill_in_path(DEFAULT_STORAGE_PATH);
+
+	if (path) {
+		HAGGLE_DBG("data store path is %s\n", path);
+	}
+
+	return path;
+}
+
+char *fill_in_default_path(void)
+{
+	char *path;
+
+	path = fill_in_path("/sdcard/haggle");
+
+	if (path)
+		return path;
+
+	path = fill_in_default_datastore_path();
+
+
+	if (path) {
+		HAGGLE_DBG("data storage path is %s\n", path);
+	} else {
+		fprintf(stderr, "could not create data storage path\n");
+	}
+
+	return path;
+}
+
 #elif defined(OS_MACOSX_IPHONE)
 char *fill_in_default_path()
 {
@@ -278,7 +307,7 @@ char *fill_in_default_path()
 	return full_path;
 }
 
-char *ddsp;
+const char *ddsp;
 
 char *fill_in_default_datastore_path()
 {

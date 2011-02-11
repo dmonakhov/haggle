@@ -36,7 +36,6 @@ HaggleKernel::HaggleKernel(DataStore *ds , const string _storagepath) :
 	dataStore(ds), starttime(Timeval::now()), shutdownCalled(false),
 	running(false), storagepath(_storagepath)
 {
-	
 }
 
 bool HaggleKernel::init()

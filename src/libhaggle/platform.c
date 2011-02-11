@@ -566,17 +566,26 @@ const char *platform_get_path(path_type_t type, const char *append)
 }
 
 #elif defined(OS_ANDROID)
+#include <sys/stat.h>
 
 const char *platform_get_path(path_type_t type, const char *append)
 {
+	struct stat sbuf;
+	
         switch (type) {
                 case PLATFORM_PATH_PROGRAM:
                         sprintf(path, "/system/bin");
                         break;
                 case PLATFORM_PATH_PRIVATE:
-                case PLATFORM_PATH_DATA:
                         strcpy(path, "/data/haggle");
                         break;
+                case PLATFORM_PATH_DATA:
+			if (stat("/sdcard/haggle", &sbuf) == 0 && 
+			    (sbuf.st_mode & S_IFDIR) == S_IFDIR) {
+				strcpy(path, "/sdcard/haggle");
+			} else {
+				strcpy(path, "/data/haggle");
+			}
                 case PLATFORM_PATH_TEMP:
                         strcpy(path, "/data/haggle");
                         break;

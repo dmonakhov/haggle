@@ -708,8 +708,6 @@ int main(void)
 	set_path();
 #endif
 #if defined(OS_UNIX)
-	fill_in_haggle_path(argv[0]);
-	
 	// Do some command line parsing. Could use "getopt", but it
 	// probably doesn't port well to Windows
 	argv++;

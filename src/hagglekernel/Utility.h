@@ -34,7 +34,7 @@
 #error "Unsupported Platform"
 #endif
 
-extern char *hdsp;
+extern const char *hdsp;
 /*
 	Default path to were to put files.
 	
@@ -44,12 +44,13 @@ extern char *hdsp;
 /*
 	Default path to were to put the data store.
 */
-#if defined(OS_WINDOWS_MOBILE)
+#if defined(OS_WINDOWS_MOBILE) || defined(OS_ANDROID)
 /*
-	Why this? Because on windows mobile, if you run the data base against an 
-	SD card, the entire machine may lock up.
-*/
-extern char *ddsp;
+  We'd like the ability to put content on external storage on
+  smartphones, while keeping the data store and configuration on
+  internal storage.
+ */
+extern const char *ddsp;
 #define DEFAULT_DATASTORE_PATH (ddsp?ddsp:ddsp = fill_in_default_datastore_path())
 #define DEFAULT_LOG_STORAGE_PATH (ddsp?ddsp:ddsp = fill_in_default_datastore_path())
 char *fill_in_default_datastore_path(void);
@@ -59,13 +60,6 @@ char *fill_in_default_datastore_path(void);
 #endif
 
 char *fill_in_default_path(void);
-
-/*
-	The path of the folder that haggle resides in.
-*/
-extern char *HAGGLE_FOLDER_PATH;
-
-void fill_in_haggle_path(char *haggle_path);
 
 /**
 	Utility function to create all the parts of a path up to and including the
