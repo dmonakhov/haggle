@@ -17,7 +17,7 @@ elif ls $MODULE_PATH/bcm4329.ko 2>/dev/null; then
     NETDEV=eth0
     MODULE=bcm4329
     HOSTNAME=Android
-    POST_INSERT_CMD="iwconfig eth0 mode ad-hoc essid HaggleHoc"
+    POST_INSERT_CMD="iwconfig eth0 mode ad-hoc essid HaggleHoc txpower 4"
 else
     echo "Unknown network device..."
     exit

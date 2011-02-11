@@ -94,6 +94,8 @@ function install_file()
 	local perm=$3
     fi
 
+    echo "Installing $file in $dir"
+
     $ADB -s $dev push $src $dir/$file
     #$ADB -s $dev push $src /sdcard/$file
     #$ADB -s $dev shell su -c "dd if=/sdcard/$file of=$dir/$file"
@@ -112,27 +114,20 @@ for dev in $DEVICES; do
     pushd symbols
 
     # Install ad hoc settings script
+    adb shell rm /$BIN_PATH_PREFIX/adhoc
     install_file $DEVICE_FILES_DIR/adhoc.sh /$BIN_PATH_PREFIX 755
-    #$ADB -s $dev push $DEVICE_FILES_DIR/adhoc.sh $BIN_PATH_PREFIX/adhoc
-    #$ADB -s $dev shell chmod 775 $BIN_PATH_PREFIX/adhoc
-
+    
     # Install Haggle binary
     echo
     echo "Installing binaries"
     echo "    $HAGGLE_BIN"
     install_file $BIN_PATH_PREFIX/$HAGGLE_BIN /$BIN_PATH_PREFIX 4775
-    #$ADB -s $dev push $BIN_PATH_PREFIX/$HAGGLE_BIN /$BIN_PATH_PREFIX/$HAGGLE_BIN
-    #$ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/$HAGGLE_BIN
 
     echo "    LuckyMe (CLI c-version)"
     install_file $BIN_PATH_PREFIX/luckyme /$BIN_PATH_PREFIX 4775
-    #$ADB -s $dev push $BIN_PATH_PREFIX/luckyme /$BIN_PATH_PREFIX/luckyme
-    #$ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/luckyme
 
     echo "    clitool"
     install_file $BIN_PATH_PREFIX/clitool /$BIN_PATH_PREFIX 4775
-    #$ADB -s $dev push $BIN_PATH_PREFIX/clitool /$BIN_PATH_PREFIX/clitool
-    #$ADB -s $dev shell chmod 4775 /$BIN_PATH_PREFIX/clitool
   
     # Install libraries.
     echo
@@ -141,8 +136,6 @@ for dev in $DEVICES; do
 	echo "    $file"
 	
 	install_file $LIB_PATH_PREFIX/$file /$LIB_PATH_PREFIX 644
-        #$ADB -s $dev push $LIB_PATH_PREFIX/$file /$LIB_PATH_PREFIX/$file
-	#$ADB -s $dev shell chmod 644 /$LIB_PATH_PREFIX/$file
     done
     
     # Back to product dir
@@ -160,12 +153,10 @@ for dev in $DEVICES; do
 	echo "    $file"
 	
 	install_file $FRAMEWORK_PATH_PREFIX/$file /$FRAMEWORK_PATH_PREFIX 644
-	#$ADB -s $dev push $FRAMEWORK_PATH_PREFIX/$file /$FRAMEWORK_PATH_PREFIX/$file
-	#$ADB -s $dev shell chmod 644 /$FRAMEWORK_PATH_PREFIX/$file
+
 	
     done
     install_file $FRAMEWORK_PERMISSIONS_FILE /system/etc/permissions 644
-    #$ADB -s $dev push $FRAMEWORK_PERMISSIONS_FILE /system/etc/permissions/org.haggle.xml
     #echo "Installing applications"
     #echo "    LuckyMe"
     #$ADB -s $dev uninstall org.haggle.LuckyMe
