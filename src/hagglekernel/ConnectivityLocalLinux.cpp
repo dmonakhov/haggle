@@ -151,18 +151,18 @@ static int nl_close_handle(struct netlink_handle *nlh)
 static int nl_send(struct netlink_handle *nlh, struct nlmsghdr *n)
 {
 	int res;
-	struct iovec iov[2];
+	struct iovec iov;
+	struct msghdr msg;
 	
-	memset(iov, 0, sizeof(struct iovec) * 2);
-	
-	iov[0].iov_base = (void *) n;
-	iov[0].iov_len = n->nlmsg_len;
+	memset(&iov, 0, sizeof(iov));	
+	iov.iov_base = n;
+	iov.iov_len = n->nlmsg_len;
 
-	struct msghdr msg = {
-		(void *) &nlh->peer, 
-                sizeof(nlh->peer), 
-                iov, 1, NULL, 0, 0
-	};
+	memset(&msg, 0, sizeof(msg));
+	msg.msg_name = &nlh->peer;
+	msg.msg_namelen = sizeof(nlh->peer);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
 
 	n->nlmsg_seq = ++nlh->seq;
 	n->nlmsg_pid = nlh->local.nl_pid;
@@ -174,7 +174,8 @@ static int nl_send(struct netlink_handle *nlh, struct nlmsghdr *n)
 	res = sendmsg(nlh->sock, &msg, 0);
 
 	if (res < 0) {
-		HAGGLE_ERR("error: %s\n", strerror(errno));
+		HAGGLE_ERR("error: %s\n", 
+			   strerror(errno));
 		return -1;
 	}
 	return 0;
@@ -670,19 +671,25 @@ static int dbus_bluetooth_set_adapter_property(struct dbus_handle *dbh, const ch
 	dbus_message_iter_init_append(msg, &iter);
 	append_variant(&iter, type, value);
 	
-	reply = dbus_connection_send_with_reply_and_block(dbh->conn, msg, -1, &dbh->err);
+	reply = dbus_connection_send_with_reply_and_block(dbh->conn, 
+							  msg, -1, &dbh->err);
+
 	dbus_message_unref(msg);
 	
 	if (!reply) {
 		if (dbus_error_is_set(&dbh->err)) {
-			HAGGLE_ERR("D-Bus error: %s (%s)\n", dbh->err.name, dbh->err.message);	\
+			HAGGLE_ERR("D-Bus error: %s (%s)\n", 
+				   dbh->err.name, dbh->err.message);
+			
 			dbus_error_free(&dbh->err);
 		} else {
 			HAGGLE_ERR("DBus reply is NULL\n");
 		}
 		return -1;
 	}
-	
+
+	dbus_message_unref(reply);
+
 	return 0;
 }
 
@@ -832,9 +839,10 @@ static InterfaceRef dbus_bluetooth_get_interface(struct dbus_handle *dbh, const 
 	
 	if (device_name && interface_mac && interface_name) {
 		bdaddr_t *mac = strtoba(interface_mac);				
-
+		
 		BluetoothAddress addr((unsigned char *)mac);
 		iface = Interface::create<BluetoothInterface>(mac, device_name, addr, IFFLAG_LOCAL | IFFLAG_UP);
+		free(mac);
 	}
 failure:
 	dbus_message_unref(reply);

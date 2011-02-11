@@ -105,8 +105,9 @@ DataObject::DataObject(InterfaceRef _localIface, InterfaceRef _remoteIface, cons
                 metadata(NULL), filename(""), filepath(""), isForLocalApp(false), 
 		storagepath(_storagepath), dataLen(0), createTime(-1), receiveTime(-1), 
                 localIface(_localIface), remoteIface(_remoteIface), rxTime(0), 
-                persistent(true), duplicate(false), stored(false), isNodeDesc(false), isThisNodeDesc(false),
-		controlMessage(false), putData_data(NULL), dataState(DATA_STATE_UNKNOWN)
+                persistent(true), duplicate(false), stored(false), isNodeDesc(false), 
+		isThisNodeDesc(false), controlMessage(false), putData_data(NULL), 
+		dataState(DATA_STATE_UNKNOWN)
 {
 	memset(id, 0, sizeof(DataObjectId_t));
 }
@@ -119,13 +120,14 @@ DataObject::DataObject(const DataObject& dObj) :
                 signatureStatus(dObj.signatureStatus),
                 signee(dObj.signee), signature(NULL), signature_len(dObj.signature_len), 
 		num(totNum++), metadata(dObj.metadata ? dObj.metadata->copy() : NULL), 
-                attrs(dObj.attrs),
-                filename(dObj.filename), filepath(dObj.filepath), 
+                attrs(dObj.attrs), filename(dObj.filename), filepath(dObj.filepath), 
                 isForLocalApp(dObj.isForLocalApp), storagepath(dObj.storagepath),
-                dataLen(dObj.dataLen), createTime(dObj.createTime), receiveTime(dObj.receiveTime), 
-                localIface(dObj.localIface), remoteIface(dObj.remoteIface), 
-                rxTime(dObj.rxTime), persistent(dObj.persistent), duplicate(false), 
-		stored(dObj.stored), isNodeDesc(dObj.isNodeDesc), isThisNodeDesc(dObj.isThisNodeDesc),
+                dataLen(dObj.dataLen), createTime(dObj.createTime), 
+		receiveTime(dObj.receiveTime), localIface(dObj.localIface), 
+		remoteIface(dObj.remoteIface), rxTime(dObj.rxTime), 
+		persistent(dObj.persistent), duplicate(false), 
+		stored(dObj.stored), isNodeDesc(dObj.isNodeDesc), 
+		isThisNodeDesc(dObj.isThisNodeDesc),
 		controlMessage(false), putData_data(NULL), dataState(dObj.dataState)
 {
 	memcpy(id, dObj.id, DATAOBJECT_ID_LEN);

@@ -24,14 +24,20 @@
 #include "ProtocolRFCOMM.h"
 #include "HaggleKernel.h"
 
-ProtocolRFCOMMClient::ProtocolRFCOMMClient(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, const unsigned short channel, ProtocolManager *m) :
+ProtocolRFCOMMClient::ProtocolRFCOMMClient(const InterfaceRef& _localIface, 
+					   const InterfaceRef& _peerIface, 
+					   const unsigned short channel, 
+					   ProtocolManager *m) :
 		ProtocolRFCOMM(_localIface, _peerIface, channel, PROT_FLAG_CLIENT, m)
 {
 	if (peerIface)
 		memcpy(mac, peerIface->getIdentifier(), peerIface->getIdentifierLen());
 }
 
-ProtocolRFCOMM::ProtocolRFCOMM(SOCKET _sock, const char *_mac, const unsigned short _channel, const InterfaceRef& _localIface, const short flags, ProtocolManager *m) :
+ProtocolRFCOMM::ProtocolRFCOMM(SOCKET _sock, const char *_mac, 
+			       const unsigned short _channel, 
+			       const InterfaceRef& _localIface, 
+			       const short flags, ProtocolManager *m) :
 	ProtocolSocket(Protocol::TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, NULL, flags, m, _sock), channel(_channel)
 {
 	memcpy(mac, _mac, BT_ALEN);
@@ -41,7 +47,10 @@ ProtocolRFCOMM::ProtocolRFCOMM(SOCKET _sock, const char *_mac, const unsigned sh
 	peerIface = Interface::create<BluetoothInterface>(mac, "Peer Bluetooth", addr, IFFLAG_UP);
 }
 
-ProtocolRFCOMM::ProtocolRFCOMM(const InterfaceRef& _localIface, const InterfaceRef& _peerIface, const unsigned short _channel, const short flags, ProtocolManager * m) : 
+ProtocolRFCOMM::ProtocolRFCOMM(const InterfaceRef& _localIface, 
+			       const InterfaceRef& _peerIface, 
+			       const unsigned short _channel, 
+			       const short flags, ProtocolManager * m) : 
 	ProtocolSocket(Protocol::TYPE_RFCOMM, "ProtocolRFCOMM", _localIface, _peerIface, flags, m), channel(_channel)
 {	
 }

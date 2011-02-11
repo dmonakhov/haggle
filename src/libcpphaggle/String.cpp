@@ -721,7 +721,8 @@ int stringprintf(string &str, const char *format, ...)
 	va_list	args;
 	char *temp = NULL;
 	int retval;
-	
+
+	memset(&args, 0, sizeof(args));
 	va_start(args, format);
 	retval = vasprintf(&temp, format, args);
 	va_end(args);

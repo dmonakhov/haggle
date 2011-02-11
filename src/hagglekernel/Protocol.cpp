@@ -527,16 +527,18 @@ ProtocolEvent Protocol::getData(size_t *bytesRead)
                                                         cancelableSleep(PROT_BLOCK_SLEEP_TIME_MSECS);
 
                                                 } else {
-							// Make sure we exit when we have tried enough
+							HAGGLE_DBG("Max tries reached,"
+								   " giving up\n");
                                                         pEvent = PROT_EVENT_ERROR_FATAL;
-						
                                                 }
                                                 break;
                                         default:
-                                                HAGGLE_ERR("Protocol error : %s\n", STRERROR(ERRNO));
+                                                HAGGLE_ERR("Protocol error : %s\n", 
+							   STRERROR(ERRNO));
                                 }
                         } else if (pEvent == PROT_EVENT_PEER_CLOSED) {
-                                HAGGLE_DBG("%s - peer [%s] closed connection\n", getName(), peerDescription().c_str());
+                                HAGGLE_DBG("%s - peer [%s] closed connection\n", 
+					   getName(), peerDescription().c_str());
                         }
 
                         if (*bytesRead > 0) {
@@ -545,7 +547,8 @@ ProtocolEvent Protocol::getData(size_t *bytesRead)
                                 break;
                         }
                 } else if (pEvent == PROT_EVENT_TIMEOUT) {
-                        HAGGLE_DBG("Protocol %s timed out while getting data\n", getName());
+                        HAGGLE_DBG("Protocol %s timed out while getting data\n", 
+				   getName());
                 } 
         }
 	return pEvent;
@@ -733,7 +736,9 @@ ProtocolEvent Protocol::receiveDataObject()
 
 	HAGGLE_DBG("%s receiving data object\n", getName());
 
-	dObj = DataObject::create_for_putting(localIface, peerIface, getKernel()->getStoragePath());
+	dObj = DataObject::create_for_putting(localIface, 
+					      peerIface, 
+					      getKernel()->getStoragePath());
 
         if (!dObj) {
 		HAGGLE_ERR("Could not create pending data object\n");
@@ -744,11 +749,11 @@ ProtocolEvent Protocol::receiveDataObject()
 	bytesRemaining = DATAOBJECT_METADATA_PENDING;
 	
 	do {
-		//HAGGLE_DBG("Reading data\n");
 		pEvent = getData(&bytesRead);
-		//HAGGLE_DBG("Read %lu bytes data\n", bytesRead);
+
                 if (pEvent == PROT_EVENT_PEER_CLOSED) {
-			HAGGLE_DBG("Peer [%s] closed connection\n", peerDescription().c_str());
+			HAGGLE_DBG("Peer [%s] closed connection\n", 
+				   peerDescription().c_str());
 			return pEvent;
 		}
 		
@@ -760,8 +765,12 @@ ProtocolEvent Protocol::receiveDataObject()
 			bytesPut = dObj->putData(buffer, bufferDataLen, &bytesRemaining);
 
 			if (bytesPut < 0) {
-				HAGGLE_ERR("%s Error on put data! [BytesPut=%lu totBytesPut=%lu totBytesRead=%lu bytesRemaining=%lu]\n", 
-					getName(), bytesPut, totBytesPut, totBytesRead, bytesRemaining);
+				HAGGLE_ERR("%s Error on put data!" 
+					   " [BytesPut=%lu totBytesPut=%lu"
+					   " totBytesRead=%lu bytesRemaining=%lu]\n", 
+					   getName(), bytesPut, 
+					   totBytesPut, totBytesRead, 
+					   bytesRemaining);
 				return PROT_EVENT_ERROR;
 			}
 
@@ -778,13 +787,18 @@ ProtocolEvent Protocol::receiveDataObject()
 				// Send "Incoming data object event."
 				if (md) {
 					
-					HAGGLE_DBG("%s: Metadata header received [BytesPut=%lu totBytesPut=%lu totBytesRead=%lu bytesRemaining=%lu]\n", 
-						getName(), bytesPut, totBytesPut, totBytesRead, bytesRemaining);
+					HAGGLE_DBG("%s: Metadata header received"
+						   " [BytesPut=%lu totBytesPut=%lu"
+						   " totBytesRead=%lu bytesRemaining=%lu]\n", 
+						   getName(), bytesPut, totBytesPut, 
+						   totBytesRead, bytesRemaining);
+					
                                         // Save the data object ID in the control message header.
                                         memcpy(m.dobj_id, dObj->getId(), DATAOBJECT_ID_LEN);
 
 					HAGGLE_DBG("%s Incoming data object [%s] from peer %s\n", 
-						getName(), dObj->getIdStr(), peerDescription().c_str());
+						getName(), dObj->getIdStr(), 
+						   peerDescription().c_str());
 
 					// Check if we already have this data object (FIXME: or are 
 					// otherwise not willing to accept it).
