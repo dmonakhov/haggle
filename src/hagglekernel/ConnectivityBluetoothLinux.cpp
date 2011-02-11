@@ -423,30 +423,44 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 	
 	addr = conn->rootInterface->getAddress<BluetoothAddress>();
 
-	if (!addr)
+	if (!addr) {
+		HAGGLE_ERR("No valid Bluetooth address\n");
 		return;
-    
-        CM_DBG("Inquiry on interface %s\n", conn->rootInterface->getName());
+	}
 
+        HAGGLE_DBG("Inquiry on interface %s\n", 
+		   conn->rootInterface->getName());
+	
         dev_id = hci_get_route(NULL);
 
+	if (dev_id < 0) {
+		HAGGLE_ERR("Could not get device id\n");
+		return;
+	}
+	
         dd = hci_open_dev(dev_id);
 
-        if (dev_id < 0 || dd < 0) {
-                return;
+	if (dd < 0) {
+		HAGGLE_ERR("Could not open device id=%d\n", dev_id);
+		return;
         }
     
         ii = (inquiry_info *)malloc(sizeof(inquiry_info) * MAX_BT_RESPONSES);
 
-        if (!ii)
+        if (!ii) {
+		HAGGLE_ERR("Could not allocate respones list\n");
+		close(dd);
                 return;
-        
+        }
+	
         ret = hci_inquiry(dev_id, 8, MAX_BT_RESPONSES, NULL, 
 			  (inquiry_info **)&ii, IREQ_CACHE_FLUSH);
 
         if (ret < 0) {
-		CM_DBG("Inquiry failed on interface %s\n", conn->rootInterface->getName());
+		HAGGLE_ERR("Inquiry failed on interface %s\n", 
+			   conn->rootInterface->getName());
                 free(ii);
+		close(dd);
                 return;
         }
         
@@ -498,7 +512,8 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 			BluetoothInterface iface(macaddr, remote_name, &addr, IFFLAG_UP);
 			
 			CM_DBG("Found Haggle device [%s - %s]\n", addr.getStr(), remote_name);
-			conn->report_interface(&iface, conn->rootInterface, new ConnectivityInterfacePolicyTTL(2));
+			conn->report_interface(&iface, conn->rootInterface, 
+					       new ConnectivityInterfacePolicyTTL(2));
 			num_found++;
 		} else {
 			CM_DBG("Device [%s] is not a Haggle device\n", addr.getStr());
