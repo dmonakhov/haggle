@@ -412,15 +412,21 @@ static int find_haggle_service(bdaddr_t bdaddr)
 	return found;
 }
 
+#include <poll.h>
+
 void bluetoothDiscovery(ConnectivityBluetooth *conn)
 {
-        inquiry_info *ii;
-	// This isn't being used:
+	struct {
+		struct hci_inquiry_req ir;
+		inquiry_info ii[MAX_BT_RESPONSES];
+	} req;
 	int num_found = 0;
-        int dd, dev_id, ret, i;
+        int sock, ret, i;
 	const BluetoothAddress *addr;
         InterfaceStatus_t status;
-	
+	struct pollfd fds;
+	struct sockaddr_hci hcia;
+
 	addr = conn->rootInterface->getAddress<BluetoothAddress>();
 
 	if (!addr) {
@@ -431,55 +437,105 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
         HAGGLE_DBG("Inquiry on interface %s\n", 
 		   conn->rootInterface->getName());
 	
-        dev_id = hci_get_route(NULL);
+	memset(&req, 0, sizeof(req));
 
-	if (dev_id < 0) {
+	ret = hci_get_route(NULL);
+
+	if (ret < 0) {
 		HAGGLE_ERR("Could not get device id\n");
 		return;
 	}
 	
-        dd = hci_open_dev(dev_id);
+	req.ir.dev_id = ret;
 
-	if (dd < 0) {
-		HAGGLE_ERR("Could not open device id=%d\n", dev_id);
+	sock = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI);
+
+	if (sock < 0) {
+		HAGGLE_DBG("Could not open Bluetooth socket\n");
 		return;
-        }
-    
-        ii = (inquiry_info *)malloc(sizeof(inquiry_info) * MAX_BT_RESPONSES);
+	}
 
-        if (!ii) {
-		HAGGLE_ERR("Could not allocate respones list\n");
-		close(dd);
-                return;
-        }
+	req.ir.num_rsp = MAX_BT_RESPONSES;
+	req.ir.length  = 8;
+	req.ir.flags   = IREQ_CACHE_FLUSH;
+	/* Not sure what this means, taken from hci_inquiry() in bluez */
+	req.ir.lap[0] = 0x33;
+	req.ir.lap[1] = 0x8b;
+	req.ir.lap[2] = 0x9e;
+
+	fds.fd = sock;
+	fds.events = POLLOUT | POLLERR;
+	fds.revents = 0;
+
+	ret = poll(&fds, 1, 0);
+
+	if (ret == -1) {
+		close(sock);
+		HAGGLE_ERR("poll error : %s\n", 
+			   strerror(errno));
+		return;
+	} else if (ret > 0) {
+		if (fds.revents & POLLOUT) {
+			/* Everything fine */
+		}
+		if (fds.revents & POLLERR) {
+			HAGGLE_ERR("Error on Bluetooth socket\n");
+			close(sock);
+			return;
+		}
+	} else {
+		HAGGLE_ERR("Bluetooth socket not writable!\n");
+		close(sock);
+		return;
+	}
+
+	ret = ioctl(sock, HCIINQUIRY, &req);
+
+	if (ret < 0) {
+		HAGGLE_ERR("Inquiry failed %s\n",
+			   strerror(errno));
+		close(sock);
+		return;
+	}
+
+	CM_DBG("Inquiry returned %d devices\n", req.ir.num_rsp);
+
+	/* 
+	   Bind socket to device, so that hci_read_remote_name does
+	   not fail.
+	*/
+	memset(&hcia, 0, sizeof(hcia));
+	hcia.hci_family = AF_BLUETOOTH;
+	hcia.hci_dev = req.ir.dev_id;
 	
-        ret = hci_inquiry(dev_id, 8, MAX_BT_RESPONSES, NULL, 
-			  (inquiry_info **)&ii, IREQ_CACHE_FLUSH);
+	if (bind(sock, (struct sockaddr *)&hcia, sizeof(hcia)) < 0) {
+		HAGGLE_ERR("could not bind bluetooth socket\n");
+		close(sock);
+		return;
+	}
 
-        if (ret < 0) {
-		HAGGLE_ERR("Inquiry failed on interface %s\n", 
-			   conn->rootInterface->getName());
-                free(ii);
-		close(dd);
-                return;
-        }
-        
-	CM_DBG("Inquiry returned %d devices\n", ret);
-
-	for (i = 0; i < ret; i++) {
+	for (i = 0; i < req.ir.num_rsp; i++) {
                 bool report_interface = false;
 		unsigned char macaddr[BT_ALEN];
-		int channel = 0, timeout = 200;
+		int channel = 0, timeout = 3000;
                 char remote_name[256];
-                
+
+		memset(remote_name, 0, 256);              
                 strcpy(remote_name, "unknown");
                 
-                if (conn->readRemoteName &&
-		    hci_read_remote_name(dd, &ii[i].bdaddr, 256, remote_name, timeout) < 0) {
-                        HAGGLE_ERR("name lookup: %s\n", strerror(errno));
+                if (conn->readRemoteName) {
+			ret = hci_read_remote_name(sock, 
+						   &req.ii[i].bdaddr, 
+						   255, 
+						   remote_name, 
+						   timeout);
+			
+			if (ret < 0) {
+				HAGGLE_ERR("name lookup: %s\n", strerror(errno));
+			}
                 }
                 
-		baswap((bdaddr_t *) &macaddr, &ii[i].bdaddr);
+		baswap((bdaddr_t *) &macaddr, &req.ii[i].bdaddr);
 
 		BluetoothAddress addr(macaddr);
 		
@@ -490,7 +546,7 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
                 } else if (status == INTERFACE_STATUS_UNKNOWN) {
                         switch (ConnectivityBluetoothBase::classifyAddress(Interface::TYPE_BLUETOOTH, macaddr)) {
                         case BLUETOOTH_ADDRESS_IS_UNKNOWN:
-                                channel = find_haggle_service(ii[i].bdaddr);
+                                channel = find_haggle_service(req.ii[i].bdaddr);
                                 if (channel > 0) {
                                         report_interface = true;
                                         conn->report_known_interface(Interface::TYPE_BLUETOOTH, macaddr, true);
@@ -516,12 +572,12 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 					       new ConnectivityInterfacePolicyTTL(2));
 			num_found++;
 		} else {
-			CM_DBG("Device [%s] is not a Haggle device\n", addr.getStr());
+			CM_DBG("Device [%s - %s] is not a Haggle device\n", 
+			       addr.getStr(), remote_name);
 		}
 	}
-
-	close(dd);
-        free(ii);
+	
+	close(sock);
 
 	CM_DBG("Bluetooth inquiry done! Num discovered=%d\n", num_found);
 
