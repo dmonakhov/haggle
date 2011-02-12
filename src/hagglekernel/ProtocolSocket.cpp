@@ -25,8 +25,11 @@
 #define SOCKADDR_SIZE sizeof(struct sockaddr_in)
 #endif
 
-ProtocolSocket::ProtocolSocket(const ProtType_t _type, const char *_name, InterfaceRef _localIface, 
-			       InterfaceRef _peerIface, const int _flags, ProtocolManager * m, SOCKET _sock, size_t bufferSize) : 
+ProtocolSocket::ProtocolSocket(const ProtType_t _type, 
+			       const char *_name, InterfaceRef _localIface, 
+			       InterfaceRef _peerIface, const int _flags, 
+			       ProtocolManager * m, SOCKET _sock, 
+			       size_t bufferSize) : 
 	Protocol(_type, _name, _localIface, _peerIface, _flags, m, bufferSize), 
         sock(_sock), socketIsRegistered(false), nonblock(false)
 {
@@ -48,12 +51,15 @@ bool ProtocolSocket::multiplyReceiveBufferSize(unsigned int x)
         if (ret != -1) {
                 optval = optval * x;
 
-                ret = ::setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &optval, optlen);
+                ret = ::setsockopt(sock, SOL_SOCKET, 
+				   SO_RCVBUF, &optval, optlen);
 
                 if (ret == -1) {
-                        HAGGLE_ERR("Could not set recv buffer size to %ld bytes\n", optval);
+                        HAGGLE_ERR("Could not set recv buffer to %ld bytes\n", 
+				   optval);
                 } else {
-                        HAGGLE_DBG("Set recv buffer size to %ld bytes on protocol %s\n", optval, getName());
+                        HAGGLE_DBG("recv buffer set to %ld bytes on %s\n", 
+				   optval, getName());
 			res = true;
                 }
         }
@@ -72,7 +78,9 @@ ProtocolSocket::~ProtocolSocket()
 		closeSocket();
 }
 
-bool ProtocolSocket::openSocket(int domain, int type, int protocol, bool registersock, bool nonblock)
+bool ProtocolSocket::openSocket(int domain, int type, 
+				int protocol, bool registersock, 
+				bool nonblock)
 {
 	if (sock != INVALID_SOCKET) {
 		HAGGLE_ERR("%s: socket already open\n", getName());
@@ -82,7 +90,8 @@ bool ProtocolSocket::openSocket(int domain, int type, int protocol, bool registe
 	sock = ::socket(domain, type, protocol);
 
 	if (sock == INVALID_SOCKET) {
-		HAGGLE_ERR("%s: could not open socket : %s\n", getName(), STRERROR(ERRNO));
+		HAGGLE_ERR("%s: could not open socket : %s\n", 
+			   getName(), STRERROR(ERRNO));
 		return false;
 	}
 	
@@ -120,7 +129,8 @@ bool ProtocolSocket::bind(const struct sockaddr *saddr, socklen_t addrlen)
 		return false;
 
 	if (::bind(sock, saddr, addrlen) == SOCKET_ERROR) {
-		HAGGLE_ERR("%s: could not bind socket: %s\n", getName(), STRERROR(ERRNO));
+		HAGGLE_ERR("%s: could not bind socket: %s\n", 
+			   getName(), STRERROR(ERRNO));
 		return false;
 	}
 	return true;
@@ -129,21 +139,22 @@ bool ProtocolSocket::bind(const struct sockaddr *saddr, socklen_t addrlen)
 SOCKET ProtocolSocket::accept(struct sockaddr *saddr, socklen_t *addrlen)
 {
 	if (sock == INVALID_SOCKET) {
-		HAGGLE_ERR("%s: cannot accept client on invalid server socket\n", getName());
+		HAGGLE_ERR("%s: invalid server socket\n", getName());
 		return INVALID_SOCKET;
 	}
 	if (!saddr || !addrlen) {
-		HAGGLE_ERR("%s: cannot accept connection as address is invalid\n", getName());
+		HAGGLE_ERR("%s: invalid address\n", getName());
 		return INVALID_SOCKET;
 	}
 	if (getMode() != PROT_MODE_LISTENING) {
-		HAGGLE_ERR("%s: cannot accept connection on non-listening socket\n", getName());
+		HAGGLE_ERR("%s: non-listening socket\n", getName());
 		return INVALID_SOCKET;
 	}
 	SOCKET clientsock = ::accept(sock, saddr, addrlen);
 
 	if (clientsock == INVALID_SOCKET) {
-		HAGGLE_ERR("%s: accept failed : %s\n", getName(), STRERROR(ERRNO));
+		HAGGLE_ERR("%s: accept failed : %s\n", 
+			   getName(), STRERROR(ERRNO));
 		return INVALID_SOCKET;
 	}
 	return clientsock;
@@ -172,14 +183,16 @@ bool ProtocolSocket::setNonblock(bool _nonblock)
 
 	if (ioctlsocket(sock, FIONBIO, &on) == SOCKET_ERROR) {
 		HAGGLE_ERR("%s: Could not set %s mode on socket %d : %s\n", 
-			   getName(), _nonblock ? "nonblocking" : "blocking", sock, STRERROR(ERRNO));
+			   getName(), _nonblock ? "nonblocking" : "blocking", 
+			   sock, STRERROR(ERRNO));
 		return false;
 	}
 #elif defined(OS_UNIX)
 	long mode = fcntl(sock, F_GETFL, 0);
 	
 	if (mode == -1) {
-		HAGGLE_ERR("%s: could not get socket flags : %s\n", getName(), STRERROR(ERRNO));
+		HAGGLE_ERR("%s: could not get socket flags : %s\n", 
+			   getName(), STRERROR(ERRNO));
 		return false;
 	}
 
@@ -190,7 +203,8 @@ bool ProtocolSocket::setNonblock(bool _nonblock)
 
 	if (fcntl(sock, F_SETFL, mode) == -1) {
 		HAGGLE_ERR("%s: Could not set %s mode on socket %d : %s\n", 
-			   getName(), _nonblock ? "nonblocking" : "blocking", sock, STRERROR(ERRNO));
+			   getName(), _nonblock ? "nonblocking" : "blocking", 
+			   sock, STRERROR(ERRNO));
 		return false;
 	}
 #endif
@@ -207,7 +221,8 @@ bool ProtocolSocket::isNonblock()
 void ProtocolSocket::closeSocket()
 {
 	if (sock == INVALID_SOCKET) {
-		HAGGLE_ERR("%s: cannot close non-open socket\n", getName());
+		HAGGLE_ERR("%s: cannot close non-open socket\n", 
+			   getName());
 		return;
 	}
 
@@ -219,7 +234,8 @@ void ProtocolSocket::closeSocket()
 	setMode(PROT_MODE_DONE);
 }
 
-ssize_t ProtocolSocket::sendTo(const void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
+ssize_t ProtocolSocket::sendTo(const void *buf, size_t len, int flags, 
+			       const struct sockaddr *to, socklen_t tolen)
 {
 	if (!to || !buf) {
 		HAGGLE_ERR("%s: invalid argument\n", getName());
@@ -232,25 +248,30 @@ ssize_t ProtocolSocket::sendTo(const void *buf, size_t len, int flags, const str
 	ssize_t ret =  sendto(sock, (const char *)buf, len, flags, to, tolen);
 
 	if (ret == -1) {
-		HAGGLE_ERR("%s: sendto failed : %s\n", getName(), STRERROR(ERRNO));
+		HAGGLE_ERR("%s: sendto failed : %s\n", 
+			   getName(), STRERROR(ERRNO));
 	}
 	return ret;
 }
 
-ssize_t ProtocolSocket::recvFrom(void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen)
+ssize_t ProtocolSocket::recvFrom(void *buf, size_t len, 
+				 int flags, struct sockaddr *from, 
+				 socklen_t *fromlen)
 {
 	if (!from || !buf) {
 		HAGGLE_ERR("%s: invalid argument\n", getName());
 		return -1;
 	}
 	if (sock == INVALID_SOCKET) {
-		HAGGLE_ERR("%s: cannot recvfrom on closed socket\n", getName());
+		HAGGLE_ERR("%s: cannot recvfrom on closed socket\n", 
+			   getName());
 		return -1;
 	}
 	ssize_t ret = recvfrom(sock, (char *)buf, len, flags, from, fromlen);
 
 	if (ret == -1) {
-		HAGGLE_ERR("%s: recvfrom failed : %s\n", getName(), STRERROR(ERRNO));
+		HAGGLE_ERR("%s: recvfrom failed : %s\n", 
+			   getName(), STRERROR(ERRNO));
 	}
 	return ret;
 }
@@ -261,7 +282,8 @@ InterfaceRef ProtocolSocket::resolvePeerInterface(const SocketAddress& addr)
 	InterfaceRef pIface = getKernel()->getInterfaceStore()->retrieve(addr);
 
 	if (pIface) {
-		HAGGLE_DBG("Peer interface is [%s]\n", pIface->getIdentifierStr());
+		HAGGLE_DBG("Peer interface is [%s]\n", 
+			   pIface->getIdentifierStr());
 	} else if (addr.getType() == Address::TYPE_IPV4
 #if defined(ENABLE_IPv6)
 		   || addr.getType() == Address::TYPE_IPV6
@@ -273,22 +295,33 @@ InterfaceRef ProtocolSocket::resolvePeerInterface(const SocketAddress& addr)
                 struct sockaddr *peer_addr = (struct sockaddr *)buf;
                 addr.fillInSockaddr(peer_addr);
                 
-                HAGGLE_DBG("%s: isServer=%s trying to figure out peer mac for IP %s on interface %s\n", getName(), isServer() ? "true" : "false", addr.getStr(), ifname ? localIface->getName() : "unspecified");
+                HAGGLE_DBG("%s: isServer=%s mac2IP %s on interface %s\n", 
+			   getName(), isServer() ? 
+			   "true" : "false", 
+			   addr.getStr(), ifname ? 
+			   localIface->getName() : "unspecified");
 		
                 res = get_peer_mac_address(peer_addr, ifname, mac, 6);
 
 		if (res < 0) {
-			HAGGLE_ERR("Error when retreiving mac address for peer %s, error=%d\n", addr.getStr(), res);
+			HAGGLE_ERR("peer %s, error=%d\n", 
+				   addr.getStr(), res);
 		} else if (res == 0) {
-			HAGGLE_ERR("No corresponding mac address for peer %s\n", addr.getStr());
+			HAGGLE_ERR("No mac address for peer %s\n", 
+				   addr.getStr());
 		} else {
 			EthernetAddress eth_addr(mac);
-			pIface = Interface::create<EthernetInterface>(mac, "TCP peer", eth_addr, IFFLAG_UP);
+			pIface = 
+				Interface::create<EthernetInterface>(mac, 
+								     "TCP peer",
+								     eth_addr, 
+								     IFFLAG_UP);
 			
 			if (pIface) {
 				pIface->addAddress(eth_addr);
 				pIface->addAddress(addr);
-				HAGGLE_DBG("Peer interface is [%s]\n", pIface->getIdentifierStr());
+				HAGGLE_DBG("Peer interface is [%s]\n", 
+					   pIface->getIdentifierStr());
 			}
 		}
 	}
@@ -299,15 +332,18 @@ InterfaceRef ProtocolSocket::resolvePeerInterface(const SocketAddress& addr)
 bool ProtocolSocket::registerSocket()
 {
 	if (sock == INVALID_SOCKET) {
-		HAGGLE_ERR("%s: Cannot register invalid socket\n", getName());
+		HAGGLE_ERR("%s: Cannot register invalid socket\n", 
+			   getName());
 		return false;
 	} 
 	if (socketIsRegistered) {
-		HAGGLE_ERR("%s: Socket already registered\n", getName());
+		HAGGLE_ERR("%s: Socket already registered\n", 
+			   getName());
 		return false;
 	}
 	if (getKernel()->registerWatchable(sock, getManager()) <= 0) {
-		HAGGLE_ERR("%s: Could not register socket with kernel\n", getName());
+		HAGGLE_ERR("%s: Could not register socket with kernel\n", 
+			   getName());
 		return false;
 	}
 	
@@ -324,7 +360,8 @@ bool ProtocolSocket::hasWatchable(const Watchable &wbl)
 void ProtocolSocket::handleWatchableEvent(const Watchable &wbl)
 {
 	if (wbl != sock) {
-		HAGGLE_ERR("ERROR! : %s does not belong to Protocol %s\n", wbl.getStr(), getName());
+		HAGGLE_ERR("ERROR! : %s does not belong to Protocol %s\n", 
+			   wbl.getStr(), getName());
 		return;
 	}
 
@@ -334,22 +371,25 @@ void ProtocolSocket::handleWatchableEvent(const Watchable &wbl)
 		acceptClient();
 }
 
-ProtocolEvent ProtocolSocket::openConnection(const struct sockaddr *saddr, socklen_t addrlen)
+ProtocolEvent ProtocolSocket::openConnection(const struct sockaddr *saddr, 
+					     socklen_t addrlen)
 {
         bool wasNonblock = nonblock;
 
 	if (sock == INVALID_SOCKET) {
-		HAGGLE_ERR("%s: cannot open connection as socket is invalid\n", getName());
+		HAGGLE_ERR("%s: socket is invalid\n", 
+			   getName());
 		return PROT_EVENT_ERROR;
 	}
 
 	if (!saddr) {
-		HAGGLE_ERR("%s: cannot open connection because address is invalid\n", getName());
+		HAGGLE_ERR("%s:  address is invalid\n", getName());
 		return PROT_EVENT_ERROR;
 	}
 
 	if (isConnected()) {
-		HAGGLE_ERR("%s: cannot open connection because a connection is already open\n", getName());
+		HAGGLE_ERR("%s: connection is already open\n", 
+			   getName());
 		return PROT_EVENT_ERROR;
 	}
 
@@ -358,10 +398,23 @@ ProtocolEvent ProtocolSocket::openConnection(const struct sockaddr *saddr, sockl
                 setNonblock(false);
 
 	if (::connect(sock, saddr, addrlen) == SOCKET_ERROR) {
-		HAGGLE_ERR("%s Connection failed : %s\n", getName(), getProtocolErrorStr());
-
+		HAGGLE_ERR("%s - %s\n", 
+			   getName(), 
+			   getProtocolErrorStr());
+		
                 if (wasNonblock)
                         setNonblock(true);
+
+		switch (getProtocolError()) {
+		case PROT_ERROR_BAD_HANDLE:
+		case PROT_ERROR_INVALID_ARGUMENT:
+		case PROT_ERROR_NO_MEMORY:
+		case PROT_ERROR_NOT_A_SOCKET:
+		case PROT_ERROR_NO_STORAGE_SPACE:
+			return PROT_EVENT_ERROR_FATAL;
+		default:
+			break;
+		}
 
 		return PROT_EVENT_ERROR;
 	}
@@ -377,12 +430,14 @@ ProtocolEvent ProtocolSocket::openConnection(const struct sockaddr *saddr, sockl
 void ProtocolSocket::closeConnection()
 {
 	if (sock == INVALID_SOCKET) {
-		HAGGLE_ERR("%s: cannot close connection as socket is not valid\n", getName());
+		HAGGLE_ERR("%s: socket is not valid\n", 
+			   getName());
 	}	return;
 	
 	unSetFlag(PROT_FLAG_CONNECTED);
 	
-	// TODO: should consider calling closeSocket() here since that is basically doing the same thing
+	// TODO: should consider calling closeSocket() here since that
+	// is basically doing the same thing
 	if (socketIsRegistered) {
 		getKernel()->unregisterWatchable(sock);
 		socketIsRegistered = false;
@@ -390,16 +445,20 @@ void ProtocolSocket::closeConnection()
 	CLOSE_SOCKET(sock);
 }
 
-bool ProtocolSocket::setSocketOption(int level, int optname, void *optval, socklen_t optlen)
+bool ProtocolSocket::setSocketOption(int level, int optname, 
+				     void *optval, socklen_t optlen)
 {
-	if (setsockopt(sock, level, optname, (char *)optval, optlen) == SOCKET_ERROR) {
-		HAGGLE_ERR("%s: setsockopt failed : %s\n", getName(), STRERROR(ERRNO));
+	if (setsockopt(sock, level, optname, 
+		       (char *)optval, optlen) == SOCKET_ERROR) {
+		HAGGLE_ERR("%s: setsockopt failed : %s\n", 
+			   getName(), STRERROR(ERRNO));
 		return false;
 	}
 	return true;
 }
 
-ProtocolEvent ProtocolSocket::receiveData(void *buf, size_t len, const int flags, size_t *bytes)
+ProtocolEvent ProtocolSocket::receiveData(void *buf, size_t len, 
+					  const int flags, size_t *bytes)
 {
 	ssize_t ret;
 	
@@ -417,7 +476,8 @@ ProtocolEvent ProtocolSocket::receiveData(void *buf, size_t len, const int flags
 	return PROT_EVENT_SUCCESS;
 }
 
-ProtocolEvent ProtocolSocket::sendData(const void *buf, size_t len, const int flags, size_t *bytes)
+ProtocolEvent ProtocolSocket::sendData(const void *buf, size_t len, 
+				       const int flags, size_t *bytes)
 {
 	ssize_t ret;
 
@@ -435,12 +495,14 @@ ProtocolEvent ProtocolSocket::sendData(const void *buf, size_t len, const int fl
 	return PROT_EVENT_SUCCESS;
 }
 
-ProtocolEvent ProtocolSocket::waitForEvent(Timeval *timeout, bool writeevent)
+ProtocolEvent ProtocolSocket::waitForEvent(Timeval *timeout, 
+					   bool writeevent)
 {
 	Watch w;
 	int ret, index;
 
-	index = w.add(sock, writeevent ? WATCH_STATE_WRITE : WATCH_STATE_READ);
+	index = w.add(sock, writeevent ? 
+		      WATCH_STATE_WRITE : WATCH_STATE_READ);
 
 	ret = w.wait(timeout);
 	
@@ -459,7 +521,9 @@ ProtocolEvent ProtocolSocket::waitForEvent(Timeval *timeout, bool writeevent)
 	return PROT_EVENT_ERROR;
 }
 
-ProtocolEvent ProtocolSocket::waitForEvent(DataObjectRef &dObj, Timeval *timeout, bool writeevent)
+ProtocolEvent ProtocolSocket::waitForEvent(DataObjectRef &dObj, 
+					   Timeval *timeout, 
+					   bool writeevent)
 {
 	QueueElement *qe = NULL;
 	Queue *q = getQueue();
@@ -504,6 +568,7 @@ ProtocolError ProtocolSocket::getProtocolError()
 		error = PROT_ERROR_WOULD_BLOCK;
 		break;
 	case EBADF:
+	case EBADFD:
 		error = PROT_ERROR_BAD_HANDLE;
 		break;
 	case ECONNREFUSED:

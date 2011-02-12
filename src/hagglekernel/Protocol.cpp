@@ -1059,33 +1059,44 @@ bool Protocol::run()
 	HAGGLE_DBG("Running protocol %s\n", getName());
 
 	while (!isDone() && !shouldExit()) {
-
 		while (!isConnected() && !shouldExit() && !isDone()) {
                         
-			HAGGLE_DBG("Protocol %s connecting to %s\n", getName(), peerDescription().c_str());
-			if (connectToPeer() == PROT_EVENT_SUCCESS) {
-				// The connected flag should probably be set in connectToPeer,
-				// but set it here for safety
-				HAGGLE_DBG("%s successfully connected to %s\n", getName(), peerDescription().c_str());
+			HAGGLE_DBG("Protocol %s connecting to %s\n", 
+				   getName(), peerDescription().c_str());
+
+			pEvent = connectToPeer();
+			
+			if (pEvent == PROT_EVENT_SUCCESS) {
+				// The connected flag should probably
+				// be set in connectToPeer, but set it
+				// here for safety
+				HAGGLE_DBG("%s successfully connected to %s\n", 
+					   getName(), 
+					   peerDescription().c_str());
+			} else if (pEvent == PROT_EVENT_ERROR_FATAL) {
+				setMode(PROT_MODE_DONE);
+				HAGGLE_ERR("Fatal error, protocol done!\n");
 			} else {
 				numConnectTry++;
-				HAGGLE_DBG("%s connection failure %d/%d to %s\n", 
+				HAGGLE_DBG("%s connect failure %d/%d to %s\n", 
 					   getName(), numConnectTry, 
 					   PROT_CONNECTION_ATTEMPTS, 
 					   peerDescription().c_str());
 
 				if (numConnectTry == PROT_CONNECTION_ATTEMPTS) {
-					HAGGLE_DBG("%s failed to connect to %s...\n", 
-						getName(), peerDescription().c_str());
+					HAGGLE_DBG("%s connect failed to %s\n", 
+						   getName(), 
+						   peerDescription().c_str());
 					q->close();
 					setMode(PROT_MODE_DONE);
 				} else {
-					unsigned int sleep_secs = RANDOM_INT(20) + 5;
+					unsigned int sleep_secs = 
+						RANDOM_INT(20) + 5;
 
-					HAGGLE_DBG("%s sleeping %u secs\n", getName(), sleep_secs);
+					HAGGLE_DBG("%s sleeping %u secs\n", 
+						   getName(), sleep_secs);
 
 					cancelableSleep(sleep_secs * 1000);
-
 				}
 			}
                         // Check to make sure we were not cancelled

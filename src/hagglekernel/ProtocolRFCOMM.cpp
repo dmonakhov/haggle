@@ -134,7 +134,8 @@ ProtocolEvent ProtocolRFCOMMClient::connectToPeer()
 	HAGGLE_DBG("%s Trying to connect over RFCOMM to [%s] channel=%u\n", 
 		   getName(), addr->getStr(), channel);
 
-	ProtocolEvent ret = openConnection((struct sockaddr *) &peerAddr, sizeof(peerAddr));
+	ProtocolEvent ret = openConnection((struct sockaddr *) &peerAddr, 
+					   sizeof(peerAddr));
 
 	if (ret != PROT_EVENT_SUCCESS) {
 		HAGGLE_DBG("%s Connection failed to [%s] channel=%u\n", 

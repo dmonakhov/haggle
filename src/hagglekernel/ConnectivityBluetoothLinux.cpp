@@ -420,13 +420,13 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 		struct hci_inquiry_req ir;
 		inquiry_info ii[MAX_BT_RESPONSES];
 	} req;
-	int num_found = 0;
         int sock, ret, i;
 	const BluetoothAddress *addr;
         InterfaceStatus_t status;
 	struct pollfd fds;
 	struct sockaddr_hci hcia;
-
+	BluetoothInterfaceRefList btList;
+	
 	addr = conn->rootInterface->getAddress<BluetoothAddress>();
 
 	if (!addr) {
@@ -539,7 +539,8 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 
 		BluetoothAddress addr(macaddr);
 		
-                status = conn->is_known_interface(Interface::TYPE_BLUETOOTH, macaddr);
+                status = conn->is_known_interface(Interface::TYPE_BLUETOOTH, 
+						  macaddr);
         
                 if (status == INTERFACE_STATUS_HAGGLE) {
                         report_interface = true;
@@ -565,12 +566,13 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
                 } 
         
 		if (report_interface) {
-			BluetoothInterface iface(macaddr, remote_name, &addr, IFFLAG_UP);
+			btList.push_back(new BluetoothInterface(macaddr, 
+								remote_name, 
+								&addr, 
+								IFFLAG_UP));
 			
-			CM_DBG("Found Haggle device [%s - %s]\n", addr.getStr(), remote_name);
-			conn->report_interface(&iface, conn->rootInterface, 
-					       new ConnectivityInterfacePolicyTTL(2));
-			num_found++;
+			CM_DBG("Found Haggle device [%s - %s]\n", 
+			       addr.getStr(), remote_name);
 		} else {
 			CM_DBG("Device [%s - %s] is not a Haggle device\n", 
 			       addr.getStr(), remote_name);
@@ -579,8 +581,18 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
 	
 	close(sock);
 
-	CM_DBG("Bluetooth inquiry done! Num discovered=%d\n", num_found);
+	CM_DBG("Bluetooth inquiry done! Num discovered=%d\n", 
+	       btList.size());
 
+	/* 
+	   Now report interfaces
+	*/
+	for (BluetoothInterfaceRefList::iterator it = btList.begin();
+	     it != btList.end(); it++) {
+		InterfaceRef iface = *it;
+		conn->report_interface(iface, conn->rootInterface, 
+				       new ConnectivityInterfacePolicyTTL(2));
+	}
 	return;
 }
 
