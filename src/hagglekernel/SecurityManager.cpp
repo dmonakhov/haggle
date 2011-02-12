@@ -148,7 +148,11 @@ static bool generateKeyPair(int num, unsigned long e, RSA **keyPair)
 }
 #endif
 
-SecurityTask::SecurityTask(const SecurityTaskType_t _type, DataObjectRef _dObj, CertificateRef _cert) : type(_type), completed(false), dObj(_dObj), privKey(NULL), cert(_cert) 
+SecurityTask::SecurityTask(const SecurityTaskType_t _type, 
+			   DataObjectRef _dObj, 
+			   CertificateRef _cert) : 
+	type(_type), completed(false), dObj(_dObj), 
+	privKey(NULL), cert(_cert) 
 {
 }
 
@@ -156,8 +160,10 @@ SecurityTask::SecurityTask(const SecurityTaskType_t _type, DataObjectRef _dObj, 
  {
  }
 
-SecurityHelper::SecurityHelper(SecurityManager *m, const EventType _etype) : 
-	ManagerModule<SecurityManager>(m, "SecurityHelper"), taskQ("SecurityHelper"), etype(_etype)
+SecurityHelper::SecurityHelper(SecurityManager *m, 
+			       const EventType _etype) : 
+	ManagerModule<SecurityManager>(m, "SecurityHelper"), 
+	taskQ("SecurityHelper"), etype(_etype)
 {
 }
 
@@ -253,7 +259,10 @@ void SecurityHelper::doTask(SecurityTask *task)
 				HAGGLE_ERR("Certificate creation failed: This node's id is not valid!\n");
 				break;
 			}
-                        task->cert = Certificate::create(getManager()->getKernel()->getThisNode()->getIdStr(), getManager()->ca_issuer, "forever", getManager()->getKernel()->getThisNode()->getId(), &task->privKey);
+                        task->cert = Certificate::create(getManager()->getKernel()->getThisNode()->getIdStr(), 
+							 getManager()->ca_issuer, "forever", 
+							 getManager()->getKernel()->getThisNode()->getId(), 
+							 &task->privKey);
                         
 			if (task->cert) {
 				if (!task->cert->sign(getManager()->caPrivKey)) {
@@ -356,9 +365,12 @@ void SecurityHelper::cleanup()
 
 const char *security_level_names[] = { "LOW", "MEDIUM", "HIGH" };
 
-SecurityManager::SecurityManager(HaggleKernel *_haggle, const SecurityLevel_t slevel) :
-	Manager("SecurityManager", _haggle), securityLevel(slevel), etype(EVENT_TYPE_INVALID), helper(NULL), 
-	myCert(NULL), ca_issuer(CA_ISSUER_NAME), caPrivKey(NULL), caPubKey(NULL), privKey(NULL)
+SecurityManager::SecurityManager(HaggleKernel *_haggle, 
+				 const SecurityLevel_t slevel) :
+	Manager("SecurityManager", _haggle), securityLevel(slevel), 
+	etype(EVENT_TYPE_INVALID), helper(NULL), 
+	myCert(NULL), ca_issuer(CA_ISSUER_NAME), 
+	caPrivKey(NULL), caPubKey(NULL), privKey(NULL)
 {
 
 }
@@ -479,11 +491,16 @@ void SecurityManager::onPrepareShutdown()
 	Mutex::AutoLocker l(certStoreMutex);
 	
 	// Save our private key
-	kernel->getDataStore()->insertRepository(new RepositoryEntry(getName(), "privkey", RSAPrivKeyToString(privKey)));
+	kernel->getDataStore()->insertRepository(new RepositoryEntry(getName(), 
+								     "privkey", 
+								     RSAPrivKeyToString(privKey)));
 			
 	// Save all certificates
-	for (CertificateStore_t::iterator it = certStore.begin(); it != certStore.end(); it++) {
-		kernel->getDataStore()->insertRepository(new RepositoryEntry(getName(), (*it).second->getSubject().c_str(), (*it).second->toPEM()));
+	for (CertificateStore_t::iterator it = certStore.begin(); 
+	     it != certStore.end(); it++) {
+		kernel->getDataStore()->insertRepository(new RepositoryEntry(getName(), 
+									     (*it).second->getSubject().c_str(), 
+									     (*it).second->toPEM()));
 	}
 	
 	signalIsReadyForShutdown();
@@ -539,7 +556,8 @@ void SecurityManager::onRepositoryData(Event *e)
 					myCert = c;
 				
 				storeCertificate(c);
-				HAGGLE_DBG("Read certificate for subject '%s' from repository\n", c->getSubject().c_str());
+				HAGGLE_DBG("Read certificate for subject '%s' from repository\n", 
+					   c->getSubject().c_str());
 			} else {
 				HAGGLE_ERR("Could not read certificate from repository\n");
 			}
@@ -604,9 +622,11 @@ void SecurityManager::printCertificates()
 	
 	printf("[Certificate Store]:\n");
 	
-	for (CertificateStore_t::iterator it = certStore.begin(); it != certStore.end(); it++) {
+	for (CertificateStore_t::iterator it = certStore.begin(); 
+	     it != certStore.end(); it++) {
 		CertificateRef& cert = (*it).second;
-		printf("# %d subject=%s issuer=%s\n", n++, cert->getSubject().c_str(), cert->getIssuer().c_str());
+		printf("# %d subject=%s issuer=%s\n", 
+		       n++, cert->getSubject().c_str(), cert->getIssuer().c_str());
 		printf("%s\n", cert->toString().c_str());
 	}
 	
@@ -658,10 +678,13 @@ void SecurityManager::onSecurityTaskComplete(Event *e)
 			  signature (if available) into a node's bloomfilter?
 			*/
 			if (task->dObj->hasValidSignature()) {
-				HAGGLE_DBG("DataObject %s has a valid signature!\n", task->dObj->getIdStr());
-				kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_VERIFIED, task->dObj));
+				HAGGLE_DBG("DataObject %s has a valid signature!\n", 
+					   task->dObj->getIdStr());
+				kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_VERIFIED, 
+							   task->dObj));
 			} else {
-				HAGGLE_DBG("DataObject %s has an unverifiable signature!\n", task->dObj->getIdStr());
+				HAGGLE_DBG("DataObject %s has an unverifiable signature!\n", 
+					   task->dObj->getIdStr());
 			}
 			break;
                 case SECURITY_TASK_SIGN_DATAOBJECT:
@@ -735,9 +758,11 @@ void SecurityManager::onIncomingDataObject(Event *e)
 		// to ensure that the signing operation has finished in the helper thread before
 		// the data object is added to the data store.
 		if (helper->signDataObject(dObj, privKey)) {
-			HAGGLE_DBG("Successfully signed data object %s, which was added by an application.\n", dObj->getIdStr());
+			HAGGLE_DBG("Successfully signed data object %s, which was added by an application.\n", 
+				   dObj->getIdStr());
 		} else {
-			HAGGLE_DBG("Signing of data object %s, which was added by an application, failed!\n", dObj->getIdStr());
+			HAGGLE_DBG("Signing of data object %s, which was added by an application, failed!\n", 
+				   dObj->getIdStr());
 		}
 	}
 }
@@ -756,10 +781,18 @@ void SecurityManager::onSendDataObject(Event *e)
 	if (dObj->isThisNodeDescription()) {
 		// This is our node description. Piggy-back our certificate.
 		if (myCert) {
-			Metadata *m = dObj->getMetadata()->addMetadata("Security");
+			Metadata *m;
+
+			m = dObj->getMetadata()->getMetadata("Security");
 			
 			if (m) {
-				m->addMetadata(myCert->toMetadata());
+				HAGGLE_ERR("Node description already has a Security tag!\n");
+			} else {
+				m = dObj->getMetadata()->addMetadata("Security");
+				
+				if (m) {
+					m->addMetadata(myCert->toMetadata());
+				}
 			}
 		}
 	}
