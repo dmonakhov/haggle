@@ -762,12 +762,14 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 		NodeRef targ = targets->pop();
 		
 		if (!targ) {
-			HAGGLE_ERR("Target num %u is NULL!\n", numTargets);
+			HAGGLE_ERR("Target num %u is NULL!\n", 
+				   numTargets);
 			numTargets--;
 			continue;
 		}
 
-		HAGGLE_DBG("Sending to target %u - %s \n", numTargets, targ->getName().c_str());
+		HAGGLE_DBG("Sending to target %s \n", 
+			   targ->getName().c_str());
 		
 		// If we are going to loop through the node's interfaces, we need to lock the node.
 		targ.lock();	
@@ -985,7 +987,8 @@ void ProtocolManager::onSendDataObjectActual(Event *e)
 
 		numTargets--;
 	}
-	HAGGLE_DBG("Scheduled %d data objects for sending\n", numTx);
+	
+	/* HAGGLE_DBG("Scheduled %d data objects\n", numTx); */
 
 	delete targets;
 }

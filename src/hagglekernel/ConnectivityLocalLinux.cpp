@@ -154,7 +154,7 @@ static int nl_send(struct netlink_handle *nlh, struct nlmsghdr *n)
 	struct iovec iov;
 	struct msghdr msg;
 	
-	memset(&iov, 0, sizeof(iov));	
+	memset(&iov, 0, sizeof(iov));
 	iov.iov_base = n;
 	iov.iov_len = n->nlmsg_len;
 

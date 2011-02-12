@@ -453,13 +453,16 @@ bool DataObject::setFilePath(const string _filepath,
 		if (dataLen == 0) {
 			dataLen = size;
 		} else if (size != dataLen) {
-			HAGGLE_ERR("File size %lu does not match given data length %lu\n", size, dataLen);
+			HAGGLE_ERR("File size %lu does not match data length %lu\n", 
+				   size, dataLen);
 			return false;
 		}
 
-		HAGGLE_DBG("Size of file \'%s\' is %lu\n", filepath.c_str(), dataLen);
+		HAGGLE_DBG("\'%s\' %lu bytes\n", 
+			   filepath.c_str(), dataLen);
 	} else {
-		HAGGLE_DBG("File \'%s\' does not exist\n", filepath.c_str());
+		HAGGLE_DBG("File \'%s\' does not exist\n", 
+			   filepath.c_str());
 		return false;
 	}
 
@@ -1177,7 +1180,6 @@ int DataObject::parseMetadata(bool from_network)
 
 		if (m) {
 			filename = m->getContent();
-			HAGGLE_DBG("Filename is %s\n", filename.c_str());
 		}
 
 		m = dm->getMetadata(DATAOBJECT_METADATA_DATA_FILEPATH);

@@ -2848,7 +2848,9 @@ out_insertNode_err:
 	return -1;	
 }
 
-int SQLDataStore::_deleteDataObject(const DataObjectId_t &id, bool shouldReportRemoval, bool keepInBloomfilter)
+int SQLDataStore::_deleteDataObject(const DataObjectId_t &id, 
+				    bool shouldReportRemoval, 
+				    bool keepInBloomfilter)
 {
 	int ret;
 	char *sql_cmd;
@@ -2869,7 +2871,8 @@ int SQLDataStore::_deleteDataObject(const DataObjectId_t &id, bool shouldReportR
 		// with the data object.
 		if (dObj) {
 			dObj->setStored(false);
-			kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_DELETED, dObj, keepInBloomfilter));
+			kernel->addEvent(new Event(EVENT_TYPE_DATAOBJECT_DELETED, 
+						   dObj, keepInBloomfilter));
 		} else {
 			HAGGLE_ERR("Tried to report removal of a data object that "
 				"isn't in the data store. (id=%s)\n", idStr);
@@ -2883,7 +2886,8 @@ int SQLDataStore::_deleteDataObject(const DataObjectId_t &id, bool shouldReportR
 	ret = sqlite3_prepare_v2(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
 	
 	if (ret != SQLITE_OK) {
-		HAGGLE_DBG("Delete dataobject command compilation failed : %s\n", sqlite3_errmsg(db));
+		HAGGLE_DBG("Delete dataobject command compilation failed : %s\n", 
+			   sqlite3_errmsg(db));
 		return -1;
 	}
 	
@@ -2899,15 +2903,19 @@ int SQLDataStore::_deleteDataObject(const DataObjectId_t &id, bool shouldReportR
 	sqlite3_finalize(stmt);
 	
 	if (ret == SQLITE_ERROR) {
-		HAGGLE_DBG("Could not delete dataobject : %s\n", sqlite3_errmsg(db));
+		HAGGLE_DBG("Could not delete dataobject : %s\n", 
+			   sqlite3_errmsg(db));
 		return -1;
 	} else {
 		if (ret == SQLITE_ROW) {
-			HAGGLE_DBG("SQLITE_ROW Deleted data object %s\n", idStr);
+			HAGGLE_DBG("SQLITE_ROW Deleted data object %s\n", 
+				   idStr);
 		} else if (ret == SQLITE_DONE) {
-			HAGGLE_DBG("SQLITE_DONE Deleted data object %s\n", idStr);
+			HAGGLE_DBG("SQLITE_DONE Deleted data object %s\n", 
+				   idStr);
 		} else {
-			HAGGLE_DBG("Delete data object %s - NO MATCH?\n", idStr);
+			HAGGLE_DBG("Delete data object %s - NO MATCH?\n", 
+				   idStr);
 		}
 	}
 	return 0;
@@ -3031,25 +3039,33 @@ int SQLDataStore::_insertDataObject(DataObjectRef& dObj,
 	HAGGLE_DBG("DataStore insert data object [%s] with num_attributes=%d\n", 
 		dObj->getIdStr(), dObj->getAttributes()->size());
 
-	if (!dObj->getRawMetadataAlloc((unsigned char **)&metadata, &metadatalen)) {
-		HAGGLE_ERR("Could not get raw metadata from data object\n");
-		dObj.unlock();
-		return -1;
-	}
-
 	// adding node_id for node descriptions to refer to the corresponding node 
 	// and simplifying to delete old node descriptions
 	if (dObj->isNodeDescription()) {
 		ret = deleteDataObjectNodeDescriptions(dObj, node_id);
+		/* 
+		   return value of 1 means the node description is a new one,
+		   and we will continue with the insert. Otherwise ignore.
+		*/
 		if (ret == 0) {
 			// this is an old node description, ignore it.
-			HAGGLE_DBG("There are already newer node descriptions for the same node [%s] in the data store. Data object will not be inserted\n", node_id.c_str());
+			HAGGLE_DBG("There are already newer node descriptions for"
+				   " the same node [%s] in the data store.\n", 
+				   node_id.c_str());
 			dObj.unlock();
-			free(metadata);
 			return -1;
 		} else if (ret == -1) {
-			HAGGLE_ERR("Bad node description\n");
+			HAGGLE_ERR("Bad node description, ignoring insert.\n");
+			dObj.unlock();
+			return -1;
 		}
+	}
+
+	if (!dObj->getRawMetadataAlloc((unsigned char **)&metadata, 
+				       &metadatalen)) {
+		HAGGLE_ERR("Could not get raw metadata from data object\n");
+		dObj.unlock();
+		return -1;
 	}
 	
 	if (dObj->getRemoteInterface())

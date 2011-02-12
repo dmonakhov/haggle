@@ -397,10 +397,8 @@ ProtocolEvent Protocol::startTxRx()
 {
 	if (isClient()) {
 		if (isRunning()) {
-			HAGGLE_DBG("%s Client thread already running!\n", getName());
 			return PROT_EVENT_SUCCESS;
 		}
-		
 		return start() ? PROT_EVENT_SUCCESS : PROT_EVENT_ERROR;
 	}
 	HAGGLE_DBG("%s Client flag not set\n", getName());
