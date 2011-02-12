@@ -494,6 +494,8 @@ ProtocolEvent Protocol::getData(size_t *bytesRead)
                                         case PROT_ERROR_NOT_CONNECTED:
                                         case PROT_ERROR_NOT_A_SOCKET:
                                         case PROT_ERROR_CONNECTION_RESET:
+						HAGGLE_ERR("Fatal error! %s\n",
+							   getProtocolErrorStr());
                                                 return PROT_EVENT_ERROR_FATAL;
                                         case PROT_ERROR_WOULD_BLOCK:
                                                 if (blockCount++ < PROT_BLOCK_TRY_MAX) {
@@ -751,13 +753,21 @@ ProtocolEvent Protocol::receiveDataObject()
 	do {
 		pEvent = getData(&bytesRead);
 
-                if (pEvent == PROT_EVENT_PEER_CLOSED) {
+		switch (pEvent) {
+		case PROT_EVENT_PEER_CLOSED:
 			HAGGLE_DBG("Peer [%s] closed connection\n", 
 				   peerDescription().c_str());
 			return pEvent;
+		case PROT_EVENT_ERROR_FATAL:
+			return pEvent;
+		case PROT_EVENT_ERROR:
+		default:
+			break;
 		}
 		
-		if (bufferDataLen > 0) {
+		if (bufferDataLen == 0) {
+			HAGGLE_DBG("No data to put into data object!\n");
+		} else {
 			ssize_t bytesPut = 0;
 			
 			totBytesRead += bytesRead;
@@ -851,9 +861,7 @@ ProtocolEvent Protocol::receiveDataObject()
 					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_INCOMING, dObj, peerNode));
 				}
 			}				
-		} else {
-			HAGGLE_DBG("No data to put into data object!\n");
-		}
+		} 
 		//HAGGLE_DBG("bytesRead=%lu bytesRemaining=%lu\n", bytesRead, bytesRemaining);
 	} while (bytesRemaining && pEvent == PROT_EVENT_SUCCESS);
 
