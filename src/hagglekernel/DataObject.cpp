@@ -416,7 +416,9 @@ void DataObject::setSignature(const string signee, unsigned char *sig, size_t si
 	//HAGGLE_DBG("Set signature on data object, siglen=%lu\n", siglen);
 }
 
-bool DataObject::setFilePath(const string _filepath, size_t data_len, bool from_network) 
+bool DataObject::setFilePath(const string _filepath, 
+			     size_t data_len, 
+			     bool from_network) 
 {
 	filepath = _filepath;
 	dataLen = data_len;
@@ -793,7 +795,8 @@ DataObjectDataRetrieverImplementation::DataObjectDataRetrieverImplementation(con
 			HAGGLE_DBG("Data object [%s] is scheduled for local application, not retrieving data\n", dObj->getIdStr());
 		} else {
 			if (dObj->getFilePath().length() > 0) {
-				HAGGLE_ERR("Data length is 0, although filepath \'%s\' is not\n", dObj->getFilePath().c_str());
+				HAGGLE_ERR("Data length is 0, although filepath \'%s\' is valid\n", 
+					   dObj->getFilePath().c_str());
 			} else {
 				HAGGLE_DBG("No file associated with data object [%s]\n", dObj->getIdStr());
 			}

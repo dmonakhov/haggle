@@ -799,7 +799,9 @@ void ForwardingManager::onNewNeighbor(Event *e)
 	pendingQueryList.push_back(node);
 	kernel->addEvent(new Event(delayedDataObjectQueryCallback, node, 5));
 	
-	HAGGLE_DBG("%s - new node contact with %s [id=%s]. Delaying data object query in case there is an incoming node description for the node\n", 
+	HAGGLE_DBG("%s - new node contact with %s [id=%s]."
+		   " Delaying data object query in case there is"
+		   " an incoming node description for the node\n", 
 		   getName(), node->getName().c_str(), node->getIdStr());
 
 
@@ -839,7 +841,8 @@ void ForwardingManager::onEndNeighbor(Event *e)
 	}
 #if defined(ENABLE_RECURSIVE_ROUTING_UPDATES)
 	if (recursiveRoutingUpdates) {
-		// Trigger a new routing update to inform our other neighbors about our new metrics
+		// Trigger a new routing update to inform our other
+		// neighbors about our new metrics
 		recursiveRoutingUpdate(node, NULL);
 	}
 #endif
@@ -854,7 +857,8 @@ void ForwardingManager::onNodeUpdated(Event *e)
 	NodeRefList &replaced = e->getNodeList();
 	
 	if (node->getType() == Node::TYPE_UNDEFINED) {
-		HAGGLE_DBG("%s Node is undefined, deferring dataObjectQuery\n", getName());
+		HAGGLE_DBG("%s Node is undefined, deferring dataObjectQuery\n", 
+			   getName());
 		return;
 	} 
 	
@@ -879,9 +883,11 @@ void ForwardingManager::onNodeUpdated(Event *e)
 		it++;
 	}
 	
-	// Check if there are any pending node queries that have been initiated by a previous
-	// new node contact event (in onNewNeighbor). In that case, remove the node from the
-	// pendingQueryList so that we do not generate the query twice.
+	// Check if there are any pending node queries that have been
+	// initiated by a previous new node contact event (in
+	// onNewNeighbor). In that case, remove the node from the
+	// pendingQueryList so that we do not generate the query
+	// twice.
 	for (List<NodeRef>::iterator it = pendingQueryList.begin(); 
 	     it != pendingQueryList.end(); it++) {
 		if (node == *it) {
@@ -958,7 +964,8 @@ size_t ForwardingManager::metadataToRecurseList(Metadata *m, NodeRefList& recurs
 	return recurse_list.size();
 }
 
-Metadata *ForwardingManager::recurseListToMetadata(Metadata *m, const NodeRefList& recurse_list)
+Metadata *ForwardingManager::recurseListToMetadata(Metadata *m, 
+						   const NodeRefList& recurse_list)
 {
 	if (!m)
 		return NULL;
@@ -1100,8 +1107,11 @@ void ForwardingManager::onNewDataObject(Event *e)
 	// forward the data object to
 	if (dObj->isPersistent()) {
 		if (kernel->getNodeStore()->numNeighbors() > 0) {
-			HAGGLE_DBG("%s - new data object %s, doing node query\n", getName(), dObj->getIdStr());
-			kernel->getDataStore()->doNodeQuery(dObj, MAX_NODES_TO_FIND_FOR_NEW_DATAOBJECTS, 1, nodeQueryCallback);
+			HAGGLE_DBG("%s - new data object %s, doing node query\n", 
+				   getName(), dObj->getIdStr());
+			kernel->getDataStore()->doNodeQuery(dObj, 
+							    MAX_NODES_TO_FIND_FOR_NEW_DATAOBJECTS, 1, 
+							    nodeQueryCallback);
 		} else {
 			HAGGLE_DBG("%s data object %s, but deferring node query due to 0 neighbors\n", 
 				   getName(), dObj->getIdStr());
@@ -1118,7 +1128,10 @@ void ForwardingManager::onTargetNodes(Event * e)
 	// node is a good delegate forwarder:
 	if (isNeighbor(delegate_node)) {
 		// No point in asking for data objects if the delegate is not a current neighbor
-		kernel->getDataStore()->doDataObjectForNodesQuery(delegate_node, target_nodes, 1, dataObjectQueryCallback);
+		kernel->getDataStore()->
+			doDataObjectForNodesQuery(delegate_node, 
+						  target_nodes, 1, 
+						  dataObjectQueryCallback);
 	}
 }
 

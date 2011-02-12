@@ -490,53 +490,55 @@ ProtocolEvent Protocol::getData(size_t *bytesRead)
                         
                         if (pEvent == PROT_EVENT_ERROR) {
                                 switch (getProtocolError()) {
-                                        case PROT_ERROR_BAD_HANDLE:
-                                        case PROT_ERROR_NOT_CONNECTED:
-                                        case PROT_ERROR_NOT_A_SOCKET:
-                                        case PROT_ERROR_CONNECTION_RESET:
-						HAGGLE_ERR("Fatal error! %s\n",
+				case PROT_ERROR_BAD_HANDLE:
+				case PROT_ERROR_NOT_CONNECTED:
+				case PROT_ERROR_NOT_A_SOCKET:
+					HAGGLE_ERR("Fatal error! %s\n",
 							   getProtocolErrorStr());
-                                                return PROT_EVENT_ERROR_FATAL;
-                                        case PROT_ERROR_WOULD_BLOCK:
-                                                if (blockCount++ < PROT_BLOCK_TRY_MAX) {
-                                                        // Set event to success so that the loop does not quit
-                                                        pEvent = PROT_EVENT_SUCCESS;
-
-                                                        /*
-                                                          On Windows mobile, we repeatedly get a WSAEWOULDBLOCK error
-                                                          here when runnig on over RFCOMM. The protocol probably reads 
-                                                          faster than data arrives over the bluetooth channel.
-                                                          Even if the socket is set to blocking mode by default,
-                                                          we get WSAEWOULDBLOCK anyway. I guess, for now, we just
-                                                          have to live with regular errors and just let the protocol
-                                                          try again after a short sleep time. 
-
+					return PROT_EVENT_ERROR_FATAL;
+				case PROT_ERROR_CONNECTION_RESET:
+					HAGGLE_DBG("%s\n", getProtocolErrorStr());
+					return PROT_EVENT_PEER_CLOSED;
+				case PROT_ERROR_WOULD_BLOCK:
+					if (blockCount++ < PROT_BLOCK_TRY_MAX) {
+						// Set event to success so that the loop does not quit
+						pEvent = PROT_EVENT_SUCCESS;
+						
+						/*
+						  On Windows mobile, we repeatedly get a WSAEWOULDBLOCK error
+						  here when runnig on over RFCOMM. The protocol probably reads 
+						  faster than data arrives over the bluetooth channel.
+						  Even if the socket is set to blocking mode by default,
+						  we get WSAEWOULDBLOCK anyway. I guess, for now, we just
+						  have to live with regular errors and just let the protocol
+						  try again after a short sleep time. 
+						  
                                                           In order to avoid repeated debug messages here as data is
                                                           received, we only print the debug message once we reach
                                                           max block count in the case of Windows mobile.
-                                                        */
+						*/
 #ifdef OS_WINDOWS_MOBILE
-                                                        if (blockCount == PROT_BLOCK_TRY_MAX){
-                                                                HAGGLE_DBG("Receive would block, try number %d/%d\n",
-                                                                           blockCount, PROT_BLOCK_TRY_MAX);
-                                                        }
+						if (blockCount == PROT_BLOCK_TRY_MAX) {
+							HAGGLE_DBG("Receive would block, try number %d/%d\n",
+								   blockCount, PROT_BLOCK_TRY_MAX);
+						}
 #else
-                                                        HAGGLE_DBG("Receive would block, try number %d/%d in %.3lf seconds\n",
-                                                                   blockCount, PROT_BLOCK_TRY_MAX, 
-                                                                   (double)PROT_BLOCK_SLEEP_TIME_MSECS / 1000);
+						HAGGLE_DBG("Receive would block, try number %d/%d in %.3lf seconds\n",
+							   blockCount, PROT_BLOCK_TRY_MAX, 
+							   (double)PROT_BLOCK_SLEEP_TIME_MSECS / 1000);
 #endif
-
-                                                        cancelableSleep(PROT_BLOCK_SLEEP_TIME_MSECS);
-
-                                                } else {
-							HAGGLE_DBG("Max tries reached,"
-								   " giving up\n");
-                                                        pEvent = PROT_EVENT_ERROR_FATAL;
-                                                }
-                                                break;
-                                        default:
-                                                HAGGLE_ERR("Protocol error : %s\n", 
-							   STRERROR(ERRNO));
+						
+						cancelableSleep(PROT_BLOCK_SLEEP_TIME_MSECS);
+						
+					} else {
+						HAGGLE_DBG("Max tries reached,"
+							   " giving up\n");
+						pEvent = PROT_EVENT_ERROR_FATAL;
+					}
+					break;
+				default:
+					HAGGLE_ERR("Protocol error : %s\n", 
+						   STRERROR(ERRNO));
                                 }
                         } else if (pEvent == PROT_EVENT_PEER_CLOSED) {
                                 HAGGLE_DBG("%s - peer [%s] closed connection\n", 
@@ -1117,13 +1119,15 @@ bool Protocol::run()
 		Timeval timeout(PROT_WAIT_TIME_BEFORE_DONE);
 		DataObjectRef dObj;
 
-		HAGGLE_DBG("%s Waiting for data object or timeout...\n", getName());
+		HAGGLE_DBG("%s Waiting for data object or timeout...\n", 
+			   getName());
 
 		pEvent = waitForEvent(dObj, &timeout);
 		
 		timeout = Timeval::now() - t_start;
 
-		HAGGLE_DBG("%s Got event %d, checking what to do...\n", getName(), pEvent);
+		HAGGLE_DBG("%s Got event %d, checking what to do...\n", 
+			   getName(), pEvent);
 
 		switch (pEvent) {
 			case PROT_EVENT_TIMEOUT:
@@ -1134,9 +1138,8 @@ bool Protocol::run()
 				// Data object to send:
 				if (!dObj) {
 					// Something is wrong here. TODO: better error handling than continue?
-					HAGGLE_ERR("%s No data object in queue despite indicated. Something is WRONG when sending to [%s]!\n", 
+					HAGGLE_ERR("%s No data object in queue. ERROR when sending to [%s]!\n", 
 						   getName(), peerDescription().c_str());
-					
 					break;
 				}
 				HAGGLE_DBG("%s Data object retrieved from queue, sending to [%s]\n", 
@@ -1147,7 +1150,9 @@ bool Protocol::run()
 				if (pEvent == PROT_EVENT_SUCCESS || pEvent == PROT_EVENT_REJECT) {
 					// Treat reject as SUCCESS, since it probably means the peer already has the
 					// data object and we should therefore not try to send it again.
-					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, dObj, peerNode, (pEvent == PROT_EVENT_REJECT) ? 1 : 0));
+					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_SUCCESSFUL, 
+									dObj, peerNode, 
+									(pEvent == PROT_EVENT_REJECT) ? 1 : 0));
 				} else {
 					// Send success/fail event with this data object
 					switch (pEvent) {
@@ -1160,7 +1165,7 @@ bool Protocol::run()
 							// until next time he is our neighbor. For now, treat
 							// the same way as if the peer closed the connection.
 						case PROT_EVENT_PEER_CLOSED:
-							HAGGLE_DBG("%s Peer [%s] closed its end of the connection...\n", 
+							HAGGLE_DBG("%s Peer [%s] closed connection.\n", 
 								getName(), peerDescription().c_str());
 							q->close();
 							setMode(PROT_MODE_DONE);
@@ -1171,7 +1176,7 @@ bool Protocol::run()
 								getName(), peerDescription().c_str());
 							break;
 						case PROT_EVENT_ERROR_FATAL:
-							HAGGLE_ERR("%s Data object fatal error when sending to %s!\n", 
+							HAGGLE_ERR("%s Fatal error when sending to %s!\n", 
 								getName(), peerDescription().c_str());
 							q->close();
 							setMode(PROT_MODE_DONE);
@@ -1180,12 +1185,14 @@ bool Protocol::run()
 							q->close();
 							setMode(PROT_MODE_DONE);
 					}
-					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_FAILURE, dObj, peerNode));
+					getKernel()->addEvent(new Event(EVENT_TYPE_DATAOBJECT_SEND_FAILURE, 
+									dObj, peerNode));
 				}
 				break;
 			case PROT_EVENT_INCOMING_DATA:
 				// Data object to receive:
-				HAGGLE_DBG("%s Incoming data object from [%s]\n", getName(), peerDescription().c_str());
+				HAGGLE_DBG("%s Incoming data object from [%s]\n", 
+					   getName(), peerDescription().c_str());
 				
 				pEvent = receiveDataObject();	
 
@@ -1195,24 +1202,24 @@ bool Protocol::run()
 							getName(), peerDescription().c_str());
 						break;
 					case PROT_EVENT_PEER_CLOSED:
-						HAGGLE_DBG("%s Peer [%s] closed its end of the connection...\n", 
-							getName(), peerDescription().c_str());
 						q->close();
 						setMode(PROT_MODE_DONE);
 						closeConnection();
 						break;
 					case PROT_EVENT_ERROR:
-						HAGGLE_ERR("%s Data object receive failed... error num %d\n", getName(), numerr);
+						HAGGLE_ERR("%s Data object receive failed... error num %d\n", 
+							   getName(), numerr);
 						if (numerr++ > 3 || shouldExit()) {
 							q->close();
 							closeConnection();
 							setMode(PROT_MODE_DONE);
-							HAGGLE_DBG("%s Reached max errors=%d - Cancelling protocol!\n", 
+							HAGGLE_DBG("%s Reached max errors=%d. Cancelling.\n", 
 								getName(), numerr);
 						}
 						continue;
 					case PROT_EVENT_ERROR_FATAL:
-						HAGGLE_ERR("%s Data object receive fatal error!\n", getName());
+						HAGGLE_ERR("%s Data object receive fatal error!\n",
+							   getName());
 						q->close();
 						setMode(PROT_MODE_DONE);
 						break;
@@ -1222,10 +1229,12 @@ bool Protocol::run()
 				}
 				break;
 			case PROT_EVENT_TXQ_EMPTY:
-				HAGGLE_ERR("%s - Queue was empty\n", getName());
+				HAGGLE_ERR("%s - Queue was empty\n", 
+					   getName());
 				break;
 			case PROT_EVENT_ERROR:
-				HAGGLE_ERR("Error num %d in protocol %s\n", numerr, getName());
+				HAGGLE_ERR("Error num %d in protocol %s\n", 
+					   numerr, getName());
 
 				if (numerr++ > 3 || shouldExit()) {
 					q->close();

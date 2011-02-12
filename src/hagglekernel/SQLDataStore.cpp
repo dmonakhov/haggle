@@ -3451,7 +3451,12 @@ filterQuery_cleanup:
 
 // ----- Node > Dataobjects
 
-int SQLDataStore::_doDataObjectQueryStep2(NodeRef &node, NodeRef delegate_node, DataStoreQueryResult *qr, int max_matches, unsigned int threshold, unsigned int attrMatch)
+int SQLDataStore::_doDataObjectQueryStep2(NodeRef &node, 
+					  NodeRef delegate_node, 
+					  DataStoreQueryResult *qr, 
+					  int max_matches, 
+					  unsigned int threshold, 
+					  unsigned int attrMatch)
 {
 	int ret;
 	sqlite3_stmt *stmt;
@@ -3542,7 +3547,10 @@ int SQLDataStore::_doDataObjectQuery(DataStoreDataObjectQuery *q)
 	qr->setQuerySqlStartTime();
 	qr->setQueryInitTime(q->getQueryInitTime());
 
-	num_match = _doDataObjectQueryStep2(node, NULL, qr, node->getMaxDataObjectsInMatch(), node->getMatchingThreshold(), q->getAttrMatch());
+	num_match = _doDataObjectQueryStep2(node, NULL, 
+					    qr, node->getMaxDataObjectsInMatch(), 
+					    node->getMatchingThreshold(), 
+					    q->getAttrMatch());
 
 	if (num_match == 0) {
 		qr->setQuerySqlEndTime();
