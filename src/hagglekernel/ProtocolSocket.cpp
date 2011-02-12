@@ -568,7 +568,9 @@ ProtocolError ProtocolSocket::getProtocolError()
 		error = PROT_ERROR_WOULD_BLOCK;
 		break;
 	case EBADF:
+#if defined(OS_LINUX)
 	case EBADFD:
+#endif
 		error = PROT_ERROR_BAD_HANDLE;
 		break;
 	case ECONNREFUSED:
