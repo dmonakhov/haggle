@@ -73,12 +73,13 @@ static int add_service(sdp_session_t *session, uint32_t *handle)
 	uuid_t root_uuid; 
 	uuid_t rfcomm_uuid, l2cap_uuid, svc_uuid;
 	sdp_list_t *root_list;
-	sdp_list_t *rfcomm_list = 0, *l2cap_list = 0, *proto_list = 0, *access_proto_list = 0, *service_list = 0;
-       
+	sdp_list_t *rfcomm_list = 0, *l2cap_list = 0, 
+		*proto_list = 0, *access_proto_list = 0, 
+		*service_list = 0;
 	sdp_data_t *channel = 0;
 	sdp_record_t *rec;
-	// connect to the local SDP server, register the service record, and
-	// disconnect
+	// connect to the local SDP server, register the service
+	// record, and disconnect
 
 	if (!session) {
 		HAGGLE_DBG("Bad local SDP session\n");
@@ -159,12 +160,12 @@ static int del_service(sdp_session_t *session, uint32_t handle)
 
 	if (sdp_device_record_unregister(session, &bdaddr_local, rec) != 0) {
 		/* 
-		 If Bluetooth is shut off, the sdp daemon will not be running and it is
-		 therefore common that this function will fail in that case. This is fine
-		 since the record is removed when the daemon shuts down. We only have
+		 If Bluetooth is shut off, the sdp daemon will not be
+		 running and it is therefore common that this function
+		 will fail in that case. This is fine since the record
+		 is removed when the daemon shuts down. We only have
 		 to free our record handle here then....
 		 */
-		//CM_DBG("Failed to unregister service record: %s\n", strerror(errno));
 		sdp_record_free(rec);
 		return -1;
 	}
@@ -193,12 +194,15 @@ void print_profile(void *data, void *u){
 	memset(profile_uuid, 0, MAX_LEN_PROFILEDESCRIPTOR_UUID_STR+1);
 	
 	sdp_uuid2strn(&d->uuid, uuid, MAX_LEN_UUID_STR);
-	sdp_profile_uuid2strn(&d->uuid, profile_uuid, MAX_LEN_PROFILEDESCRIPTOR_UUID_STR);
+	sdp_profile_uuid2strn(&d->uuid, profile_uuid, 
+			      MAX_LEN_PROFILEDESCRIPTOR_UUID_STR);
 
-	snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\t%s (0x%s)\n", profile_uuid, uuid);
+	snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, 
+		 "\t%s (0x%s)\n", profile_uuid, uuid);
 
 	if(d->version){
-		snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tVersion: 0x%04x\n", d->version);
+		snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, 
+			 "\tVersion: 0x%04x\n", d->version);
 	}
 }
 
@@ -206,9 +210,12 @@ void print_lang(void *data, void *u){
 	sdp_lang_attr_t *lang = (sdp_lang_attr_t *)data;
 	char *buf = (char *)u;
 
-	snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tcode_ISO639: 0x%02x\n", lang->code_ISO639);
-	snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tencoding:    0x%02x\n", lang->encoding);
-	snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tbase_offset: 0x%02x\n", lang->base_offset);
+	snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, 
+		 "\tcode_ISO639: 0x%02x\n", lang->code_ISO639);
+	snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, 
+		 "\tencoding:    0x%02x\n", lang->encoding);
+	snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, 
+		 "\tbase_offset: 0x%02x\n", lang->base_offset);
 }
 
 void print_proto_desc(void *data, void *u){
@@ -231,29 +238,55 @@ void print_proto_desc(void *data, void *u){
 		case SDP_UUID128:
 			proto = sdp_uuid_to_proto(&d->val.uuid);
 			sdp_uuid2strn(&d->val.uuid, uuid, MAX_LEN_UUID_STR);
-			sdp_proto_uuid2strn(&d->val.uuid, proto_uuid, MAX_LEN_PROTOCOL_UUID_STR);
-			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\t%s (0x%s)\n", proto_uuid, uuid);
+			sdp_proto_uuid2strn(&d->val.uuid, 
+					    proto_uuid, 
+					    MAX_LEN_PROTOCOL_UUID_STR);
+			snprintf(buf+strlen(buf), 
+				 MAXLEN-strlen(buf)-1, 
+				 "\t%s (0x%s)\n", 
+				 proto_uuid, uuid);
 			break;
 		case SDP_UINT8:
 			if(proto == RFCOMM_UUID)
-				snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tChannel: %d\n", d->val.uint8);
+				snprintf(buf+strlen(buf), 
+					 MAXLEN-strlen(buf)-1, 
+					 "\tChannel: %d\n", 
+					 d->val.uint8);
 			else
-				snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tuint8: 0x%x\n", d->val.uint8);
+				snprintf(buf+strlen(buf), 
+					 MAXLEN-strlen(buf)-1, 
+					 "\tuint8: 0x%x\n", 
+					 d->val.uint8);
 			break;
 		case SDP_UINT16:
 			if (proto == L2CAP_UUID) {
 				if (i == 1)
-					snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tPSM: %d\n", d->val.uint16);
+					snprintf(buf+strlen(buf), 
+						 MAXLEN-strlen(buf)-1, 
+						 "\tPSM: %d\n", 
+						 d->val.uint16);
 				else
-					snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tVersion: 0x%04x\n", d->val.uint16);
+					snprintf(buf+strlen(buf), 
+						 MAXLEN-strlen(buf)-1, 
+						 "\tVersion: 0x%04x\n", 
+						 d->val.uint16);
 				
 			} else if (proto == BNEP_UUID)
 				if (i == 1)
-					snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tVersion: 0x%04x\n", d->val.uint16);
+					snprintf(buf+strlen(buf), 
+						 MAXLEN-strlen(buf)-1, 
+						 "\tVersion: 0x%04x\n", 
+						 d->val.uint16);
 				else
-					snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tuint16: 0x%x\n", d->val.uint16);
+					snprintf(buf+strlen(buf), 
+						 MAXLEN-strlen(buf)-1, 
+						 "\tuint16: 0x%x\n", 
+						 d->val.uint16);
 			else
-				snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tuint16: 0x%x\n", d->val.uint16);
+				snprintf(buf+strlen(buf), 
+					 MAXLEN-strlen(buf)-1, 
+					 "\tuint16: 0x%x\n", 
+					 d->val.uint16);
 			break;
 			/*
 			  case SDP_SEQ16:
@@ -262,7 +295,8 @@ void print_proto_desc(void *data, void *u){
 			  break;
 			*/
 		default:
-			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\tUnknow: 0x%x\n", d->dtd);
+			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, 
+				 "\tUnknow: 0x%x\n", d->dtd);
 			break;
 		}
 	}
@@ -283,9 +317,11 @@ void print_class(void *data, void *u){
 	memset(svclass_uuid, 0, MAX_LEN_SERVICECLASS_UUID_STR+1);
 	
 	sdp_uuid2strn((uuid_t *)data, uuid, MAX_LEN_UUID_STR);
-	sdp_svclass_uuid2strn((uuid_t *)data, svclass_uuid, MAX_LEN_SERVICECLASS_UUID_STR);
+	sdp_svclass_uuid2strn((uuid_t *)data, svclass_uuid, 
+			      MAX_LEN_SERVICECLASS_UUID_STR);
 	
-	snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "\t%s (0x%s)\n", svclass_uuid, uuid);
+	snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, 
+		 "\t%s (0x%s)\n", svclass_uuid, uuid);
 }
 
 #endif // BLUETOOTH_SERVICE_SCAN_DEBUG
@@ -310,7 +346,9 @@ static int do_search(sdp_session_t *session, uuid_t *uuid)
 	HAGGLE_DBG("Searching for services\n");
 
 	// perform the search
-	err = sdp_service_search_attr_req(session, search_list, SDP_ATTR_REQ_RANGE, attrid_list, &response_list);
+	err = sdp_service_search_attr_req(session, search_list, 
+					  SDP_ATTR_REQ_RANGE, 
+					  attrid_list, &response_list);
 
 	if (err) {
 		result = -1;
@@ -326,31 +364,38 @@ static int do_search(sdp_session_t *session, uuid_t *uuid)
 		sdp_data_t *data;
 		
 		if ((data = sdp_data_get(rec, SDP_ATTR_SVCNAME_PRIMARY)) != NULL){
-			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "Service Name: %s\n", data->val.str);
+			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, 
+				 "Service Name: %s\n", data->val.str);
 		}
 		if ((data = sdp_data_get(rec, SDP_ATTR_SVCDESC_PRIMARY)) != NULL){
-			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "Service Description: %s\n", data->val.str);
+			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, 
+				 "Service Description: %s\n", data->val.str);
 		}
 		if ((data = sdp_data_get(rec, SDP_ATTR_PROVNAME_PRIMARY)) != NULL){
-			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "Service Provider: %s\n", data->val.str);
+			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, 
+				 "Service Provider: %s\n", data->val.str);
 		}
 		if (sdp_get_service_classes(rec, &list) == 0){
-			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "Service Classes:\n");
+			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, 
+				 "Service Classes:\n");
 			sdp_list_foreach(list, print_class, buf);
 			sdp_list_free(list, free);
 		}
 		if (sdp_get_access_protos(rec, &list) == 0){
-			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "Service Protocol:\n");
+			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, 
+				 "Service Protocol:\n");
 			sdp_list_foreach(list, print_proto, buf);
 			sdp_list_free(list, (sdp_free_func_t)sdp_data_free);
 		}
 		if (sdp_get_lang_attr(rec, &list) == 0){
-			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "Service Language:\n");
+			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, 
+				 "Service Language:\n");
 			sdp_list_foreach(list, print_lang, buf);
 			sdp_list_free(list, free);
 		}
 		if (sdp_get_profile_descs(rec, &list) == 0){
-			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, "Service Profile:\n");
+			snprintf(buf+strlen(buf), MAXLEN-strlen(buf)-1, 
+				 "Service Profile:\n");
 			sdp_list_foreach(list, print_profile, buf);
 			sdp_list_free(list, free);
 		}
@@ -362,8 +407,8 @@ static int do_search(sdp_session_t *session, uuid_t *uuid)
 
 			if ((port = sdp_get_proto_port(p, RFCOMM_UUID)) != 0) {
 				result = port;
-                                printf("Found port %d\n", result);
-			} else if ((port = sdp_get_proto_port(p, L2CAP_UUID)) != 0) {
+			} else if ((port = 
+				    sdp_get_proto_port(p, L2CAP_UUID)) != 0) {
 			} else {
 			}
 
@@ -399,7 +444,8 @@ static int find_haggle_service(bdaddr_t bdaddr)
 	ba2str(&bdaddr, str);
 
 	if (!sess) {
-		HAGGLE_ERR("Failed to connect to SDP server on %s: %s\n", str, strerror(errno));
+		HAGGLE_ERR("Failed to connect to SDP server on %s: %s\n", 
+			   str, strerror(errno));
 		return -1;
 	}
 

@@ -728,7 +728,8 @@ out_error:
 	
 }
 
-int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ignore_busy_signal)
+int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, 
+			       int ignore_busy_signal)
 {
 	int ret;
 	struct haggle_handle *hh = NULL;
@@ -816,7 +817,8 @@ int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ig
 	haggle_addr.sin_port = htons(HAGGLE_SERVICE_DEFAULT_PORT);
 #endif
 
-	dobj = create_control_dataobject(hh, CTRL_TYPE_REGISTRATION_REQUEST, NULL);
+	dobj = create_control_dataobject(hh, CTRL_TYPE_REGISTRATION_REQUEST, 
+					 NULL);
 
 	if (!dobj) {
 		ret = HAGGLE_ALLOC_ERROR;
@@ -846,7 +848,8 @@ int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ig
 	/*
 	 Check the reply message.
 	 */	
-	m = haggle_dataobject_get_metadata(dobj_reply, DATAOBJECT_METADATA_APPLICATION);
+	m = haggle_dataobject_get_metadata(dobj_reply, 
+					   DATAOBJECT_METADATA_APPLICATION);
 
 #if defined(DEBUG)
 	haggle_dataobject_print(stdout, dobj_reply);
@@ -859,7 +862,7 @@ int haggle_handle_get_internal(const char *name, haggle_handle_t *handle, int ig
 	}
 	if (!metadata_get_parameter(m, DATAOBJECT_METADATA_APPLICATION_NAME_PARAM)) {
 		haggle_dataobject_free(dobj_reply);
-		LIBHAGGLE_ERR("Error: Invalid application metadata: No application name\n");
+		LIBHAGGLE_ERR("Error: No application name metadata\n");
 		goto out_error;
 		
 	}
@@ -1248,7 +1251,8 @@ int haggle_ipc_send_dataobject(struct haggle_handle *hh, haggle_dobj_t *dobj,
 		return HAGGLE_ALLOC_ERROR;
 	}
         
-	ret = sendto(hh->sock, data, datalen, 0, (struct sockaddr *)&haggle_addr, sizeof(haggle_addr));
+	ret = sendto(hh->sock, data, datalen, 0, 
+		     (struct sockaddr *)&haggle_addr, sizeof(haggle_addr));
 
 	free(data);
 
@@ -1307,8 +1311,10 @@ int haggle_ipc_send_dataobject(struct haggle_handle *hh, haggle_dobj_t *dobj,
                         return HAGGLE_SOCKET_ERROR;
                 }
 		
-		printf("Received raw data on socket: %s\n", (char *)databuffer);
-               
+		/*
+		printf("Received raw data on socket: %s\n", 
+			      (char *)databuffer);
+		*/
                 dobj_recv = haggle_dataobject_new_from_raw(databuffer, ret);
                 
                 if (dobj_recv == NULL) {
