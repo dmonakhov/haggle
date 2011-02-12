@@ -39,8 +39,10 @@
 	Windows will cause problems.  */
 #if defined(OS_WINDOWS)
 #define SQLITE_INT64_FMT "%I64d"
+#define SIZE_T_FMT "%lu"
 #else
 #define SQLITE_INT64_FMT "%lld"
+#define SIZE_T_FMT "%zu"
 #endif
 
 using namespace haggle;
@@ -1010,7 +1012,8 @@ static inline char *sql_insert_dataobject_cmd_alloc(const char *metadata,
 			   "source_iface_rowid,"
 			   "node_id"
 			   ") VALUES(?,\'%s\',\'%s\',\'%s\',"
-			   "%lu,%d,?,%d,\'%s\',?,%lu," 
+			   SIZE_T_FMT ",%d,?,%d,\'%s\',?,"
+			   SIZE_T_FMT "," 
 			   SQLITE_INT64_FMT "," 
 			   SQLITE_INT64_FMT ",%lu," 
 			   SQLITE_INT64_FMT ",'%s');", 
@@ -2462,7 +2465,8 @@ int SQLDataStore::deleteDataObjectNodeDescriptions(DataObjectRef dObj,
 		   cntStoredNodeDescriptions, node_id.c_str());
 	
 	// loop through dObjs list and delete if older createtime
-	for (DataObjectRefList::iterator it = dObjs.begin(); it != dObjs.end(); it++) {
+	for (DataObjectRefList::iterator it = dObjs.begin(); 
+	     it != dObjs.end(); it++) {
 		// delete and report as event
 		_deleteDataObject(*it, true); 
 	}
@@ -2497,7 +2501,8 @@ int SQLDataStore::_deleteFilter(long eventtype)
 	return 0;
 }
 
-int SQLDataStore::_insertFilter(Filter *f, bool matchFilter, const EventCallback<EventHandler> *callback)
+int SQLDataStore::_insertFilter(Filter *f, bool matchFilter, 
+				const EventCallback<EventHandler> *callback)
 {
 	int ret;
 	char *sql_cmd;
@@ -2514,7 +2519,8 @@ int SQLDataStore::_insertFilter(Filter *f, bool matchFilter, const EventCallback
 
 	sql_cmd = SQL_INSERT_FILTER_CMD(f->getEventType());
 
-	ret = sqlite3_prepare_v2(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
+	ret = sqlite3_prepare_v2(db, sql_cmd, 
+				 (int) strlen(sql_cmd), &stmt, &tail);
 
 	if (ret != SQLITE_OK) {
 		HAGGLE_DBG("SQLite command compilation failed! %s\n", sql_cmd);
@@ -2538,7 +2544,8 @@ int SQLDataStore::_insertFilter(Filter *f, bool matchFilter, const EventCallback
 
 		return ret;
 	} else if (ret == SQLITE_ERROR) {
-		HAGGLE_DBG("Could not insert Filter : %s\n", sqlite3_errmsg(db));
+		HAGGLE_DBG("Could not insert Filter : %s\n", 
+			   sqlite3_errmsg(db));
 		return -1;
 	}
 
@@ -2547,7 +2554,8 @@ int SQLDataStore::_insertFilter(Filter *f, bool matchFilter, const EventCallback
 	// Insert Attributes
 	attrs = f->getAttributes();
 
-	for (Attributes::const_iterator it = attrs->begin(); it != attrs->end(); it++) {
+	for (Attributes::const_iterator it = attrs->begin(); 
+	     it != attrs->end(); it++) {
 		const Attribute& a = (*it).second;
 
 		ret = sqlQuery(SQL_INSERT_ATTR_CMD(&a));
@@ -2563,10 +2571,12 @@ int SQLDataStore::_insertFilter(Filter *f, bool matchFilter, const EventCallback
 			attr_rowid = sqlite3_last_insert_rowid(db);
 		}
 
-		ret = sqlQuery(SQL_INSERT_FILTER_ATTR_CMD(filter_rowid, attr_rowid, a.getWeight()));
+		ret = sqlQuery(SQL_INSERT_FILTER_ATTR_CMD(filter_rowid, 
+							  attr_rowid, 
+							  a.getWeight()));
 
 		if (ret == SQLITE_ERROR) {
-			HAGGLE_DBG("SQLite insert of filter-attribute link failed!\n");
+			HAGGLE_DBG("insert of filter-attribute link failed!\n");
 			return -1;
 		}
 	}
@@ -2591,14 +2601,17 @@ int SQLDataStore::_deleteNode(NodeRef& node)
 	
 	sql_cmd = SQL_DELETE_NODE_CMD();
 	
-	ret = sqlite3_prepare_v2(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
+	ret = sqlite3_prepare_v2(db, sql_cmd, (int) strlen(sql_cmd), 
+				 &stmt, &tail);
 	
 	if (ret != SQLITE_OK) {
-		HAGGLE_DBG("Delete node command compilation failed : %s\n", sqlite3_errmsg(db));
+		HAGGLE_DBG("Delete node command compilation failed : %s\n", 
+			   sqlite3_errmsg(db));
 		return -1;
 	}
 	
-	ret = sqlite3_bind_blob(stmt, 1, node->getId(), NODE_ID_LEN, SQLITE_TRANSIENT);
+	ret = sqlite3_bind_blob(stmt, 1, node->getId(), 
+				NODE_ID_LEN, SQLITE_TRANSIENT);
    
 	if (ret != SQLITE_OK) {
 	   HAGGLE_DBG("SQLite could not bind blob!\n");
@@ -2610,14 +2623,17 @@ int SQLDataStore::_deleteNode(NodeRef& node)
 	sqlite3_finalize(stmt);
 	
 	if (ret == SQLITE_ERROR) {
-		HAGGLE_DBG("Could not delete node : %s\n", sqlite3_errmsg(db));
+		HAGGLE_DBG("Could not delete node : %s\n", 
+			   sqlite3_errmsg(db));
 		return -1;
 	}
 	return 0;
 }
 
 
-int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *callback, bool mergeBloomfilter)
+int SQLDataStore::_insertNode(NodeRef& node, 
+			      const EventCallback<EventHandler> *callback, 
+			      bool mergeBloomfilter)
 {
 	int ret;
 	char *sql_cmd;
@@ -2636,13 +2652,15 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 
 	// Do not insert nodes with undefined state/type
 	if (node->getType() == Node::TYPE_UNDEFINED) {
-		HAGGLE_DBG("Node type undefined. Ignoring INSERT of node %s\n", node->getName().c_str());
+		HAGGLE_DBG("Node type undefined. Ignoring INSERT of node %s\n", 
+			   node->getName().c_str());
 		node.unlock();
 		return -1;
 	}
 	
 	HAGGLE_DBG("Inserting node %s, num attributes=%lu num interfaces=%lu\n", 
-		node->getName().c_str(), node->getAttributes()->size(), node->getInterfaces()->size());
+		node->getName().c_str(), node->getAttributes()->size(), 
+		   node->getInterfaces()->size());
 
 //	sqlQuery(SQL_BEGIN_TRANSACTION_CMD);
 
@@ -2650,14 +2668,16 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 
 	HAGGLE_DBG("SQLcmd: %s\n", sql_cmd);
 
-	ret = sqlite3_prepare_v2(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
+	ret = sqlite3_prepare_v2(db, sql_cmd, (int) strlen(sql_cmd), 
+				 &stmt, &tail);
 
 	if (ret != SQLITE_OK) {
 		HAGGLE_DBG("Error: %s\n", sqlite3_errmsg(db));
 		goto out_insertNode_err;
 	}
 
-	ret = sqlite3_bind_blob(stmt, 1, node->getId(), NODE_ID_LEN, SQLITE_TRANSIENT);
+	ret = sqlite3_bind_blob(stmt, 1, node->getId(), NODE_ID_LEN, 
+				SQLITE_TRANSIENT);
 
 	if (ret != SQLITE_OK) {
 		HAGGLE_DBG("SQLite could not bind blob!\n");
@@ -2665,7 +2685,9 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 		goto out_insertNode_err;
 	}
 
-	ret = sqlite3_bind_blob(stmt, 2, node->getBloomfilter()->getRaw(), node->getBloomfilter()->getRawLen() , SQLITE_TRANSIENT);
+	ret = sqlite3_bind_blob(stmt, 2, node->getBloomfilter()->getRaw(), 
+				node->getBloomfilter()->getRawLen() , 
+				SQLITE_TRANSIENT);
 
 	if (ret != SQLITE_OK) {
 		HAGGLE_DBG("SQLite could not bind blob!\n");
@@ -2678,7 +2700,8 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 
 	if (ret == SQLITE_CONSTRAINT) {
 		NodeRef existing_node = node;
-		HAGGLE_DBG("Node %s already in datastore -> replacing...\n", node->getName().c_str());
+		HAGGLE_DBG("Node %s already in datastore -> replacing...\n", 
+			   node->getName().c_str());
 
 		if (mergeBloomfilter) {
 			sqlite_int64 node_rowid = getNodeRowId(node);
@@ -2687,7 +2710,8 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 				existing_node = getNodeFromRowId(node_rowid);
 
 				if (existing_node) {
-					HAGGLE_DBG("Merging bloomfilter of node %s\n", node->getName().c_str());
+					HAGGLE_DBG("Merging BF of node %s\n", 
+						   node->getName().c_str());
 					node->getBloomfilter()->merge(*existing_node->getBloomfilter());
 				}
 			}
@@ -2696,17 +2720,19 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 		ret = _deleteNode(existing_node);
 		
 		if (ret < 0) {
-			HAGGLE_ERR("Could not delete node %s\n", node->getName().c_str());
+			HAGGLE_ERR("Could not delete node %s\n", 
+				   node->getName().c_str());
 			goto out_insertNode_err;
 		}
 
 		// Call this function again
-//		sqlQuery(SQL_END_TRANSACTION_CMD);
+		// sqlQuery(SQL_END_TRANSACTION_CMD);
 		int ret = _insertNode(node, callback);
 		node.unlock();
 		return ret;
 	} else if (ret == SQLITE_ERROR) {
-		HAGGLE_DBG("Could not insert Node %s - Error: %s\n", node->getName().c_str(), sqlite3_errmsg(db));
+		HAGGLE_DBG("Could not insert Node %s - Error: %s\n", 
+			   node->getName().c_str(), sqlite3_errmsg(db));
 		goto out_insertNode_err;
 	} else {
 		node_rowid = sqlite3_last_insert_rowid(db);
@@ -2719,9 +2745,11 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 	// Must use the node pointer here since the nodeRef is now locked.
 	attrs = node->getAttributes();
 
-	for (Attributes::const_iterator it = attrs->begin(); it != attrs->end(); it++) {
+	for (Attributes::const_iterator it = attrs->begin(); 
+	     it != attrs->end(); it++) {
 		const Attribute& a = (*it).second;
-		HAGGLE_DBG("Inserting attribute %s=%s\n", a.getName().c_str(), a.getValue().c_str());
+		HAGGLE_DBG("Inserting attribute %s=%s\n", 
+			   a.getName().c_str(), a.getValue().c_str());
 
 		sql_cmd = SQL_INSERT_ATTR_CMD(&a);
 
@@ -2738,12 +2766,13 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 			attr_rowid = sqlite3_last_insert_rowid(db);
 		}
 
-		sql_cmd = SQL_INSERT_NODE_ATTR_CMD(node_rowid, attr_rowid, a.getWeight());
+		sql_cmd = SQL_INSERT_NODE_ATTR_CMD(node_rowid, 
+						   attr_rowid, a.getWeight());
 
 		ret = sqlQuery(sql_cmd);
 
 		if (ret == SQLITE_ERROR) {
-			HAGGLE_DBG("SQLite insert of node-attribute link failed!\n");
+			HAGGLE_DBG("node-attribute link insert failed!\n");
 			goto out_insertNode_err;
 		}
 	}
@@ -2751,26 +2780,35 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 	// Insert node interfaces
 	ifaces = node->getInterfaces();
 
-	for (InterfaceRefList::const_iterator it = ifaces->begin(); it != ifaces->end(); it++) {
+	for (InterfaceRefList::const_iterator it = ifaces->begin(); 
+	     it != ifaces->end(); it++) {
 		InterfaceRef iface = (*it);
 
 		iface.lock();
 		
-		sql_cmd = SQL_INSERT_IFACE_CMD((sqlite_int64) iface->getType(), iface->getIdentifierStr(), node_rowid);
+		sql_cmd = SQL_INSERT_IFACE_CMD((sqlite_int64) iface->getType(), 
+					       iface->getIdentifierStr(), 
+					       node_rowid);
+		
 		HAGGLE_DBG("Insert interface SQLcmd: %s\n", sql_cmd);
 
-		ret = sqlite3_prepare_v2(db, sql_cmd, (int) strlen(sql_cmd), &stmt, &tail);
+		ret = sqlite3_prepare_v2(db, sql_cmd, 
+					 (int)strlen(sql_cmd), 
+					 &stmt, &tail);
 
 		if (ret != SQLITE_OK) {
-			HAGGLE_DBG("SQLite command compilation failed! %s\n", sql_cmd);
+			HAGGLE_DBG("SQLite command compilation failed! %s\n", 
+				   sql_cmd);
 			iface.unlock();
 			goto out_insertNode_err;
 		}
 
-		ret = sqlite3_bind_blob(stmt, 1, iface->getIdentifier(), iface->getIdentifierLen(), SQLITE_TRANSIENT);
+		ret = sqlite3_bind_blob(stmt, 1, iface->getIdentifier(), 
+					iface->getIdentifierLen(), 
+					SQLITE_TRANSIENT);
 
 		if (ret != SQLITE_OK) {
-			HAGGLE_DBG("SQLite could not bind interface identifier blob!\n");
+			HAGGLE_DBG("could not bind interface identifier blob\n");
 			sqlite3_finalize(stmt);
 			iface.unlock();
 			goto out_insertNode_err;
@@ -2780,9 +2818,12 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 		sqlite3_finalize(stmt);
 
 		if (ret == SQLITE_CONSTRAINT) {
-			HAGGLE_DBG("Interface %s already in datastore\n", iface->getIdentifierStr());
+			HAGGLE_DBG("Interface %s already in datastore\n", 
+				   iface->getIdentifierStr());
 		} else if (ret == SQLITE_ERROR) {
-			HAGGLE_DBG("Could not insert Interface %s - Error:%s\n", iface->getIdentifierStr(), sqlite3_errmsg(db));
+			HAGGLE_DBG("Could not insert Interface %s - Error:%s\n",
+				   iface->getIdentifierStr(), 
+				   sqlite3_errmsg(db));
 			iface.unlock();
 			goto out_insertNode_err;
 		}
@@ -2796,7 +2837,8 @@ int SQLDataStore::_insertNode(NodeRef& node, const EventCallback<EventHandler> *
 		HAGGLE_DBG("Scheduling callback for inserted node\n");
 		kernel->addEvent(new Event(callback, node));
 	}
-	HAGGLE_DBG("Node %s inserted successfully\n", node->getName().c_str());
+	HAGGLE_DBG("Node %s inserted successfully\n", 
+		   node->getName().c_str());
 
 	return 1;
 	
@@ -2884,7 +2926,9 @@ int SQLDataStore::_deleteDataObject(DataObjectRef& dObj,
 	return 0;
 }
 
-int SQLDataStore::_ageDataObjects(const Timeval& minimumAge, const EventCallback<EventHandler> *callback, bool keepInBloomfilter)
+int SQLDataStore::_ageDataObjects(const Timeval& minimumAge, 
+				  const EventCallback<EventHandler> *callback, 
+				  bool keepInBloomfilter)
 {
 	int ret;
 	char *sql_cmd;
