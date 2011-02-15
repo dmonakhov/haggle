@@ -208,16 +208,21 @@ HAGGLE_API int libhaggle_gettimeofday(struct timeval *tv, void *tz);
 #error "Unsupported Platform"
 #endif
 
+#endif /* LIBHAGGLE_INTERNAL */
+
 typedef enum path_type {
-        PLATFORM_PATH_PROGRAM,
-	PLATFORM_PATH_PRIVATE,
-        PLATFORM_PATH_DATA,
-        PLATFORM_PATH_TEMP,
+        PLATFORM_PATH_HAGGLE_EXE, /* Location of Haggle executable */
+	PLATFORM_PATH_HAGGLE_PRIVATE, /* Location where Haggle stores private data */
+        PLATFORM_PATH_HAGGLE_DATA, /* Location where Haggle stores data (e.g., data objects). */
+        PLATFORM_PATH_HAGGLE_TEMP, /* Location where Haggle stores temporary files */
+	PLATFORM_PATH_APP_DATA, /* Application specific storage location */
 } path_type_t;
 
-const char *platform_get_path(path_type_t type, const char *append);
-
-#endif /* LIBHAGGLE_INTERNAL */
+/*
+  Set and override the default paths defined above.
+ */
+int libhaggle_platform_set_path(path_type_t type, const char *path);
+const char *libhaggle_platform_get_path(path_type_t type, const char *append);
 
 /*
 	Pseudo-random number generation library

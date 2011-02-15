@@ -1,0 +1,3 @@
+-keep class * extends android.app.Service {
+  <init>(...);
+}

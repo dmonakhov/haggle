@@ -39,6 +39,14 @@ JNIEXPORT void JNICALL Java_org_haggle_Handle_nativeFree
 
 /*
  * Class:     org_haggle_Handle
+ * Method:    setDataPath
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_org_haggle_Handle_setDataPath
+  (JNIEnv *, jclass, jstring);
+
+/*
+ * Class:     org_haggle_Handle
  * Method:    unregister
  * Signature: (Ljava/lang/String;)V
  */

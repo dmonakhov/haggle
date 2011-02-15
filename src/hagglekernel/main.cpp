@@ -661,6 +661,8 @@ static int check_cmd(char *input, unsigned int index)
 
 #endif // OS_UNIX
 
+#if !defined(OS_ANDROID)
+
 #if defined(WINCE)
 int WINAPI WinMain(
     HINSTANCE hInstance, 
@@ -780,5 +782,127 @@ int main(void)
 
 	return run_haggle();
 }
+
+#endif
+
+#else // OS_ANDROID
+
+#include <jni.h>
+#include <grp.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+static JavaVM *jvm = NULL;
+
+JNIEXPORT jint JNICALL Java_org_haggle_kernel_Haggle_mainLoop(JNIEnv *env, jobject obj, jstring fileDirPath)
+{	
+/*
+	jclass cls = env->FindClass(env, "android.content.Context");
+	
+	if (!cls)
+		return -1;
+	
+	jc_handle.cls = (*env)->NewGlobalRef(env, cls);
+
+	(*env)->DeleteLocalRef(env, cls);
+	
+        if (!jc_handle.cls)
+                return -1;
+
+
+        jmethodID mid = env->GetMethodID(cls, "getFilesDir", "()Ljava/io/File");
+
+        if (!mid)
+                return -1;
+	
+	*/
+       
+        const char *str = env->GetStringUTFChars(fileDirPath, 0); 
+        
+        if (!str)
+                return -1;
+	
+	HAGGLE_DBG("Data path is %s\n", str);
+	
+	char *tmp = (char *)malloc(strlen(str) + 1);
+
+	if (tmp) {
+		strcpy(tmp, str);
+
+		// ddsp -- Haggle default data store path, defined in Utility.h
+		if (ddsp) {
+			free((void *)ddsp);
+		}
+		ddsp = tmp;
+	}
+	
+        env->ReleaseStringUTFChars(fileDirPath, str);
+	
+	int ret = run_haggle();
+
+	cleanup();
+
+	return ret;
+}
+
+JNIEXPORT jint JNICALL Java_org_haggle_kernel_Haggle_shutdown(JNIEnv *env, jobject obj)
+{	
+	if (kernel)
+		kernel->shutdown();
+	return 0;
+}
+
+JNIEXPORT jint JNICALL Java_org_haggle_kernel_Haggle_nativeInit(JNIEnv *env, jclass cls)
+{
+	FILE *fp = fopen("/data/haggle/debug2.log", "w");
+
+	if (fp) {
+#define NUM_GROUPS 10
+		gid_t groups[NUM_GROUPS];
+		
+		int num = getgroups(NUM_GROUPS, groups);
+		
+		if (num > 0) {
+			for (int i = 0; i < num; i++) {
+				struct group *g = getgrgid(groups[i]);
+				if (g) {
+					fprintf(fp, "group: %u %s\n", g->gr_gid, g->gr_name);
+				}
+			}
+		}
+		fclose(fp);
+	}
+	return 0;
+}
+
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
+{
+        JNIEnv *env;
+	jclass cls;
+
+        jvm = vm;
+
+        if (vm->GetEnv((void **)&env, JNI_VERSION_1_4) != JNI_OK) {
+                fprintf(stderr, "Could not get JNI env in JNI_OnLoad\n");
+                return -1;
+        }
+
+	return JNI_VERSION_1_4;
+}
+
+JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved)
+{
+	JNIEnv *env = NULL;
+	
+        if (vm->GetEnv((void **)&env, JNI_VERSION_1_4) != JNI_OK) {
+                fprintf(stderr, "Could not get JNI env in JNI_OnUnload\n");
+                return;
+        }         
+}
+#ifdef __cplusplus
+}
+#endif
 
 #endif

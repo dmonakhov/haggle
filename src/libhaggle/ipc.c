@@ -56,7 +56,7 @@ typedef pthread_attr_t thread_handle_attr_t;
 #include <libhaggle/node.h>
 #include <libhaggle/dataobject.h>
 
-#define PID_FILE platform_get_path(PLATFORM_PATH_PRIVATE, "/haggle.pid")
+#define PID_FILE libhaggle_platform_get_path(PLATFORM_PATH_HAGGLE_PRIVATE, "/haggle.pid")
 
 #ifdef USE_UNIX_APPLICATION_SOCKET
 #define HAGGLE_UNIX_SOCK_PATH "/tmp/haggle.sock"
@@ -490,14 +490,17 @@ static int spawn_daemon_internal(const char *daemonpath, daemon_spawn_callback_t
 #if defined(OS_UNIX)
 #define PATH_LEN 200
 	char cmd[PATH_LEN];
-	
+
+#if defined(OS_ANDROID)
+	snprintf(cmd, PATH_LEN, "am startservice -a android.intent.action.MAIN -n org.haggle.Haggle/org.haggle.Haggle.Haggle");
+#else
 	if (!daemonpath) {
 		ret = HAGGLE_ERROR;
 		goto fail_start;
 	}
 	
 	snprintf(cmd, PATH_LEN, "%s -d", daemonpath);
-	
+#endif /* OS_ANDROID */
 	LIBHAGGLE_DBG("Trying to spawn daemon using %s\n", cmd);
 	
 	ret = system(cmd);
@@ -616,9 +619,9 @@ int haggle_daemon_spawn_with_callback(const char *daemonpath, daemon_spawn_callb
 		memory used to get the platform path.
 		*/
 #if defined(OS_WINDOWS)
-		const char *haggle_paths[] = { platform_get_path(PLATFORM_PATH_PROGRAM, "\\Haggle.exe"), NULL };
+		const char *haggle_paths[] = { libhaggle_platform_get_path(PLATFORM_PATH_HAGGLE_EXE, "\\Haggle.exe"), NULL };
 #elif defined(OS_ANDROID)
-                const char *haggle_paths[] = { platform_get_path(PLATFORM_PATH_PROGRAM, "/haggle"), NULL };
+                const char *haggle_paths[] = { libhaggle_platform_get_path(PLATFORM_PATH_HAGGLE_EXE, "/haggle"), NULL };
 #elif defined(OS_UNIX)
 		// Do some qualified guessing
 		const char *haggle_paths[] = { "./haggle", "./bin/haggle", "/bin/haggle", "/usr/bin/haggle", "/usr/local/bin/haggle", "/opt/bin/haggle", "/opt/local/bin/haggle", NULL };

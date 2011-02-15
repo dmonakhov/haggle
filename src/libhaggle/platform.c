@@ -431,7 +431,12 @@ void fill_in_default_path()
 		path[i] = (char) best_path[i];
 }
 
-const char *platform_get_path(path_type_t type, const char *append)
+int libhaggle_platform_set_path(path_type_t type, const char *path)
+{
+	return -1;
+}
+
+const char *libhaggle_platform_get_path(path_type_t type, const char *append)
 {
 	long len = 0;
 	
@@ -439,19 +444,19 @@ const char *platform_get_path(path_type_t type, const char *append)
         int wintype = 0;
         
         switch (type) {
-                case PLATFORM_PATH_PROGRAM:
+                case PLATFORM_PATH_HAGGLE_EXE:
                         wintype = CSIDL_PROGRAM_FILES;
                         break;
-                case PLATFORM_PATH_PRIVATE:
+                case PLATFORM_PATH_HAGGLE_PRIVATE:
 			wintype = CSIDL_APPDATA;
 			break;
-		case PLATFORM_PATH_DATA:
+		case PLATFORM_PATH_HAGGLE_DATA:
                         wintype = CSIDL_APPDATA;
 			fill_in_default_path();
 			len = strlen(path);
 			goto path_valid;
                         break;
-                case PLATFORM_PATH_TEMP:
+                case PLATFORM_PATH_HAGGLE_TEMP:
                         wintype = CSIDL_APPDATA;
                         break;
                 default:
@@ -465,10 +470,10 @@ const char *platform_get_path(path_type_t type, const char *append)
 		path[len] = (char) login1[len];
 
 path_valid:
-	if (type == PLATFORM_PATH_PROGRAM || 
-		type == PLATFORM_PATH_PRIVATE || 
-		type == PLATFORM_PATH_DATA || 
-		type == PLATFORM_PATH_TEMP) {
+	if (type == PLATFORM_PATH_HAGGLE_EXE || 
+		type == PLATFORM_PATH_HAGGLE_PRIVATE || 
+		type == PLATFORM_PATH_HAGGLE_DATA || 
+		type == PLATFORM_PATH_HAGGLE_TEMP) {
 			wchar_t *wpath;
 			if (len + strlen(DEFAULT_STORAGE_PATH_POSTFIX) > MAX_PATH_LEN)
 				return NULL;
@@ -493,7 +498,12 @@ path_valid:
 }
 #elif defined(OS_WINDOWS_VISTA)
 
-const char *platform_get_path(path_type_t type, const char *append)
+int libhaggle_platform_set_path(path_type_t type, const char *path)
+{
+	return -1;
+}
+
+const char *libhaggle_platform_get_path(path_type_t type, const char *append)
 {
 #if 0 // Only on Windows Vista
 	wchar_t *login1;
@@ -507,22 +517,22 @@ const char *platform_get_path(path_type_t type, const char *append)
 	int folder;
 #endif
         switch (type) {
-                case PLATFORM_PATH_PROGRAM:
+                case PLATFORM_PATH_HAGGLE_EXE:
 #if 0 // Only on Windows Vista
                         wintype = FOLDERID_ProgramFiles;
 #else
 			folder = CSIDL_PROGRAM_FILES;
 #endif
 			break;
-                case PLATFORM_PATH_PRIVATE:
-                case PLATFORM_PATH_DATA:
+                case PLATFORM_PATH_HAGGLE_PRIVATE:
+                case PLATFORM_PATH_HAGGLE_DATA:
 #if 0 // Only on Windows Vista
                         wintype = FOLDERID_LocalAppData;
 #else
 			folder = CSIDL_LOCAL_APPDATA;
 #endif
                         break;
-                case PLATFORM_PATH_TEMP:
+                case PLATFORM_PATH_HAGGLE_TEMP:
 #if 0 // Only on Windows Vista
                         wintype = FOLDERID_LocalAppData;
 #else
@@ -536,7 +546,7 @@ const char *platform_get_path(path_type_t type, const char *append)
 #if 0 // Only on Windows Vista
 	if (SHGetKnownFolderPath(&wintype, 0, NULL, &login1) != S_OK)
 #else
-	if(SHGetFolderPath(NULL, folder, NULL, SHGFP_TYPE_CURRENT, login1) != S_OK)
+	if (SHGetFolderPath(NULL, folder, NULL, SHGFP_TYPE_CURRENT, login1) != S_OK)
 #endif
 	{
 		return NULL;
@@ -549,10 +559,10 @@ const char *platform_get_path(path_type_t type, const char *append)
 	CoTaskMemFree(login1);
 #endif
 
-        if (type == PLATFORM_PATH_PROGRAM || 
-		type == PLATFORM_PATH_PRIVATE || 
-		type == PLATFORM_PATH_DATA || 
-		type == PLATFORM_PATH_TEMP) {
+        if (type == PLATFORM_PATH_HAGGLE_EXE || 
+		type == PLATFORM_PATH_HAGGLE_PRIVATE || 
+		type == PLATFORM_PATH_HAGGLE_DATA || 
+		type == PLATFORM_PATH_HAGGLE_TEMP) {
                 if (len + strlen(DEFAULT_STORAGE_PATH_POSTFIX) > MAX_PATH_LEN)
                         return NULL;
                 len += snprintf(path + len, MAX_PATH_LEN - len, "%s", DEFAULT_STORAGE_PATH_POSTFIX);
@@ -568,37 +578,66 @@ const char *platform_get_path(path_type_t type, const char *append)
 #elif defined(OS_ANDROID)
 #include <sys/stat.h>
 
-const char *platform_get_path(path_type_t type, const char *append)
+static char path_app_data[MAX_PATH_LEN + 1];
+static int path_app_data_valid = 0;
+
+int libhaggle_platform_set_path(path_type_t type, const char *path)
 {
+	if (!path || strlen(path) == 0) 
+		return -1;
+
+	if (type == PLATFORM_PATH_APP_DATA) {
+		if (strlen(path) > MAX_PATH_LEN)
+			return -1;
+		
+		strcpy(path_app_data, path);
+		path_app_data_valid = 1;
+		return 1;
+	}
+	return 0;
+}
+
+const char *libhaggle_platform_get_path(path_type_t type, const char *append)
+{
+	char *ret_path = path;
 	struct stat sbuf;
-	
+
         switch (type) {
-                case PLATFORM_PATH_PROGRAM:
-                        sprintf(path, "/system/bin");
-                        break;
-                case PLATFORM_PATH_PRIVATE:
-                        strcpy(path, "/data/haggle");
-                        break;
-                case PLATFORM_PATH_DATA:
-			if (stat("/sdcard/haggle", &sbuf) == 0 && 
-			    (sbuf.st_mode & S_IFDIR) == S_IFDIR) {
-				strcpy(path, "/sdcard/haggle");
-			} else {
-				strcpy(path, "/data/haggle");
-			}
-                case PLATFORM_PATH_TEMP:
-                        strcpy(path, "/data/haggle");
-                        break;
-                default:
-                        return NULL;
+	case PLATFORM_PATH_HAGGLE_EXE:
+		sprintf(ret_path, "/system/bin");
+		break;
+	case PLATFORM_PATH_HAGGLE_PRIVATE:
+		sprintf(ret_path, "/data/data/org.haggle.kernel/files");
+		break;
+	case PLATFORM_PATH_HAGGLE_DATA:
+		if (stat("/sdcard/haggle", &sbuf) == 0 && 
+		    (sbuf.st_mode & S_IFDIR) == S_IFDIR) {
+			strcpy(path, "/sdcard/haggle");
+		} else {
+			sprintf(ret_path, "/data/data/org.haggle.kernel/files");
+		}
+
+		break;
+	case PLATFORM_PATH_HAGGLE_TEMP:
+		strcpy(ret_path, "/data/data/org.haggle.kernel/files");
+		break;
+	case PLATFORM_PATH_APP_DATA:
+		if (path_app_data_valid == 1) {
+			ret_path = path_app_data;				
+		} else {
+			return NULL;
+		}
+		break;
+	default:
+		return NULL;
         }
         
         if (append) {
-                if (strlen(path) + strlen(append) > MAX_PATH_LEN)
+                if (strlen(ret_path) + strlen(append) > MAX_PATH_LEN)
                         return NULL;
-                strcpy(path +  strlen(path), append);
+                strcpy(ret_path +  strlen(ret_path), append);
         }
-        return path;
+        return ret_path;
 }
 
 #elif defined(OS_MACOSX_IPHONE)
@@ -612,7 +651,13 @@ const char *platform_get_path(path_type_t type, const char *append)
   The application can neither read any data objects passed as files if
   they are not in the application's sandbox.
  */
-const char *platform_get_path(path_type_t type, const char *append)
+
+int libhaggle_platform_set_path(path_type_t type, const char *path)
+{
+	return -1;
+}
+
+const char *libhaggle_platform_get_path(path_type_t type, const char *append)
 {
         /*
         CFStringRef homeDir = (CFStringRef)NSHomeDirectory();
@@ -620,16 +665,16 @@ const char *platform_get_path(path_type_t type, const char *append)
         CFStringGetCString(homeDir, path, MAX_PATH_LEN, kCFStringEncodingUTF8);
         */
         switch (type) {
-                case PLATFORM_PATH_PROGRAM:
+                case PLATFORM_PATH_HAGGLE_EXE:
                         // TODO: Set to something that makes sense, considering
                         // the iPhone apps are sandboxed.
                         strcpy(path, "/usr/bin");
                         break;
-                case PLATFORM_PATH_PRIVATE:
-                case PLATFORM_PATH_DATA:
+                case PLATFORM_PATH_HAGGLE_PRIVATE:
+                case PLATFORM_PATH_HAGGLE_DATA:
                         strcpy(path, "/var/cache/haggle");
                         break;
-                case PLATFORM_PATH_TEMP:
+                case PLATFORM_PATH_HAGGLE_TEMP:
                         strcpy(path, "/tmp");
                         break;
                 default:
@@ -649,7 +694,13 @@ const char *platform_get_path(path_type_t type, const char *append)
 #include <sys/types.h>
 #include <pwd.h>
 
-const char *platform_get_path(path_type_t type, const char *append)
+
+int libhaggle_platform_set_path(path_type_t type, const char *path)
+{
+	return -1;
+}
+
+const char *libhaggle_platform_get_path(path_type_t type, const char *append)
 {
         struct passwd *pwd;
         char *login = NULL;
@@ -657,11 +708,11 @@ const char *platform_get_path(path_type_t type, const char *append)
         path[0] = '\0';
 
         switch (type) {
-                case PLATFORM_PATH_PROGRAM:
+                case PLATFORM_PATH_HAGGLE_EXE:
                         strcpy(path, "/usr/bin");
                         break;
-                case PLATFORM_PATH_PRIVATE:
-                case PLATFORM_PATH_DATA:
+                case PLATFORM_PATH_HAGGLE_PRIVATE:
+                case PLATFORM_PATH_HAGGLE_DATA:
                         pwd = getpwuid(getuid());
 
                         if (pwd && pwd->pw_name) {
@@ -682,7 +733,7 @@ const char *platform_get_path(path_type_t type, const char *append)
                                         login,
                                         DEFAULT_STORAGE_PATH_POSTFIX);
                         break;
-                case PLATFORM_PATH_TEMP:
+                case PLATFORM_PATH_HAGGLE_TEMP:
                         strcpy(path, "/tmp");
                         break;
                 default:
@@ -698,8 +749,14 @@ const char *platform_get_path(path_type_t type, const char *append)
 }
 #else
 
-const char *platform_get_path(path_type_t type, const char *append)
+int libhaggle_platform_set_path(path_type_t type, const char *path)
+{
+	return -1;
+}
+
+const char *libhaggle_platform_get_path(path_type_t type, const char *append)
 {
         return NULL;
 }
+
 #endif

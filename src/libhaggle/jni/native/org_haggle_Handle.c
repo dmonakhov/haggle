@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <libhaggle/haggle.h>
+#include <libhaggle/platform.h>
 #include <jni.h>
 
 #include "common.h"
@@ -94,6 +95,22 @@ static int callback_list_erase_all_with_handle(haggle_handle_t hh)
         haggle_handle_free(hh);
 
         return n;
+}
+
+JNIEXPORT void JNICALL Java_org_haggle_Handle_setDataPath(JNIEnv *env, jclass cls, jstring path)
+{
+	const char *path_str;
+  
+        path_str = (*env)->GetStringUTFChars(env, path, 0); 
+        
+        if (!path_str)
+                return;
+
+	libhaggle_platform_set_path(PLATFORM_PATH_APP_DATA, path_str);
+
+        (*env)->ReleaseStringUTFChars(env, path, path_str);
+
+	return;
 }
 
 struct event_loop_data {

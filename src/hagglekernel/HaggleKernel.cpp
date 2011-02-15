@@ -16,7 +16,9 @@
 
 #include <libcpphaggle/Platform.h>
 #include <libcpphaggle/Watch.h>
-
+#if defined(OS_UNIX)
+#include <grp.h>
+#endif
 #include "HaggleKernel.h"
 #include "Event.h"
 #include "EventQueue.h"
@@ -60,7 +62,29 @@ bool HaggleKernel::init()
                 return false;
 	}
 #endif
+
+	HAGGLE_DBG("Storage path is %s\n", storagepath.c_str());
 	
+#if defined(OS_UNIX)
+#define NUM_GROUPS 10
+	gid_t groups[NUM_GROUPS];
+	
+	int num = getgroups(NUM_GROUPS, groups);
+
+	if (num > 0) {
+		for (int i = 0; i < num; i++) {
+			struct group *g = getgrgid(groups[i]);
+			if (g) {
+				HAGGLE_DBG("group: %u %s\n", g->gr_gid, g->gr_name);
+			}
+		}
+	}
+	struct group *g = getgrnam("bluetooth");
+	if (g) {
+		HAGGLE_DBG("group: %u %s\n", g->gr_gid, g->gr_name);
+	}
+#endif
+
 	if (dataStore) {
 		dataStore->kernel = this;
 		if (!dataStore->init()) {
@@ -97,6 +121,7 @@ bool HaggleKernel::init()
 		return false;
 	}
 	currentPolicy = NULL;
+
 
 	return true;
 }

@@ -53,8 +53,8 @@ __attribute__((constructor))
 void libhaggle_debug_init(void)
 {
 #ifdef TRACE_TO_FILE
-	const char *path = platform_get_path(PLATFORM_PATH_PRIVATE, "/libhaggle.txt");
-
+	const char *path = libhaggle_platform_get_path(PLATFORM_PATH_HAGGLE_PRIVATE, "/libhaggle.txt");
+	
 	if (!path || tr_out || tr_err)
 		return;
 

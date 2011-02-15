@@ -184,17 +184,18 @@ bool ConnEthIfaceListElement::openBroadcastSocket()
 		return false;
 	}
 #if defined(OS_LINUX)
-#if defined(OS_ANDROID)
-        // On Android we run with root privileges, so we can use a
-        // higher priority on that platform
-        int priority = IPTOS_LOWDELAY;
-#else
-	int priority = 6;
-#endif
+	int priority = IPTOS_LOWDELAY;
+
 	if (setsockopt(broadcastSocket, SOL_SOCKET, SO_PRIORITY, (const char *) &priority, sizeof(priority)) == -1) {
-		CLOSE_SOCKET(broadcastSocket);
-		HAGGLE_ERR("Could not set socket option SO_PRIORITY\n");
-		return false;
+		// If setting a very high priorty fails, lets try a
+		// more reasonable one that does not require root
+		// permissions.
+		priority = 6;
+		if (setsockopt(broadcastSocket, SOL_SOCKET, SO_PRIORITY, (const char *) &priority, sizeof(priority)) == -1) {
+			CLOSE_SOCKET(broadcastSocket);
+			HAGGLE_ERR("Could not set socket option SO_PRIORITY\n");
+			return false;
+		}
 	}
 #endif
 	// Bind the socket to the address:

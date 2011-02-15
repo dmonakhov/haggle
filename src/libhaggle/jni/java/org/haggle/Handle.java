@@ -9,6 +9,7 @@ public class Handle {
         private native int getHandle(String name);
         private native void nativeFree(); // Must be called when handle is not used any more
 	
+	private static native void setDataPath(String path);
         public static native void unregister(String name);
 	public void unregister() { unregister(name); }
 

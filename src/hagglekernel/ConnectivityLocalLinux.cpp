@@ -583,7 +583,8 @@ static List<watch_data *> dbusWatches;
 
 void dbus_close_handle(struct dbus_handle *dbh)
 {
-	dbus_connection_unref(dbh->conn);
+	if (dbh && dbh->conn)
+		dbus_connection_unref(dbh->conn);
 }
 
 static dbus_bool_t dbus_watch_add(DBusWatch * watch, void *data)
@@ -995,15 +996,15 @@ static int dbus_init_handle(struct dbus_handle *dbh)
 		return -1;
 
 	dbus_error_init(&dbh->err);
-
+	
+#if defined(OS_ANDROID)
+	dbus_threads_init_default();
+#endif
 	dbh->conn = dbus_bus_get(DBUS_BUS_SYSTEM, &dbh->err);
 	
 	if (dbus_error_is_set(&dbh->err)) {
 		HAGGLE_ERR("D-Bus Connection Error (%s)\n", dbh->err.message);
 		dbus_error_free(&dbh->err);
-	}
-
-	if (!dbh->conn) {
 		return -1;
 	}
 
@@ -1382,6 +1383,11 @@ void ConnectivityLocalLinux::findLocalBluetoothInterfaces()
 	DBusMessage *reply, *msg;
 	char **adapters = NULL;
 	int len = 0;
+
+	if (!dbh.conn) {
+		CM_DBG("Invalid d-bus handle. Cannot detect Bluetooth interfaces\n");
+		return;
+	}
 
 	dbus_error_init(&dbh.err);
 	
