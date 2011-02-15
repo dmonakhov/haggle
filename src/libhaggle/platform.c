@@ -586,6 +586,7 @@ const char *platform_get_path(path_type_t type, const char *append)
 			} else {
 				strcpy(path, "/data/haggle");
 			}
+			break;
                 case PLATFORM_PATH_TEMP:
                         strcpy(path, "/data/haggle");
                         break;
