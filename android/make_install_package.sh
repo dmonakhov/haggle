@@ -5,7 +5,7 @@ SCRIPT_DIR=`dirname $0`
 ANDROID_SRC_DIR=
 HAGGLE_SRC_DIR=`basename $THIS_DIR`
 HAGGLE_VER="x.y"
-HAGGLE_DIR_NAME=haggle-new
+HAGGLE_DIR_NAME=haggle
 
 function usage() {
     echo "Usage: $0 ANDROID_SRC_DIR [ PHOTOSHARE_SRC_DIR ]"

@@ -801,6 +801,8 @@ int read_dataobject_from_trace(struct dataobject **dobj, struct timeval *timeout
 	char node[50];
 	int bytes = 0;
 	unsigned long total_bytes = 0;
+	struct timeval traceTime;
+	static struct timeval lastTime = { 0, 0 };
 	
 	
 	if (!dobj || !timeout || !data_trace_fp)
@@ -874,9 +876,20 @@ int read_dataobject_from_trace(struct dataobject **dobj, struct timeval *timeout
 	
 	// conversion format: create_time|node-nr|attribute list|
 	ret = sscanf(line, "%ld.%ld %[^ ]%n", 
-		     (long *)&timeout->tv_sec, 
-		     (long *)&timeout->tv_usec, 
+		     (long *)&traceTime.tv_sec, 
+		     (long *)&traceTime.tv_usec, 
 		     node, &bytes);
+	
+	
+	// calculate timeout from traceTime and lastTime
+	timeout->tv_sec = traceTime.tv_sec - lastTime.tv_sec;
+	timeout->tv_usec = traceTime.tv_usec - lastTime.tv_usec;
+	if (timeout->tv_usec < 0) {
+		timeout->tv_sec--;
+		timeout->tv_usec = timeout->tv_usec + 1000000;
+	}
+	memcpy(&lastTime, &traceTime, sizeof(struct timeval));
+		
 	
 	if (ret == EOF) {
 		LIBHAGGLE_DBG("EOF when reading data trace\n");
