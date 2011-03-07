@@ -1318,6 +1318,7 @@ void ForwardingManager::onConfig(Metadata *m)
 				} else {
 					// do not change forwarding module if name not known
 					HAGGLE_DBG("configured forwarding module <%s> not known. No change applied.", protocol); 
+				}
 			}			
 			if (forwardingModule) {
 				forwardingModule->onConfig(*fm);
