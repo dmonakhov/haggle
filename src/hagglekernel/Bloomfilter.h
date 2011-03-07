@@ -30,7 +30,7 @@ class Bloomfilter;
 using namespace haggle;
 
 #define DEFAULT_BLOOMFILTER_ERROR_RATE  (0.01)
-#define DEFAULT_BLOOMFILTER_CAPACITY    (1000)
+#define DEFAULT_BLOOMFILTER_CAPACITY    (2000)
 
 #define BLOOMFILTER_METADATA "Bloomfilter"
 #define BLOOMFILTER_METADATA_TYPE_PARAM "type"
