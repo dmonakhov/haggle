@@ -94,7 +94,8 @@ public class LuckyService extends Service implements EventHandler {
 		}
 
 		// Set deviceId (IMEI, used to read trace file)
-		deviceId = TelephonyManager.getDefault().getDeviceId();
+		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE); 
+		deviceId = tm.getDeviceId();
 						
 		// Get a reference to a wake look so that we can keep the device
 		// awake even if the power button is pressed.
