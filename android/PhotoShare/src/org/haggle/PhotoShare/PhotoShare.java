@@ -8,6 +8,7 @@ import org.haggle.LaunchCallback;
 
 import android.app.AlertDialog;
 import android.app.Application;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
 import android.util.Log;
@@ -81,14 +82,27 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 			Log.d(PhotoShare.LOG_TAG, "Trying to spawn Haggle daemon");
 
 			if (!Handle.spawnDaemon(new LaunchCallback() {
-
+				ProgressDialog progress = null;
+				
 				public int callback(long milliseconds) {
 
 					Log.d(PhotoShare.LOG_TAG, "Spawning milliseconds..." + milliseconds);
 
 					if (milliseconds == 0) {
 						// Daemon launched
+					} else if (milliseconds == 2000) {
+						progress = ProgressDialog.show(pv, "",
+				        		"Launching Haggle...", true);
+					} else if (milliseconds == 10000) {
+						Log.d(PhotoShare.LOG_TAG, "Spawning failed, giving up");
+						
+						if (progress != null)
+							progress.dismiss();
+						return -1;
 					}
+
+					if (progress != null)
+						progress.dismiss();
 					return 0;
 				}
 			})) {
