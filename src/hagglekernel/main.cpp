@@ -856,24 +856,6 @@ JNIEXPORT jint JNICALL Java_org_haggle_kernel_Haggle_shutdown(JNIEnv *env, jobje
 
 JNIEXPORT jint JNICALL Java_org_haggle_kernel_Haggle_nativeInit(JNIEnv *env, jclass cls)
 {
-	FILE *fp = fopen("/data/haggle/debug2.log", "w");
-
-	if (fp) {
-#define NUM_GROUPS 10
-		gid_t groups[NUM_GROUPS];
-		
-		int num = getgroups(NUM_GROUPS, groups);
-		
-		if (num > 0) {
-			for (int i = 0; i < num; i++) {
-				struct group *g = getgrgid(groups[i]);
-				if (g) {
-					fprintf(fp, "group: %u %s\n", g->gr_gid, g->gr_name);
-				}
-			}
-		}
-		fclose(fp);
-	}
 	return 0;
 }
 

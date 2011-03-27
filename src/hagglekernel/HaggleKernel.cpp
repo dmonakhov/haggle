@@ -64,24 +64,31 @@ bool HaggleKernel::init()
 #endif
 
 	HAGGLE_DBG("Storage path is %s\n", storagepath.c_str());
+	HAGGLE_DBG("Data store path is %s\n", DEFAULT_DATASTORE_PATH);
 	
 #if defined(OS_UNIX)
-#define NUM_GROUPS 10
-	gid_t groups[NUM_GROUPS];
-	
-	int num = getgroups(NUM_GROUPS, groups);
+	int num = getgroups(0, NULL);
 
 	if (num > 0) {
-		for (int i = 0; i < num; i++) {
-			struct group *g = getgrgid(groups[i]);
-			if (g) {
-				HAGGLE_DBG("group: %u %s\n", g->gr_gid, g->gr_name);
+		gid_t *groups = new gid_t[num];
+		
+		if (groups) { 
+			if (getgroups(num, groups) == num) {
+				for (int i = 0; i < num; i++) {
+					struct group *g = getgrgid(groups[i]);
+					if (g) {
+						HAGGLE_DBG("group: %u %s\n", g->gr_gid, g->gr_name);
+					}
+				}
 			}
+			delete [] groups;
 		}
 	}
+
 	struct group *g = getgrnam("bluetooth");
+
 	if (g) {
-		HAGGLE_DBG("group: %u %s\n", g->gr_gid, g->gr_name);
+		HAGGLE_DBG("group<fix>: %u %s\n", g->gr_gid, g->gr_name);
 	}
 #endif
 
