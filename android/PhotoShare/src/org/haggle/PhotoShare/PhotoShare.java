@@ -88,7 +88,7 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 					if (milliseconds == 0) {
 						// Daemon launched
 					} else if (milliseconds == 2000) {
-						progress = ProgressDialog.show(pv, "",
+						progress = ProgressDialog.show(getBaseContext(), "",
 				        		"Launching Haggle...", true);
 					} else if (milliseconds == 10000) {
 						Log.d(PhotoShare.LOG_TAG, "Spawning failed, giving up");

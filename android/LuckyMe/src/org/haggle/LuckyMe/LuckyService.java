@@ -15,7 +15,6 @@ import java.util.HashSet;
 import java.util.Random;
 
 import android.app.Service;
-import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;

@@ -1,5 +1,6 @@
 if HAVE_ANDROID_SDK
-SUBDIRS = PhotoShare LuckyMe
+SUBDIRS =
+# SUBDIRS = PhotoShare LuckyMe
 else
 SUBDIRS =
 endif
