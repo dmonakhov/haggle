@@ -76,7 +76,7 @@ static unsigned int Benchmark_DataObjects_Num = 10000;
 static unsigned int Benchmark_Test_Num = 100;
 #endif /* BENCHMARK */
 
-#if defined(OS_UNIX)
+#if defined(OS_UNIX) && !defined(OS_ANDROID)
 
 #include <termios.h>
 
@@ -312,7 +312,7 @@ static void tray_notification_remove()
 
 #endif /* WINDOWS_MOBILE */
 
-static void cleanup()
+void cleanup()
 {
 	HAGGLE_DBG("Cleaning up\n");
 
@@ -549,7 +549,7 @@ int run_haggle()
 
 	if (!db || !db->init()) {
 		HAGGLE_ERR("Could not initialize debug manager\n");
-		goto finish;
+		/* Treat as non critical error. */
 	}
 #endif
 
@@ -785,106 +785,4 @@ int main(void)
 
 #endif
 
-#else // OS_ANDROID
-
-#include <jni.h>
-#include <grp.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-static JavaVM *jvm = NULL;
-
-JNIEXPORT jint JNICALL Java_org_haggle_kernel_Haggle_mainLoop(JNIEnv *env, jobject obj, jstring fileDirPath)
-{	
-/*
-	jclass cls = env->FindClass(env, "android.content.Context");
-	
-	if (!cls)
-		return -1;
-	
-	jc_handle.cls = (*env)->NewGlobalRef(env, cls);
-
-	(*env)->DeleteLocalRef(env, cls);
-	
-        if (!jc_handle.cls)
-                return -1;
-
-
-        jmethodID mid = env->GetMethodID(cls, "getFilesDir", "()Ljava/io/File");
-
-        if (!mid)
-                return -1;
-	
-	*/
-       
-        const char *str = env->GetStringUTFChars(fileDirPath, 0); 
-        
-        if (!str)
-                return -1;
-	
-	HAGGLE_DBG("Data path is %s\n", str);
-	
-	char *tmp = (char *)malloc(strlen(str) + 1);
-
-	if (tmp) {
-		strcpy(tmp, str);
-
-		// ddsp -- Haggle default data store path, defined in Utility.h
-		if (ddsp) {
-			free((void *)ddsp);
-		}
-		ddsp = tmp;
-	}
-	
-        env->ReleaseStringUTFChars(fileDirPath, str);
-	
-	int ret = run_haggle();
-
-	cleanup();
-
-	return ret;
-}
-
-JNIEXPORT jint JNICALL Java_org_haggle_kernel_Haggle_shutdown(JNIEnv *env, jobject obj)
-{	
-	if (kernel)
-		kernel->shutdown();
-	return 0;
-}
-
-JNIEXPORT jint JNICALL Java_org_haggle_kernel_Haggle_nativeInit(JNIEnv *env, jclass cls)
-{
-	return 0;
-}
-
-JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
-{
-        JNIEnv *env;
-	jclass cls;
-
-        jvm = vm;
-
-        if (vm->GetEnv((void **)&env, JNI_VERSION_1_4) != JNI_OK) {
-                fprintf(stderr, "Could not get JNI env in JNI_OnLoad\n");
-                return -1;
-        }
-
-	return JNI_VERSION_1_4;
-}
-
-JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved)
-{
-	JNIEnv *env = NULL;
-	
-        if (vm->GetEnv((void **)&env, JNI_VERSION_1_4) != JNI_OK) {
-                fprintf(stderr, "Could not get JNI env in JNI_OnUnload\n");
-                return;
-        }         
-}
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+#endif /* !defined(OS_ANDROID) */

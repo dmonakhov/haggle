@@ -20,7 +20,11 @@
 #include <libhaggle/haggle.h>
 #include <libhaggle/platform.h>
 
-#if defined(WINCE) || defined(OS_ANDROID)
+#if defined(OS_ANDROID)
+#include <android/log.h>
+#endif
+
+#if defined(WINCE)
 #define TRACE_TO_FILE 1
 #endif
 
@@ -53,7 +57,7 @@ __attribute__((constructor))
 void libhaggle_debug_init(void)
 {
 #ifdef TRACE_TO_FILE
-	const char *path = libhaggle_platform_get_path(PLATFORM_PATH_HAGGLE_PRIVATE, "/libhaggle.txt");
+	const char *path = libhaggle_platform_get_path(PLATFORM_PATH_HAGGLE_TEMP, "/libhaggle.txt");
 	
 	if (!path || tr_out || tr_err)
 		return;
@@ -93,8 +97,14 @@ int libhaggle_trace(int err, const char *func, const char *fmt, ...)
 #endif
 	va_end(args);
 
-	fprintf((err ? tr_err : tr_out), "%ld.%06ld %s: %s", (long)now.tv_sec, (long)now.tv_usec, func, buf);
+#if defined(OS_ANDROID)
+	len = __android_log_print(ANDROID_LOG_DEBUG, "LIBHAGGLE", 
+				  "%ld.%06ld %s: %s", (long)now.tv_sec, 
+				  (long)now.tv_usec, func, buf);
+#else
+	fprintf((err ? tr_err : tr_out), "%ld.%06ld %s: %s", 
+		(long)now.tv_sec, (long)now.tv_usec, func, buf);
 	fflush(tr_out);
-
+#endif
 	return 0;
 }

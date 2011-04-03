@@ -2,7 +2,7 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 # Build all java files in the src subdirectory
-LOCAL_SRC_FILES := $(call all-java-files-under,java)
+LOCAL_SRC_FILES := $(call all-java-files-under,src)
 
 LOCAL_JNI_SHARED_LIBRARIES += libhagglekernel_jni
 

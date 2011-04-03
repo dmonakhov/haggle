@@ -65,7 +65,8 @@ LOCAL_SRC_FILES := \
 	Trace.cpp \
 	Utility.cpp \
 	Metadata.cpp \
-	XMLMetadata.cpp 
+	XMLMetadata.cpp \
+	jni.cpp 
 
 ifneq ($(BOARD_WLAN_TI_STA_DK_ROOT),)
 # This Connectivity is specific for tiwlan driver
@@ -109,11 +110,11 @@ LOCAL_SHARED_LIBRARIES := \
 
 # We need to compile our own version of libxml2, because the static
 # library provided in Android does not have the configured options we need.
-LOCAL_LDLIBS := -lpthread -lsqlite -lcrypto -ldbus -lhaggle-xml2 -lbluetooth -lhardware_legacy -lwpa_client -lcutils
+LOCAL_LDLIBS := -lpthread -lsqlite -lcrypto -ldbus -lhaggle-xml2 -lbluetooth -lhardware_legacy -lwpa_client -lcutils -llog
 
-LOCAL_SHARED_LIBRARIES += libdl libstdc++ libsqlite libcrypto libdbus libhaggle-xml2 libbluetooth libhardware_legacy libwpa_client libcutils
+LOCAL_SHARED_LIBRARIES += libdl libstdc++ libsqlite libcrypto libdbus libbluetooth libhardware_legacy libwpa_client libcutils liblog
 
-LOCAL_STATIC_LIBRARIES += libcpphaggle
+LOCAL_STATIC_LIBRARIES += libcpphaggle libhaggle-xml2
 
 EXTRA_DEFINES:=-DHAVE_CONFIG -DOS_ANDROID -DHAVE_EXCEPTION=0 -DENABLE_ETHERNET -DENABLE_BLUETOOTH -DHAVE_DBUS -DDEBUG
 LOCAL_CFLAGS:=-O2 -g $(EXTRA_DEFINES)

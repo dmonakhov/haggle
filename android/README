@@ -59,43 +59,13 @@ supports wireless extensions and therefore it can use the "regular"
 Linux code for detecting interfaces.
 
 When everything is setup, enter 'external/haggle' and type 'mm'. This
-should build Haggle for Android. The binaries will end up as part of
-the Android system in 'out/target/product/dream/system' (you might
-have 'generic' instead of 'dream', depending on what target you built
-for). You may manually transfer the binaries and libraries to your
-Android device using, e.g., the 'adb push' command (or the provided
-'install_haggle.sh' script), or you may create a new system image
-(which now includes Haggle) and then flash your device with it. If you
-want to compile against another target than 'generic', you may have to
-run, e.g., 'lunch htc_dream-eng', or 'lunch generic_passion-eng' (for
-Nexus One) to change target (as of version 0.3, Haggle is by default
-configured to compile against phones with wireless extension support).
-
-The basic components of Haggle that are of interest for Android are
-the Haggle executable ('haggle') and the application programming
-library ('libhaggle'). These end up in the output directory's 'bin/'
-and 'lib/' folders, respectively. Since Android's libxml2 library does
-not have the features needed by Haggle compiled in, a separate libxml2
-is built for Haggle. This is renamed to 'haggle-libxml2' in order to
-avoid conflicts and ends up in 'lib/'. In order to build applications
-using Android's Java-based application framework, a JNI class library
-is also built and installed. The components of this library are
-'libhaggle_jni' (the native code) and org.haggle.jar (the class
-library). These end up in 'lib/' and 'framework/',
-respectively. Haggle applications can be developed by including the
-org.haggle.jar class library when developing for Android.
-
-Haggle can be run from a shell by logging in on the phone with 'adb'.
-Type 'adb shell' to get a shell on the phone. Then execute 'haggle'.
-
-(How to use 'adb' and install programs on your device is out of the
-scope of this document, so we assume that you have the proper
-access and permissions on your device.)
-
-In order to install binaries in '/system', you may need to remount the
-filesystem with read/write permissions:
-
-> mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system
+should build Haggle for Android. The resulting application packages
+(.apk) will end up in out/target/product/<target_platform>/system/app/
+under the android source tree. (You should, e.g., find there the
+PhotoShare.apk and Haggle.apk.) These packages can be installed with
+adb using, e.g., adb install <path_to_package>/Haggle.apk. Note that
+you normally need to allow applications from "Unknown sources" under
+Settings/Applications on your Android device.
 
 Writing Haggle Applications
 ---------------------------
@@ -103,9 +73,11 @@ Writing Haggle Applications
 Haggle applications are developed as any other Android applications
 (see the Android tutorials for that). However, to be able to interact
 with Haggle from your application, you also have to include the
-org.haggle.jar class library in your Android application project (e.g., in
-Eclipse). The Haggle class library allows your application to interact
-with Haggle using a Java API.
+org.haggle.jar class library in your Android application project
+(e.g., in Eclipse). The Haggle class library allows your application
+to interact with Haggle using a Java API. Unless the native Haggle
+application libraries have been installed on your device, they also
+need to be bundled with your application.
 
 One example application, called "PhotoShare", should be bundled with
 this source package in the 'android' directory. PhotoShare is an

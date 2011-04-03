@@ -22,7 +22,8 @@ LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/include \
 	$(LOCAL_PATH)/../../extlibs/libxml2-2.6.31/include
 
-LOCAL_SHARED_LIBRARIES := libdl libhaggle-xml2
+LOCAL_SHARED_LIBRARIES := libdl liblog
+LOCAL_STATIC_LIBRARIES := libhaggle-xml2
 
 EXTRA_DEFINES=-DOS_ANDROID -DDEBUG
 LOCAL_CFLAGS :=-O2 -g -std=gnu99 $(EXTRA_DEFINES)
@@ -30,11 +31,13 @@ LOCAL_CPPFLAGS +=$(EXTRA_DEFINES)
 
 LOCAL_PRELINK_MODULE := false
 
-LOCAL_LDLIBS :=-lhaggle-xml2 -lpthread
+LOCAL_LDLIBS :=-lpthread -llog
 
 LOCAL_MODULE := libhaggle
 
-include $(BUILD_SHARED_LIBRARY)
+#include $(BUILD_SHARED_LIBRARY)
+
+include $(BUILD_STATIC_LIBRARY)
 
 include $(call first-makefiles-under,$(LOCAL_PATH))
 

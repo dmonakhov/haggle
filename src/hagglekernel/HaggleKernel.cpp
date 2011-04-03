@@ -49,6 +49,9 @@ bool HaggleKernel::init()
 		HAGGLE_ERR("Could not enable file tracing\n");
 	}
 #endif
+	if (!LogTrace::init()) {
+		HAGGLE_ERR("Could not open trace file\n");
+	}
 
 #ifdef OS_WINDOWS
 	WSADATA wsaData;
@@ -64,10 +67,12 @@ bool HaggleKernel::init()
 #endif
 
 	HAGGLE_DBG("Storage path is %s\n", storagepath.c_str());
-	HAGGLE_DBG("Data store path is %s\n", DEFAULT_DATASTORE_PATH);
+	HAGGLE_DBG("Datastore path is %s\n", DEFAULT_DATASTORE_PATH);
 	
-#if defined(OS_UNIX)
+#if defined(OS_ANDROID)
 	int num = getgroups(0, NULL);
+
+	HAGGLE_DBG("Haggle has the permissions of the following groups:\n");
 
 	if (num > 0) {
 		gid_t *groups = new gid_t[num];
@@ -88,7 +93,7 @@ bool HaggleKernel::init()
 	struct group *g = getgrnam("bluetooth");
 
 	if (g) {
-		HAGGLE_DBG("group<fix>: %u %s\n", g->gr_gid, g->gr_name);
+		HAGGLE_DBG("Haggle needs the permissions of group %u %s, but is currently not granted\n", g->gr_gid, g->gr_name);
 	}
 #endif
 
@@ -139,6 +144,8 @@ HaggleKernel::~HaggleKernel()
 	// Cleanup winsock
 	WSACleanup();
 #endif
+	LogTrace::fini();
+
 	// Now that it has finished processing, delete the data store:
 	if (dataStore)
 		delete dataStore;

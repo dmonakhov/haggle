@@ -19,6 +19,11 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#if defined(OS_ANDROID)
+#include <android/log.h>
+#define HAGGLE_LOG_TAG "Haggle"
+#endif
+
 Trace Trace::trace;
 bool Trace::stdout_enabled = true;
 
@@ -92,10 +97,12 @@ int Trace::write(const TraceType_t _type, const char *func, const char *fmt, ...
 	va_end(args);
 
 	if (stdout_enabled && stream)
-		fprintf(stream, "%.3lf:[%s]{%s}:%s", t.getTimeAsSecondsDouble(), thread_id, func, buf);
+		fprintf(stream, "%.3lf:[%s]{%s}:%s", 
+			t.getTimeAsSecondsDouble(), thread_id, func, buf);
 
 	if (traceFile)
-		fprintf(traceFile, "%.3lf:[%s]{%s}:%s", t.getTimeAsSecondsDouble(), thread_id, func, buf);
+		fprintf(traceFile, "%.3lf:[%s]{%s}:%s", 
+			t.getTimeAsSecondsDouble(), thread_id, func, buf);
 
 	return len;
 }
@@ -166,22 +173,38 @@ LogTrace LogTrace::ltrace;
  */
 LogTrace::LogTrace(void)
 {
-	// Sanity check for Android. See NOTE above.  Without this
-        // check, the file will be opened twice and the addToLog()
-        // function will block on write once the log is flushed to 
-        // disk. This will deadlock Haggle.
+}
+
+LogTrace::~LogTrace(void)
+{
+	close();
+}
+
+bool LogTrace::init(void)
+{
+	return ltrace.open("trace.log");
+}
+
+void LogTrace::fini(void)
+{
+	return ltrace.close();
+}
+
+bool LogTrace::open(const string name)
+{
         if (traceFile)
-                return;
+		return false;
 
 	if (!create_path(DEFAULT_LOG_STORAGE_PATH)) {
-		fprintf(stderr, "Unable to ensure that the haggle storage path (%s) exists\n",
-			HAGGLE_DEFAULT_STORAGE_PATH);
+		fprintf(stderr, "Could not create storage path %s\n",
+			DEFAULT_LOG_STORAGE_PATH);
+		return false;
 	}
 	
-	filename = string(DEFAULT_LOG_STORAGE_PATH) + 
-		string(PLATFORM_PATH_DELIMITER) + 
-		string("trace.log");
-
+	string filename = string(DEFAULT_LOG_STORAGE_PATH) + 
+		PLATFORM_PATH_DELIMITER + 
+		name;
+	
 	traceFile = fopen(filename.c_str(), "a");
 
 	if (traceFile) {
@@ -190,14 +213,18 @@ LogTrace::LogTrace(void)
 			 fileno(traceFile));
 	} else {
 		fprintf(stderr,"Unable to open log file!\n");
+		return false;
 	}
+
+	return true;
 }
 
-LogTrace::~LogTrace(void)
+void LogTrace::close(void)
 {
 	if (traceFile) {
 		addToLog("%s: Log stopped\n", Timeval::now().getAsString().c_str());
 		fclose(traceFile);
+		traceFile = NULL;
 	}
 }
 

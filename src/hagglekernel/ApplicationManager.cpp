@@ -192,12 +192,12 @@ void ApplicationManager::onStartup()
 	inet_pton(AF_INET, "127.0.0.1", &ip);
 	
 	// Set up the address to the application:
-	IPv4Address addr(ip, TransportUDP(8788));
+	IPv4Address addr(ip, TransportUDP(50888));
 	
 	// Reuse whatever is written in the URL above, to minimize the number of 
 	// hardcoded values:
 	// Create an interface for the address:
-	InterfaceRef iface = new ApplicationPortInterface(8788, "App startup", &addr, IFFLAG_UP);
+	InterfaceRef iface = new ApplicationPortInterface(50888, "App startup", &addr, IFFLAG_UP);
 	
 	// Add the interface to the node:
 	fakeAppNode->addInterface(iface);

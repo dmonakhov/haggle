@@ -12,7 +12,7 @@ fi
 
 if [ "$1" = "ro" ] || [ "$1" = "rw" ]; then
     echo "Setting device's /system partition in $1 mode"
-    adb shell mount -o remount,$1 -t yaffs2 /dev/block/mtdblock3 /system
+    adb shell su -c "mount -o remount,$1 -t yaffs2 /dev/block/mtdblock3 /system"
 else
     echo "You must specify either 'ro' or 'rw' as argument."
     exit

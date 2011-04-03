@@ -797,7 +797,7 @@ static int spawn_daemon_callback(unsigned int milliseconds)
                 return -1;
         }
 
-        if (milliseconds == 0 || ret == 1) {
+        if (milliseconds == 0 || ret == 1 || ret == -1) {
                 (*env)->DeleteGlobalRef(env, spawn_object);
 		spawn_object = NULL;
         }

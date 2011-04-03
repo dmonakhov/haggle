@@ -73,7 +73,7 @@ EXTRA_DIST_OTHER_PLATFORMS = \
 	ResourceMonitorWindowsMobile.h \
 	ResourceMonitorWindowsMobile.cpp \
 	ResourceMonitorWindowsXP.h \
-	ResourceMonitorWindowsXP.cpp \
+	jni.cpp \
 	Android.mk
 
 EXTRA_DIST= Attribute.h \

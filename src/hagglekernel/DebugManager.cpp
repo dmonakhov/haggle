@@ -38,10 +38,7 @@
 
 SOCKET openSocket(int port);
 
-#define HAGGLE_XML_FILENAME "/tmp/haggle.xml"
-#define HAGGLE_XSLT_FILENAME "/tmp/haggle.xslt"
-#define HAGGLE_SVG_FILENAME "/tmp/haggle.svg"
-#define DEFAULT_DEBUG_PORT 9090
+#define DEFAULT_DEBUG_PORT 50901
 
 // #ifdef DEBUG_LEAKS
 // #undef DEBUG_LEAKS
@@ -78,13 +75,13 @@ bool DebugManager::init_derived()
 
 	server_sock = openSocket(DEFAULT_DEBUG_PORT);
 
-	HAGGLE_DBG("Server sock is %d\n", server_sock);
-
 	if (server_sock == INVALID_SOCKET || !kernel->registerWatchable(server_sock, this)) {
 		CLOSE_SOCKET(server_sock);
 		HAGGLE_ERR("Could not register socket\n");
 		return false;
 	}
+
+	HAGGLE_DBG("Server sock is %d\n", server_sock);
 
 #if (defined(OS_LINUX) && !defined(OS_ANDROID)) || (defined(OS_MACOSX) && !defined(OS_MACOSX_IPHONE))
 	if (interactive) {
@@ -612,16 +609,16 @@ SOCKET openSocket(int port)
 		HAGGLE_ERR("setsockopt SO_KEEPALIVE failed: %s\n", STRERROR(ERRNO));
 	}
 	
-	memset(&addr, 0, sizeof(struct sockaddr_in));
+	memset(&addr, 0, sizeof(addr));
 
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	addr.sin_port = htons(port);
 
-	ret = bind(sock, (struct sockaddr *) &addr, sizeof(struct sockaddr_in));
+	ret = bind(sock, (struct sockaddr *) &addr, sizeof(addr));
 
 	if (ret == SOCKET_ERROR) {
-		HAGGLE_ERR("Could not bind debug TCP socket\n");
+		HAGGLE_ERR("Could not bind debug TCP socket to port %d\n", port);
 		return INVALID_SOCKET;
 	}
 

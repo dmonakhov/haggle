@@ -1232,10 +1232,12 @@ void ForwardingManager::onSendRoutingInformation(Event * e)
 
 /*
  handled configurations:
- - <ForwardingModule>noForward</ForwardingModule>	(no resolution, nothing!)
+ - <ForwardingModule>noResolution</ForwardingModule>	(no resolution, nothing!)
  - <ForwardingModule>Prophet</ForwardingModule>		(Prophet)
- - <ForwardingModule>...</ForwardingModule>		(else: no forwarding)
- */ 
+ - <ForwardingModule>noForward</ForwardingModule>	(no forwarding)
+ 
+ default forwarding is defined in ForwardingManager::init_derived(), at the moment Prophet 
+*/ 
 void ForwardingManager::onConfig(Metadata *m)
 {
 	Metadata *fm = NULL;
@@ -1306,13 +1308,16 @@ void ForwardingManager::onConfig(Metadata *m)
 				HAGGLE_DBG("Forwarder %s already set!\n", protocol.c_str());
 			} else {
 				// handle new configuration
-				if (protocol.compare("none") == 0) {
+				if (protocol.compare("noResolution") == 0) {
 					// clean up current forwardingModule
 					setForwardingModule(NULL, true);
 				} else if (protocol.compare(PROPHET_NAME) == 0) {
 					setForwardingModule(new ForwarderProphet(this));
-				} else {
+				} else if (protocol.compare("noForward") == 0) {
 					setForwardingModule(NULL);
+				} else {
+					// do not change forwarding module if name not known
+					HAGGLE_DBG("configured forwarding module <%s> not known. No change applied.", protocol.c_str()); 
 				}
 			}			
 			if (forwardingModule) {

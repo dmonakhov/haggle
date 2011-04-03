@@ -371,6 +371,7 @@ public class LuckyView extends Activity {
 		if (!mIsBound) {
 			doBindService(false);
 
+/*
 			// Force Bluetooth adaptor on
 			BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
 
@@ -382,6 +383,7 @@ public class LuckyView extends Activity {
 
 			if (wifi != null)
 				wifi.setWifiEnabled(false);
+*/
 		}
 	}
 

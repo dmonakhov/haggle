@@ -58,6 +58,12 @@ typedef pthread_attr_t thread_handle_attr_t;
 
 #define PID_FILE libhaggle_platform_get_path(PLATFORM_PATH_HAGGLE_PRIVATE, "/haggle.pid")
 
+#if defined(OS_ANDROID)
+#define HAGGLE_PROCESS_NAME "org.haggle.kernel"
+#else
+#define HAGGLE_PROCESS_NAME "haggle"
+#endif
+
 #ifdef USE_UNIX_APPLICATION_SOCKET
 #define HAGGLE_UNIX_SOCK_PATH "/tmp/haggle.sock"
 #else
@@ -423,7 +429,7 @@ int haggle_daemon_pid(unsigned long *pid)
 
         if (fp != NULL) {
                 size_t nitems = fread(buf, 1, PIDBUFLEN, fp);
-                if (nitems && strstr(buf, "haggle") != NULL) 
+                if (nitems && strstr(buf, HAGGLE_PROCESS_NAME) != NULL) 
                         old_instance_is_running = 1;
                 fclose(fp);
 	}
@@ -475,16 +481,18 @@ static int spawn_daemon_internal(const char *daemonpath, daemon_spawn_callback_t
 	if (sock == INVALID_SOCKET) {
 		ret = HAGGLE_SOCKET_ERROR;
 		haggle_set_socket_error();
+		LIBHAGGLE_ERR("Could not open launch callback socket\n");
 		goto fail_sock;
 	}
 	
 	haggle_addr.sin_family = AF_INET;
 	haggle_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	haggle_addr.sin_port = htons(8788);
+	haggle_addr.sin_port = htons(50888);
 
 	if (bind(sock, (struct sockaddr *) &haggle_addr, sizeof(haggle_addr)) == SOCKET_ERROR) {
 		ret = HAGGLE_SOCKET_ERROR;
 		haggle_set_socket_error();
+		LIBHAGGLE_ERR("Could not bind launch callback socket\n");
 		goto fail_start;
 	}
 #if defined(OS_UNIX)
@@ -492,7 +500,8 @@ static int spawn_daemon_internal(const char *daemonpath, daemon_spawn_callback_t
 	char cmd[PATH_LEN];
 
 #if defined(OS_ANDROID)
-	snprintf(cmd, PATH_LEN, "am startservice -a android.intent.action.MAIN -n org.haggle.Haggle/org.haggle.Haggle.Haggle");
+	/* Should probably figure out a cleaner way of launching the Haggle service */
+	snprintf(cmd, PATH_LEN, "am startservice -a android.intent.action.MAIN -n org.haggle.kernel/org.haggle.kernel.Haggle");
 #else
 	if (!daemonpath) {
 		ret = HAGGLE_ERROR;
@@ -505,13 +514,11 @@ static int spawn_daemon_internal(const char *daemonpath, daemon_spawn_callback_t
 	
 	ret = system(cmd);
 	
-	if (ret == -1 || ret != EXIT_SUCCESS) {
+	if (ret == -1 || ret != 0) {
 		LIBHAGGLE_ERR("could not start Haggle daemon, err=%d\n", ret);
 		ret = HAGGLE_ERROR;
 		goto fail_start;
 	}
-	
-	LIBHAGGLE_DBG("Daemon started\n");
 	
 #elif defined(OS_WINDOWS)
 #if defined(OS_WINDOWS_MOBILE) || defined(OS_WINDOWS_VISTA)
@@ -519,9 +526,10 @@ static int spawn_daemon_internal(const char *daemonpath, daemon_spawn_callback_t
 #else
 	path = daemonpath;
 #endif
-	if (!path)
-		return HAGGLE_ERROR;
-
+	if (!path) {
+		ret = HAGGLE_ERROR;
+		goto fail_start;
+	}
 	ret = CreateProcess(path, L"", NULL, NULL, 0, 0, NULL, NULL, NULL, &pi);
 
 #if defined(OS_WINDOWS_MOBILE) || defined(OS_WINDOWS_VISTA)
@@ -542,7 +550,7 @@ static int spawn_daemon_internal(const char *daemonpath, daemon_spawn_callback_t
 	
 	LIBHAGGLE_DBG("Waiting for Haggle to start...\n");
 
-	do {
+	while (1) {
 		FD_ZERO(&readfds);
 		FD_SET(sock, &readfds);
 		
@@ -554,6 +562,7 @@ static int spawn_daemon_internal(const char *daemonpath, daemon_spawn_callback_t
 			LIBHAGGLE_DBG("Socket error while waiting for Haggle to start\n");
 			ret = HAGGLE_SOCKET_ERROR;
 			haggle_set_socket_error();
+			break;
 		} else if (status == 0) {
 			// Timeout!
 			
@@ -564,14 +573,18 @@ static int spawn_daemon_internal(const char *daemonpath, daemon_spawn_callback_t
 			timeout.tv_usec = 0;
 			time_passed += timeout.tv_sec * 1000 + timeout.tv_usec / 1000;
 
-			if (time_left == 0)
+			if (time_left == 0) {
 				ret = HAGGLE_DAEMON_ERROR;
-
+				break;
+			}
 			if (callback) {
-				LIBHAGGLE_DBG("Calling daemon spawn callback, time_passed=%u\n", time_passed);
+				LIBHAGGLE_DBG("Calling daemon spawn callback, time_passed=%u\n", 
+					      time_passed);
+
 				if (callback(time_passed) == -1) {
 					LIBHAGGLE_DBG("Application wants to stop waiting\n");
 					ret = HAGGLE_DAEMON_ERROR;
+					break;
 				}
 			}
 		} else if (FD_ISSET(sock, &readfds)) {
@@ -583,8 +596,9 @@ static int spawn_daemon_internal(const char *daemonpath, daemon_spawn_callback_t
 				callback(0);
 			}
 			ret = HAGGLE_NO_ERROR;
+			break;
 		}
-	} while (ret == HAGGLE_ERROR);
+	}
 	
 fail_start:
 	CLOSE_SOCKET(sock);

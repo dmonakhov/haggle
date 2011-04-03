@@ -619,7 +619,7 @@ const char *libhaggle_platform_get_path(path_type_t type, const char *append)
 
 		break;
 	case PLATFORM_PATH_HAGGLE_TEMP:
-		strcpy(ret_path, "/data/data/org.haggle.kernel/files");
+		strcpy(ret_path, "/data/local/tmp");
 		break;
 	case PLATFORM_PATH_APP_DATA:
 		if (path_app_data_valid == 1) {

@@ -13,6 +13,15 @@ ADB=adb
 ADB_PARAMS=
 ANDROID_DIR=$ANDROID_BUILD_TOP
 
+echo 
+echo "NOTICE"
+echo "This script is deprecated as Haggle can now be installed as a"
+echo "regular Android application bundle (using, e.g., adb). See"
+echo "android/README for more information."
+echo "Press any key to continue, or ctrl-c to abort"
+# Wait for some user input
+read
+
 if [ -z $TARGET_PRODUCT ]; then
         echo "There is no TARGET_PRODUCT environment variable set."
 	echo "Please make sure that the Android build environment"
@@ -60,7 +69,7 @@ pushd $SCRIPT_DIR
 for dev in $DEVICES; do
     echo "Installing configuration files onto device $dev"
     $ADB -s $dev push $DEVICE_FILES_DIR/tiwlan.ini $DATA_DIR/
-    $ADB -s $dev shell mkdir /data/haggle
+    $ADB -s $dev shell su -c "mkdir /data/haggle"
     $ADB -s $dev shell mkdir /sdcard/PhotoShare
 done
 
@@ -96,10 +105,10 @@ function install_file()
 
     echo "Installing $file in $dir"
 
-    $ADB -s $dev push $src $dir/$file
-    #$ADB -s $dev push $src /sdcard/$file
-    #$ADB -s $dev shell su -c "dd if=/sdcard/$file of=$dir/$file"
-    #$ADB -s $dev shell rm -f /sdcard/$file
+    #$ADB -s $dev push $src $dir/$file
+    $ADB -s $dev push $src /sdcard/$file.tmp
+    $ADB -s $dev shell su -c "dd if=/sdcard/$file.tmp of=$dir/$file"
+    $ADB -s $dev shell rm /sdcard/$file
     $ADB -s $dev shell su -c "chmod $perm $dir/$file"
 }
 

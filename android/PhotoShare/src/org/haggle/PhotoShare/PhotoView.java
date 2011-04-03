@@ -257,9 +257,9 @@ public class PhotoView extends Activity implements OnClickListener {
     public boolean onCreateOptionsMenu(Menu menu) {
     	super.onCreateOptionsMenu(menu);
 
-        menu.add(0, MENU_TAKE_PICTURE, 0, R.string.menu_take_picture).setIcon(R.drawable.ic_camera_indicator_photo);
-        menu.add(0, MENU_INTERESTS, 0, R.string.menu_interests);
-        menu.add(0, MENU_SHUTDOWN_HAGGLE, 0, R.string.menu_shutdown_haggle);
+        menu.add(0, MENU_TAKE_PICTURE, 0, R.string.menu_take_picture).setIcon(android.R.drawable.ic_menu_camera);
+        menu.add(0, MENU_INTERESTS, 0, R.string.menu_interests).setIcon(android.R.drawable.ic_menu_search);
+        menu.add(0, MENU_SHUTDOWN_HAGGLE, 0, R.string.menu_shutdown_haggle).setIcon(android.R.drawable.ic_lock_power_off);
 
         return true;
 	}

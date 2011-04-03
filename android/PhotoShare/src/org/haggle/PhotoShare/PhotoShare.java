@@ -8,6 +8,7 @@ import org.haggle.LaunchCallback;
 
 import android.app.AlertDialog;
 import android.app.Application;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
 import android.util.Log;
@@ -36,29 +37,26 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 	}
 
 	public void onCreate() {
-		// TODO Auto-generated method stub
 		super.onCreate();
-
-    	Log.d(PhotoShare.LOG_TAG, "PhotoShare:onCreate(), thread id=" + Thread.currentThread().getId());
-    	
-    	vibrator = (android.os.Vibrator)getSystemService(VIBRATOR_SERVICE);
+		
+		Log.d(PhotoShare.LOG_TAG, "PhotoShare:onCreate(), thread id=" + Thread.currentThread().getId());
+		
+		vibrator = (android.os.Vibrator)getSystemService(VIBRATOR_SERVICE);
 	}
 
 	public void onLowMemory() {
-		// TODO Auto-generated method stub
 		super.onLowMemory();
-    	Log.d(PhotoShare.LOG_TAG, "PhotoShare:onLowMemory()");	
+		Log.d(PhotoShare.LOG_TAG, "PhotoShare:onLowMemory()");	
 	}
 
 	public void onTerminate() {
-		// TODO Auto-generated method stub
 		super.onTerminate();
-    	Log.d(PhotoShare.LOG_TAG, "PhotoShare:onTerminate()");	
-    	//finiHaggle();
+		Log.d(PhotoShare.LOG_TAG, "PhotoShare:onTerminate()");	
+		//finiHaggle();
 	}
 	public void setPhotoView(PhotoView pv) {
-    	Log.d(PhotoShare.LOG_TAG, "PhotoShare: Setting pv");
-    	this.pv = pv;
+		Log.d(PhotoShare.LOG_TAG, "PhotoShare: Setting pv");
+		this.pv = pv;
 	}
 	public PhotoView getPhotoView() {
 		return pv;
@@ -81,14 +79,27 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 			Log.d(PhotoShare.LOG_TAG, "Trying to spawn Haggle daemon");
 
 			if (!Handle.spawnDaemon(new LaunchCallback() {
-
+				ProgressDialog progress = null;
+				
 				public int callback(long milliseconds) {
 
 					Log.d(PhotoShare.LOG_TAG, "Spawning milliseconds..." + milliseconds);
 
 					if (milliseconds == 0) {
 						// Daemon launched
+					} else if (milliseconds == 2000) {
+						progress = ProgressDialog.show(pv, "",
+				        		"Launching Haggle...", true);
+					} else if (milliseconds == 10000) {
+						Log.d(PhotoShare.LOG_TAG, "Spawning failed, giving up");
+						
+						if (progress != null)
+							progress.dismiss();
+						return -1;
 					}
+
+					if (progress != null)
+						progress.dismiss();
 					return 0;
 				}
 			})) {
@@ -184,6 +195,7 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 		pv.runOnUiThread(pv.new DataUpdater(dObj));
 	
 	}
+	@Override
 	public void onNeighborUpdate(Node[] neighbors) {
 
 		if (pv == null)
@@ -233,19 +245,16 @@ public class PhotoShare extends Application implements org.haggle.EventHandler {
 	}
 	
 	public void onInterestListUpdate(Attribute[] interests) {
-		// TODO Auto-generated method stub
 		Log.d(PhotoShare.LOG_TAG, "Setting interests (size=" + interests.length + ")");
 		InterestView.setInterests(interests);
 	}
 
 	public void onEventLoopStart() {
-		// TODO Auto-generated method stub
 		Log.d(PhotoShare.LOG_TAG, "Event loop started.");
 		hh.getApplicationInterestsAsync();
 	}
 
 	public void onEventLoopStop() {
-		// TODO Auto-generated method stub
 		Log.d(PhotoShare.LOG_TAG, "Event loop stopped.");
 	}
 }

@@ -105,7 +105,10 @@ class LogTrace {
 	~LogTrace(void);
 public:
 	static LogTrace ltrace;
-	
+	static bool init(void);
+	static void fini(void);
+	bool open(const string name);
+	void close(void);
 	string getFile(void) { return filename; }
 	void addToLog(const char *fmt, ...);
 };

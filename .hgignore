@@ -15,6 +15,13 @@ Makefile.in
 *.lai
 *.m4
 *.jar
+*.orig
+*.dex
+.classpath
+.project
+R.java
+.settings
+local.properties
 doc/api/*
 autom4te.cache
 bin
@@ -45,6 +52,7 @@ src/hagglekernel/haggle
 src/libcpphaggle/Doxyfile
 src/libhaggle/Doxyfile
 src/libhaggle/jni/classes.list
+src/libhaggle/jni/sources.list
 src/libhaggle/jni/java/org/haggle/classnoinst.stamp
 src/logcollector/logcollector
 src/luckyMe/luckyMe

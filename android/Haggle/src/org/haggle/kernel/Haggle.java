@@ -1,24 +1,22 @@
 package org.haggle.kernel;
 
 import android.app.Service;
-import android.content.Context;
+import android.app.NotificationManager;
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Handler;
 import android.os.Messenger;
-import android.os.PowerManager;
 import android.os.RemoteException;
-import android.provider.Settings.Secure;
 import android.util.Log;
 import java.util.ArrayList;
 
 /* 
-   Start service from command line with: 
-   > am startservice -a android.intent.action.MAIN -n org.haggle.kernel/org.haggle.kernel.Haggle
-   
-   NOTE: must be run as root
+   Haggle service can be started from command line with: 
+   $ am startservice -a android.intent.action.MAIN -n org.haggle.kernel/org.haggle.kernel.Haggle
 */
 public class Haggle extends Service {
 	static {
@@ -28,7 +26,8 @@ public class Haggle extends Service {
 	private native static int nativeInit();
 	
 	/** For showing and hiding our notification. */
-	// NotificationManager mNM;
+	NotificationManager mNM;
+
 	/** Keeps track of all current registered clients. */
 	ArrayList<Messenger> mClients = new ArrayList<Messenger>();
 	/** Holds last value set by a client. */
@@ -95,7 +94,7 @@ public class Haggle extends Service {
 	final Messenger mMessenger = new Messenger(new IncomingHandler());
 
 	native int mainLoop(String fileDirPath);
-	native int shutdown();
+	public native int shutdown();
 	private boolean isRunning = false;
 	private int startId = -1;
 
@@ -112,10 +111,11 @@ public class Haggle extends Service {
 	}
 	@Override
 	public void onCreate() {
-		//mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-
+		mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+		
 		// Display a notification about us starting.
-		//showNotification();
+		showNotification();
+
 		if (!isRunning) {
 			Log.i("Haggle", "Starting Haggle");
 			mHaggleThread = new Thread(new HaggleMainLoop());
@@ -138,7 +138,7 @@ public class Haggle extends Service {
 	@Override
 	public void onDestroy() {
 		// Cancel the persistent notification.
-		//mNM.cancel(R.string.remote_service_started);
+		mNM.cancel(R.string.remote_service_started);
 
 		// Tell the user we stopped.
 		//Toast.makeText(this, R.string.remote_service_stopped, Toast.LENGTH_SHORT).show();
@@ -153,39 +153,44 @@ public class Haggle extends Service {
 		}
 		Log.i("Haggle", "Joined with Haggle main thread");
 	}
-
+	
+	public class HaggleBinder extends Binder {
+		Haggle getHaggle() {
+			return Haggle.this;
+		}
+	}
+	private final HaggleBinder mBinder = new HaggleBinder();
+	
 	/**
 	 * When binding to the service, we return an interface to our messenger
 	 * for sending messages to the service.
 	 */
 	@Override
 	public IBinder onBind(Intent intent) {
-		return mMessenger.getBinder();
+		//return mMessenger.getBinder();
+		return mBinder;
 	}
 
 	/**
 	 * Show a notification while this service is running.
 	 */
-	/*
-	  private void showNotification() {
-	  // In this sample, we'll use the same text for the ticker and the expanded notification
-	  CharSequence text = getText(R.string.remote_service_started);
-
-	  // Set the icon, scrolling text and timestamp
-	  Notification notification = new Notification(R.drawable.stat_sample, text,
-	  System.currentTimeMillis());
-
-	  // The PendingIntent to launch our activity if the user selects this notification
-	  PendingIntent contentIntent = PendingIntent.getActivity(this, 0,
-	  new Intent(this, Controller.class), 0);
-
-	  // Set the info for the views that show in the notification panel.
-	  notification.setLatestEventInfo(this, getText(R.string.remote_service_label),
-	  text, contentIntent);
-
-	  // Send the notification.
-	  // We use a string id because it is a unique number.  We use it later to cancel.
-	  mNM.notify(R.string.remote_service_started, notification);
-	  }
-	*/
+	private void showNotification() {
+		CharSequence text = getText(R.string.remote_service_started);
+		
+		// Set the icon, scrolling text and timestamp
+		Notification notification = new Notification(R.drawable.ic_stat_notify_haggle, text,
+							     System.currentTimeMillis());
+		
+		// The PendingIntent to launch our StatusView activity if the
+		// user selects this notification
+		Intent status = new Intent(this, StatusView.class);
+		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, status, 0);
+		
+		// Set the info for the views that show in the
+		// notification panel.
+		notification.setLatestEventInfo(this, getText(R.string.remote_service_label),
+						text, contentIntent);
+		
+		mNM.notify(R.string.remote_service_started, notification);
+	}
 }

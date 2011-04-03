@@ -1,0 +1,11 @@
+-keep class * implements org.haggle.EventHandler {
+  *;
+}
+
+-keep class org.haggle.PhotoShare.* {
+  *;
+}
+
+-keep class * {
+  *;
+}
