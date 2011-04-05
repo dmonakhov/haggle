@@ -52,11 +52,6 @@ using namespace haggle;
 
 #endif /* OS_WINDOWS_MOBILE */
 
-#if defined(OS_ANDROID)
-// Include Android property service for reading device id
-#include <cutils/properties.h>
-#endif
-
 unsigned long Node::totNum = 0;
 
 const char *Node::typestr[] = {
@@ -746,10 +741,12 @@ static void getserial(char *serialNumber)
 
    Calculate a unique node Id which will be consistent each time.
 */
+#if defined(OS_ANDROID)
+#define _REALLY_INCLUDE_SYS__SYSTEM_PROPERTIES_H_
+#include <sys/_system_properties.h>
+#endif
 void Node::calcId()
 {
-	HAGGLE_DBG("Updating Id for node type=%d\n", type);
-
 #if defined(OS_WINDOWS_MOBILE)
 #define APPLICATION_DATA "@^!Haggle!^@"
 
@@ -764,12 +761,11 @@ void Node::calcId()
 
 #elif defined(OS_ANDROID)
 	SHA_CTX ctx;
-	char serialno[PROPERTY_VALUE_MAX] = {'\0'};
-
+	char serialno[50] = {'\0'};
 	SHA1_Init(&ctx);	
-	
-	property_get("ro.serialno", serialno, NULL);
-		
+
+	__system_property_get("ro.serialno", serialno);
+
 	SHA1_Update(&ctx, (unsigned char *)serialno, strlen(serialno));
 	SHA1_Final((unsigned char *)id, &ctx);
 	
@@ -800,6 +796,8 @@ void Node::calcId()
 #endif
 
 	calcIdStr();
+
+	HAGGLE_DBG("Node type=%d, id=[%s]\n", type, idStr);
 }
 
 void Node::calcIdStr()

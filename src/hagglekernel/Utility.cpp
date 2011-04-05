@@ -487,7 +487,6 @@ bool create_path(const char *p)
 #include <net/if.h>
 #include <netinet/in.h>
 
-// Android property manager
 #include <cutils/properties.h>
 
 #include "TI_IPC_Api.h"

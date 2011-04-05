@@ -1,71 +1,17 @@
-Building Haggle for Android
+Haggle for Android
 ===========================
 
 NOTE: Always check http://code.google.com/p/haggle/w/list for the
 latest information on building for Android.
 
-Haggle can be built for Google's Android OS (e.g., the Nexus One).
-Android is Linux based, but it is a very stripped down system with a
-minimal libc (called Bionic) and very basic C++ library support. There
-are no STL classes available on Android, but Haggle is built by
-default using its own STL-like container classes.
-
-To build Haggle for Android, you need an Android toolchain (ARM
-based). There are probably several ways to build Haggle for Android,
-but here we assume you use the source tree that can be downloaded from
-http://source.android.com. Follow the instructions on
-http://source.android.com/download in order to build the Android
-sources (you may want to build specifically for the G1 phone. Please
-note the special procedure for that). We here assume you build for a
-real device, and not the Android simulator.
-
-Currently there is no support for building Haggle with the Android NDK
-(Native Development Kit), although this should in theory be possible
-(at least if one ignores the fact that we probably rely on some
-headers that are not available in the NDK).
-
-Once you have a completely built Android system, enter the top
-directory of the Android source tree and put your Haggle source in
-'external/haggle' (the easiest way is to just put a symlink there
-pointing to wherever your Haggle source is located). Execute
-
-> source build/envsetup.sh
-
-In order to set all paths, etc. It might also be necessary to run the
-normal Haggle configure process in order to generate the config.h
-header file before Haggle can be built for Android.
-
-Haggle depends on the presence of Bluetooth and WiFi support in the
-Android build configuration. Make sure that the board configuration of
-your Android configuration includes Bluetooth and WiFi
-support. Support for such hardware is typically included when building
-for a specific phone, such as Dream, Magic or Nexus One. But, when
-building for, e.g., "generic" there is no such support in the
-configuration. This can be added by creating a new configuration, or
-editing an existing, and adding the following to BoardConfig.mk:
-
-BOARD_HAVE_BLUETOOTH := true                                                                                                                        
-BOARD_WLAN_TI_STA_DK_ROOT := system/wlan/ti/sta_dk_4_0_4_32     
-
-For example, for the "generic" configuration the BoardConfig.mk is 
-found at build/target/board/generic/BoardConfig.mk. Note that the 
-path to the wlan source may change with newer Android source versions.
- 
-NOTE: Support for the Texas Instrument WiFi driver is only required
-for phones such as HTC's Magic, G1, and Hero. This driver does not
-support the Linux Wireless extensions and therefore require special
-code to detect the wireless interface. The Google Nexus One natively
-supports wireless extensions and therefore it can use the "regular"
-Linux code for detecting interfaces.
-
-When everything is setup, enter 'external/haggle' and type 'mm'. This
-should build Haggle for Android. The resulting application packages
-(.apk) will end up in out/target/product/<target_platform>/system/app/
-under the android source tree. (You should, e.g., find there the
-PhotoShare.apk and Haggle.apk.) These packages can be installed with
-adb using, e.g., adb install <path_to_package>/Haggle.apk. Note that
-you normally need to allow applications from "Unknown sources" under
-Settings/Applications on your Android device.
+Haggle can be built for Google's Android OS (e.g., the Nexus One) and
+run as an Android Service. This allows Haggle to run on non-rooted
+devices, but it restricts its use to WiFi in managed mode. WiFi ad-hoc
+mode cannot currently be set in Android without first rooting the
+device. Similarly, Bluetooth cannot be accessed from native code
+without access privileges outside of what Android provides to
+applications (see note below how to enable Bluetooth on rooted
+devices).
 
 Writing Haggle Applications
 ---------------------------
@@ -84,6 +30,73 @@ this source package in the 'android' directory. PhotoShare is an
 Android Eclipse project. Once it is opened in Eclipse, it is probably
 necessary to configure local paths to org.haggle.jar, the Android SDK,
 etc.
+
+Building
+--------
+
+Prerequisites: 
+
+* Android NDK version r5 or greater
+* Android SDK
+* Eclipse with Android development plugin
+* Java
+
+Steps (all paths relative top directory):
+
+1. First build the external library dependencies:
+   $ cd android/extlibs
+   $ ./build.sh
+
+2. Build native Haggle code:
+   $ cd android/Haggle
+   $ <path_to_NDK>/ndk-build
+
+3. Build native application code (e.g.):
+   $ cd android/PhotoShare
+   $ <path_to_NDK>/ndk-build
+
+Repeat step 3 for all Android applications that require native code to
+be built (e.g., LuckyMe).
+
+4. Build Haggle's Java component (in Eclipse)
+   - Start Eclipse
+   - Import the directory 'android/Haggle' as an Android project.
+   - Build (should be automatic)
+
+5. Build Haggle applications (in Eclipse)
+   - Import application code in Eclipse as an Android project 
+     (e.g., android/PhotoShare)
+   - Build org.haggle.jar (should be enough to just run 
+     "./configure && make" in the top dir)
+   - Copy src/libhaggle/jni/org.haggle.jar to android/<MyApp>/libs
+   - Add src/libhaggle/jni/org.haggle.jar as a referenced library:
+     Eclipse->Project->Properties->Java Build Path->Libraries->Add External Jar
+
+Repeat step 5 for all other applications.
+
+
+Enabling Bluetooth on rooted Android devices
+--------------------------------------------
+
+Haggle can use bluetooth on rooted devices by modifying the privileges
+given to Android applications with the BLUETOOTH_ADMIN
+permission. This can be done relatively easily by modifying the
+/system/etc/permissions/platform.xml file on a device. Change the
+following section:
+
+<permission name="android.permission.BLUETOOTH_ADMIN" >
+        <group gid="net_bt_admin" />
+</permission>
+
+to
+
+<permission name="android.permission.BLUETOOTH_ADMIN" >
+        <group gid="net_bt_admin" />
+        <group gid="bluetooth" />
+</permission>		  
+
+This change allows Haggle to detect the device's local bluetooth
+hardware.
 
 Setting Ad hoc mode
 -------------------
@@ -132,38 +145,3 @@ not critical. For example, statically allocated strings will probably
 leak memory because the string constructor is run twice, thus
 allocating the string memory twice as well. But this is something one
 can live with until a fix is applied in Bionic upstream.
-
-Building Android Applications
------------------------------
-
-Android applications, e.g, PhotoShare and LuckyMe, can be built either
-using Eclipse or with the standard build system (configure/make).
-
-In either case, you need to first install the Android SDK.
-
-With Eclipse, just import the project directory as an Android project,
-then add <my haggle path>/lib/org.haggle.jar as an external library
-dependency for your project.
-
-Building with the standard build system requires that Ant is
-installed. If you run into problems compiling the Android
-applications, e.g., with the error "taskdef class
-com.android.ant.SetupTask cannot be found", then you need to make sure
-you have selected an SDK target for the android app that matches your
-installed ones in the SDK. Do:
-
-> android list targets
-
-to list the available targets.
-
-Then issue (in <my haggle path>/android) the following command:
-
-> android update project --name PhotoShare --target 3 --path ./PhotoShare
-
-Replace the target number with something that matches what is
-available in your SDK setup. Note, however, that the apps might not
-build against too old targets (pre android 2.1).
-
-After having configured the target, recompile.
-
-

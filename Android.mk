@@ -1,6 +1,8 @@
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
+EXTRA_LIBS_PATH := external
+
 # Do not build for simulator
 ifneq ($(TARGET_SIMULATOR),true)
 

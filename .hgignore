@@ -1,6 +1,7 @@
 syntax: glob
 *~
 *.o
+*.o.d
 *.lo
 *.Po
 *.Plo
@@ -128,3 +129,5 @@ winmobile/Haggle/Haggle.aps
 winmobile/HaggleInstaller/Debug*
 winmobile/LibHaggleCS/obj
 winmobile/PhotoShare/obj
+android/extlibs/.ndkconfig
+android/extlibs/external
