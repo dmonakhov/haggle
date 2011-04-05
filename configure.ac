@@ -1,4 +1,4 @@
-AC_INIT([haggle], [0.3.1], [bugs@haggleproject.org])
+AC_INIT([haggle], [0.4], [haggle-developer@googlegroups.com])
 AC_CANONICAL_SYSTEM
 
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])

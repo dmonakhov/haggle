@@ -160,7 +160,7 @@ NodeRef NodeStore::add(Node *node)
 
 	if (_stored(*node)) {
 		HAGGLE_DBG("Node %s is already in node store\n", node->getIdStr());
-		return false;
+		return NULL;
 	}
 
 	HAGGLE_DBG("Adding new node to node store %s\n", node->getIdStr());

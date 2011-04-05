@@ -11,7 +11,18 @@ endif
 
 SUBDIRS += doc src android
 
-EXTRA_DIST = bin lib extlibs winmobile windows iphone android macosx resources README Android.mk
+EXTRA_DIST = \
+	bin \
+	lib \
+	extlibs \
+	winmobile \
+	windows \
+	iphone \
+	macosx \
+	resources \
+	README \
+	Android.mk
+
 DIST_SUBDIRS = $(SUBDIRS) testsuite
 
 dist_doc_DATA = README
@@ -19,7 +30,10 @@ docdir = doc
 
 if DOCS
 
-DOC_DIRS := src/hagglekernel src/libcpphaggle src/libhaggle
+DOC_DIRS := \
+	src/hagglekernel \
+	src/libcpphaggle \
+	src/libhaggle
 
 docs: 
 	@echo "Generating documentation"
