@@ -36,6 +36,8 @@ read
 
 export NDK_PROJECT_PATH BOARD_HAVE_BLUETOOTH
 
+mkdir -p external
+
 pushd external
 
 # Core utils
