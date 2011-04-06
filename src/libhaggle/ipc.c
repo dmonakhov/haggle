@@ -458,7 +458,8 @@ int haggle_daemon_pid(unsigned long *pid)
         return HAGGLE_DAEMON_CRASHED;
 }
 
-static int spawn_daemon_internal(const char *daemonpath, daemon_spawn_callback_t callback)
+static int spawn_daemon_internal(const char *daemonpath, 
+				 daemon_spawn_callback_t callback)
 {
 	int ret = HAGGLE_ERROR;
 	int status;
@@ -626,6 +627,9 @@ int haggle_daemon_spawn_with_callback(const char *daemonpath, daemon_spawn_callb
 		LIBHAGGLE_DBG("No daemon spawn callback\n");
 	}
 
+#if defined(OS_ANDROID)
+	return spawn_daemon_internal(NULL, callback);
+#else
 	while (1) {
 		/*
 		Need to put the definition of haggle_paths here. Otherwise,
@@ -634,8 +638,6 @@ int haggle_daemon_spawn_with_callback(const char *daemonpath, daemon_spawn_callb
 		*/
 #if defined(OS_WINDOWS)
 		const char *haggle_paths[] = { libhaggle_platform_get_path(PLATFORM_PATH_HAGGLE_EXE, "\\Haggle.exe"), NULL };
-#elif defined(OS_ANDROID)
-                const char *haggle_paths[] = { libhaggle_platform_get_path(PLATFORM_PATH_HAGGLE_EXE, "/haggle"), NULL };
 #elif defined(OS_UNIX)
 		// Do some qualified guessing
 		const char *haggle_paths[] = { "./haggle", "./bin/haggle", "/bin/haggle", "/usr/bin/haggle", "/usr/local/bin/haggle", "/opt/bin/haggle", "/opt/local/bin/haggle", NULL };
@@ -652,6 +654,7 @@ int haggle_daemon_spawn_with_callback(const char *daemonpath, daemon_spawn_callb
 	}
 
 	return HAGGLE_ERROR;
+#endif /* OS_ANDROID */
 }
 
 static const char *ctrl_type_names[] = { 
