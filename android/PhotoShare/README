@@ -8,7 +8,7 @@ automatically be compiled.
 
 Manually (make or ant):
 
-> ant debug -lib ../../lib/haggle.jar
+> ant debug -lib ../../lib/org.haggle.jar
 
 
 Eclipse:
