@@ -656,6 +656,8 @@ AC_CONFIG_FILES([Makefile
  		 android/PhotoShare/local.properties
 		 android/LuckyMe/Makefile
  		 android/LuckyMe/local.properties
+		 android/Haggle/Makefile
+		 android/Haggle/local.properties
                  $extra_config_files])
 AC_OUTPUT
 

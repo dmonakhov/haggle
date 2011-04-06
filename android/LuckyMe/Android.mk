@@ -14,7 +14,7 @@ LOCAL_STATIC_JAVA_LIBRARIES := org.haggle
 # Name of the APK to build
 LOCAL_PACKAGE_NAME := LuckyMe
 
-LOCAL_PROGUARD_FLAGS := -include $(LOCAL_PATH)/proguard.flags
+LOCAL_PROGUARD_FLAGS := -include $(LOCAL_PATH)/proguard.cfg
 
 # Tell it to build an APK
 include $(BUILD_PACKAGE)

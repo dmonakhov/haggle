@@ -37,43 +37,56 @@ Building
 Prerequisites: 
 
 * Android NDK version r5 or greater
-* Android SDK
-* Eclipse with Android development plugin
+* Android SDK (installed and in PATH)
+* Eclipse with Android development plugin or Ant
 * Java
 
 Steps (all paths relative top directory):
 
-1. First build the external library dependencies:
+1. Run configure in top-level directory
+   - Make sure "Android applications = yes" in case you want to build
+     Android applications with Ant rather than Eclipse. For this to 
+     succeed, both Ant and the Android SDK need to be in the PATH.
+
+2. First build the external library dependencies:
    $ cd android/extlibs
    $ ./build.sh
 
-2. Build native Haggle code:
+3. Build native Haggle code:
    $ cd android/Haggle
    $ <path_to_NDK>/ndk-build
 
-3. Build native application code (e.g.):
+4. Build native application code (e.g.):
    $ cd android/PhotoShare
    $ <path_to_NDK>/ndk-build
 
-Repeat step 3 for all Android applications that require native code to
+Repeat step 4 for all Android applications that require native code to
 be built (e.g., LuckyMe).
 
-4. Build Haggle's Java component (in Eclipse)
-   - Start Eclipse
+5. Build Haggle's Java component (in Eclipse or using Ant)
+   Eclipse:
    - Import the directory 'android/Haggle' as an Android project.
    - Build (should be automatic)
-
-5. Build Haggle applications (in Eclipse)
+   Ant:
+   - Make sure the Ant is installed
+   - Run make in application directories (e.g., android/Haggle)
+   
+6. Build Haggle applications (in Eclipse or using Ant)
+   Eclipse:
    - Import application code in Eclipse as an Android project 
      (e.g., android/PhotoShare)
    - Build org.haggle.jar (should be enough to just run 
      "./configure && make" in the top dir)
    - Copy src/libhaggle/jni/org.haggle.jar to android/<MyApp>/libs
    - Add src/libhaggle/jni/org.haggle.jar as a referenced library:
-     Eclipse->Project->Properties->Java Build Path->Libraries->Add External Jar
+     Eclipse->Project->Properties->Java Build Path->Libraries->
+     ->Add External Jar
+   Ant:
+   - Follow instructions under 5.
 
-Repeat step 5 for all other applications.
+Repeat step 6 for all other applications.
 
+Install on device with adb, e.g., "adb install Haggle.apk".
 
 Enabling Bluetooth on rooted Android devices
 --------------------------------------------
