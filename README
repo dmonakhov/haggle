@@ -27,8 +27,8 @@ Tested hardware platforms:
 * LG KS20 (experimental Bluetooth support)
 * iPhone (limited functionality, needs jailbreak)
 * T-Mobile G1 (or the Google Android developer phone)
-* HTC Magic (must be rooted)
-* Google Nexus One (must be rooted)
+* HTC Magic
+* Google Nexus One
 
 Complete functionality may not be supported on all platforms at all
 times (e.g., Bluetooth or WiFi functionality may differ, or not work
@@ -131,4 +131,4 @@ Building for iPhone
 
 See iphone/README
 
-Written by: Erik Nordström <erikn@it.uu.se>
+Written by: Erik Nordström <erik.nordstrom@gmail.com>

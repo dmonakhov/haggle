@@ -289,11 +289,13 @@ void ConnectivityEthernet::cancelDiscovery(void)
 
 void ConnectivityEthernet::setPolicy(PolicyRef newPolicy)
 {
+	/* TODO: Make beacon interval dynamic */
+#if defined(ENABLE_DYNAMIC_BEACON_INTERVAL)
 	PolicyType_t pol;
 	
 	if (!newPolicy)
 		return;
-	
+
 	pol = newPolicy->getPowerPolicy();
 	
 	switch (pol) {
@@ -314,6 +316,7 @@ void ConnectivityEthernet::setPolicy(PolicyRef newPolicy)
 		break;
 	}
         CM_DBG("Setting beacon interval to %u seconds\n", beaconInterval);
+#endif
 }
 
 
@@ -333,7 +336,7 @@ bool ConnectivityEthernet::isBeaconMine(struct haggle_beacon *b)
 
 ConnectivityEthernet::ConnectivityEthernet(ConnectivityManager * m, const InterfaceRef& iface) :
 	Connectivity(m, iface, "Ethernet connectivity"), listenSock(INVALID_SOCKET), 
-	seqno(0), beaconInterval(15)
+	seqno(0), beaconInterval(5)
 {
 }
 
@@ -465,7 +468,7 @@ bool ConnectivityEthernet::run()
 					
 					for (;it != ifaceList.end(); it++) {
 						(*it)->broadcast_packet.seqno = htonl(seqno);
-						(*it)->broadcast_packet.interval = beaconInterval;
+						(*it)->broadcast_packet.interval = htonl(beaconInterval);
 						 
 						ret = sendto((*it)->broadcastSocket, 
 							     (const char *) &((*it)->broadcast_packet), 
@@ -531,7 +534,7 @@ bool ConnectivityEthernet::run()
 				CM_DBG("Bad size of beacon: len=%d\n", len);
 			} else if (!isBeaconMine(beacon)) {
 				Addresses addrs;
-				Timeval received_lifetime = BEACON_TIMEOUT(beacon->interval);
+				Timeval received_lifetime = BEACON_TIMEOUT(ntohl(beacon->interval));
 				
 				if (received_lifetime < lifetime)
 					lifetime = received_lifetime;
