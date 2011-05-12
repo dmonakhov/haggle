@@ -1020,7 +1020,8 @@ void haggle_handle_free(haggle_handle_t hh)
 	if (hh->event_loop_running)
 		haggle_event_loop_stop(hh);
 
-	dobj = create_control_dataobject(hh, CTRL_TYPE_DEREGISTRATION_NOTICE, NULL);
+	dobj = create_control_dataobject(hh, 
+					 CTRL_TYPE_DEREGISTRATION_NOTICE, NULL);
 	
 	if (dobj) {
 		ret = haggle_ipc_send_dataobject(hh, dobj, NULL, IO_NO_REPLY);
@@ -1074,7 +1075,9 @@ typedef enum {
 	INTEREST_OP_REMOVE
 } interest_op_t;
 
-static int haggle_ipc_add_or_remove_interests(haggle_handle_t hh, interest_op_t op, const haggle_attrlist_t *al)
+static int haggle_ipc_add_or_remove_interests(haggle_handle_t hh, 
+					      interest_op_t op, 
+					      const haggle_attrlist_t *al)
 {
 	struct dataobject *dobj;
 	metadata_t *ctrl_m = NULL;
@@ -1231,7 +1234,8 @@ int haggle_ipc_publish_dataobject(haggle_handle_t hh, haggle_dobj_t *dobj)
 	return haggle_ipc_send_dataobject(hh, dobj, NULL, IO_NO_REPLY);
 }
 
-int haggle_ipc_generate_and_send_control_dataobject(haggle_handle_t hh, control_type_t type)
+int haggle_ipc_generate_and_send_control_dataobject(haggle_handle_t hh, 
+						    control_type_t type)
 {
 	struct dataobject *dobj;
 	int ret;
@@ -1323,7 +1327,8 @@ int haggle_ipc_send_dataobject(struct haggle_handle *hh, haggle_dobj_t *dobj,
 			return HAGGLE_TIMEOUT_ERROR;
 		} 
                              
-                ret = recvfrom(hh->sock, databuffer, DATA_BUFLEN, 0, (struct sockaddr *)&peer_addr, &addrlen);
+                ret = recvfrom(hh->sock, databuffer, DATA_BUFLEN, 0, 
+			       (struct sockaddr *)&peer_addr, &addrlen);
                 
                 if (ret == SOCKET_ERROR) {
                         LIBHAGGLE_DBG("Receive error = %d\n", ret);
@@ -1347,7 +1352,9 @@ int haggle_ipc_send_dataobject(struct haggle_handle *hh, haggle_dobj_t *dobj,
         return HAGGLE_NO_ERROR;
 }
 
-int haggle_ipc_delete_data_object_by_id_bloomfilter(haggle_handle_t hh, const dataobject_id_t id, int keep_in_bloomfilter)
+int haggle_ipc_delete_data_object_by_id_bloomfilter(haggle_handle_t hh, 
+						    const dataobject_id_t id, 
+						    int keep_in_bloomfilter)
 {
 	char base64str[BASE64_LENGTH(sizeof(dataobject_id_t)) + 1];
 	struct dataobject *dobj;
@@ -1671,7 +1678,8 @@ start_ret_t haggle_event_loop(void *arg)
                                                
                         event_type = atoi(event_type_str);
                         			
-			if (handle_event(hh, event_type, dobj, app_m, event_m) <= 0) {
+			if (handle_event(hh, event_type, 
+					 dobj, app_m, event_m) <= 0) {
 				haggle_dataobject_free(dobj);
 			}
 		}

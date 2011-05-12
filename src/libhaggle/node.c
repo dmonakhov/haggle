@@ -35,7 +35,9 @@ static unsigned long num_node_alloc = 0;
 static unsigned long num_node_free = 0;
 #endif
 
-static void haggle_node_add_interface(struct node *n, haggle_interface_t *iface);
+static void haggle_node_add_interface(struct node *n,
+				      haggle_interface_t *iface);
+
 static int haggle_nodelist_add_node(haggle_nodelist_t *nl, struct node *n);
 
 static haggle_nodelist_t *haggle_nodelist_new()
@@ -181,7 +183,7 @@ struct node *haggle_node_new_from_metadata(metadata_t *m)
 
 	if (id) {
 		struct base64_decode_context b64_ctx;
-		size_t len;
+		size_t len = 0;
 		bool ret;
 
 		base64_decode_ctx_init(&b64_ctx);
