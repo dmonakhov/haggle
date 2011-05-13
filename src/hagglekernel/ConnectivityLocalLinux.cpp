@@ -604,8 +604,9 @@ static dbus_bool_t dbus_watch_add(DBusWatch * watch, void *data)
 #if HAVE_DBUS_WATCH_GET_UNIX_FD
 	wd->fd = dbus_watch_get_unix_fd(watch);
 #else
-	wd->fd = dbus_watch_get_socket(watch);
+	wd->fd = dbus_watch_get_fd(watch);
 #endif
+
 	dbusWatches.push_back(wd);
 
 	dbus_watch_set_data(watch, (void *) data, NULL);
