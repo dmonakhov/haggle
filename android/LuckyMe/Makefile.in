@@ -1,6 +1,8 @@
 APP=LuckyMe
-JAR_PATH=@top_srcdir@/src/libhaggle/jni/org.haggle.jar
-EXTRA_JARS=$(patsubst %,libs/%,$(notdir ${JAR_PATH}))
+JAR_LIB_PATH=@top_srcdir@/src/libhaggle/jni
+JAR_LIB_NAME=org.haggle.jar
+JAR_LIB_DEPS=${JAR_LIB_PATH}/${JAR_LIB_NAME}
+EXTRA_JARS=$(patsubst %,libs/%,$(notdir ${JAR_LIB_DEPS}))
 SRC=src/org/haggle/${APP}/*.java
 DEBUG=bin/${APP}-debug
 RELEASE=bin/${APP}-unsigned
@@ -11,9 +13,12 @@ debug: ${DEBUG}.apk
 release: ${RELEASE}.apk
 all: debug
 
-${EXTRA_JARS}: ${JAR_PATH}
+${JAR_LIB_DEPS}:
+	$(MAKE) -C ${JAR_LIB_PATH}
+
+${EXTRA_JARS}: ${JAR_LIB_DEPS}
 	mkdir -p libs
-	cp -f ${JAR_PATH} libs/
+	cp -f ${JAR_LIB_DEPS} libs/
 
 ${DEBUG}.apk: ${EXTRA_JARS} build.xml ${SRC}
 	${ANT} debug
