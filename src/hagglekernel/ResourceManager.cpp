@@ -23,8 +23,10 @@ ResourceManager::ResourceManager(HaggleKernel *kernel) :
 
 ResourceManager::~ResourceManager()
 {
-	delete resMon;
-	delete onCheckStatusCallback;
+	if (resMon)
+		delete resMon;
+	if (onCheckStatusCallback)
+		delete onCheckStatusCallback;
 }
 
 bool ResourceManager::init_derived()

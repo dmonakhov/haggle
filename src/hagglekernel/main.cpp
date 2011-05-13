@@ -366,7 +366,6 @@ static void signal_handler(int signal)
 		}
 		shutdown_counter++;
 		break;
-	case SIGPIPE:
 	default:
 		break;
 	}
@@ -600,26 +599,6 @@ finish:
 	return retval;
 }
 
-#if defined(OS_WINDOWS)
-static void set_path(void)
-{
-	TCHAR tstr[512];
-	char str[512];
-	DWORD size;
-	DWORD i;
-	
-	size = GetModuleFileName(NULL, tstr, 512);
-	if (size != 512) {
-		for (i = 0; i <= size; i++)
-			str[i] = (char) tstr[i];
-		
-		fill_in_haggle_path(str);
-	} else{
-		fill_in_haggle_path(".\\");
-	}
-}
-#endif
-
 #if defined(OS_UNIX)
 
 static struct {
@@ -676,7 +655,6 @@ int WINAPI WinMain(
 	isBenchmarking = true;
 #endif
 	atexit(cleanup);
-	set_path();
 	
 	setCreateTimeOnBloomfilterUpdate = true;
 
@@ -705,9 +683,6 @@ int main(void)
 
 #if defined(BENCHMARK)
 	isBenchmarking = true;
-#endif
-#if defined(OS_WINDOWS)
-	set_path();
 #endif
 #if defined(OS_UNIX)
 	// Do some command line parsing. Could use "getopt", but it

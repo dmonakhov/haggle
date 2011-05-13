@@ -38,8 +38,8 @@ ResourceMonitor *ResourceMonitor::create(ResourceManager *m)
 	return new ResourceMonitorLinux(m);
 #elif defined(OS_MACOSX)
 	return new ResourceMonitorMacOSX(m);
-#elif defined(OS_WINDOWS_DESKT2OP)
-	return new ResourceMonitorWindowsDesktop(m);
+#elif defined(OS_WINDOWS_DESKTOP)
+	return new ResourceMonitorWindowsXP(m);
 #elif defined(OS_WINDOWS_MOBILE)
 	return new ResourceMonitorWindowsMobile(m);
 #else
