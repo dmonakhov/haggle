@@ -1261,7 +1261,8 @@ static int hci_init_handle(struct hci_handle *hcih)
 	hcih->sock = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI);
 
 	if (hcih->sock < 0) {
-		HAGGLE_ERR("could not open HCI socket\n");
+		HAGGLE_ERR("could not open HCI socket: %s\n",
+			   strerror(errno));
 		return -1;
 	}
 
@@ -1272,6 +1273,9 @@ static int hci_init_handle(struct hci_handle *hcih)
 	hci_filter_set_event(EVT_STACK_INTERNAL, &hcih->flt);
 
 	if (setsockopt(hcih->sock, SOL_HCI, HCI_FILTER, &hcih->flt, sizeof(hcih->flt)) < 0) {
+		HAGGLE_ERR("Could not set HCI_FILTER: %s\n",
+			   strerror(errno));
+		close(hcih->sock);
 		return -1;
 	}
 
@@ -1279,16 +1283,23 @@ static int hci_init_handle(struct hci_handle *hcih)
 	hcih->addr.hci_family = AF_BLUETOOTH;
 	hcih->addr.hci_dev = HCI_DEV_NONE;
 
-	if (bind(hcih->sock, (struct sockaddr *) &hcih->addr, sizeof(struct sockaddr_hci)) < 0) {
+	if (bind(hcih->sock, (struct sockaddr *) &hcih->addr, 
+		 sizeof(struct sockaddr_hci)) < 0) {
+		HAGGLE_ERR("Could not bind HCI sock: %s\n",
+			   strerror(errno));
+		close(hcih->sock);
 		return -1;
 	}
+
+	HAGGLE_DBG("Opened HCI socket\n");
 
 	return 0;
 }
 
 void hci_close_handle(struct hci_handle *hcih)
 {
-	close(hcih->sock);
+	if (hcih->sock > 0)
+		close(hcih->sock);
 }
 #endif
 
@@ -1412,16 +1423,21 @@ void ConnectivityLocalLinux::findLocalBluetoothInterfaces()
 	}
 	
 	if (dbus_message_get_args(reply, &dbh.err,
-				  DBUS_TYPE_ARRAY, DBUS_TYPE_OBJECT_PATH, &adapters, &len, DBUS_TYPE_INVALID)) {
+				  DBUS_TYPE_ARRAY, DBUS_TYPE_OBJECT_PATH, 
+				  &adapters, &len, DBUS_TYPE_INVALID)) {
 		int i;
 		
 		for (i = 0; i < len; i++) {
-			dbus_bluetooth_set_adapter_property_boolean(&dbh, adapters[i], "Discoverable", true);
-			dbus_bluetooth_set_adapter_property_integer(&dbh, adapters[i], "DiscoverableTimeout", 0);
-
+			dbus_bluetooth_set_adapter_property_boolean(&dbh, adapters[i], 
+								    "Discoverable", true);
+			dbus_bluetooth_set_adapter_property_integer(&dbh, adapters[i], 
+								    "DiscoverableTimeout", 0);
+			
 			InterfaceRef iface = dbus_bluetooth_get_interface(&dbh, adapters[i]);
+			
 			if (iface) {				
-				report_interface(iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
+				report_interface(iface, rootInterface, 
+						 new ConnectivityInterfacePolicyAgeless());
 			}
 		}
 		dbus_free_string_array(adapters);
@@ -1512,15 +1528,17 @@ void ConnectivityLocalLinux::findLocalBluetoothInterfaces()
                         fprintf(stderr, "Could not force discoverable mode for Bluetooth device %s\n", devname);
                 }
 #endif
-		
 		BluetoothAddress addy((unsigned char *) macaddr);
 		
-		InterfaceRef iface = Interface::create<BluetoothInterfac>(macaddr, devname, addy, IFFLAG_LOCAL | IFFLAG_UP);
+		InterfaceRef iface = Interface::create<BluetoothInterface>(macaddr, 
+									   devname, 
+									   addy, 
+									   IFFLAG_LOCAL|IFFLAG_UP);
 		
 		if (iface) {
-			report_interface(iface, rootInterface, new ConnectivityInterfacePolicyAgeless());
+			report_interface(iface, rootInterface, 
+					 new ConnectivityInterfacePolicyAgeless());
 		}
-
 	}
 	return;
 }
