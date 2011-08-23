@@ -1,5 +1,6 @@
+==================
 Haggle for Android
-===========================
+==================
 
 NOTE: Always check http://code.google.com/p/haggle/w/list for the
 latest information on building for Android.
@@ -13,6 +14,7 @@ without access privileges outside of what Android provides to
 applications (see note below how to enable Bluetooth on rooted
 devices).
 
+---------------------------
 Writing Haggle Applications
 ---------------------------
 
@@ -31,6 +33,7 @@ Android Eclipse project. Once it is opened in Eclipse, it is probably
 necessary to configure local paths to org.haggle.jar, the Android SDK,
 etc.
 
+--------
 Building
 --------
 
@@ -65,7 +68,8 @@ be built (e.g., LuckyMe).
 
 5. Build Haggle's Java component (in Eclipse or using Ant)
    Eclipse:
-   - Import the directory 'android/Haggle' as an Android project.
+   - Import the directory 'android/Haggle' as an Android project (New
+     Android Project, import from directory).
    - Build (should be automatic)
    Ant:
    - Make sure the Ant is installed
@@ -82,12 +86,25 @@ be built (e.g., LuckyMe).
      Eclipse->Project->Properties->Java Build Path->Libraries->
      ->Add External Jar
    Ant:
-   - Follow instructions under 5.
+   - Follow general instructions under 5 (with modified paths, of
+     course).
 
 Repeat step 6 for all other applications.
 
 Install on device with adb, e.g., "adb install Haggle.apk".
 
+--------------------
+Enabling Debug Build
+--------------------
+
+Pass the argument EXTRA_DEFINES=-DDEBUG to ndk-build, e.g.:
+
+$ <path_to_NDK>/ndk-build EXTRA_DEFINES=-DDEBUG
+
+Make sure you do 'ndk-build clean' first, in case you already built
+with debugging disabled.
+
+--------------------------------------------
 Enabling Bluetooth on rooted Android devices
 --------------------------------------------
 
@@ -111,6 +128,7 @@ to
 This change allows Haggle to detect the device's local bluetooth
 hardware.
 
+-------------------
 Setting Ad hoc mode
 -------------------
 
@@ -139,6 +157,7 @@ device and run it as 'root', e.g.:
 The WiFi interface should be turned off in the Android GUI before this
 script is run.
 
+---------------------------------------------------
 Note about a bug with static initializers in Bionic
 ---------------------------------------------------
 

@@ -164,12 +164,7 @@ static void on_event_loop_start(void *arg)
    on platform. We use this define just to avoid compiler warnings.
  */
 	if (!data || data->is_async) {
-#if defined(OS_ANDROID)
-#define ENV_CAST(e) (e)
-#else
-#define ENV_CAST(e) (void **)(e)
-#endif
-		if ((*jvm)->AttachCurrentThread(jvm, ENV_CAST(&env), NULL) != JNI_OK) {
+		if ((*jvm)->AttachCurrentThread(jvm, &env, NULL) != JNI_OK) {
 			fprintf(stderr, "libhaggle_jni: Could not attach thread\n");
 			return;
 		}

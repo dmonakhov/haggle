@@ -637,10 +637,22 @@ int haggle_daemon_spawn_with_callback(const char *daemonpath, daemon_spawn_callb
 		memory used to get the platform path.
 		*/
 #if defined(OS_WINDOWS)
-		const char *haggle_paths[] = { libhaggle_platform_get_path(PLATFORM_PATH_HAGGLE_EXE, "\\Haggle.exe"), NULL };
+		const char *haggle_paths[] = { 
+			libhaggle_platform_get_path(PLATFORM_PATH_HAGGLE_EXE, "\\Haggle.exe"), 
+			NULL 
+		};
 #elif defined(OS_UNIX)
 		// Do some qualified guessing
-		const char *haggle_paths[] = { "./haggle", "./bin/haggle", "/bin/haggle", "/usr/bin/haggle", "/usr/local/bin/haggle", "/opt/bin/haggle", "/opt/local/bin/haggle", NULL };
+		const char *haggle_paths[] = { 
+			"./haggle", 
+			"./bin/haggle", 
+			"/bin/haggle",
+			"/usr/bin/haggle", 
+			"/usr/local/bin/haggle", 
+			"/opt/bin/haggle", 
+			"/opt/local/bin/haggle", 
+			NULL 
+		};
 #endif
 		FILE *fp = fopen(haggle_paths[i], "r");
 
