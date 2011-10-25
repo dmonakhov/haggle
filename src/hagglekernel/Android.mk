@@ -86,7 +86,9 @@ LOCAL_C_INCLUDES += \
 	$(EXTRA_LIBS_PATH)/openssl \
 	$(EXTRA_LIBS_PATH)/openssl/include \
 	$(EXTRA_LIBS_PATH)/dbus \
+	$(EXTRA_LIBS_PATH)/bluetooth/bluez/libs/include \
 	$(EXTRA_LIBS_PATH)/bluetooth/bluez/include \
+	$(EXTRA_LIBS_PATH)/bluetooth/bluez/libs \
 	$(EXTRA_LIBS_PATH)/bluetooth/bluez/lib \
 	$(JNI_H_INCLUDE)
 
