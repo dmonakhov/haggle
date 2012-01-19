@@ -522,7 +522,10 @@ void trace(const trace_type_t _type, const char *func, const char *fmt, ...)
 	len = vsnprintf(buf, TRACE_BUFLEN, fmt, args);
 #endif
 	va_end(args);
-	
+
+	if (len == -1) 
+		return;
+
 	gettimeofday(&now, NULL);
 	timeval_sub_base(&now);
 	now_d = now.tv_usec;

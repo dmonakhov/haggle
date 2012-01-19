@@ -481,14 +481,13 @@ void Node::setName(const string _name)
 Metadata *Node::toMetadata(bool withBloomfilter) const
 {
 	char *b64str = NULL;
-	int b64len = 0;
 
         Metadata *nm = new XMLMetadata(NODE_METADATA);
         
         if (!nm)
                 return NULL;
         
-	b64len = base64_encode_alloc((const char *)getId(), NODE_ID_LEN, &b64str);
+	base64_encode_alloc((const char *)getId(), NODE_ID_LEN, &b64str);
 
 	if (!b64str) {
 		HAGGLE_ERR("Could not convert node id to metadata\n");

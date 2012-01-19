@@ -277,10 +277,7 @@ public:
 		
 		// Delete all elements in the list
 		while (!lst.empty()) {
-			T qe;
-
-			qe = lst.front();
-			lst.pop_front();
+		        lst.pop_front();
 		}
 	}
 };

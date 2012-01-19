@@ -215,8 +215,6 @@ ProtocolEvent ProtocolTCPServer::acceptClient()
 	socklen_t len;
 	SOCKET clientsock;
 	ProtocolTCPClient *p = NULL;
-	unsigned char *rawaddr = NULL;
-	socklen_t addrlen = 0;
 	SocketAddress *addr = NULL;
 	unsigned short port;
 
@@ -243,16 +241,12 @@ ProtocolEvent ProtocolTCPServer::acceptClient()
 #if defined(ENABLE_IPv6)
 	if (peer_addr->sa_family == AF_INET6) {
 		struct sockaddr_in6 *saddr_in6 = (struct sockaddr_in6 *)peer_addr;
-		addrlen = sizeof(struct sockaddr_in6);
-		rawaddr = (unsigned char *)&saddr_in6->sin6_addr;
 		port = ntohs(saddr_in6->sin6_port);
 		addr = new IPv6Address(*saddr_in6, TransportTCP(port));
 	} else
 #endif
 	if (peer_addr->sa_family == AF_INET) {
 		struct sockaddr_in *saddr_in = (struct sockaddr_in *)peer_addr;
-		addrlen = sizeof(struct sockaddr_in);
-		rawaddr = (unsigned char *)&saddr_in->sin_addr;
 		port = ntohs(saddr_in->sin_port);
 		addr = new IPv4Address(*saddr_in, TransportTCP(port));
 	} else {

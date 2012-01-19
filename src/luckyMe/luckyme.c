@@ -1028,6 +1028,9 @@ int on_shutdown(haggle_event_t *e, void* nix)
 	ssize_t ret;
 	stop_now = 1;
 	ret = write(test_loop_event[1], "x", 1);
+	
+	if (ret == -1)
+		fprintf(stderr, "shutdown signal error\n");
 #endif
 	return 0;
 }
@@ -1448,6 +1451,9 @@ void signal_handler()
 	ssize_t ret;
 	stop_now = 1;
 	ret = write(test_loop_event[1], "x", 1);
+
+	if (ret == -1)
+		fprintf(stderr, "could not signal shutdown event\n");
 }
 
 int main(int argc, char **argv)

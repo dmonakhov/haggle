@@ -390,8 +390,6 @@ void DebugManager::onDebugReport(Event *e)
 
 void DebugManager::onWatchableEvent(const Watchable& wbl)
 {
-	int num = 0;
-
 	if (!wbl.isValid())
 		return;
 	
@@ -416,7 +414,6 @@ void DebugManager::onWatchableEvent(const Watchable& wbl)
 		} else {
 			HAGGLE_DBG("accept failed: %ld\n", client_sock);
 		}
-		num = 1;
 	}
 #if defined(OS_LINUX) || defined(OS_MACOSX) || defined(OS_WINDOWS_DESKTOP)
 #if defined(DEBUG)

@@ -335,7 +335,6 @@ int ConnectivityLocalLinux::read_netlink()
 	}
 	for (nlm = (struct nlmsghdr *) buf; NLMSG_OK(nlm, (unsigned int) len); nlm = NLMSG_NEXT(nlm, len)) {
 		struct nlmsgerr *nlmerr = NULL;
-		int ret = 0;
 
 		memset(&ifinfo, 0, sizeof(struct if_info));
 
@@ -351,7 +350,7 @@ int ConnectivityLocalLinux::read_netlink()
 			}
 			break;
 		case RTM_NEWLINK:
-			ret = nl_parse_link_info(nlm, &ifinfo);
+		        nl_parse_link_info(nlm, &ifinfo);
 
 			//CM_DBG("RTM NEWLINK %s [%s] %s\n", ifinfo.ifname, eth_to_str(ifinfo.mac), ifinfo.isUp ? "UP" : "DOWN");
 
@@ -405,7 +404,7 @@ int ConnectivityLocalLinux::read_netlink()
 			break;
 		case RTM_DELLINK:
 		{
-			ret = nl_parse_link_info(nlm, &ifinfo);
+			nl_parse_link_info(nlm, &ifinfo);
 			EthernetAddress mac(ifinfo.mac);
 			CM_DBG("Interface dellink %s %s\n", ifinfo.ifname, mac.getStr());
 			// Delete interface here?
@@ -414,13 +413,13 @@ int ConnectivityLocalLinux::read_netlink()
 		}
 			break;
 		case RTM_DELADDR:
-			ret = nl_parse_addr_info(nlm, &ifinfo);
+			nl_parse_addr_info(nlm, &ifinfo);
 			CM_DBG("Interface deladdr %s %s\n", ifinfo.ifname, ip_to_str(ifinfo.ipaddr.sin_addr));
 			// Delete interface here?
 			delete_interface(ifinfo.isWireless ? Interface::TYPE_WIFI : Interface::TYPE_ETHERNET, ifinfo.mac);
 			break;
 		case RTM_NEWADDR:
-			ret = nl_parse_addr_info(nlm, &ifinfo);
+			nl_parse_addr_info(nlm, &ifinfo);
 			CM_DBG("Interface newaddr %s %s\n", ifinfo.ifname, ip_to_str(ifinfo.ipaddr.sin_addr));
 			
 			if (!isBlacklistDeviceName(ifinfo.ifname)) {

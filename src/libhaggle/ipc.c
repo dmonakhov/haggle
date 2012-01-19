@@ -326,6 +326,10 @@ void event_loop_signal_raise(haggle_handle_t hh)
                 return;
         
         res = write(hh->signal[1], &c, 1);
+
+	if (res == -1) {
+		fprintf(stderr, "%s: could not raise signal\n", __func__);
+	}
 }
 
 
@@ -340,6 +344,10 @@ void event_loop_signal_lower(haggle_handle_t hh)
         fcntl(hh->signal[0], F_SETFD, O_NONBLOCK);
         res = read(hh->signal[0], &c, 1);
         fcntl(hh->signal[0], F_SETFD, ~O_NONBLOCK);
+
+	if (res == -1) {
+		perror("event_loop_signal_lower:");
+	}
 }
 #endif
 

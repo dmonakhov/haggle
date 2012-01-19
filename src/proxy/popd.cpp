@@ -150,18 +150,22 @@ static void debug_str(const char *prefix, const char *str)
 	len = strlen(str);
 
         // Capture return value in order to make gcc happy. 
-        // TODO: Should also check for errors...
 	size_t n = fwrite(prefix, strlen(prefix), 1, stdout);
 
-	for(i = 0; i < len; i++)
-	{
-		if(str[i] < 0x20)
+	if (n < 1)
+		return;
+
+	for (i = 0; i < len; i++) {
+		if (str[i] < 0x20)
 			n = fwrite((const void *) char_name[(unsigned char) (str[i])], 
-				strlen(char_name[(unsigned char) (str[i])]), 
-				1, 
-				stdout);
+				   strlen(char_name[(unsigned char) (str[i])]), 
+				   1, 
+				   stdout);
 		else
 			n = fwrite((const void *) &(str[i]), 1, 1, stdout);
+
+		if (n < 1)
+			return;
 	}
 	n = fwrite((char *) "\n", 1, 1, stdout);
 }
@@ -224,7 +228,6 @@ void pop3_accept_connections(void)
 		char line[MAX_LINE_LEN+1];
 		char user_name[MAX_LINE_LEN];
 		long cmd_len;
-		bool is_bad_user = false;
 		bool got_user_name = false;
 		bool not_done = true;
 		enum {
@@ -271,7 +274,6 @@ void pop3_accept_connections(void)
 				inet_ntoa(((struct sockaddr_in *)(&addr))->sin_addr));
 #endif
 			my_send((char *) "-ERR Bad originating IP address\r\n");
-			is_bad_user = true;
 		} else {
 			my_send((char *) "+OK Haggle POP3 server ready\r\n");
 		}

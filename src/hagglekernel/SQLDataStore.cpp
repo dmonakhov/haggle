@@ -1418,7 +1418,6 @@ NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 	const char *tail;
 	sqlite_int64 node_rowid;
 	NodeRef node = NULL;
-	int num_match = 0;
 	Node::Id_t node_id;
 	Timeval nodedescription_createtime = -1;
 
@@ -1465,7 +1464,6 @@ NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 		return node;
 	}
 
-	num_match = 0;
 
 	while ((ret = sqlite3_step(stmt)) != SQLITE_DONE) {
 		if (ret == SQLITE_ROW) {
@@ -1498,8 +1496,6 @@ NodeRef SQLDataStore::createNode(sqlite3_stmt * in_stmt)
 		HAGGLE_DBG("SQLite command compilation failed! %s\n", SQL_IFACES_FROM_NODE_ROWID_CMD);
 		return node;
 	}
-
-	num_match = 0;
 
 	while ((ret = sqlite3_step(stmt)) != SQLITE_DONE) {
 		if (ret == SQLITE_ROW) {

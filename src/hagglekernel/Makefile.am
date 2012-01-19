@@ -2,7 +2,10 @@
 bin_PROGRAMS:=haggle
 haggle_SOURCES:=main.cpp
 haggle_DEPENDENCIES:=$(top_srcdir)/config.h libhagglekernel.a $(top_builddir)/src/utils/libhaggleutils.a $(top_builddir)/src/libcpphaggle/libcpphaggle.a
-haggle_LDADD:=libhagglekernel.a $(top_builddir)/src/utils/libhaggleutils.a $(top_builddir)/src/libcpphaggle/libcpphaggle.a
+haggle_LDFLAGS :=libhagglekernel.a $(top_builddir)/src/utils/libhaggleutils.a $(top_builddir)/src/libcpphaggle/libcpphaggle.a -lm -lcrypto -lsqlite3 $(XML_LIBS)
+haggle_CXXFLAGS :=$(CXXFLAGS)
+haggle_CPPFLAGS :=$(XML_CPPFLAGS) -I$(top_srcdir)/src/utils -I$(top_srcdir)/src/libcpphaggle/include -I$(top_srcdir)/src/libhaggle/include
+haggle_LDADD:=
 
 # This target is an intermediate library, that can be reused by the testsuite
 noinst_LIBRARIES:=libhagglekernel.a
@@ -142,11 +145,8 @@ EXTRA_DIST= Attribute.h \
 	Doxyfile.in \
 	hagglesim
 
-
-haggle_LDFLAGS :=-L../utils/ -L../libcpphaggle -lhaggleutils -lcpphaggle -lm $(XML_LIBS) -lcrypto
-haggle_CXXFLAGS :=$(CXXFLAGS)
-haggle_CPPFLAGS :=$(XML_CPPFLAGS) -I$(top_srcdir)/src/utils -I$(top_srcdir)/src/libcpphaggle/include -I$(top_srcdir)/src/libhaggle/include
 libhagglekernel_a_CPPFLAGS:=$(haggle_CPPFLAGS)
+#libhagglekernel_a_LIBADD:=
 
 if HAVE_EXCEPTION
 haggle_CXXFLAGS +=-DHAVE_EXCEPTION=1

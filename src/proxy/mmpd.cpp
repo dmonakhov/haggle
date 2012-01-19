@@ -93,22 +93,22 @@ static void debug_str(const char *prefix, char *str)
 	
 	len = strlen(str);
 
-        /*
-          Hmmm, no error checking for fwrite here... should add.  We
-          need at least to capture the return value to make gcc happy.
-
-         */
 	count = fwrite(prefix, strlen(prefix), 1, stdout);
 
-	for(i = 0; i < len; i++)
-	{
-		if(str[i] < 0x20)
+	if (count < 1)
+		return;
+
+	for (i = 0; i < len; i++) {
+		if (str[i] < 0x20)
 			count = fwrite((const void *) char_name[(unsigned char) (str[i])], 
                                        strlen(char_name[(unsigned char) (str[i])]), 
                                        1, 
                                        stdout);
 		else
 			count = fwrite((const void *) &(str[i]), 1, 1, stdout);
+
+		if (count < 1)
+			return;
 	}
 	count = fwrite((char *) "\n", 1, 1, stdout);
 }

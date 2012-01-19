@@ -343,7 +343,6 @@ Interface *Interface::fromMetadata(const Metadata& m)
 Metadata *Interface::toMetadata() const
 {
 	char *b64str = NULL;
-	int b64len = 0;
 	
 	Metadata *m = new XMLMetadata(INTERFACE_METADATA); 
 	
@@ -352,7 +351,7 @@ Metadata *Interface::toMetadata() const
 	
 	m->setParameter(INTERFACE_METADATA_TYPE_PARAM, getTypeStr());
 	
-	b64len = base64_encode_alloc((const char *)getIdentifier(), getIdentifierLen(), &b64str);
+	base64_encode_alloc((const char *)getIdentifier(), getIdentifierLen(), &b64str);
 	
 	if (!b64str) {
 		delete m;

@@ -301,9 +301,7 @@ Thread::Thread() :
 Thread::Thread(Runnable *r) : 
 	num(totNum++), starttime(Timeval::now()), name(NULL), runObj(r), 
 	state(THREAD_STATE_STOPPED), detached(false)
-{
-	int ret = 0;
-
+{	
 	if (!runObj)
 		return;
 
@@ -317,7 +315,7 @@ Thread::Thread(Runnable *r) :
 
 #if defined(HAVE_PTHREADS)
 	// Defaults to joinable
-	ret = pthread_attr_init(&attr);
+	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 #endif
 

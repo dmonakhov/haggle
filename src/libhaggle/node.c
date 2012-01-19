@@ -184,11 +184,9 @@ struct node *haggle_node_new_from_metadata(metadata_t *m)
 	if (id) {
 		struct base64_decode_context b64_ctx;
 		size_t len = 0;
-		bool ret;
 
 		base64_decode_ctx_init(&b64_ctx);
-
-		ret = base64_decode(&b64_ctx, id, strlen(id), n->id, &len);
+		base64_decode(&b64_ctx, id, strlen(id), n->id, &len);
 	}
 
 	mi = metadata_get(m, "Interface");

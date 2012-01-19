@@ -96,6 +96,9 @@ int libhaggle_trace(int err, const char *func, const char *fmt, ...)
 	len = vsnprintf(buf, 1024, fmt, args);
 #endif
 	va_end(args);
+	
+	if (len == -1)
+		return -1;
 
 #if defined(OS_ANDROID)
 	len = __android_log_print(ANDROID_LOG_DEBUG, "LIBHAGGLE", 

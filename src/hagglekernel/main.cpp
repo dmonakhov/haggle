@@ -171,8 +171,25 @@ static void daemonize()
 	
 	/* Redirect standard files to /dev/null */
 	f = freopen("/dev/null", "r", stdin);
+
+	if (!f) {
+		perror("redirect stdin:");
+		exit(EXIT_FAILURE);
+	}
+
 	f = freopen("/dev/null", "w", stdout);
+
+	if (!f) {
+		perror("redirect stdout:");
+		exit(EXIT_FAILURE);
+	}
+
 	f = freopen("/dev/null", "w", stderr);
+
+	if (!f) {
+		perror("redirect stderr:");
+		exit(EXIT_FAILURE);
+	}
 }
 
 #endif /* OS_UNIX */
