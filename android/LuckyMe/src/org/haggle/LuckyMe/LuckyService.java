@@ -41,7 +41,7 @@ import org.haggle.Handle.RegistrationFailedException;
 public class LuckyService extends Service implements EventHandler {
 	private Thread mDataThread = null;
 	//private DataObjectGenerator mDataGenerator = null;
-	private ExperimentSetupReader mExpReader = null;
+	//private ExperimentSetupReader mExpReader = null;
 	private org.haggle.Handle hh = null;
 	private boolean haggleIsRunning = false;
 	private int num_dataobjects_rx = 0;
@@ -64,12 +64,11 @@ public class LuckyService extends Service implements EventHandler {
 	private Node[] neighbors = null;
 	private String androidId;
 	private long nodeId = 0;
-	private PowerManager pm;
-	private PowerManager.WakeLock wl;
 	private Attribute[] interests = null;
 	private HashMap<Long, Long> myLuck = new HashMap<Long, Long>();
 	private long cumulativeLuck = 0;
 	private String deviceId;
+	private WakeLockHandler mWakeLockHandler;
 
 	@Override
 	public void onCreate() {
@@ -78,10 +77,12 @@ public class LuckyService extends Service implements EventHandler {
 		Log.i(LUCKY_SERVICE_TAG, "LuckyService created");
 		//mDataGenerator = new DataObjectGenerator();
 		//mDataThread = new Thread(mDataGenerator);
-		mExpReader = new ExperimentSetupReader();
-		mDataThread = new Thread(mExpReader);
+		mWakeLockHandler = new WakeLockHandler();
+		mDataThread = new Thread(mWakeLockHandler);
+		//mExpReader = new ExperimentSetupReader();
+		//mDataThread = new Thread(mExpReader);
 		androidId = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
-
+                
 		Log.i(LUCKY_SERVICE_TAG, "Android id is " + androidId);
 
 		try {
@@ -96,60 +97,6 @@ public class LuckyService extends Service implements EventHandler {
 		// Set deviceId (IMEI, used to read trace file)
 		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE); 
 		deviceId = tm.getDeviceId();
-						
-		// Get a reference to a wake look so that we can keep the device
-		// awake even if the power button is pressed.
-		pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-		wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, LUCKY_SERVICE_TAG);
-	}
-
-	@Override
-	public void onDestroy() {
-		super.onDestroy();
-
-		stopDataGenerator();
-
-		if (hh != null) {
-			// Tell Haggle to stop, but first make sure we ignore the shutdown
-			// event since we dispose of the handle here
-			ignoreShutdown = true;
-			hh.shutdown();
-			hh.dispose();
-			hh = null;
-		}
-
-		Log.i(LUCKY_SERVICE_TAG, "Service destroyed.");
-	}
-
-	@Override
-	public IBinder onBind(Intent intent) {
-		Log.i(LUCKY_SERVICE_TAG, "onBind: Client bound to service : " + intent);
-		return mBinder;
-	}
-
-	@Override
-	public void onRebind(Intent intent) {
-		Log.i(LUCKY_SERVICE_TAG, "onRebind: Client bound to service : "
-				+ intent);
-		super.onRebind(intent);
-	}
-
-	@Override
-	public boolean onUnbind(Intent intent) {
-		super.onUnbind(intent);
-		Log.i(LUCKY_SERVICE_TAG, "onUnbind: LuckyMe disconnected from service.");
-		mClientMessenger = null;
-		return true;
-	}
-
-	/**
-	 * Class for clients to access. Because we know this service always runs in
-	 * the same process as its clients, we don't need to deal with IPC.
-	 */
-	public class LuckyBinder extends Binder {
-		LuckyService getService() {
-			return LuckyService.this;
-		}
 	}
 
 	@Override
@@ -157,7 +104,7 @@ public class LuckyService extends Service implements EventHandler {
 		Log.d(LUCKY_SERVICE_TAG, "Received start id " + startId + ": " + intent);
 		// We want this service to continue running until it is explicitly
 		// stopped, so return sticky.
-
+		
 		if (hh == null) {
 			switch (Handle.getDaemonStatus()) {
 			case Handle.HAGGLE_DAEMON_CRASHED:
@@ -229,6 +176,102 @@ public class LuckyService extends Service implements EventHandler {
 		return START_NOT_STICKY;
 	}
 
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+
+		stopDataGenerator();
+
+		if (hh != null) {
+			// Tell Haggle to stop, but first make sure we ignore the shutdown
+			// event since we dispose of the handle here
+			ignoreShutdown = true;
+			hh.shutdown();
+			hh.dispose();
+			hh = null;
+		}
+
+		Log.i(LUCKY_SERVICE_TAG, "Service destroyed.");
+	}
+
+	@Override
+	public IBinder onBind(Intent intent) {
+		Log.i(LUCKY_SERVICE_TAG, "onBind: Client bound to service : " + intent);
+		return mBinder;
+	}
+
+	@Override
+	public void onRebind(Intent intent) {
+		Log.i(LUCKY_SERVICE_TAG, "onRebind: Client bound to service : "
+				+ intent);
+		super.onRebind(intent);
+	}
+
+	@Override
+	public boolean onUnbind(Intent intent) {
+		super.onUnbind(intent);
+		Log.i(LUCKY_SERVICE_TAG, "onUnbind: LuckyMe disconnected from service.");
+		mClientMessenger = null;
+		return true;
+	}
+
+	/**
+	 * Class for clients to access. Because we know this service always runs in
+	 * the same process as its clients, we don't need to deal with IPC.
+	 */
+	public class LuckyBinder extends Binder {
+		LuckyService getService() {
+			return LuckyService.this;
+		}
+	}
+
+	class WakeLockHandler implements Runnable {
+		private boolean shouldExit = false;
+		private PowerManager.WakeLock wakeLock;
+		private boolean hasLock = false;
+		
+		WakeLockHandler() {
+			PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+			wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, LUCKY_SERVICE_TAG);
+		}
+		
+		void lockAcquire() {
+			Log.d(LUCKY_SERVICE_TAG, "Acquire wake lock");
+			wakeLock.acquire();
+			hasLock = true;
+		}
+		void lockRelease() {
+			Log.d(LUCKY_SERVICE_TAG, "Release wake lock");
+			wakeLock.release();
+			hasLock = false;
+		}
+		
+		@Override
+		public void run() {
+				Log.d(LUCKY_SERVICE_TAG, "WakeLockHandler running");
+				
+				while (!shouldExit) {
+					try {
+						if (!hasLock) {
+							// Hold lock for 30 mins
+							lockAcquire();
+							Thread.sleep(30 * 60 * 1000);
+						} else {
+							// Release lock for 5 mins
+							lockRelease();
+							Thread.sleep(5 * 60 * 1000);
+						}
+					} catch (InterruptedException e) {
+						Log.d(LUCKY_SERVICE_TAG, "WakeLockHandler interrupted");
+					}
+				}
+		}
+		
+		public void stop() {
+			shouldExit = true;
+		}
+	}
+	
 	class DataObjectGenerator implements Runnable {
 		private boolean shouldExit = false;
 
@@ -269,15 +312,13 @@ public class LuckyService extends Service implements EventHandler {
 	private void startDataGenerator() {
 		Log.i(LUCKY_SERVICE_TAG, "Starting data generator");
 		mDataThread.start();
-		// Acquire wake look to keep the device from going to
-		// complete sleep
-		wl.acquire();
 	}
 
 	private void stopDataGenerator() {
 		if (mDataThread != null) {
 			//mDataGenerator.stop();
-			mExpReader.stop();
+			//mExpReader.stop();
+			mWakeLockHandler.stop();
 			mDataThread.interrupt();
 			try {
 				mDataThread.join();
@@ -286,9 +327,6 @@ public class LuckyService extends Service implements EventHandler {
 				Log.i(LUCKY_SERVICE_TAG, "Could not join with data thread.");
 			}
 		}
-		// Release wake lock
-		if (wl.isHeld())
-			wl.release();
 	}
 
 	public boolean isRunning() {
@@ -454,6 +492,7 @@ public class LuckyService extends Service implements EventHandler {
 		@Override
 		public void run() {
 			Log.i(LUCKY_SERVICE_TAG, "Reading experiment setup");
+			
 			try {
 				InputStream in = getResources().openRawResource(R.raw.test);
 				BufferedReader br = new BufferedReader(new InputStreamReader(in));
@@ -469,7 +508,7 @@ public class LuckyService extends Service implements EventHandler {
 					if (line.length() == 0 || line.charAt(0) == '#')
 						continue;
 					
-					Log.i(LUCKY_SERVICE_TAG, "Line is: " + line);
+					//Log.i(LUCKY_SERVICE_TAG, "Line is: " + line);
 					
 					if (line.charAt(0) == 'n' && line.length() > 2) {
 						String[] larr = line.split(" ");
@@ -482,7 +521,7 @@ public class LuckyService extends Service implements EventHandler {
 							
 							nodeId = Long.parseLong(larr[2]);
 							 
-							Log.i(LUCKY_SERVICE_TAG, "parsing node deviceId=" + deviceId + " nodeId=" + nodeId);
+							//Log.i(LUCKY_SERVICE_TAG, "parsing node deviceId=" + deviceId + " nodeId=" + nodeId);
 							
 							for (int i = 3; i < larr.length; i++) {
 								String[] aarr = larr[i].split(":"); 
@@ -505,7 +544,7 @@ public class LuckyService extends Service implements EventHandler {
 					} else if (line.charAt(0) == 'x') {
 						String[] larr = line.split(" ");
 
-						Log.i(LUCKY_SERVICE_TAG, "parsing extra node");
+						//Log.i(LUCKY_SERVICE_TAG, "parsing extra node");
 						
 						DataObject dObj = null;
 						try {
@@ -534,7 +573,7 @@ public class LuckyService extends Service implements EventHandler {
 					
 					} else if (line.charAt(0) == 'd') {
 						String[] larr = line.split(" ");
-						Log.i(LUCKY_SERVICE_TAG, "parsing data");
+						//Log.i(LUCKY_SERVICE_TAG, "parsing data");
 						
 						if (larr.length < 2)
 							continue;
@@ -543,7 +582,7 @@ public class LuckyService extends Service implements EventHandler {
 							long id = Long.parseLong(larr[1]);
 							
 							if (id != nodeId) {
-								Log.d(LUCKY_SERVICE_TAG, "Ignoring data line [wrong node]: " + line);
+								//Log.d(LUCKY_SERVICE_TAG, "Ignoring data line [wrong node]: " + line);
 								continue;
 							}
 							
@@ -562,11 +601,11 @@ public class LuckyService extends Service implements EventHandler {
 									Log.d(LUCKY_SERVICE_TAG, "bad number format");
 								}
 							}
-							Log.d(LUCKY_SERVICE_TAG, "New data object: " + dObj);
+							//Log.d(LUCKY_SERVICE_TAG, "New data object: " + dObj);
 							hh.publishDataObject(dObj);
 							num_dataobjects_tx++;
-							Log.d(LUCKY_SERVICE_TAG, "Generated data object "
-									+ num_dataobjects_tx + " luck=" + calculateLuck(dObj));
+							//Log.d(LUCKY_SERVICE_TAG, "Generated data object "
+								//	+ num_dataobjects_tx + " luck=" + calculateLuck(dObj));
 							sendClientMessage(MSG_NUM_DATAOBJECTS_TX);
 							if (!shouldExit) {
 								try {

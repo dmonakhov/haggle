@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
-	<classpathentry kind="lib" path="/Users/enordstr/Projects/haggle-new/lib/org.haggle.jar"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
-	<classpathentry kind="output" path="bin"/>
+	<classpathentry kind="lib" path="libs/org.haggle.jar"/>
+	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
