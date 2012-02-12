@@ -5,14 +5,8 @@ Haggle for Android
 NOTE: Always check http://code.google.com/p/haggle/w/list for the
 latest information on building for Android.
 
-Haggle can be built for Google's Android OS (e.g., the Nexus One) and
-run as an Android Service. This allows Haggle to run on non-rooted
-devices, but it restricts its use to WiFi in managed mode. WiFi ad-hoc
-mode cannot currently be set in Android without first rooting the
-device. Similarly, Bluetooth cannot be accessed from native code
-without access privileges outside of what Android provides to
-applications (see note below how to enable Bluetooth on rooted
-devices).
+Haggle for Android runs as a service and works with WiFi and
+Bluetooth.
 
 ---------------------------
 Writing Haggle Applications
@@ -104,30 +98,6 @@ $ <path_to_NDK>/ndk-build EXTRA_DEFINES=-DDEBUG
 Make sure you do 'ndk-build clean' first, in case you already built
 with debugging disabled.
 
---------------------------------------------
-Enabling Bluetooth on rooted Android devices
---------------------------------------------
-
-Haggle can use bluetooth on rooted devices by modifying the privileges
-given to Android applications with the BLUETOOTH_ADMIN
-permission. This can be done relatively easily by modifying the
-/system/etc/permissions/platform.xml file on a device. Change the
-following section:
-
-<permission name="android.permission.BLUETOOTH_ADMIN" >
-        <group gid="net_bt_admin" />
-</permission>
-
-to
-
-<permission name="android.permission.BLUETOOTH_ADMIN" >
-        <group gid="net_bt_admin" />
-        <group gid="bluetooth" />
-</permission>		  
-
-This change allows Haggle to detect the device's local bluetooth
-hardware.
-
 -------------------
 Setting Ad hoc mode
 -------------------
@@ -156,24 +126,3 @@ device and run it as 'root', e.g.:
 
 The WiFi interface should be turned off in the Android GUI before this
 script is run.
-
----------------------------------------------------
-Note about a bug with static initializers in Bionic
----------------------------------------------------
-
-As of Android platform release 1.5r2 (and probably earlier) there is a
-confirmed bug in Bionic which causes the constructor of static objects
-to be run twice.
-
-See the following discussion thread for more information:
-
-http://groups.google.com/group/android-platform/browse_thread/thread/1a434b326cef6609
-
-To deal with this problem, some class constructors, of which there
-exist statically allocated objects, have extra checks to make sure the
-constructor can handle two calls without bad consequences.  In some
-other constructors, no fixes have been applied, because the problem is
-not critical. For example, statically allocated strings will probably
-leak memory because the string constructor is run twice, thus
-allocating the string memory twice as well. But this is something one
-can live with until a fix is applied in Bionic upstream.

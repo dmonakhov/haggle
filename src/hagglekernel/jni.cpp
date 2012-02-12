@@ -64,7 +64,7 @@ jint Java_org_haggle_kernel_Haggle_mainLoop(JNIEnv *env,
 					    jobject obj, 
 					    jstring fileDirPath)
 {	
-        const char *str = env->GetStringUTFChars(fileDirPath, 0); 
+        const char *str = env->GetStringUTFChars(fileDirPath, NULL); 
         
         if (!str)
                 return -1;
