@@ -414,7 +414,9 @@ ProtocolEvent Protocol::startTxRx()
 /* Convenience function to send a single data object. Adds a data
    object to the queue and starts the thread.  This will only work if
    the protocol is in idle mode, i.e., it was just created. */
-bool Protocol::sendDataObject(const DataObjectRef& dObj, const NodeRef& peer, const InterfaceRef& iface)
+bool Protocol::sendDataObject(const DataObjectRef& dObj, 
+			      const NodeRef& peer, 
+			      const InterfaceRef& iface)
 {
 	if (mode == PROT_MODE_DONE || mode == PROT_MODE_GARBAGE) {
 		HAGGLE_DBG("Protocol %s is no longer valid\n", getName());
@@ -437,11 +439,14 @@ bool Protocol::sendDataObject(const DataObjectRef& dObj, const NodeRef& peer, co
 		return false;
 	}
 	
-	if (!peerNode || (peerNode->getType() == Node::TYPE_UNDEFINED && peer->getType() != Node::TYPE_UNDEFINED)) {
-		HAGGLE_DBG("Setting peer node to %s, which was previously undefined\n", peer->getName().c_str());
+	if (!peerNode || (peerNode->getType() == Node::TYPE_UNDEFINED && 
+			  peer->getType() != Node::TYPE_UNDEFINED)) {
+		HAGGLE_DBG("Setting peer node to %s, which was previously undefined\n", 
+			   peer->getName().c_str());
 		peerNode = peer;
 	} else if (peerNode != peer) {
-		HAGGLE_ERR("Target node %s does not match peer %s in protocol\n", peer->getName().c_str(), peerNode->getName().c_str());
+		HAGGLE_ERR("Target node %s does not match peer %s in protocol\n", 
+			   peer->getName().c_str(), peerNode->getName().c_str());
 		return false;
 	}
 

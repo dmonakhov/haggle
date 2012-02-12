@@ -21,7 +21,7 @@
 #include "Utility.h"
 #include "HaggleKernel.h"
 
-static JavaVM *jvm = NULL;
+JavaVM *jvm = NULL;
 extern HaggleKernel *kernel;
 extern int run_haggle(void);
 extern void cleanup();
@@ -108,7 +108,6 @@ jint Java_org_haggle_kernel_Haggle_nativeInit(JNIEnv *env, jclass cls)
 jint JNI_OnLoad(JavaVM *vm, void *reserved)
 {
         JNIEnv *env;
-	jclass cls;
 
         jvm = vm;
 

@@ -4,7 +4,10 @@ import android.app.Service;
 import android.app.NotificationManager;
 import android.app.Notification;
 import android.app.PendingIntent;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.Message;
@@ -97,7 +100,9 @@ public class Haggle extends Service {
 	public native int shutdown();
 	private boolean isRunning = false;
 	private int startId = -1;
-
+	private final BluetoothConnectivity mBluetoothConnectivity = 
+			new BluetoothConnectivity(this);
+	
 	private class HaggleMainLoop implements Runnable {
 		@Override
 		public void run() {
@@ -115,7 +120,9 @@ public class Haggle extends Service {
 		
 		// Display a notification about us starting.
 		showNotification();
-
+				
+		mBluetoothConnectivity.initialize();
+		
 		if (!isRunning) {
 			Log.i("Haggle", "Starting Haggle");
 			mHaggleThread = new Thread(new HaggleMainLoop());
@@ -140,6 +147,8 @@ public class Haggle extends Service {
 		// Cancel the persistent notification.
 		mNM.cancel(R.string.remote_service_started);
 
+		mBluetoothConnectivity.finalize();
+		
 		// Tell the user we stopped.
 		//Toast.makeText(this, R.string.remote_service_stopped, Toast.LENGTH_SHORT).show();
 		if (isRunning) {

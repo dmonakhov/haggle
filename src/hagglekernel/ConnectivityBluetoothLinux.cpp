@@ -598,7 +598,22 @@ void bluetoothDiscovery(ConnectivityBluetooth *conn)
                                         report_interface = true;
                                         conn->report_known_interface(Interface::TYPE_BLUETOOTH, macaddr, true);
                                 } else if (channel == 0) {
-                                        conn->report_known_interface(Interface::TYPE_BLUETOOTH, macaddr, false);
+					/*
+					  Reporting an interface as
+					  known "non-Haggle" can cause
+					  problems if a Haggle device
+					  is detected before Haggle
+					  has been started on that
+					  device. Therefore, disable
+					  the caching of negative
+					  results.
+					  
+					  The downside of disabling
+					  caching is that the SDP scan
+					  can be overwhelmed when
+					  there are many devices.
+					 */
+                                        //conn->report_known_interface(Interface::TYPE_BLUETOOTH, macaddr, false);
                                 }
                                 break;
                         case BLUETOOTH_ADDRESS_IS_HAGGLE_NODE:

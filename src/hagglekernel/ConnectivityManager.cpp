@@ -419,7 +419,9 @@ InterfaceStatus_t ConnectivityManager::report_known_interface(const InterfaceRef
 	return (*p.first).second.isHaggle ? INTERFACE_STATUS_HAGGLE : INTERFACE_STATUS_OTHER;
 }
 
-InterfaceStatus_t ConnectivityManager::report_known_interface(Interface::Type_t type, const unsigned char *identifier, bool isHaggle)
+InterfaceStatus_t ConnectivityManager::report_known_interface(Interface::Type_t type, 
+							      const unsigned char *identifier, 
+							      bool isHaggle)
 {
 	InterfaceStatus_t ret = INTERFACE_STATUS_ERROR;
 

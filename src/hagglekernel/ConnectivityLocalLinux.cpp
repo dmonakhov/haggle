@@ -654,7 +654,8 @@ void append_variant(DBusMessageIter *iter, int type, void *val)
 	dbus_message_iter_close_container(iter, &value_iter);
 }
 
-static int dbus_bluetooth_set_adapter_property(struct dbus_handle *dbh, const char *object, const char *c_key, void *value, int type)
+static int dbus_bluetooth_set_adapter_property(struct dbus_handle *dbh, const char *object, 
+					       const char *c_key, void *value, int type)
 {
 	DBusMessage *reply, *msg;
 	DBusMessageIter iter;
@@ -694,12 +695,14 @@ static int dbus_bluetooth_set_adapter_property(struct dbus_handle *dbh, const ch
 	return 0;
 }
 
-static int dbus_bluetooth_set_adapter_property_integer(struct dbus_handle *dbh, const char *adapter, const char *c_key, unsigned int value)
+static int dbus_bluetooth_set_adapter_property_integer(struct dbus_handle *dbh, const char *adapter, 
+						       const char *c_key, unsigned int value)
 {
 	return dbus_bluetooth_set_adapter_property(dbh, adapter, c_key, (void *)&value, DBUS_TYPE_UINT32);
 }
 
-static int dbus_bluetooth_set_adapter_property_boolean(struct dbus_handle *dbh, const char *adapter, const char *c_key, int value)
+static int dbus_bluetooth_set_adapter_property_boolean(struct dbus_handle *dbh, const char *adapter, 
+						       const char *c_key, int value)
 {
 	return dbus_bluetooth_set_adapter_property(dbh, adapter, c_key, (void *)&value, DBUS_TYPE_BOOLEAN);
 }
@@ -1386,7 +1389,6 @@ int ConnectivityLocalLinux::read_hci()
 	return 0;
 }
 
-// Finds local bluetooth interfaces:
 #if defined(HAVE_DBUS)
 
 void ConnectivityLocalLinux::findLocalBluetoothInterfaces()
@@ -1531,7 +1533,7 @@ void ConnectivityLocalLinux::findLocalBluetoothInterfaces()
 		BluetoothAddress addy((unsigned char *) macaddr);
 		
 		InterfaceRef iface = Interface::create<BluetoothInterface>(macaddr, 
-									   devname, 
+									   name, 
 									   addy, 
 									   IFFLAG_LOCAL|IFFLAG_UP);
 		
@@ -1543,6 +1545,45 @@ void ConnectivityLocalLinux::findLocalBluetoothInterfaces()
 	return;
 }
 #endif // HAVE_DBUS
+
+#if defined(OS_ANDROID)
+static ConnectivityLocalLinux *cl = NULL;
+
+void Java_org_haggle_kernel_BluetoothConnectivity_onBluetoothTurnedOn(JNIEnv *env, jobject obj,
+								      jstring addr, jstring name)
+{
+        const char *mac = env->GetStringUTFChars(addr, NULL); 
+        
+        if (!mac)
+                return;
+
+	HAGGLE_DBG("Bluetooth adapter %s turned on\n", mac);
+
+	if (cl)
+		cl->findLocalBluetoothInterfaces();
+
+        env->ReleaseStringUTFChars(addr, mac);
+}
+
+void Java_org_haggle_kernel_BluetoothConnectivity_onBluetoothTurnedOff(JNIEnv *env, jobject obj,
+								       jstring addr, jstring name)
+{
+        const char *name_str = env->GetStringUTFChars(name, NULL); 
+        
+	if (!name_str) {
+		HAGGLE_ERR("Could not get adapter name\n");
+		return;
+	}
+
+	HAGGLE_DBG("Bluetooth adapter %s turned off\n", name_str);
+	
+	if (cl)
+		cl->delete_interface(name_str);
+
+        env->ReleaseStringUTFChars(name, name_str);
+}
+
+#endif
 
 #endif // ENABLE_BLUETOOTH
 
@@ -1594,7 +1635,8 @@ bool ConnectivityLocalLinux::run()
 			HAGGLE_ERR("Failed add dbus watch\n");
 		}
 
-		dbus_connection_set_watch_functions(dbh.conn, dbus_watch_add, dbus_watch_remove, dbus_watch_toggle, (void *) this, NULL);
+		dbus_connection_set_watch_functions(dbh.conn, dbus_watch_add, dbus_watch_remove, 
+						    dbus_watch_toggle, (void *) this, NULL);
 		dbus_connection_add_filter(dbh.conn, dbus_handler, this, NULL);
 	}
 #else
@@ -1603,6 +1645,9 @@ bool ConnectivityLocalLinux::run()
 	Timeval wait_start = Timeval::now();;
 	long to_wait = DISCOVERABLE_RESET_INTERVAL;
 #endif
+
+	cl = this;
+
 	// Some events on this socket require root permissions. These
 	// include adapter up/down events in read_hci()
 	ret = hci_init_handle(&hcih);
@@ -1710,6 +1755,10 @@ bool ConnectivityLocalLinux::run()
 
 #endif // ENABLE_BLUETOOTH
 	}
+
+#if defined(OS_ANDROID)
+	cl = NULL;
+#endif
 	return false;
 }
 

@@ -50,6 +50,23 @@ struct hci_handle {
 };
 #endif
 
+#if defined(OS_ANDROID)
+#include <jni.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+JNIEXPORT void JNICALL Java_org_haggle_kernel_BluetoothConnectivity_onBluetoothTurnedOn(JNIEnv *env, jobject obj,
+											jstring addr, jstring name);
+
+JNIEXPORT void JNICALL Java_org_haggle_kernel_BluetoothConnectivity_onBluetoothTurnedOff(JNIEnv *env, jobject obj,
+											 jstring addr, jstring name);
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* OS_ANDROID */
+
 /**
 	Local connectivity module
 
@@ -68,6 +85,10 @@ private:
 #if defined(ENABLE_BLUETOOTH)
         struct hci_handle hcih;
 #if defined(OS_ANDROID)
+	friend void Java_org_haggle_kernel_BluetoothConnectivity_onBluetoothTurnedOn(JNIEnv *env, jobject obj,
+										     jstring addr, jstring name);
+	friend void Java_org_haggle_kernel_BluetoothConnectivity_onBluetoothTurnedOff(JNIEnv *env, jobject obj,
+										      jstring addr, jstring name);
         bool set_piscan_mode;
         int dev_id;
 #endif	
