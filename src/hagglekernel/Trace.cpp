@@ -21,7 +21,21 @@
 
 #if defined(OS_ANDROID)
 #include <android/log.h>
+
 #define HAGGLE_LOG_TAG "Haggle"
+static int android_log_type(TraceType_t type)
+{
+	switch (type) {
+	case TRACE_TYPE_DEBUG:
+		return ANDROID_LOG_DEBUG;
+	case TRACE_TYPE_ERROR:
+		return ANDROID_LOG_ERROR;
+	case TRACE_TYPE_BENCHMARK:
+	case TRACE_TYPE_LOG:
+		return ANDROID_LOG_VERBOSE;
+	}
+	return ANDROID_LOG_UNKNOWN;
+}
 #endif
 
 Trace Trace::trace;
@@ -103,7 +117,11 @@ int Trace::write(const TraceType_t _type, const char *func, const char *fmt, ...
 	if (traceFile)
 		fprintf(traceFile, "%.3lf:[%s]{%s}:%s", 
 			t.getTimeAsSecondsDouble(), thread_id, func, buf);
-
+#if defined(OS_ANDROID)
+	__android_log_print(android_log_type(_type),
+			    HAGGLE_LOG_TAG, "%.3lf:[%s]{%s}:%s",
+			    t.getTimeAsSecondsDouble(), thread_id, func, buf);
+#endif
 	return len;
 }
 
@@ -117,7 +135,11 @@ int Trace::writeWithoutTimestamp(const char *fmt, ...)
 		return 0;
 
 	va_start(args, fmt);
+#if defined(OS_ANDROID)
+	__android_log_print(TRACE_TYPE_DEBUG, HAGGLE_LOG_TAG, fmt, args);
+# else
 	len = vfprintf(stdout, fmt, args);
+#endif
 	va_end(args);
 
 	return len;
